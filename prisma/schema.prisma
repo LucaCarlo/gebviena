@@ -1,0 +1,252 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  role         String    @default("admin")
+  avatar       String?
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Designer {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  bio       String?
+  country   String?
+  imageUrl  String?
+  website   String?
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+
+  @@index([slug])
+}
+
+model Product {
+  id           String          @id @default(cuid())
+  name         String
+  slug         String          @unique
+  designerId   String?
+  designerName String
+  category     String
+  subcategory  String?
+  description  String?
+  materials    String?
+  dimensions   String?
+  imageUrl     String
+  galleryUrls  String?
+  isFeatured   Boolean         @default(false)
+  isNew        Boolean         @default(false)
+  isActive     Boolean         @default(true)
+  sortOrder    Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  designer     Designer?       @relation(fields: [designerId], references: [id])
+  finishes     ProductFinish[]
+
+  @@index([category])
+  @@index([subcategory])
+  @@index([slug])
+  @@index([designerId])
+}
+
+model Finish {
+  id        String          @id @default(cuid())
+  name      String
+  slug      String          @unique
+  code      String?
+  category  String
+  colorHex  String?
+  imageUrl  String?
+  isActive  Boolean         @default(true)
+  sortOrder Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  products  ProductFinish[]
+
+  @@index([category])
+  @@index([slug])
+}
+
+model ProductFinish {
+  id        String  @id @default(cuid())
+  productId String
+  finishId  String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  finish    Finish  @relation(fields: [finishId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, finishId])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  type        String
+  country     String
+  city        String?
+  year        Int?
+  architect   String?
+  description String?
+  imageUrl    String
+  galleryUrls String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type])
+  @@index([country])
+  @@index([slug])
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  subtitle    String?
+  description String?
+  imageUrl    String
+  galleryUrls String?
+  videoUrl    String?
+  year        Int?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+}
+
+model Award {
+  id           String   @id @default(cuid())
+  name         String
+  productName  String?
+  year         Int
+  organization String
+  description  String?
+  imageUrl     String?
+  url          String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([year])
+}
+
+model HeroSlide {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String?
+  ctaText   String?
+  ctaLink   String?
+  imageUrl  String
+  videoUrl  String?
+  position  String   @default("center")
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Language {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  name       String
+  nativeName String?
+  flag       String?
+  isDefault  Boolean  @default(false)
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model MediaFile {
+  id           String   @id @default(cuid())
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  url          String
+  altText      String?
+  folder       String   @default("general")
+  createdAt    DateTime @default(now())
+
+  @@index([folder])
+}
+
+model PointOfSale {
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  address   String
+  city      String
+  country   String
+  phone     String?
+  email     String?
+  website   String?
+  imageUrl  String?
+  latitude  Float
+  longitude Float
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([country])
+  @@index([city])
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  type      String   @default("general")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  referrer  String?
+  userAgent String?
+  ipHash    String?
+  createdAt DateTime @default(now())
+
+  @@index([path])
+  @@index([createdAt])
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  group String @default("general")
+
+  @@index([group])
+}
