@@ -38,26 +38,29 @@ model Designer {
 }
 
 model Product {
-  id           String          @id @default(cuid())
-  name         String
-  slug         String          @unique
-  designerId   String?
-  designerName String
-  category     String
-  subcategory  String?
-  description  String?
-  materials    String?
-  dimensions   String?
-  imageUrl     String
-  galleryUrls  String?
-  isFeatured   Boolean         @default(false)
-  isNew        Boolean         @default(false)
-  isActive     Boolean         @default(true)
-  sortOrder    Int             @default(0)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  designer     Designer?       @relation(fields: [designerId], references: [id])
-  finishes     ProductFinish[]
+  id            String           @id @default(cuid())
+  name          String
+  slug          String           @unique
+  designerId    String?
+  designerName  String
+  category      String
+  subcategory   String?
+  description   String?
+  materials     String?
+  dimensions    String?
+  coverImage    String?
+  heroImage     String?
+  sideImage     String?
+  galleryImages String?
+  imageUrl      String           @default("")
+  isFeatured    Boolean          @default(false)
+  isNew         Boolean          @default(false)
+  isActive      Boolean          @default(true)
+  sortOrder     Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  designer      Designer?        @relation(fields: [designerId], references: [id])
+  projects      ProjectProduct[]
 
   @@index([category])
   @@index([subcategory])
@@ -65,38 +68,10 @@ model Product {
   @@index([designerId])
 }
 
-model Finish {
-  id        String          @id @default(cuid())
-  name      String
-  slug      String          @unique
-  code      String?
-  category  String
-  colorHex  String?
-  imageUrl  String?
-  isActive  Boolean         @default(true)
-  sortOrder Int             @default(0)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  products  ProductFinish[]
-
-  @@index([category])
-  @@index([slug])
-}
-
-model ProductFinish {
-  id        String  @id @default(cuid())
-  productId String
-  finishId  String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  finish    Finish  @relation(fields: [finishId], references: [id], onDelete: Cascade)
-
-  @@unique([productId, finishId])
-}
-
 model Project {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   name        String
-  slug        String   @unique
+  slug        String           @unique
   type        String
   country     String
   city        String?
@@ -105,20 +80,32 @@ model Project {
   description String?
   imageUrl    String
   galleryUrls String?
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean          @default(true)
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  products    ProjectProduct[]
 
   @@index([type])
   @@index([country])
   @@index([slug])
 }
 
+model ProjectProduct {
+  id        String  @id @default(cuid())
+  projectId String
+  productId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, productId])
+}
+
 model Campaign {
   id          String   @id @default(cuid())
   name        String
   slug        String   @unique
+  type        String   @default("")
   subtitle    String?
   description String?
   imageUrl    String
@@ -131,6 +118,7 @@ model Campaign {
   updatedAt   DateTime @updatedAt
 
   @@index([slug])
+  @@index([type])
 }
 
 model Award {
@@ -150,18 +138,24 @@ model Award {
 }
 
 model HeroSlide {
-  id        String   @id @default(cuid())
-  title     String
-  subtitle  String?
-  ctaText   String?
-  ctaLink   String?
-  imageUrl  String
-  videoUrl  String?
-  position  String   @default("center")
-  isActive  Boolean  @default(true)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  title            String
+  subtitle         String?
+  ctaText          String?
+  ctaLink          String?
+  imageUrl         String
+  videoUrl         String?
+  position         String   @default("center")
+  verticalPosition String   @default("center")
+  darkOverlay      Boolean  @default(false)
+  overlayOpacity   Int      @default(60)
+  page             String   @default("homepage")
+  isActive         Boolean  @default(true)
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([page])
 }
 
 model Language {
@@ -178,17 +172,25 @@ model Language {
 }
 
 model MediaFile {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   filename     String
   originalName String
   mimeType     String
   size         Int
   url          String
+  wasabiUrl    String?
+  wasabiKey    String?
+  isSynced     Boolean   @default(false)
+  syncedAt     DateTime?
   altText      String?
-  folder       String   @default("general")
-  createdAt    DateTime @default(now())
+  folder       String    @default("general")
+  width        Int?
+  height       Int?
+  originalSize Int?
+  createdAt    DateTime  @default(now())
 
   @@index([folder])
+  @@index([isSynced])
 }
 
 model PointOfSale {
@@ -214,9 +216,11 @@ model PointOfSale {
 }
 
 model NewsletterSubscriber {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  email          String   @unique
+  acceptsPrivacy Boolean  @default(false)
+  acceptsUpdates Boolean  @default(false)
+  createdAt      DateTime @default(now())
 }
 
 model ContactSubmission {
@@ -249,4 +253,59 @@ model Setting {
   group String @default("general")
 
   @@index([group])
+}
+
+model ContentTypology {
+  id          String                    @id @default(cuid())
+  contentType String
+  value       String
+  label       String
+  sortOrder   Int                       @default(0)
+  isActive    Boolean                   @default(true)
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  categories  ContentTypologyCategory[]
+
+  @@unique([contentType, value])
+  @@index([contentType])
+}
+
+model ContentCategory {
+  id            String                    @id @default(cuid())
+  contentType   String
+  value         String
+  label         String
+  sortOrder     Int                       @default(0)
+  isActive      Boolean                   @default(true)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  typologies    ContentTypologyCategory[]
+  subcategories ContentSubcategory[]
+
+  @@unique([contentType, value])
+  @@index([contentType])
+}
+
+model ContentTypologyCategory {
+  id         String           @id @default(cuid())
+  typologyId String
+  categoryId String
+  typology   ContentTypology  @relation(fields: [typologyId], references: [id], onDelete: Cascade)
+  category   ContentCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([typologyId, categoryId])
+}
+
+model ContentSubcategory {
+  id         String          @id @default(cuid())
+  categoryId String
+  value      String
+  label      String
+  sortOrder  Int             @default(0)
+  isActive   Boolean         @default(true)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  category   ContentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
 }

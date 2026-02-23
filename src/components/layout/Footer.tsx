@@ -3,22 +3,31 @@
 import { useState } from "react";
 import Link from "next/link";
 import Logo from "./Logo";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     try {
-      await fetch("/api/newsletter", {
+      let recaptchaToken = "";
+      if (executeRecaptcha) {
+        recaptchaToken = await executeRecaptcha("newsletter_subscribe");
+      }
+      const res = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, recaptchaToken }),
       });
-      setSubscribed(true);
-      setEmail("");
+      const data = await res.json();
+      if (data.success) {
+        setSubscribed(true);
+        setEmail("");
+      }
     } catch {
       // silently fail
     }

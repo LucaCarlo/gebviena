@@ -1,15 +1,185 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
-import { PRODUCT_CATEGORIES, CATEGORY_SUBCATEGORIES } from "@/lib/constants";
-import type { Product } from "@/types";
+import { ChevronRight, ChevronLeft } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import type { Product, HeroSlide } from "@/types";
 
 const ITEMS_PER_PAGE = 16;
+const HERO_AUTOPLAY = 5000;
+
+function ProductsHero() {
+  const [slides, setSlides] = useState<HeroSlide[]>([]);
+  const [current, setCurrent] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/hero-slides?page=products")
+      .then((r) => r.json())
+      .then((data) => {
+        setSlides(data.data || []);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  // Autoplay
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % slides.length);
+    }, HERO_AUTOPLAY);
+    return () => clearInterval(timer);
+  }, [slides.length, current]);
+
+  // Fallback: static hero if no slides configured
+  if (loaded && slides.length === 0) {
+    return (
+      <section className="relative w-full flex items-center justify-center bg-warm-100" style={{ height: "calc(100vh - 6rem)" }}>
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.3 }}
+          className="font-serif text-[46px] md:text-[58px] lg:text-[70px] text-warm-800 tracking-wide"
+        >
+          Prodotti
+        </motion.h1>
+      </section>
+    );
+  }
+
+  if (!loaded) {
+    return (
+      <section className="relative w-full flex items-center justify-center bg-warm-100" style={{ height: "calc(100vh - 6rem)" }}>
+        <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
+      </section>
+    );
+  }
+
+  const slide = slides[current];
+
+  const textAlignH =
+    slide.position === "left" ? "items-start text-left pl-8 md:pl-20" :
+    slide.position === "right" ? "items-end text-right pr-8 md:pr-20" :
+    "items-center text-center";
+
+  const textAlignV =
+    slide.verticalPosition === "top" ? "top-20 bottom-auto" :
+    slide.verticalPosition === "bottom" ? "bottom-20 top-auto" :
+    "top-1/2 -translate-y-1/2";
+
+  return (
+    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 6rem)" }}>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={slide.id}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8 }}
+          className="absolute inset-0"
+        >
+          <Image
+            src={slide.imageUrl}
+            alt={slide.title}
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+        </motion.div>
+      </AnimatePresence>
+
+      {slide.darkOverlay ? (
+        <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+      )}
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`text-${slide.id}`}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
+        >
+          <h1 className="font-serif text-[40px] md:text-[50px] lg:text-[60px] text-white tracking-wide">
+            {slide.title}
+          </h1>
+          {slide.subtitle && (
+            <p className="text-sm md:text-base text-white/70 mt-2 max-w-2xl">
+              {slide.subtitle}
+            </p>
+          )}
+          {slide.ctaText && slide.ctaLink && (
+            <Link
+              href={slide.ctaLink}
+              className="inline-block mt-4 uppercase text-sm tracking-[0.2em] text-white font-medium hover:text-white/80 transition-colors"
+            >
+              {slide.ctaText} <span className="ml-1">&rarr;</span>
+            </Link>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Navigation arrows */}
+      {slides.length > 1 && (
+        <>
+          <button
+            onClick={() => setCurrent((prev) => (prev - 1 + slides.length) % slides.length)}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm text-white/70 flex items-center justify-center hover:bg-black/40 hover:text-white transition-all z-10"
+            aria-label="Slide precedente"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={() => setCurrent((prev) => (prev + 1) % slides.length)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm text-white/70 flex items-center justify-center hover:bg-black/40 hover:text-white transition-all z-10"
+            aria-label="Slide successivo"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </>
+      )}
+
+      {/* Dots */}
+      {slides.length > 1 && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+          {slides.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrent(idx)}
+              className={`rounded-full transition-all duration-300 ${
+                idx === current
+                  ? "w-6 h-1.5 bg-white"
+                  : "w-1.5 h-1.5 bg-white/40 hover:bg-white/60"
+              }`}
+              aria-label={`Vai allo slide ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+interface TypologyItem {
+  value: string;
+  label: string;
+  id: string;
+}
+
+interface CategoryItem {
+  value: string;
+  label: string;
+  id: string;
+  typologies: { typology: { id: string; value: string } }[];
+}
 
 function ProductsContent() {
   const searchParams = useSearchParams();
@@ -20,6 +190,44 @@ function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [typologies, setTypologies] = useState<TypologyItem[]>([]);
+  const [allCategories, setAllCategories] = useState<CategoryItem[]>([]);
+  const separatorRef = useRef<HTMLDivElement>(null);
+  const typoButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [notchX, setNotchX] = useState<number | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  // Calculate notch position when category changes
+  useEffect(() => {
+    const updateNotch = () => {
+      const sep = separatorRef.current;
+      const btn = typoButtonRefs.current[currentCategory];
+      if (sep && btn) {
+        const sRect = sep.getBoundingClientRect();
+        const bRect = btn.getBoundingClientRect();
+        setNotchX(bRect.left + bRect.width / 2 - sRect.left);
+        setContainerWidth(sRect.width);
+      }
+    };
+    // Small delay to ensure layout is ready
+    const raf = requestAnimationFrame(updateNotch);
+    window.addEventListener("resize", updateNotch);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", updateNotch);
+    };
+  }, [currentCategory, typologies]);
+
+  // Load typologies and categories from DB
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/typologies?contentType=products").then((r) => r.json()),
+      fetch("/api/categories?contentType=products").then((r) => r.json()),
+    ]).then(([tData, cData]) => {
+      setTypologies(tData.data || []);
+      setAllCategories(cData.data || []);
+    });
+  }, []);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -61,8 +269,10 @@ function ProductsContent() {
     router.push(`/prodotti?${params}`, { scroll: false });
   };
 
-  /* Get subcategories for current category */
-  const subcategories = CATEGORY_SUBCATEGORIES[currentCategory] || CATEGORY_SUBCATEGORIES.TUTTI;
+  /* Get categories for current typology */
+  const filteredCategories = currentCategory === "TUTTI"
+    ? allCategories
+    : allCategories.filter((c) => c.typologies.some((t) => t.typology.value === currentCategory));
 
   /* Pagination with ellipsis */
   const getPaginationItems = () => {
@@ -83,17 +293,8 @@ function ProductsContent() {
 
   return (
     <>
-      {/* ===== HERO — full screen, title centered ===== */}
-      <section className="relative w-full flex items-center justify-center bg-warm-100" style={{ height: "100vh" }}>
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.3 }}
-          className="font-serif text-4xl md:text-5xl lg:text-6xl text-warm-800 tracking-wide"
-        >
-          Prodotti
-        </motion.h1>
-      </section>
+      {/* ===== DYNAMIC HERO ===== */}
+      <ProductsHero />
 
       {/* ===== DESCRIPTION ===== */}
       <section className="gtv-container py-14 md:py-20">
@@ -112,44 +313,82 @@ function ProductsContent() {
         </motion.p>
       </section>
 
-      {/* ===== CATEGORY FILTERS ===== */}
+      {/* ===== FILTERS SECTION ===== */}
       <div className="gtv-container">
-        <div className="flex flex-wrap gap-6 justify-center pb-6">
-          {PRODUCT_CATEGORIES.map((cat) => (
+        {/* Tipologie — testo semplice con sottolineatura */}
+        <div className="flex flex-wrap gap-6 md:gap-8 justify-center pb-6">
+          <button
+            ref={(el) => { typoButtonRefs.current["TUTTI"] = el; }}
+            onClick={() => setCategory("TUTTI")}
+            className={`text-sm tracking-[0.06em] text-dark pb-1 transition-all border-b ${
+              currentCategory === "TUTTI"
+                ? "border-dark"
+                : "border-transparent hover:border-warm-400"
+            }`}
+          >
+            Tutti
+          </button>
+          {typologies.map((t) => (
             <button
-              key={cat.value}
-              onClick={() => setCategory(cat.value)}
-              className={`text-sm tracking-[0.08em] pb-1 transition-colors ${
-                currentCategory === cat.value
-                  ? "text-warm-800 border-b border-warm-800"
-                  : "text-warm-400 hover:text-warm-600"
+              key={t.value}
+              ref={(el) => { typoButtonRefs.current[t.value] = el; }}
+              onClick={() => setCategory(t.value)}
+              className={`text-sm tracking-[0.06em] text-dark pb-1 transition-all border-b ${
+                currentCategory === t.value
+                  ? "border-dark"
+                  : "border-transparent hover:border-warm-400"
               }`}
             >
-              {cat.label}
+              {t.label}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* ===== SUB-CATEGORY FILTERS ===== */}
-      <div className="border-t border-b border-warm-200">
-        <div className="gtv-container py-4">
-          <div className="flex flex-wrap gap-x-6 gap-y-3 justify-center">
-            {subcategories.map((sub) => (
-              <button
-                key={sub}
-                onClick={() => setSubcategory(currentSubcategory === sub ? null : sub)}
-                className={`text-sm uppercase tracking-[0.08em] transition-colors ${
-                  currentSubcategory === sub
-                    ? "text-warm-800 font-medium border-b border-warm-800 pb-0.5"
-                    : "text-warm-500 hover:text-warm-800"
-                }`}
-              >
-                {sub}
-              </button>
-            ))}
-          </div>
+        {/* Separator — single continuous line with ^ notch */}
+        <div className="relative h-[14px]" ref={separatorRef}>
+          {containerWidth > 0 && (
+            <svg
+              className="absolute bottom-0 left-0 w-full"
+              height="14"
+              style={{ overflow: "visible" }}
+            >
+              <path
+                d={
+                  notchX !== null
+                    ? `M0 13.5 L${notchX - 10} 13.5 L${notchX} 2 L${notchX + 10} 13.5 L${containerWidth} 13.5`
+                    : `M0 13.5 L${containerWidth} 13.5`
+                }
+                stroke="#000"
+                strokeWidth="1"
+                fill="none"
+              />
+            </svg>
+          )}
+          {containerWidth === 0 && (
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-dark" />
+          )}
         </div>
+
+        {/* Categorie — pill con sfondo arrotondato */}
+        {filteredCategories.length > 0 && (
+          <div className="pt-5 pb-2">
+            <div className="flex flex-wrap gap-3 justify-center">
+              {filteredCategories.map((cat) => (
+                <button
+                  key={cat.value}
+                  onClick={() => setSubcategory(currentSubcategory === cat.value ? null : cat.value)}
+                  className={`px-4 py-1.5 rounded-full text-xs uppercase tracking-[0.1em] transition-all ${
+                    currentSubcategory === cat.value
+                      ? "bg-dark text-white"
+                      : "bg-warm-100 text-dark hover:bg-warm-200"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ===== PRODUCT GRID ===== */}
@@ -177,7 +416,7 @@ function ProductsContent() {
                 <Link href={`/prodotti/${product.slug}`} className="group block">
                   <div className="relative aspect-square bg-warm-50 overflow-hidden">
                     <Image
-                      src={product.imageUrl}
+                      src={product.coverImage || product.imageUrl}
                       alt={product.name}
                       fill
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -210,7 +449,7 @@ function ProductsContent() {
           <div className="flex items-center justify-center gap-3 mt-16">
             {getPaginationItems().map((item, i) =>
               item === "..." ? (
-                <span key={`ellipsis-${i}`} className="text-xs text-warm-400 px-1">…</span>
+                <span key={`ellipsis-${i}`} className="text-xs text-warm-400 px-1">&hellip;</span>
               ) : (
                 <button
                   key={item}

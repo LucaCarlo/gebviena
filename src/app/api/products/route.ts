@@ -41,22 +41,9 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { finishIds, ...rest } = body;
-    // Remove relation fields that Prisma doesn't accept on create
-    delete rest.designer;
-    delete rest.finishes;
+    delete body.designer;
 
-    const data = await prisma.product.create({ data: rest });
-
-    // Create finish associations
-    if (finishIds && Array.isArray(finishIds) && finishIds.length > 0) {
-      await prisma.productFinish.createMany({
-        data: finishIds.map((finishId: string) => ({
-          productId: data.id,
-          finishId,
-        })),
-      });
-    }
+    const data = await prisma.product.create({ data: body });
 
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (e) {

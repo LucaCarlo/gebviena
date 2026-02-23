@@ -146,30 +146,6 @@ async function main() {
     await prisma.award.create({ data: { ...a, isActive: true } });
   }
 
-  // Finishes
-  const finishes = [
-    { name: "Faggio Naturale", slug: "faggio-naturale", code: "FN01", category: "LEGNO", colorHex: "#C4A882" },
-    { name: "Noce Canaletto", slug: "noce-canaletto", code: "NC01", category: "LEGNO", colorHex: "#5C3D2E" },
-    { name: "Rovere Sbiancato", slug: "rovere-sbiancato", code: "RS01", category: "LEGNO", colorHex: "#D4C5A9" },
-    { name: "Frassino Tinto Nero", slug: "frassino-tinto-nero", code: "FTN01", category: "LEGNO", colorHex: "#2C2C2C" },
-    { name: "Frassino Naturale", slug: "frassino-naturale", code: "FNA01", category: "LEGNO", colorHex: "#B8A88A" },
-    { name: "Laccato Bianco", slug: "laccato-bianco", code: "LB01", category: "LACCATO", colorHex: "#FFFFFF" },
-    { name: "Laccato Nero", slug: "laccato-nero", code: "LN01", category: "LACCATO", colorHex: "#000000" },
-    { name: "Laccato Rosso", slug: "laccato-rosso", code: "LR01", category: "LACCATO", colorHex: "#8B0000" },
-    { name: "Ottone Satinato", slug: "ottone-satinato", code: "OS01", category: "METALLO", colorHex: "#B5A642" },
-    { name: "Cromo Lucido", slug: "cromo-lucido", code: "CL01", category: "METALLO", colorHex: "#C0C0C0" },
-    { name: "Rame Brunito", slug: "rame-brunito", code: "RB01", category: "METALLO", colorHex: "#8B4513" },
-    { name: "Pelle Cognac", slug: "pelle-cognac", code: "PC01", category: "PELLE", colorHex: "#9A4A2F" },
-    { name: "Pelle Nera", slug: "pelle-nera", code: "PN01", category: "PELLE", colorHex: "#1A1A1A" },
-    { name: "Tessuto Grigio Chiaro", slug: "tessuto-grigio-chiaro", code: "TGC01", category: "TESSUTO", colorHex: "#A8A8A8" },
-    { name: "Tessuto Blu Notte", slug: "tessuto-blu-notte", code: "TBN01", category: "TESSUTO", colorHex: "#191970" },
-    { name: "Velluto Verde", slug: "velluto-verde", code: "VV01", category: "TESSUTO", colorHex: "#2E4F3E" },
-  ];
-
-  for (const f of finishes) {
-    await prisma.finish.create({ data: { ...f, isActive: true } });
-  }
-
   // Hero Slides
   const heroSlides = [
     { title: "Un omaggio alla tradizione viennese", subtitle: "Kipferl by Nendo", ctaText: "Scopri il prodotto", ctaLink: "/prodotti/kipferl", imageUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=2560&h=1707&fit=crop&q=90", sortOrder: 0 },
@@ -237,7 +213,6 @@ async function main() {
   console.log("   - Projects:", projects.length);
   console.log("   - Campaigns:", campaigns.length);
   console.log("   - Awards:", awards.length);
-  console.log("   - Finishes:", finishes.length);
   console.log("   - Hero slides:", heroSlides.length);
   console.log("   - Languages:", languages.length);
   console.log("   - Page views: ~600");

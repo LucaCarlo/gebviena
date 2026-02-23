@@ -16,6 +16,9 @@ export async function GET(req: NextRequest) {
   const [data, total] = await Promise.all([
     prisma.project.findMany({
       where,
+      include: {
+        _count: { select: { products: true } },
+      },
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { sortOrder: "asc" },
@@ -38,8 +41,29 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const data = await prisma.project.create({ data: body });
-    return NextResponse.json({ success: true, data }, { status: 201 });
+    const { productIds, ...projectData } = body;
+
+    const data = await prisma.project.create({ data: projectData });
+
+    if (productIds && Array.isArray(productIds) && productIds.length > 0) {
+      await prisma.projectProduct.createMany({
+        data: productIds.map((productId: string) => ({
+          projectId: data.id,
+          productId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    const result = await prisma.project.findUnique({
+      where: { id: data.id },
+      include: {
+        products: { include: { product: true } },
+        _count: { select: { products: true } },
+      },
+    });
+
+    return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (e) {
     return NextResponse.json({ success: false, error: String(e) }, { status: 400 });
   }

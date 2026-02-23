@@ -2,19 +2,67 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
 export default function CollaborazioniPage() {
-  const [form, setForm] = useState({ name: "", email: "", message: "", subject: "Collaborazione designer" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    message: "",
+    subject: "Collaborazione designer",
+    acceptPrivacy: true,
+    subscribeNewsletter: true,
+  });
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch("/api/contact", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, type: "collaboration" }),
-    });
-    setSent(true);
+    setError("");
+
+    if (!form.acceptPrivacy) {
+      setError("Devi accettare la privacy policy per inviare il messaggio.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      let recaptchaToken = "";
+      if (executeRecaptcha) {
+        recaptchaToken = await executeRecaptcha("contact_collaboration");
+      }
+
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          subject: form.subject,
+          message: form.message,
+          type: "collaboration",
+          recaptchaToken,
+          subscribeNewsletter: form.subscribeNewsletter,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        setError(data.error || "Errore durante l'invio del messaggio.");
+        return;
+      }
+
+      setSent(true);
+    } catch {
+      setError("Errore di connessione. Riprova più tardi.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -38,6 +86,11 @@ export default function CollaborazioniPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-4 py-3">
+                  {error}
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Nome e Cognome *</label>
                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" required />
@@ -50,8 +103,44 @@ export default function CollaborazioniPage() {
                 <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Messaggio *</label>
                 <textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} rows={5} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" required />
               </div>
-              <button type="submit" className="w-full bg-warm-800 text-white py-3 rounded text-sm font-medium uppercase tracking-wider hover:bg-warm-900 transition-colors">
-                Invia candidatura
+
+              <div className="space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.acceptPrivacy}
+                    onChange={(e) => setForm({ ...form, acceptPrivacy: e.target.checked })}
+                    className="mt-0.5 accent-warm-800"
+                    required
+                  />
+                  <span className="text-sm text-warm-600">
+                    Accetto la{" "}
+                    <Link href="/privacy-policy" className="text-warm-800 underline hover:text-warm-900">
+                      privacy policy
+                    </Link>{" "}
+                    *
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.subscribeNewsletter}
+                    onChange={(e) => setForm({ ...form, subscribeNewsletter: e.target.checked })}
+                    className="mt-0.5 accent-warm-800"
+                  />
+                  <span className="text-sm text-warm-600">
+                    Desidero ricevere aggiornamenti e novità
+                  </span>
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-warm-800 text-white py-3 rounded text-sm font-medium uppercase tracking-wider hover:bg-warm-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? "Invio in corso..." : "Invia candidatura"}
               </button>
             </form>
           )}

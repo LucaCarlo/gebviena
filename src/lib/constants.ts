@@ -48,18 +48,24 @@ export const POS_TYPES = [
   { value: "AGENT", label: "Agente / Distributore" },
 ] as const;
 
-export const FINISH_CATEGORIES = [
-  { value: "LEGNO", label: "Legno" },
-  { value: "TESSUTO", label: "Tessuto" },
-  { value: "METALLO", label: "Metallo" },
-  { value: "PELLE", label: "Pelle" },
-  { value: "LACCATO", label: "Laccato" },
-] as const;
-
 export const HERO_POSITIONS = [
   { value: "center", label: "Centro" },
   { value: "left", label: "Sinistra" },
   { value: "right", label: "Destra" },
+] as const;
+
+export const HERO_VERTICAL_POSITIONS = [
+  { value: "top", label: "Alto" },
+  { value: "center", label: "Centro" },
+  { value: "bottom", label: "Basso" },
+] as const;
+
+export const HERO_PAGES = [
+  { value: "homepage", label: "Homepage" },
+  { value: "products", label: "Pagina Prodotti" },
+  { value: "projects", label: "Pagina Progetti" },
+  { value: "mondo-gtv", label: "Mondo GTV" },
+  { value: "professionisti", label: "Professionisti" },
 ] as const;
 
 export const USER_ROLES = [

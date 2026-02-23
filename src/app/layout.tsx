@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   title: "Wiener GTV Design | Gebrüder Thonet Vienna",
   description:
     "Born in Vienna. Made in Italy. Designed around the world. Scopri la collezione di arredi di design Gebrüder Thonet Vienna.",
+  icons: {
+    icon: "/logo.webp",
+    apple: "/logo.webp",
+  },
 };
 
 export default function RootLayout({

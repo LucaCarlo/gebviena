@@ -30,20 +30,6 @@ export interface Designer {
   updatedAt: string;
 }
 
-export interface Finish {
-  id: string;
-  name: string;
-  slug: string;
-  code: string | null;
-  category: string;
-  colorHex: string | null;
-  imageUrl: string | null;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface Product {
   id: string;
   name: string;
@@ -55,8 +41,11 @@ export interface Product {
   description: string | null;
   materials: string | null;
   dimensions: string | null;
+  coverImage: string | null;
+  heroImage: string | null;
+  sideImage: string | null;
+  galleryImages: string | null;
   imageUrl: string;
-  galleryUrls: string | null;
   isNew: boolean;
   isFeatured: boolean;
   isActive: boolean;
@@ -64,7 +53,7 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
   designer?: Designer;
-  finishes?: Finish[];
+  projects?: ProjectProduct[];
 }
 
 export interface Project {
@@ -83,6 +72,15 @@ export interface Project {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  products?: ProjectProduct[];
+}
+
+export interface ProjectProduct {
+  id: string;
+  projectId: string;
+  productId: string;
+  project?: Project;
+  product?: Product;
 }
 
 export interface Campaign {
@@ -124,10 +122,52 @@ export interface HeroSlide {
   imageUrl: string;
   videoUrl: string | null;
   position: string;
+  verticalPosition: string;
+  darkOverlay: boolean;
+  overlayOpacity: number;
+  page: string;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ContentTypology {
+  id: string;
+  contentType: string;
+  value: string;
+  label: string;
+  sortOrder: number;
+  isActive: boolean;
+  categories?: ContentTypologyCategory[];
+}
+
+export interface ContentCategory {
+  id: string;
+  contentType: string;
+  value: string;
+  label: string;
+  sortOrder: number;
+  isActive: boolean;
+  typologies?: ContentTypologyCategory[];
+  subcategories?: ContentSubcategory[];
+}
+
+export interface ContentTypologyCategory {
+  id: string;
+  typologyId: string;
+  categoryId: string;
+  typology?: ContentTypology;
+  category?: ContentCategory;
+}
+
+export interface ContentSubcategory {
+  id: string;
+  categoryId: string;
+  value: string;
+  label: string;
+  sortOrder: number;
+  isActive: boolean;
 }
 
 export interface Language {
@@ -150,8 +190,15 @@ export interface MediaFile {
   mimeType: string;
   size: number;
   url: string;
+  wasabiUrl: string | null;
+  wasabiKey: string | null;
+  isSynced: boolean;
+  syncedAt: string | null;
   altText: string | null;
   folder: string;
+  width: number | null;
+  height: number | null;
+  originalSize: number | null;
   createdAt: string;
 }
 
@@ -217,7 +264,6 @@ export interface DashboardStats {
   unreadContactsCount: number;
   heroSlidesCount: number;
   languagesCount: number;
-  finishesCount: number;
   mediaFilesCount: number;
   pageViewsCount: number;
   usersCount: number;

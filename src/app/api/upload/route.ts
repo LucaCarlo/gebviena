@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { getAuthUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { processImage, getWebpFilename, type ImagePurpose } from "@/lib/image";
+import { isS3Configured, uploadToS3 } from "@/lib/s3";
 
 export async function POST(req: Request) {
   const auth = await getAuthUser();
@@ -12,6 +15,9 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
+    const purpose = (formData.get("purpose") as ImagePurpose) || "general";
+    const folder = (formData.get("folder") as string) || "general";
+    const skipCompression = formData.get("skipCompression") === "true";
 
     if (!file) {
       return NextResponse.json({ success: false, error: "Nessun file" }, { status: 400 });
@@ -19,19 +25,124 @@ export async function POST(req: Request) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const isImage = file.type.startsWith("image/");
+    const timestamp = Date.now();
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
+    let url: string;
+    let wasabiUrl: string | null = null;
+    let wasabiKey: string | null = null;
+    let isSynced = false;
+    let filename: string;
+    let width: number | null = null;
+    let height: number | null = null;
+    let finalSize: number;
+    let originalSize: number | null = null;
 
-    const uniqueName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-    const filePath = path.join(uploadsDir, uniqueName);
-    await writeFile(filePath, buffer);
+    if (isImage && !skipCompression) {
+      const { processed, medium, thumbnail, metadata } = await processImage(buffer, purpose);
+      const webpName = getWebpFilename(sanitizedName);
+      filename = `${timestamp}-${webpName}`;
+      finalSize = metadata.size;
+      width = metadata.width;
+      height = metadata.height;
+      originalSize = metadata.originalSize;
+
+      const mdName = `${timestamp}-md-${webpName}`;
+      const thName = `${timestamp}-thumb-${webpName}`;
+
+      if (isS3Configured()) {
+        const key = `${folder}/${filename}`;
+        wasabiUrl = await uploadToS3(processed, key, "image/webp");
+        wasabiKey = key;
+        isSynced = true;
+        url = wasabiUrl;
+        // Upload medium and thumbnail too
+        await uploadToS3(medium, `${folder}/${mdName}`, "image/webp");
+        await uploadToS3(thumbnail, `${folder}/thumbs/${thName}`, "image/webp");
+      } else {
+        const uploadsDir = path.join(process.cwd(), "public", "uploads");
+        const thumbsDir = path.join(uploadsDir, "thumbs");
+        await mkdir(uploadsDir, { recursive: true });
+        await mkdir(thumbsDir, { recursive: true });
+
+        await writeFile(path.join(uploadsDir, filename), processed);
+        await writeFile(path.join(uploadsDir, mdName), medium);
+        await writeFile(path.join(thumbsDir, thName), thumbnail);
+        url = `/uploads/${filename}`;
+      }
+    } else if (isImage && skipCompression) {
+      // Skip compression: save original file as-is
+      filename = `${timestamp}-${sanitizedName}`;
+      finalSize = buffer.length;
+      const sharp = (await import("sharp")).default;
+      const meta = await sharp(buffer).metadata();
+      width = meta.width || null;
+      height = meta.height || null;
+
+      if (isS3Configured()) {
+        const key = `${folder}/${filename}`;
+        wasabiUrl = await uploadToS3(buffer, key, file.type);
+        wasabiKey = key;
+        isSynced = true;
+        url = wasabiUrl;
+      } else {
+        const uploadsDir = path.join(process.cwd(), "public", "uploads");
+        await mkdir(uploadsDir, { recursive: true });
+        await writeFile(path.join(uploadsDir, filename), buffer);
+        url = `/uploads/${filename}`;
+      }
+    } else {
+      filename = `${timestamp}-${sanitizedName}`;
+      finalSize = buffer.length;
+
+      if (isS3Configured()) {
+        const key = `${folder}/${filename}`;
+        wasabiUrl = await uploadToS3(buffer, key, file.type);
+        wasabiKey = key;
+        isSynced = true;
+        url = wasabiUrl;
+      } else {
+        const uploadsDir = path.join(process.cwd(), "public", "uploads");
+        await mkdir(uploadsDir, { recursive: true });
+        await writeFile(path.join(uploadsDir, filename), buffer);
+        url = `/uploads/${filename}`;
+      }
+    }
+
+    // Create MediaFile record so it appears in the Media library
+    await prisma.mediaFile.create({
+      data: {
+        filename,
+        originalName: file.name,
+        mimeType: isImage && !skipCompression ? "image/webp" : file.type,
+        size: finalSize,
+        url,
+        wasabiUrl,
+        wasabiKey,
+        isSynced,
+        syncedAt: isSynced ? new Date() : null,
+        folder,
+        width,
+        height,
+        originalSize,
+      },
+    });
 
     return NextResponse.json({
       success: true,
-      data: { url: `/uploads/${uniqueName}`, name: file.name },
+      data: {
+        url,
+        name: file.name,
+        width,
+        height,
+        size: finalSize,
+        originalSize,
+        format: isImage && !skipCompression ? "webp" : file.type,
+      },
     });
-  } catch {
+  } catch (e) {
+    console.error("Upload error:", e);
     return NextResponse.json({ success: false, error: "Upload fallito" }, { status: 500 });
   }
 }

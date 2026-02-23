@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --site-margin: 0px;
+}
+@media (min-width: 1700px) {
+  :root {
+    --site-margin: clamp(0px, calc((100vw - 1700px) * 0.568), 125px);
+  }
+}
+
 @layer base {
   html {
     @apply scroll-smooth;

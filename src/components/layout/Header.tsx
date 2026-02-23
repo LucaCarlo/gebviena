@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,12 +9,19 @@ import MobileMenu from "./MobileMenu";
 import SearchPanel from "./SearchPanel";
 
 export default function Header() {
+  const pathname = usePathname();
+  const isHomepage = pathname === "/";
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const heroEndRef = useRef(0);
 
   useEffect(() => {
+    if (!isHomepage) {
+      setIsScrolled(true);
+      return;
+    }
+
     // Find the hero section height to know when to switch
     const heroSection = document.querySelector("main > section:first-child");
     if (heroSection) {
@@ -25,22 +33,19 @@ export default function Header() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isHomepage]);
 
   return (
     <>
       <header
         className={`fixed top-0 z-50 transition-all duration-500 ${
           isScrolled
-            ? "bg-white border-b border-neutral-200"
+            ? isHomepage ? "bg-white border-b border-neutral-200" : "bg-white"
             : ""
         }`}
         style={{
-          width: "85vw",
-          left: "0",
-          right: "0",
-          marginLeft: "auto",
-          marginRight: "auto",
+          left: 'var(--site-margin)',
+          right: 'var(--site-margin)',
           ...(!isScrolled ? { textShadow: "0 1px 8px rgba(0,0,0,0.3)" } : {}),
         }}
       >

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { signToken, setAuthCookie } from "@/lib/auth";
+import { signToken } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
@@ -21,13 +21,24 @@ export async function POST(req: Request) {
     }
 
     const token = signToken({ userId: user.id, email: user.email });
-    await setAuthCookie(token);
 
-    return NextResponse.json({
+    const isSecure = process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https") ?? false;
+    const response = NextResponse.json({
       success: true,
       data: { id: user.id, email: user.email, name: user.name },
     });
-  } catch {
+
+    response.cookies.set("admin_token", token, {
+      httpOnly: true,
+      secure: isSecure,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
+    return response;
+  } catch (e) {
+    console.error("Login error:", e);
     return NextResponse.json({ success: false, error: "Errore server" }, { status: 500 });
   }
 }

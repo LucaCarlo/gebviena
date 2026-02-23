@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
 import type { Award } from "@/types";
 
 export default function AdminAwardsPage() {
   const [awards, setAwards] = useState<Award[]>([]);
   const [loading, setLoading] = useState(true);
+  const importRef = useRef<HTMLInputElement>(null);
 
   const fetchAwards = () => {
     fetch("/api/awards")
@@ -23,16 +24,70 @@ export default function AdminAwardsPage() {
     fetchAwards();
   };
 
+  const handleExport = async () => {
+    try {
+      const res = await fetch("/api/export/awards");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "awards.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      alert("Errore: " + (e instanceof Error ? e.message : String(e)));
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const res = await fetch("/api/import/awards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(json),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Importati ${data.count ?? 0} elementi`);
+        fetchAwards();
+      } else {
+        alert("Errore: " + (data.error || "Importazione fallita"));
+      }
+    } catch {
+      alert("File JSON non valido");
+    }
+    e.target.value = "";
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-semibold text-warm-800">Premi</h1>
-        <Link
-          href="/admin/awards/new"
-          className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
-        >
-          <Plus size={16} /> Nuovo premio
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
+          >
+            <Download size={16} /> Esporta
+          </button>
+          <button
+            onClick={() => importRef.current?.click()}
+            className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
+          >
+            <Upload size={16} /> Importa
+          </button>
+          <input type="file" ref={importRef} accept=".json" className="hidden" onChange={handleImport} />
+          <Link
+            href="/admin/awards/new"
+            className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
+          >
+            <Plus size={16} /> Nuovo premio
+          </Link>
+        </div>
       </div>
 
       {loading ? (

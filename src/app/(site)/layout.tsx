@@ -1,5 +1,7 @@
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import ClientMain from "@/components/layout/ClientMain";
+import RecaptchaProvider from "@/components/providers/RecaptchaProvider";
 
 export default function SiteLayout({
   children,
@@ -7,10 +9,12 @@ export default function SiteLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="w-[85vw] mx-auto bg-white min-h-screen relative">
-      <Header />
-      <main>{children}</main>
-      <Footer />
-    </div>
+    <RecaptchaProvider>
+      <div className="bg-white min-h-screen relative" style={{ marginLeft: 'var(--site-margin)', marginRight: 'var(--site-margin)' }}>
+        <Header />
+        <ClientMain>{children}</ClientMain>
+        <Footer />
+      </div>
+    </RecaptchaProvider>
   );
 }

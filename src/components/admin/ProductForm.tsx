@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Upload, Check } from "lucide-react";
-import { PRODUCT_CATEGORIES, CATEGORY_SUBCATEGORIES } from "@/lib/constants";
 import { slugify } from "@/lib/utils";
+import ImageUploadField from "./ImageUploadField";
+import GalleryUploadField from "./GalleryUploadField";
 
 interface ProductFormProps {
   productId?: string;
@@ -16,45 +15,54 @@ interface DesignerOption {
   name: string;
 }
 
-interface FinishOption {
+interface TypologyOption {
   id: string;
-  name: string;
-  category: string;
-  colorHex: string | null;
-  imageUrl: string | null;
+  value: string;
+  label: string;
+}
+
+interface CategoryOption {
+  id: string;
+  value: string;
+  label: string;
+  typologies: { typology: { id: string; value: string } }[];
 }
 
 export default function ProductForm({ productId }: ProductFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
   const [designers, setDesigners] = useState<DesignerOption[]>([]);
-  const [allFinishes, setAllFinishes] = useState<FinishOption[]>([]);
-  const [selectedFinishIds, setSelectedFinishIds] = useState<string[]>([]);
-  const [finishFilter, setFinishFilter] = useState("TUTTI");
+  const [typologies, setTypologies] = useState<TypologyOption[]>([]);
+  const [allCategories, setAllCategories] = useState<CategoryOption[]>([]);
   const [form, setForm] = useState({
     name: "",
     slug: "",
     designerName: "",
     designerId: "",
-    category: "SEDUTE",
+    category: "",
     subcategory: "",
     description: "",
     materials: "",
     dimensions: "",
-    imageUrl: "",
+    coverImage: "",
+    heroImage: "",
+    sideImage: "",
+    galleryImages: "[]",
     isFeatured: false,
     isNew: false,
   });
 
   useEffect(() => {
-    fetch("/api/designers")
-      .then((r) => r.json())
-      .then((data) => { if (data.success) setDesigners(data.data || []); });
-    fetch("/api/finishes")
-      .then((r) => r.json())
-      .then((data) => { if (data.success) setAllFinishes(data.data || []); });
+    Promise.all([
+      fetch("/api/designers").then((r) => r.json()),
+      fetch("/api/typologies?contentType=products").then((r) => r.json()),
+      fetch("/api/categories?contentType=products").then((r) => r.json()),
+    ]).then(([dData, tData, cData]) => {
+      if (dData.success) setDesigners(dData.data || []);
+      setTypologies(tData.data || []);
+      setAllCategories(cData.data || []);
+    });
   }, []);
 
   const loadProduct = useCallback(async () => {
@@ -73,17 +81,25 @@ export default function ProductForm({ productId }: ProductFormProps) {
         description: p.description || "",
         materials: p.materials || "",
         dimensions: p.dimensions || "",
-        imageUrl: p.imageUrl,
+        coverImage: p.coverImage || p.imageUrl || "",
+        heroImage: p.heroImage || "",
+        sideImage: p.sideImage || "",
+        galleryImages: p.galleryImages || "[]",
         isFeatured: p.isFeatured,
         isNew: p.isNew || false,
       });
-      if (p.finishes && Array.isArray(p.finishes)) {
-        setSelectedFinishIds(p.finishes.map((pf: { finish: { id: string } }) => pf.finish.id));
-      }
     }
   }, [productId]);
 
   useEffect(() => { loadProduct(); }, [loadProduct]);
+
+  // Filter categories based on selected typology (category field stores the typology value)
+  const filteredCategories = useMemo(() => {
+    if (!form.category) return allCategories;
+    return allCategories.filter((c) =>
+      c.typologies.some((t) => t.typology.value === form.category)
+    );
+  }, [allCategories, form.category]);
 
   const handleNameChange = (name: string) => {
     setForm((prev) => ({
@@ -102,27 +118,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
     }));
   };
 
-  const toggleFinish = (finishId: string) => {
-    setSelectedFinishIds((prev) =>
-      prev.includes(finishId)
-        ? prev.filter((id) => id !== finishId)
-        : [...prev, finishId]
-    );
-  };
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (data.success) setForm((prev) => ({ ...prev, imageUrl: data.data.url }));
-    } catch { /* silent */ } finally { setUploading(false); }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -130,10 +125,14 @@ export default function ProductForm({ productId }: ProductFormProps) {
     try {
       const url = productId ? `/api/products/${productId}` : "/api/products";
       const method = productId ? "PUT" : "POST";
+      const payload = {
+        ...form,
+        imageUrl: form.coverImage || "",
+      };
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, finishIds: selectedFinishIds }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {
@@ -148,18 +147,20 @@ export default function ProductForm({ productId }: ProductFormProps) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const finishCats = Array.from(new Set(allFinishes.map((f) => f.category))) as string[];
-  const filteredFinishes = finishFilter === "TUTTI"
-    ? allFinishes
-    : allFinishes.filter((f) => f.category === finishFilter);
+  const galleryUrls: string[] = (() => {
+    try { return JSON.parse(form.galleryImages); } catch { return []; }
+  })();
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">{error}</div>
       )}
 
+      {/* INFO PRODOTTO */}
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
+        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Informazioni prodotto</h3>
+
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Nome *</label>
           <input
@@ -206,7 +207,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Categoria *</label>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Tipologia *</label>
             <select
               value={form.category}
               onChange={(e) => {
@@ -215,21 +216,22 @@ export default function ProductForm({ productId }: ProductFormProps) {
               }}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
             >
-              {PRODUCT_CATEGORIES.filter((c) => c.value !== "TUTTI").map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+              <option value="">— Seleziona —</option>
+              {typologies.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Sottocategoria</label>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Categoria</label>
             <select
               value={form.subcategory}
               onChange={(e) => updateField("subcategory", e.target.value)}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
             >
               <option value="">— Nessuna —</option>
-              {(CATEGORY_SUBCATEGORIES[form.category] || []).map((sub) => (
-                <option key={sub} value={sub}>{sub}</option>
+              {filteredCategories.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>
@@ -266,33 +268,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
           />
         </div>
 
-        {/* Image upload */}
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Immagine *</label>
-          <div className="flex items-start gap-4">
-            {form.imageUrl && (
-              <div className="w-24 h-24 relative rounded overflow-hidden bg-warm-100 flex-shrink-0">
-                <Image src={form.imageUrl} alt="Preview" fill className="object-cover" sizes="96px" />
-              </div>
-            )}
-            <div className="flex-1">
-              <label className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-warm-300 rounded cursor-pointer hover:border-warm-500 transition-colors">
-                <Upload size={16} className="text-warm-400" />
-                <span className="text-sm text-warm-500">{uploading ? "Caricamento..." : "Carica immagine"}</span>
-                <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
-              </label>
-              <p className="text-xs text-warm-400 mt-1">oppure inserisci URL:</p>
-              <input
-                type="text"
-                value={form.imageUrl}
-                onChange={(e) => updateField("imageUrl", e.target.value)}
-                className="w-full mt-1 border border-warm-300 rounded px-3 py-1.5 text-xs focus:border-warm-800 focus:outline-none"
-                placeholder="https://..."
-              />
-            </div>
-          </div>
-        </div>
-
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <input
@@ -317,85 +292,54 @@ export default function ProductForm({ productId }: ProductFormProps) {
         </div>
       </div>
 
-      {/* === FINITURE / TESSUTI ASSOCIATI === */}
-      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-sm font-semibold text-warm-800">Finiture associate</h3>
-            <p className="text-xs text-warm-400 mt-0.5">
-              Seleziona le finiture disponibili per questo prodotto ({selectedFinishIds.length} selezionate)
-            </p>
-          </div>
-        </div>
-
-        {/* Category filter */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <button
-            type="button"
-            onClick={() => setFinishFilter("TUTTI")}
-            className={`px-3 py-1 rounded-full text-xs transition-colors ${
-              finishFilter === "TUTTI"
-                ? "bg-warm-800 text-white"
-                : "bg-warm-100 text-warm-600 hover:bg-warm-200"
-            }`}
-          >
-            Tutti
-          </button>
-          {finishCats.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setFinishFilter(cat)}
-              className={`px-3 py-1 rounded-full text-xs transition-colors ${
-                finishFilter === cat
-                  ? "bg-warm-800 text-white"
-                  : "bg-warm-100 text-warm-600 hover:bg-warm-200"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Finish grid */}
-        <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-[300px] overflow-y-auto p-1">
-          {filteredFinishes.map((finish) => {
-            const isSelected = selectedFinishIds.includes(finish.id);
-            return (
-              <button
-                key={finish.id}
-                type="button"
-                onClick={() => toggleFinish(finish.id)}
-                className={`relative group rounded overflow-hidden border-2 transition-all ${
-                  isSelected ? "border-warm-800 ring-1 ring-warm-800" : "border-transparent hover:border-warm-300"
-                }`}
-                title={`${finish.name} (${finish.category})`}
-              >
-                <div className="aspect-square relative">
-                  {finish.imageUrl ? (
-                    <Image src={finish.imageUrl} alt={finish.name} fill className="object-cover" sizes="64px" />
-                  ) : (
-                    <div className="w-full h-full" style={{ backgroundColor: finish.colorHex || "#e8e6e3" }} />
-                  )}
-                </div>
-                {isSelected && (
-                  <div className="absolute inset-0 bg-warm-800/40 flex items-center justify-center">
-                    <Check size={16} className="text-white" />
-                  </div>
-                )}
-                <p className="text-[8px] text-warm-500 text-center py-0.5 truncate px-0.5 bg-white">
-                  {finish.name}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-
-        {allFinishes.length === 0 && (
-          <p className="text-sm text-warm-400 text-center py-4">
-            Nessuna finitura disponibile. Crea delle finiture dalla sezione Finiture.
+      {/* IMMAGINI */}
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-6">
+        <div>
+          <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Immagini prodotto</h3>
+          <p className="text-[10px] text-warm-400 mt-0.5">
+            Tutte le immagini vengono automaticamente convertite in WebP e ottimizzate per il web
           </p>
-        )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ImageUploadField
+            label="Immagine Cover"
+            value={form.coverImage}
+            onChange={(url) => updateField("coverImage", url)}
+            onRemove={() => updateField("coverImage", "")}
+            purpose="cover"
+            folder="products"
+            helpText="Mostrata nella griglia prodotti dello shop (800x1000px)"
+          />
+
+          <ImageUploadField
+            label="Immagine Hero"
+            value={form.heroImage}
+            onChange={(url) => updateField("heroImage", url)}
+            onRemove={() => updateField("heroImage", "")}
+            purpose="hero"
+            folder="products"
+            helpText="Banner a tutta larghezza nella pagina prodotto (1920x1080px)"
+          />
+
+          <ImageUploadField
+            label="Immagine Laterale"
+            value={form.sideImage}
+            onChange={(url) => updateField("sideImage", url)}
+            onRemove={() => updateField("sideImage", "")}
+            purpose="side"
+            folder="products"
+            helpText="Sezione descrizione, affiancata al testo (800x1200px)"
+          />
+        </div>
+
+        <GalleryUploadField
+          label="Galleria immagini"
+          value={galleryUrls}
+          onChange={(urls) => updateField("galleryImages", JSON.stringify(urls))}
+          folder="products"
+          helpText="Immagini aggiuntive per il carosello ispirazione. Trascina per riordinare."
+        />
       </div>
 
       <div className="flex gap-3">

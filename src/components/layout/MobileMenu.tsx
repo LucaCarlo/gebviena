@@ -47,17 +47,19 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             onClick={onClose}
           />
 
-          {/* Panel — width expands when subcategories are open */}
+          {/* Wrapper — contains both columns, slides in as one unit */}
           <motion.div
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "tween", duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-            className="fixed top-0 left-0 bottom-0 z-[70] bg-white flex transition-[width] duration-300 ease-in-out"
-            style={{ width: hasSubOpen ? "66vw" : "33vw", maxWidth: hasSubOpen ? "1000px" : "500px", minWidth: "320px" }}
+            className="fixed top-0 left-0 bottom-0 z-[70] flex"
           >
-            {/* Left column — close button + nav + image */}
-            <div className={`flex flex-col transition-all duration-300 ${hasSubOpen ? "w-1/2" : "w-full"}`}>
+            {/* Left column — FIXED width, never changes */}
+            <div
+              className="bg-white flex flex-col shrink-0 relative z-10"
+              style={{ width: "33vw", minWidth: "320px", maxWidth: "500px" }}
+            >
               {/* Close */}
               <div className="px-8 pt-6 pb-2">
                 <button
@@ -119,23 +121,24 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               </div>
             </div>
 
-            {/* Right column — subcategories, border goes full height */}
+            {/* Right column — same width as left, slides in from left */}
             <AnimatePresence>
               {hasSubOpen && activeNav && "children" in activeNav && activeNav.children && (
                 <motion.div
-                  initial={{ opacity: 0, x: "100%" }}
-                  animate={{ opacity: 1, x: 0, transition: { type: "tween", duration: 0.35, ease: [0.25, 0.1, 0.25, 1] } }}
-                  exit={{ opacity: 0, transition: { duration: 0 } }}
-                  className="flex items-start pt-32 overflow-hidden w-1/2"
-                  style={{ borderLeft: "1px solid #000", paddingLeft: "15%" }}
+                  initial={{ x: "-100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "-100%" }}
+                  transition={{ type: "tween", duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="bg-white flex items-start pt-32 shrink-0 overflow-hidden"
+                  style={{ borderLeft: "1px solid #000", paddingLeft: "15%", width: "33vw", minWidth: "320px", maxWidth: "500px" }}
                 >
                   <AnimatePresence mode="wait">
                     <motion.ul
                       key={activeItem}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      transition={{ type: "tween", duration: 0.25, ease: "easeOut" }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ type: "tween", duration: 0.25, delay: 0.15 }}
                       className="space-y-6 md:space-y-7"
                     >
                       {activeNav.children.map((child) => (

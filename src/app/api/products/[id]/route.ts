@@ -5,7 +5,7 @@ import { getAuthUser } from "@/lib/auth";
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const data = await prisma.product.findUnique({
     where: { id: params.id },
-    include: { designer: true, finishes: { include: { finish: true } } },
+    include: { designer: true },
   });
   if (!data) {
     return NextResponse.json({ success: false, error: "Non trovato" }, { status: 404 });
@@ -21,27 +21,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   try {
     const body = await req.json();
-    const { finishIds, ...rest } = body;
-    // Remove relation fields that Prisma doesn't accept on update
-    delete rest.designer;
-    delete rest.finishes;
+    delete body.designer;
 
-    const data = await prisma.product.update({ where: { id: params.id }, data: rest });
-
-    // Update finish associations if provided
-    if (finishIds && Array.isArray(finishIds)) {
-      // Delete existing associations
-      await prisma.productFinish.deleteMany({ where: { productId: params.id } });
-      // Create new ones
-      if (finishIds.length > 0) {
-        await prisma.productFinish.createMany({
-          data: finishIds.map((finishId: string) => ({
-            productId: params.id,
-            finishId,
-          })),
-        });
-      }
-    }
+    const data = await prisma.product.update({ where: { id: params.id }, data: body });
 
     return NextResponse.json({ success: true, data });
   } catch (e) {

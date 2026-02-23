@@ -1,10 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const page = searchParams.get("page");
+  const all = searchParams.get("all"); // admin: return all including inactive
+
+  const where: Record<string, unknown> = {};
+  if (page) where.page = page;
+  if (!all) where.isActive = true;
+
   const data = await prisma.heroSlide.findMany({
-    where: { isActive: true },
+    where,
     orderBy: { sortOrder: "asc" },
   });
 

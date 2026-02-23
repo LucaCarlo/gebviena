@@ -31,7 +31,7 @@ export async function setAuthCookie(token: string) {
   const cookieStore = cookies();
   (await cookieStore).set("admin_token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https") ?? false,
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7, // 7 days
     path: "/",

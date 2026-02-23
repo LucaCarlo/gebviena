@@ -1,17 +1,33 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { verifyRecaptcha } from "@/lib/recaptcha";
 
 export async function POST(req: Request) {
   try {
-    const { email } = await req.json();
+    const { email, recaptchaToken, acceptsPrivacy, acceptsUpdates } = await req.json();
     if (!email) {
       return NextResponse.json({ success: false, error: "Email richiesta" }, { status: 400 });
     }
 
+    // Verify reCAPTCHA
+    if (recaptchaToken) {
+      const isHuman = await verifyRecaptcha(recaptchaToken);
+      if (!isHuman) {
+        return NextResponse.json({ success: false, error: "Verifica reCAPTCHA fallita" }, { status: 400 });
+      }
+    }
+
     await prisma.newsletterSubscriber.upsert({
       where: { email },
-      update: {},
-      create: { email },
+      update: {
+        acceptsPrivacy: acceptsPrivacy ?? undefined,
+        acceptsUpdates: acceptsUpdates ?? undefined,
+      },
+      create: {
+        email,
+        acceptsPrivacy: acceptsPrivacy ?? false,
+        acceptsUpdates: acceptsUpdates ?? false,
+      },
     });
 
     return NextResponse.json({ success: true });

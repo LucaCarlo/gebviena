@@ -12,7 +12,6 @@ export async function GET(req: Request) {
     where: { slug },
     include: {
       designer: true,
-      finishes: { include: { finish: true } },
     },
   });
 
@@ -27,12 +26,6 @@ export async function GET(req: Request) {
     include: { designer: true },
   });
 
-  // Fetch all finishes grouped by category
-  const allFinishes = await prisma.finish.findMany({
-    where: { isActive: true },
-    orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-  });
-
   // Fetch a random project for the "project reference" section
   const projectCount = await prisma.project.count({ where: { isActive: true } });
   const randomSkip = Math.floor(Math.random() * Math.max(projectCount, 1));
@@ -43,6 +36,6 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     success: true,
-    data: { ...data, related, allFinishes, project },
+    data: { ...data, related, project },
   });
 }

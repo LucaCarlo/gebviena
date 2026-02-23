@@ -3,7 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const data = await prisma.project.findUnique({ where: { id: params.id } });
+  const data = await prisma.project.findUnique({
+    where: { id: params.id },
+    include: {
+      products: { include: { product: true } },
+    },
+  });
   if (!data) {
     return NextResponse.json({ success: false, error: "Non trovato" }, { status: 404 });
   }
@@ -18,8 +23,39 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   try {
     const body = await req.json();
-    const data = await prisma.project.update({ where: { id: params.id }, data: body });
-    return NextResponse.json({ success: true, data });
+    const { productIds, ...projectData } = body;
+
+    await prisma.project.update({
+      where: { id: params.id },
+      data: projectData,
+    });
+
+    if (Array.isArray(productIds)) {
+      // Delete all existing ProjectProduct for this project
+      await prisma.projectProduct.deleteMany({
+        where: { projectId: params.id },
+      });
+
+      // Recreate with new productIds
+      if (productIds.length > 0) {
+        await prisma.projectProduct.createMany({
+          data: productIds.map((productId: string) => ({
+            projectId: params.id,
+            productId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    const result = await prisma.project.findUnique({
+      where: { id: params.id },
+      include: {
+        products: { include: { product: true } },
+      },
+    });
+
+    return NextResponse.json({ success: true, data: result });
   } catch (e) {
     return NextResponse.json({ success: false, error: String(e) }, { status: 400 });
   }

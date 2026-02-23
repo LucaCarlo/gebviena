@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Upload } from "lucide-react";
-import { HERO_POSITIONS } from "@/lib/constants";
+import { HERO_POSITIONS, HERO_VERTICAL_POSITIONS, HERO_PAGES } from "@/lib/constants";
+import ImageUploadField from "./ImageUploadField";
 
 interface HeroSlideFormProps {
   slideId?: string;
@@ -14,7 +13,6 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     title: "",
     subtitle: "",
@@ -23,6 +21,10 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
     imageUrl: "",
     videoUrl: "",
     position: "center",
+    verticalPosition: "center",
+    darkOverlay: false,
+    overlayOpacity: 60,
+    page: "homepage",
     isActive: true,
     sortOrder: 0,
   });
@@ -41,6 +43,10 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
         imageUrl: s.imageUrl || "",
         videoUrl: s.videoUrl || "",
         position: s.position || "center",
+        verticalPosition: s.verticalPosition || "center",
+        darkOverlay: s.darkOverlay ?? false,
+        overlayOpacity: s.overlayOpacity ?? 60,
+        page: s.page || "homepage",
         isActive: s.isActive ?? true,
         sortOrder: s.sortOrder || 0,
       });
@@ -48,25 +54,6 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
   }, [slideId]);
 
   useEffect(() => { loadSlide(); }, [loadSlide]);
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (data.success) {
-        setForm((prev) => ({ ...prev, imageUrl: data.data.url }));
-      }
-    } catch {
-      // silent
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,6 +95,22 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
+        {/* Page selector */}
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+            Pagina
+          </label>
+          <select
+            value={form.page}
+            onChange={(e) => updateField("page", e.target.value)}
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          >
+            {HERO_PAGES.map((p) => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
+
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Titolo
@@ -159,34 +162,16 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
           </div>
         </div>
 
-        {/* Image upload */}
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            Immagine
-          </label>
-          <div className="flex items-start gap-4">
-            {form.imageUrl && (
-              <div className="w-32 h-20 relative rounded overflow-hidden bg-warm-100 flex-shrink-0">
-                <Image src={form.imageUrl} alt="Preview" fill className="object-cover" sizes="128px" />
-              </div>
-            )}
-            <div className="flex-1">
-              <label className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-warm-300 rounded cursor-pointer hover:border-warm-500 transition-colors">
-                <Upload size={16} className="text-warm-400" />
-                <span className="text-sm text-warm-500">{uploading ? "Caricamento..." : "Carica immagine"}</span>
-                <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
-              </label>
-              <p className="text-xs text-warm-400 mt-1">oppure inserisci URL:</p>
-              <input
-                type="text"
-                value={form.imageUrl}
-                onChange={(e) => updateField("imageUrl", e.target.value)}
-                className="w-full mt-1 border border-warm-300 rounded px-3 py-1.5 text-xs focus:border-warm-800 focus:outline-none"
-                placeholder="https://..."
-              />
-            </div>
-          </div>
-        </div>
+        {/* Image upload using ImageUploadField */}
+        <ImageUploadField
+          label="Immagine"
+          value={form.imageUrl}
+          onChange={(url) => updateField("imageUrl", url)}
+          onRemove={() => updateField("imageUrl", "")}
+          purpose="hero"
+          folder="hero"
+          helpText="Immagine di sfondo per lo slide hero"
+        />
 
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
@@ -201,10 +186,10 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-              Posizione Testo
+              Posizione Orizzontale
             </label>
             <select
               value={form.position}
@@ -212,6 +197,20 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
             >
               {HERO_POSITIONS.map((p) => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+              Posizione Verticale
+            </label>
+            <select
+              value={form.verticalPosition}
+              onChange={(e) => updateField("verticalPosition", e.target.value)}
+              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+            >
+              {HERO_VERTICAL_POSITIONS.map((p) => (
                 <option key={p.value} value={p.value}>{p.label}</option>
               ))}
             </select>
@@ -229,17 +228,48 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="isActive"
-            checked={form.isActive}
-            onChange={(e) => updateField("isActive", e.target.checked)}
-            className="rounded border-warm-300"
-          />
-          <label htmlFor="isActive" className="text-sm text-warm-600">
-            Slide attiva
-          </label>
+        <div className="space-y-3">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="darkOverlay"
+                checked={form.darkOverlay}
+                onChange={(e) => updateField("darkOverlay", e.target.checked)}
+                className="rounded border-warm-300"
+              />
+              <label htmlFor="darkOverlay" className="text-sm text-warm-600">
+                Oscura immagine
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={form.isActive}
+                onChange={(e) => updateField("isActive", e.target.checked)}
+                className="rounded border-warm-300"
+              />
+              <label htmlFor="isActive" className="text-sm text-warm-600">
+                Slide attiva
+              </label>
+            </div>
+          </div>
+          {form.darkOverlay && (
+            <div className="flex items-center gap-3 pl-6">
+              <label className="text-xs text-warm-500 whitespace-nowrap">Opacita overlay</label>
+              <input
+                type="range"
+                min={10}
+                max={90}
+                step={5}
+                value={form.overlayOpacity}
+                onChange={(e) => updateField("overlayOpacity", parseInt(e.target.value))}
+                className="flex-1 accent-warm-800"
+              />
+              <span className="text-xs text-warm-600 font-medium w-10 text-right">{form.overlayOpacity}%</span>
+            </div>
+          )}
         </div>
       </div>
 

@@ -6,11 +6,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, ChevronRight } from "lucide-react";
-import type { Product, Designer, Finish, Project } from "@/types";
+import type { Product, Designer, Project } from "@/types";
 
 interface ProductDetail extends Product {
   related: (Product & { designer?: Designer })[];
-  allFinishes: Finish[];
   project: Project | null;
 }
 
@@ -123,7 +122,6 @@ export default function ProductDetailPage() {
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeFinishCategory, setActiveFinishCategory] = useState<string | null>(null);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
 
   useEffect(() => {
@@ -133,10 +131,6 @@ export default function ProductDetailPage() {
       const json = await res.json();
       if (json.success) {
         setProduct(json.data);
-        if (json.data.allFinishes?.length > 0) {
-          const categories = Array.from(new Set(json.data.allFinishes.map((f: Finish) => f.category))) as string[];
-          setActiveFinishCategory(categories[0] as string);
-        }
       }
       setLoading(false);
     }
@@ -160,9 +154,15 @@ export default function ProductDetailPage() {
     );
   }
 
-  const gallery: string[] = product.galleryUrls ? JSON.parse(product.galleryUrls) : [];
-  const finishCategories = Array.from(new Set(product.allFinishes.map((f) => f.category))) as string[];
-  const activeFinishes = product.allFinishes.filter((f) => f.category === activeFinishCategory);
+  const gallery: string[] = (() => {
+    try {
+      if (product.galleryImages) return JSON.parse(product.galleryImages);
+    } catch { /* ignore */ }
+    return [];
+  })();
+  const heroImg = product.heroImage || product.coverImage || product.imageUrl;
+  const sideImg = product.sideImage || product.coverImage || product.imageUrl;
+  const coverImg = product.coverImage || product.imageUrl;
 
   const sectionNav = [
     { label: "Ispirazione", id: "ispirazione" },
@@ -176,7 +176,7 @@ export default function ProductDetailPage() {
       {/* ===== 1. HERO — full-screen image, title CENTERED ===== */}
       <section className="relative w-full" style={{ height: "115vh" }}>
         <Image
-          src={product.imageUrl}
+          src={heroImg}
           alt={product.name}
           fill
           className="object-cover"
@@ -212,7 +212,7 @@ export default function ProductDetailPage() {
             style={{ aspectRatio: "3 / 4.2" }}
           >
             <Image
-              src={product.imageUrl}
+              src={sideImg}
               alt={`${product.name} ambiance`}
               fill
               className="object-cover"
@@ -424,97 +424,6 @@ export default function ProductDetailPage() {
                 </AnimatePresence>
               </div>
 
-              {/* --- MATERIALI E COLORI --- */}
-              <div>
-                <button
-                  onClick={() => setOpenAccordion(openAccordion === "materiali" ? null : "materiali")}
-                  className="w-full flex items-center justify-between py-5 px-2 group"
-                >
-                  <span className="uppercase text-xs tracking-[0.15em] text-warm-600 group-hover:text-warm-800 transition-colors">
-                    Materiali e colori
-                  </span>
-                  <span className="w-8 h-8 border border-warm-300 flex items-center justify-center text-warm-500 flex-shrink-0">
-                    {openAccordion === "materiali" ? <Minus size={14} /> : <Plus size={14} />}
-                  </span>
-                </button>
-                <AnimatePresence>
-                  {openAccordion === "materiali" && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-2 pb-8">
-                        <div className="grid grid-cols-1 lg:grid-cols-[160px_1fr] gap-8">
-                          {/* Product thumbnail */}
-                          <div className="hidden lg:block">
-                            <div className="relative aspect-square border border-warm-200 bg-white overflow-hidden">
-                              <Image src={product.imageUrl} alt={product.name} fill className="object-contain p-2" sizes="160px" />
-                            </div>
-                          </div>
-
-                          {/* Finishes content */}
-                          <div>
-                            {/* Category tabs */}
-                            {finishCategories.length > 0 && (
-                              <div className="flex flex-wrap gap-3 mb-6">
-                                {finishCategories.map((cat) => (
-                                  <button
-                                    key={cat}
-                                    onClick={() => setActiveFinishCategory(cat)}
-                                    className={`text-[11px] uppercase tracking-[0.12em] pb-0.5 transition-colors ${
-                                      activeFinishCategory === cat
-                                        ? "text-warm-800 border-b border-warm-800"
-                                        : "text-warm-400 hover:text-warm-600"
-                                    }`}
-                                  >
-                                    {cat}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Category label */}
-                            {activeFinishCategory && (
-                              <p className="uppercase text-[11px] tracking-[0.12em] text-warm-500 font-medium mb-4">
-                                {activeFinishCategory}
-                              </p>
-                            )}
-
-                            {/* Swatches grid */}
-                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
-                              {activeFinishes.map((finish) => (
-                                <div key={finish.id} className="cursor-pointer group">
-                                  <div
-                                    className="aspect-[4/3] border border-warm-200 overflow-hidden hover:ring-2 hover:ring-warm-400 transition-all relative bg-white"
-                                    title={finish.name}
-                                  >
-                                    {finish.imageUrl ? (
-                                      <Image src={finish.imageUrl} alt={finish.name} fill className="object-cover" sizes="100px" />
-                                    ) : (
-                                      <div className="w-full h-full" style={{ backgroundColor: finish.colorHex || "#e8e6e3" }} />
-                                    )}
-                                  </div>
-                                  <p className="text-[8px] text-warm-500 text-center mt-1 truncate leading-tight uppercase tracking-wider">
-                                    {finish.name}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-
-                            {product.allFinishes.length === 0 && (
-                              <p className="text-sm text-warm-400 font-light">Nessuna finitura associata a questo prodotto.</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
               {/* --- DIMENSIONI --- */}
               <div>
                 <button
@@ -541,7 +450,7 @@ export default function ProductDetailPage() {
                         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
                           {/* Left — product image placeholder for technical drawing */}
                           <div className="relative bg-white border border-warm-200 p-8" style={{ aspectRatio: "4 / 3" }}>
-                            <Image src={product.imageUrl} alt={`${product.name} dimensioni`} fill className="object-contain p-6" sizes="(max-width: 768px) 100vw, 60vw" />
+                            <Image src={coverImg} alt={`${product.name} dimensioni`} fill className="object-contain p-6" sizes="(max-width: 768px) 100vw, 60vw" />
                           </div>
 
                           {/* Right — dimension values */}

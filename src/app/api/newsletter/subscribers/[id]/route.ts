@@ -2,14 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const data = await prisma.finish.findUnique({ where: { id: params.id } });
-  if (!data) {
-    return NextResponse.json({ success: false, error: "Non trovato" }, { status: 404 });
-  }
-  return NextResponse.json({ success: true, data });
-}
-
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const auth = await getAuthUser();
   if (!auth) {
@@ -18,10 +10,17 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   try {
     const body = await req.json();
-    const data = await prisma.finish.update({ where: { id: params.id }, data: body });
+    const data = await prisma.newsletterSubscriber.update({
+      where: { id: params.id },
+      data: {
+        acceptsPrivacy: body.acceptsPrivacy,
+        acceptsUpdates: body.acceptsUpdates,
+      },
+    });
+
     return NextResponse.json({ success: true, data });
-  } catch (e) {
-    return NextResponse.json({ success: false, error: String(e) }, { status: 400 });
+  } catch {
+    return NextResponse.json({ success: false, error: "Errore server" }, { status: 500 });
   }
 }
 
@@ -31,6 +30,13 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
   }
 
-  await prisma.finish.delete({ where: { id: params.id } });
-  return NextResponse.json({ success: true });
+  try {
+    await prisma.newsletterSubscriber.delete({
+      where: { id: params.id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ success: false, error: "Errore server" }, { status: 500 });
+  }
 }

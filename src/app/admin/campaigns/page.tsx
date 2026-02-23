@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
 import type { Campaign } from "@/types";
 
 export default function AdminCampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const importRef = useRef<HTMLInputElement>(null);
 
   const fetchCampaigns = () => {
     fetch("/api/campaigns")
@@ -24,16 +25,70 @@ export default function AdminCampaignsPage() {
     fetchCampaigns();
   };
 
+  const handleExport = async () => {
+    try {
+      const res = await fetch("/api/export/campaigns");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "campaigns.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      alert("Errore: " + (e instanceof Error ? e.message : String(e)));
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const res = await fetch("/api/import/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(json),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Importati ${data.count ?? 0} elementi`);
+        fetchCampaigns();
+      } else {
+        alert("Errore: " + (data.error || "Importazione fallita"));
+      }
+    } catch {
+      alert("File JSON non valido");
+    }
+    e.target.value = "";
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-semibold text-warm-800">Campagne</h1>
-        <Link
-          href="/admin/campaigns/new"
-          className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
-        >
-          <Plus size={16} /> Nuova campagna
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
+          >
+            <Download size={16} /> Esporta
+          </button>
+          <button
+            onClick={() => importRef.current?.click()}
+            className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
+          >
+            <Upload size={16} /> Importa
+          </button>
+          <input type="file" ref={importRef} accept=".json" className="hidden" onChange={handleImport} />
+          <Link
+            href="/admin/campaigns/new"
+            className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
+          >
+            <Plus size={16} /> Nuova campagna
+          </Link>
+        </div>
       </div>
 
       {loading ? (

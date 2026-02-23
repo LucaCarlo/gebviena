@@ -10,20 +10,34 @@ interface CampaignFormProps {
   campaignId?: string;
 }
 
+interface CategoryOption {
+  id: string;
+  value: string;
+  label: string;
+}
+
 export default function CampaignForm({ campaignId }: CampaignFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [campaignCategories, setCampaignCategories] = useState<CategoryOption[]>([]);
   const [form, setForm] = useState({
     name: "",
     slug: "",
+    type: "",
     subtitle: "",
     year: new Date().getFullYear(),
     description: "",
     imageUrl: "",
     videoUrl: "",
   });
+
+  useEffect(() => {
+    fetch("/api/categories?contentType=campaigns")
+      .then((r) => r.json())
+      .then((data) => setCampaignCategories(data.data || []));
+  }, []);
 
   const loadCampaign = useCallback(async () => {
     if (!campaignId) return;
@@ -34,6 +48,7 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
       setForm({
         name: c.name,
         slug: c.slug,
+        type: c.type || "",
         subtitle: c.subtitle || "",
         year: c.year || new Date().getFullYear(),
         description: c.description || "",
@@ -125,7 +140,7 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
               Slug
@@ -136,6 +151,21 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
               onChange={(e) => updateField("slug", e.target.value)}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none"
             />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+              Categoria
+            </label>
+            <select
+              value={form.type}
+              onChange={(e) => updateField("type", e.target.value)}
+              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+            >
+              <option value="">— Nessuna —</option>
+              {campaignCategories.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">

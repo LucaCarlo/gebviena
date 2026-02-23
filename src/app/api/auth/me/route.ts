@@ -10,7 +10,7 @@ export async function GET() {
 
   const user = await prisma.adminUser.findUnique({
     where: { id: auth.userId },
-    select: { id: true, email: true, name: true },
+    select: { id: true, email: true, name: true, role: true },
   });
 
   if (!user) {
