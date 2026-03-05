@@ -26,7 +26,7 @@ export interface SignatureTemplateData {
   webLinkUrl: string | null;
   websiteUrl: string | null;
   website: string | null;
-  disclaimerLang: "it" | "en";
+  disclaimerLang: "it" | "en" | "both";
   footerIt: string | null;
   footerEn: string | null;
   ecoText: string | null;
@@ -97,7 +97,7 @@ export function renderSignatureHtml(
   if (t.showWeb && t.webLinkUrl) {
     socialIcons.push(`<a href="${escapeHtml(t.webLinkUrl)}" style="display:inline-block;text-decoration:none;"><img src="${ICON_WEB}" style="display:inline-block;width:20px;height:20px;vertical-align:middle;"></a>`);
   }
-  const socialHtml = socialIcons.join("&nbsp;");
+  const socialHtml = socialIcons.join("&nbsp;&nbsp;&nbsp;");
 
   const logoHtml = t.logoUrl
     ? `<img alt="" src="${t.logoUrl}" style="width: 160px; height: 64px;">`
@@ -107,7 +107,16 @@ export function renderSignatureHtml(
     ? `<img src="${t.bannerUrl}"/>`
     : "";
 
-  const disclaimerHtml = t.disclaimerLang === "en" ? (t.footerEn || "") : (t.footerIt || "");
+  let disclaimerHtml = "";
+  if (t.disclaimerLang === "both") {
+    const it = t.footerIt || "";
+    const en = t.footerEn || "";
+    disclaimerHtml = it + (it && en ? "<br>" : "") + en;
+  } else if (t.disclaimerLang === "en") {
+    disclaimerHtml = t.footerEn || "";
+  } else {
+    disclaimerHtml = t.footerIt || "";
+  }
   const ecoText = t.ecoText || "";
 
   const websiteHtml = t.websiteUrl && t.website
@@ -196,7 +205,7 @@ width:150px;
 <tr>
 \t<td style="width: 160px; border-top: 2px solid orange;  border-bottom: 2px solid orange;">
 \t${logoHtml}
-<div style="margin-top: 6px; white-space: nowrap; text-align: center;">${socialHtml}</div>
+<div style="margin-top: 10px; white-space: nowrap; text-align: center;">${socialHtml}</div>
 </td>\t
 \t<td style="width: 600px; border-top: 2px solid orange;border-bottom: 2px solid orange;">
 \t\t${bannerHtml}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Check,
   Save,
@@ -14,6 +14,7 @@ import {
   FileSignature,
   UserCheck,
   UserX,
+  Link,
 } from "lucide-react";
 import {
   renderSignatureHtml,
@@ -138,7 +139,7 @@ export default function AdminFirmaPage() {
       webLinkUrl: t.webLinkUrl ?? EMPTY_TEMPLATE.webLinkUrl,
       websiteUrl: t.websiteUrl ?? EMPTY_TEMPLATE.websiteUrl,
       website: t.website ?? EMPTY_TEMPLATE.website,
-      disclaimerLang: (t.disclaimerLang as "it" | "en") ?? "it",
+      disclaimerLang: (t.disclaimerLang as "it" | "en" | "both") ?? "it",
       footerIt: t.footerIt,
       footerEn: t.footerEn,
       ecoText: t.ecoText,
@@ -170,7 +171,7 @@ export default function AdminFirmaPage() {
           setMyTemplate({
             ...EMPTY_TEMPLATE,
             ...data.data.template,
-            disclaimerLang: (data.data.template.disclaimerLang as "it" | "en") || "it",
+            disclaimerLang: (data.data.template.disclaimerLang as "it" | "en" | "both") || "it",
           });
         }
       }
@@ -604,53 +605,33 @@ export default function AdminFirmaPage() {
                     <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-2">
                       Lingua Disclaimer
                     </label>
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="disclaimerLang"
-                          value="it"
-                          checked={templateForm.disclaimerLang === "it"}
-                          onChange={() => setTemplateForm((prev) => ({ ...prev, disclaimerLang: "it" }))}
-                          className="text-warm-800 focus:ring-warm-800"
-                        />
-                        <span className="text-xs text-warm-700">Italiano</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="disclaimerLang"
-                          value="en"
-                          checked={templateForm.disclaimerLang === "en"}
-                          onChange={() => setTemplateForm((prev) => ({ ...prev, disclaimerLang: "en" }))}
-                          className="text-warm-800 focus:ring-warm-800"
-                        />
-                        <span className="text-xs text-warm-700">Inglese</span>
-                      </label>
+                    <div className="flex items-center gap-1">
+                      {(["it", "en", "both"] as const).map((lang) => (
+                        <button
+                          key={lang}
+                          type="button"
+                          onClick={() => setTemplateForm((prev) => ({ ...prev, disclaimerLang: lang }))}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                            templateForm.disclaimerLang === lang
+                              ? "bg-warm-800 text-white"
+                              : "bg-warm-100 text-warm-600 hover:bg-warm-200"
+                          }`}
+                        >
+                          {lang === "it" ? "Italiano" : lang === "en" ? "Inglese" : "Entrambi"}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">
-                      Disclaimer Italiano
-                    </label>
-                    <textarea
-                      value={templateForm.footerIt || ""}
-                      onChange={(e) => updateTemplate("footerIt", e.target.value)}
-                      rows={3}
-                      className="w-full border border-warm-300 rounded px-3 py-2 text-xs focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">
-                      Disclaimer Inglese
-                    </label>
-                    <textarea
-                      value={templateForm.footerEn || ""}
-                      onChange={(e) => updateTemplate("footerEn", e.target.value)}
-                      rows={3}
-                      className="w-full border border-warm-300 rounded px-3 py-2 text-xs focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-                    />
-                  </div>
+                  <RichTextarea
+                    label="Disclaimer Italiano"
+                    value={templateForm.footerIt || ""}
+                    onChange={(v) => updateTemplate("footerIt", v)}
+                  />
+                  <RichTextarea
+                    label="Disclaimer Inglese"
+                    value={templateForm.footerEn || ""}
+                    onChange={(v) => updateTemplate("footerEn", v)}
+                  />
                   <FieldInput
                     label="Testo ecologico (verde)"
                     value={templateForm.ecoText || ""}
@@ -670,41 +651,43 @@ export default function AdminFirmaPage() {
                     {allUsers.map((user) => {
                       const isAssigned = selectedTemplate.users.some((u) => u.id === user.id);
                       return (
-                        <div
+                        <label
                           key={user.id}
-                          className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-                            isAssigned ? "bg-green-50 border border-green-200" : "bg-warm-50 border border-warm-100"
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
+                            isAssigned
+                              ? "bg-green-50 border border-green-200"
+                              : "bg-warm-50 border border-warm-100 hover:bg-warm-100"
                           }`}
                         >
-                          <div>
+                          <span
+                            onClick={(e) => { e.preventDefault(); handleToggleUser(user.id); }}
+                            className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                              isAssigned
+                                ? "bg-green-500 border-green-500"
+                                : "border-warm-300 bg-white"
+                            }`}
+                          >
+                            {isAssigned && (
+                              <Check size={13} className="text-white" strokeWidth={3} />
+                            )}
+                          </span>
+                          <div className="flex-1 min-w-0">
                             <span className="text-sm text-warm-800">{user.name || user.email}</span>
                             <span className="text-[10px] text-warm-400 ml-2">{user.role}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {isAssigned && (
-                              <button
-                                onClick={() => {
-                                  setAdminEditingUserId(user.id);
-                                  loadUserSignature(user.id);
-                                }}
-                                className="text-[10px] text-warm-500 hover:text-warm-800 underline"
-                              >
-                                Modifica dati
-                              </button>
-                            )}
+                          {isAssigned && (
                             <button
-                              onClick={() => handleToggleUser(user.id)}
-                              className={`p-1.5 rounded transition-colors ${
-                                isAssigned
-                                  ? "text-green-600 hover:text-red-500"
-                                  : "text-warm-400 hover:text-green-600"
-                              }`}
-                              title={isAssigned ? "Rimuovi" : "Assegna"}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setAdminEditingUserId(user.id);
+                                loadUserSignature(user.id);
+                              }}
+                              className="text-[10px] text-warm-500 hover:text-warm-800 underline flex-shrink-0"
                             >
-                              {isAssigned ? <UserCheck size={16} /> : <UserX size={16} />}
+                              Modifica dati
                             </button>
-                          </div>
-                        </div>
+                          )}
+                        </label>
                       );
                     })}
                   </div>
@@ -949,6 +932,229 @@ function ImageUploadRow({
   );
 }
 
+function RichTextarea({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const lastValueRef = useRef(value);
+  const savedRangeRef = useRef<Range | null>(null);
+
+  // Floating toolbar state
+  const [toolbar, setToolbar] = useState<{ x: number; y: number; isLink: boolean } | null>(null);
+  // Link URL input state
+  const [linkInput, setLinkInput] = useState<{ x: number; y: number; url: string } | null>(null);
+
+  useEffect(() => {
+    if (editorRef.current && value !== lastValueRef.current) {
+      editorRef.current.innerHTML = value;
+      lastValueRef.current = value;
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = value;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleInput = () => {
+    if (editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      lastValueRef.current = html;
+      onChange(html);
+    }
+  };
+
+  const getSelectionPos = (): { x: number; y: number } | null => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const wrapperRect = wrapperRef.current?.getBoundingClientRect();
+    if (!wrapperRect) return null;
+    return {
+      x: rect.left - wrapperRect.left + rect.width / 2,
+      y: rect.top - wrapperRect.top - 8,
+    };
+  };
+
+  const isInsideLink = (): boolean => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return false;
+    let node: Node | null = sel.anchorNode;
+    while (node && node !== editorRef.current) {
+      if (node.nodeName === "A") return true;
+      node = node.parentNode;
+    }
+    return false;
+  };
+
+  const handleSelectionChange = () => {
+    const sel = window.getSelection();
+    if (
+      !sel ||
+      sel.isCollapsed ||
+      !editorRef.current?.contains(sel.anchorNode)
+    ) {
+      if (!linkInput) setToolbar(null);
+      return;
+    }
+    const pos = getSelectionPos();
+    if (pos) {
+      setToolbar({ ...pos, isLink: isInsideLink() });
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => document.removeEventListener("selectionchange", handleSelectionChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkInput]);
+
+  const handleShowLinkInput = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+    }
+    const pos = getSelectionPos();
+    if (!pos) return;
+    // Pre-fill with existing href if editing a link
+    let existingUrl = "";
+    if (isInsideLink()) {
+      let node: Node | null = sel?.anchorNode || null;
+      while (node && node !== editorRef.current) {
+        if (node.nodeName === "A") {
+          existingUrl = (node as HTMLAnchorElement).href;
+          break;
+        }
+        node = node.parentNode;
+      }
+    }
+    setToolbar(null);
+    setLinkInput({ x: pos.x, y: pos.y, url: existingUrl || "mailto:" });
+  };
+
+  const handleApplyLink = () => {
+    if (!linkInput || !savedRangeRef.current) return;
+    const sel = window.getSelection();
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedRangeRef.current);
+    }
+    if (linkInput.url.trim()) {
+      document.execCommand("createLink", false, linkInput.url.trim());
+    }
+    handleInput();
+    setLinkInput(null);
+    savedRangeRef.current = null;
+  };
+
+  const handleRemoveLink = () => {
+    document.execCommand("unlink");
+    handleInput();
+    setToolbar(null);
+  };
+
+  const handleLinkKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleApplyLink();
+    }
+    if (e.key === "Escape") {
+      setLinkInput(null);
+      savedRangeRef.current = null;
+    }
+  };
+
+  return (
+    <div>
+      <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">
+        {label}
+      </label>
+      <div ref={wrapperRef} className="relative">
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={handleInput}
+          onBlur={() => {
+            handleInput();
+            setTimeout(() => {
+              if (!linkInput) setToolbar(null);
+            }, 200);
+          }}
+          className="w-full min-h-[72px] border border-warm-300 rounded px-3 py-2 text-xs focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800 overflow-auto [&_a]:text-orange-600 [&_a]:underline"
+          style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+        />
+
+        {/* Floating toolbar on text selection */}
+        {toolbar && !linkInput && (
+          <div
+            className="absolute z-50 flex items-center gap-1 bg-warm-900 rounded-lg shadow-lg px-1.5 py-1 -translate-x-1/2 -translate-y-full"
+            style={{ left: toolbar.x, top: toolbar.y }}
+          >
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); handleShowLinkInput(); }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium text-white hover:bg-warm-700 transition-colors"
+            >
+              <Link size={10} /> Link
+            </button>
+            {toolbar.isLink && (
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); handleRemoveLink(); }}
+                className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium text-warm-300 hover:text-white hover:bg-warm-700 transition-colors"
+              >
+                Rimuovi
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Inline URL input */}
+        {linkInput && (
+          <div
+            className="absolute z-50 flex items-center gap-1 bg-white border border-warm-300 rounded-lg shadow-lg px-2 py-1.5 -translate-x-1/2 -translate-y-full"
+            style={{ left: linkInput.x, top: linkInput.y }}
+          >
+            <input
+              autoFocus
+              type="text"
+              value={linkInput.url}
+              onChange={(e) => setLinkInput({ ...linkInput, url: e.target.value })}
+              onKeyDown={handleLinkKeyDown}
+              placeholder="URL..."
+              className="w-48 border border-warm-200 rounded px-2 py-0.5 text-[11px] focus:border-warm-800 focus:outline-none"
+            />
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); handleApplyLink(); }}
+              className="px-2 py-0.5 rounded text-[10px] font-medium bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+            >
+              OK
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); setLinkInput(null); savedRangeRef.current = null; }}
+              className="px-1.5 py-0.5 rounded text-[10px] text-warm-400 hover:text-warm-600 transition-colors"
+            >
+              &times;
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SocialToggle({
   label,
   checked,
@@ -959,13 +1165,22 @@ function SocialToggle({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="w-4 h-4 rounded border-warm-300 text-warm-800 focus:ring-warm-800"
-      />
+    <label className="flex items-center gap-2 cursor-pointer select-none">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+          checked ? "bg-warm-800" : "bg-warm-300"
+        }`}
+      >
+        <span
+          className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
+            checked ? "translate-x-[18px]" : "translate-x-[2px]"
+          }`}
+        />
+      </button>
       <span className="text-xs text-warm-700">{label}</span>
     </label>
   );
