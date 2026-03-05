@@ -1,16 +1,14 @@
 import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { processImage, getWebpFilename, type ImagePurpose } from "@/lib/image";
 import { isS3Configured, uploadToS3 } from "@/lib/s3";
 
 export async function POST(req: Request) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("media", "create");
+  if (isErrorResponse(result)) return result;
 
   try {
     const formData = await req.formData();
@@ -51,7 +49,7 @@ export async function POST(req: Request) {
       const mdName = `${timestamp}-md-${webpName}`;
       const thName = `${timestamp}-thumb-${webpName}`;
 
-      if (isS3Configured()) {
+      if (await isS3Configured()) {
         const key = `${folder}/${filename}`;
         wasabiUrl = await uploadToS3(processed, key, "image/webp");
         wasabiKey = key;
@@ -69,7 +67,7 @@ export async function POST(req: Request) {
         await writeFile(path.join(uploadsDir, filename), processed);
         await writeFile(path.join(uploadsDir, mdName), medium);
         await writeFile(path.join(thumbsDir, thName), thumbnail);
-        url = `/uploads/${filename}`;
+        url = `/api/uploads/${filename}`;
       }
     } else if (isImage && skipCompression) {
       // Skip compression: save original file as-is
@@ -80,7 +78,7 @@ export async function POST(req: Request) {
       width = meta.width || null;
       height = meta.height || null;
 
-      if (isS3Configured()) {
+      if (await isS3Configured()) {
         const key = `${folder}/${filename}`;
         wasabiUrl = await uploadToS3(buffer, key, file.type);
         wasabiKey = key;
@@ -90,13 +88,13 @@ export async function POST(req: Request) {
         const uploadsDir = path.join(process.cwd(), "public", "uploads");
         await mkdir(uploadsDir, { recursive: true });
         await writeFile(path.join(uploadsDir, filename), buffer);
-        url = `/uploads/${filename}`;
+        url = `/api/uploads/${filename}`;
       }
     } else {
       filename = `${timestamp}-${sanitizedName}`;
       finalSize = buffer.length;
 
-      if (isS3Configured()) {
+      if (await isS3Configured()) {
         const key = `${folder}/${filename}`;
         wasabiUrl = await uploadToS3(buffer, key, file.type);
         wasabiKey = key;
@@ -106,7 +104,7 @@ export async function POST(req: Request) {
         const uploadsDir = path.join(process.cwd(), "public", "uploads");
         await mkdir(uploadsDir, { recursive: true });
         await writeFile(path.join(uploadsDir, filename), buffer);
-        url = `/uploads/${filename}`;
+        url = `/api/uploads/${filename}`;
       }
     }
 

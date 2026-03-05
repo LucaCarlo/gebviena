@@ -134,7 +134,7 @@ export default function CategoryCarousel() {
                     src={cat.image}
                     alt={cat.name}
                     fill
-                    className="object-contain transition-transform duration-700 group-hover:scale-105"
+                    className="object-contain"
                     draggable={false}
                   />
                 </div>

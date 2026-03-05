@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Upload } from "lucide-react";
+import RichTextEditor from "./RichTextEditor";
+import SeoPanel from "./SeoPanel";
 
 interface AwardFormProps {
   awardId?: string;
@@ -17,11 +19,16 @@ export default function AwardForm({ awardId }: AwardFormProps) {
   const [form, setForm] = useState({
     name: "",
     productName: "",
+    productSlug: "",
+    productCategory: "",
     year: new Date().getFullYear(),
     organization: "",
     description: "",
     imageUrl: "",
     url: "",
+    seoTitle: "",
+    seoDescription: "",
+    seoKeywords: "[]",
   });
 
   const loadAward = useCallback(async () => {
@@ -33,11 +40,16 @@ export default function AwardForm({ awardId }: AwardFormProps) {
       setForm({
         name: a.name || "",
         productName: a.productName || "",
+        productSlug: a.productSlug || "",
+        productCategory: a.productCategory || "",
         year: a.year || new Date().getFullYear(),
         organization: a.organization || "",
         description: a.description || "",
         imageUrl: a.imageUrl || "",
         url: a.url || "",
+        seoTitle: a.seoTitle || "",
+        seoDescription: a.seoDescription || "",
+        seoKeywords: a.seoKeywords || "[]",
       });
     }
   }, [awardId]);
@@ -130,6 +142,33 @@ export default function AwardForm({ awardId }: AwardFormProps) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+              Slug Prodotto
+            </label>
+            <input
+              type="text"
+              value={form.productSlug}
+              onChange={(e) => updateField("productSlug", e.target.value)}
+              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+              placeholder="es. n-811"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+              Categoria Prodotto
+            </label>
+            <input
+              type="text"
+              value={form.productCategory}
+              onChange={(e) => updateField("productCategory", e.target.value)}
+              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+              placeholder="es. Sedie con braccioli"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
               Anno *
             </label>
             <input
@@ -154,17 +193,11 @@ export default function AwardForm({ awardId }: AwardFormProps) {
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            Descrizione
-          </label>
-          <textarea
-            value={form.description}
-            onChange={(e) => updateField("description", e.target.value)}
-            rows={4}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-          />
-        </div>
+        <RichTextEditor
+          label="Descrizione"
+          value={form.description}
+          onChange={(html) => updateField("description", html)}
+        />
 
         {/* Image upload */}
         <div>
@@ -208,6 +241,20 @@ export default function AwardForm({ awardId }: AwardFormProps) {
           />
         </div>
       </div>
+
+      <SeoPanel
+        seoTitle={form.seoTitle}
+        seoDescription={form.seoDescription}
+        seoKeywords={(() => { try { return JSON.parse(form.seoKeywords); } catch { return []; } })()}
+        content={form.description}
+        onChange={(field, value) => {
+          if (field === "seoKeywords") {
+            updateField("seoKeywords", JSON.stringify(value));
+          } else {
+            updateField(field, value as string);
+          }
+        }}
+      />
 
       <div className="flex gap-3">
         <button

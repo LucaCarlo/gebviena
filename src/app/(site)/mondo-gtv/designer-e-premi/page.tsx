@@ -1,0 +1,283 @@
+import Image from "next/image";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import type { Metadata } from "next";
+import DesignerGrid from "./DesignerGrid";
+
+export const metadata: Metadata = {
+  title: "Designer e Premi | Gebrüder Thonet Vienna",
+  description:
+    "GTV collabora con designer di talento per reinterpretare la tradizione. Scopri i designer e i premi internazionali di GTV.",
+};
+
+const RELATED_PAGES = [
+  {
+    page: "brand-manifesto",
+    label: "Brand Manifesto",
+    href: "/mondo-gtv/brand-manifesto",
+  },
+  {
+    page: "curvatura-legno",
+    label: "La Curvatura del Legno",
+    href: "/mondo-gtv/curvatura-legno",
+  },
+  {
+    page: "sostenibilita",
+    label: "Sostenibilit\u00e0",
+    href: "/mondo-gtv/sostenibilita",
+  },
+];
+
+export default async function DesignerPremiPage() {
+  // Fetch all active designers
+  const designers = await prisma.designer.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: "asc" },
+    select: { id: true, name: true, slug: true, imageUrl: true },
+  });
+
+  // Fetch awards from DB
+  const allAwards = await prisma.award.findMany({
+    where: { isActive: true },
+    orderBy: { year: "asc" },
+  });
+
+  // Group awards by organization + year
+  const awardGroups = new Map<string, typeof allAwards>();
+  for (const award of allAwards) {
+    const key = `${award.organization}-${award.year}`;
+    if (!awardGroups.has(key)) {
+      awardGroups.set(key, []);
+    }
+    awardGroups.get(key)!.push(award);
+  }
+
+  // Fetch product images for awards that have productSlug
+  const awardSlugs = allAwards
+    .map((a) => a.productSlug)
+    .filter((s): s is string => !!s);
+  const awardProducts = await prisma.product.findMany({
+    where: { slug: { in: awardSlugs } },
+    select: { slug: true, coverImage: true, imageUrl: true },
+  });
+  const productBySlug = new Map(awardProducts.map((p) => [p.slug, p]));
+
+  // Related page covers
+  const relatedSlides = await prisma.heroSlide.findMany({
+    where: {
+      page: { in: RELATED_PAGES.map((p) => p.page) },
+      isActive: true,
+    },
+    orderBy: { sortOrder: "asc" },
+  });
+  const slidesByPage = new Map<string, (typeof relatedSlides)[0]>();
+  for (const slide of relatedSlides) {
+    if (!slidesByPage.has(slide.page)) {
+      slidesByPage.set(slide.page, slide);
+    }
+  }
+
+  return (
+    <>
+      {/* ── Titolo ───────────────────────────────────────────────── */}
+      <section className="pt-16 md:pt-24 lg:pt-32 pb-12 md:pb-16">
+        <div className="mx-auto w-[90%] max-w-[75%] text-center">
+          <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-dark leading-[1.2] tracking-tight">
+            Designer e premi
+          </h1>
+        </div>
+      </section>
+
+      {/* ── Intro — text left-aligned ────────────────────────────── */}
+      <section className="pb-16 md:pb-20">
+        <div className="mx-auto w-[90%] max-w-[75%]">
+          <p className="text-lg text-dark leading-[1.8] font-light max-w-3xl mx-auto">
+            GTV collabora con designer di talento per reinterpretare la
+            tradizione attraverso un linguaggio contemporaneo. Questo impegno
+            nella ricerca e nell&apos;innovazione &egrave; riconosciuto a
+            livello internazionale, con premi e menzioni che attestano
+            l&apos;eccellenza del brand nel design.
+          </p>
+        </div>
+      </section>
+
+      {/* ── DESIGNER grid ────────────────────────────────────────── */}
+      <section className="w-full py-20 md:py-28">
+        <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark mb-10 uppercase tracking-wide font-light text-center">
+          Designer
+        </h2>
+        <DesignerGrid designers={designers} />
+      </section>
+
+      {/* ── Separator ────────────────────────────────────────────── */}
+      <div className="mx-auto w-[95%] max-w-[90%]">
+        <div className="separator" />
+      </div>
+
+      {/* ── PREMI ────────────────────────────────────────────────── */}
+      <section className="py-20 md:py-28">
+        <div className="mx-auto w-[95%] max-w-[90%]">
+          <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark mb-12 uppercase tracking-wide font-light text-center">
+            Premi
+          </h2>
+
+          <div className="space-y-24">
+            {Array.from(awardGroups.entries()).map(([key, awards]) => {
+              const first = awards[0];
+              return (
+                <div key={key} className="flex items-start gap-0">
+                  {/* Left: award image — square, small */}
+                  <div className="flex-shrink-0 w-[120px] md:w-[160px] pt-2">
+                    {first.imageUrl ? (
+                      <div className="relative aspect-square">
+                        <Image
+                          src={first.imageUrl}
+                          alt={`${first.organization} ${first.year}`}
+                          fill
+                          className="object-contain"
+                          sizes="160px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-square bg-warm-100 flex items-center justify-center">
+                        <span className="text-xs text-warm-400 text-center px-2">
+                          {first.organization}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Vertical line with > chevron near the top (award level) */}
+                  <div className="relative flex-shrink-0 w-[32px] self-stretch ml-3">
+                    {/* Top segment of line — overlaps 1px into chevron */}
+                    <div className="absolute left-[10px] top-0 w-px bg-dark" style={{ height: 44 }} />
+                    {/* Chevron > — left edge of V aligns with the line */}
+                    <svg
+                      className="absolute left-[9px]"
+                      style={{ top: 42 }}
+                      width="16"
+                      height="24"
+                      viewBox="0 0 16 24"
+                      fill="none"
+                    >
+                      <path d="M1 1L15 12L1 23" stroke="#1a1a1a" strokeWidth="1" />
+                    </svg>
+                    {/* Bottom segment of line — overlaps 1px into chevron */}
+                    <div className="absolute left-[10px] bottom-0 w-px bg-dark" style={{ top: 64 }} />
+                  </div>
+
+                  {/* Right: products — large */}
+                  <div className="flex-1 pl-6 md:pl-10">
+                    <div className={`grid gap-6 md:gap-8 ${awards.length === 1 ? "grid-cols-1 max-w-lg" : "grid-cols-1 md:grid-cols-2"}`}>
+                      {awards.map((award) => {
+                        const prod = award.productSlug
+                          ? productBySlug.get(award.productSlug)
+                          : null;
+                        const imgSrc =
+                          prod?.coverImage || prod?.imageUrl || null;
+                        return (
+                          <Link
+                            key={award.id}
+                            href={
+                              award.productSlug
+                                ? `/prodotti/${award.productSlug}`
+                                : "#"
+                            }
+                            className="group block"
+                          >
+                            <div className="relative aspect-square bg-warm-50 overflow-hidden mb-4">
+                              {imgSrc ? (
+                                <Image
+                                  src={imgSrc}
+                                  alt={award.productName || award.name}
+                                  fill
+                                  className="object-contain p-6 group-hover:scale-105 transition-transform duration-500"
+                                  sizes="(max-width: 768px) 80vw, 40vw"
+                                />
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <span className="font-serif text-4xl text-warm-300">
+                                    {(award.productName || award.name).charAt(0)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            {award.productCategory && (
+                              <p className="text-xs uppercase tracking-[0.15em] text-black font-normal">
+                                {award.productCategory}
+                              </p>
+                            )}
+                            <h3 className="text-base md:text-lg font-normal uppercase tracking-[0.08em] text-black mt-1 group-hover:text-warm-500 transition-colors">
+                              {award.productName || award.name}
+                            </h3>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
+      <section className="py-20 md:py-28">
+        <div className="mx-auto w-[90%] max-w-[75%]">
+          <h3 className="text-center font-sans text-base md:text-lg uppercase tracking-[0.15em] text-dark mb-12">
+            Potrebbe interessarti anche
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {RELATED_PAGES.map((rp) => {
+              const slide = slidesByPage.get(rp.page);
+              const coverSrc =
+                slide?.coverImage || slide?.imageUrl || null;
+              return (
+                <Link key={rp.page} href={rp.href} className="group block">
+                  <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
+                    {coverSrc ? (
+                      <Image
+                        src={coverSrc}
+                        alt={rp.label}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 25vw"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-warm-200" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 flex items-end p-6">
+                      <h4 className="font-sans text-sm md:text-base uppercase tracking-[0.15em] text-white font-light">
+                        {rp.label}
+                      </h4>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Breadcrumbs ───────────────────────────────────────────── */}
+      <div className="gtv-container pb-12">
+        <nav className="flex items-center gap-2 text-xs text-warm-400">
+          <Link href="/" className="hover:text-warm-800 transition-colors">
+            Home
+          </Link>
+          <span>&gt;</span>
+          <Link
+            href="/mondo-gtv"
+            className="hover:text-warm-800 transition-colors"
+          >
+            Mondo GTV
+          </Link>
+          <span>&gt;</span>
+          <span className="text-warm-600">Designer e premi</span>
+        </nav>
+      </div>
+    </>
+  );
+}

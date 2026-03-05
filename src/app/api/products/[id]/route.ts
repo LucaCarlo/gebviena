@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const data = await prisma.product.findUnique({
@@ -14,10 +14,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 }
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("products", "edit");
+  if (isErrorResponse(result)) return result;
 
   try {
     const body = await req.json();
@@ -32,10 +30,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("products", "delete");
+  if (isErrorResponse(result)) return result;
 
   await prisma.product.delete({ where: { id: params.id } });
   return NextResponse.json({ success: true });

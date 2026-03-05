@@ -8,9 +8,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, ChevronRight } from "lucide-react";
 import type { Product, Designer, Project } from "@/types";
 
-interface ProductDetail extends Product {
+interface ProductDetail extends Omit<Product, "projects"> {
   related: (Product & { designer?: Designer })[];
-  project: Project | null;
+  projects: Project[];
 }
 
 /* ─── Inspiration Carousel sub-component ─── */
@@ -160,9 +160,16 @@ export default function ProductDetailPage() {
     } catch { /* ignore */ }
     return [];
   })();
+  const variants: { name: string; image: string }[] = (() => {
+    try {
+      if (product.variants) return JSON.parse(product.variants);
+    } catch { /* ignore */ }
+    return [];
+  })();
   const heroImg = product.heroImage || product.coverImage || product.imageUrl;
   const sideImg = product.sideImage || product.coverImage || product.imageUrl;
   const coverImg = product.coverImage || product.imageUrl;
+  const dimImg = product.dimensionImage || coverImg;
 
   const sectionNav = [
     { label: "Ispirazione", id: "ispirazione" },
@@ -229,9 +236,17 @@ export default function ProductDetailPage() {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               {product.description && (
-                <p className="text-warm-600 leading-relaxed text-base lg:text-body font-light" style={{ textAlign: "justify" }}>
-                  {product.description}
-                </p>
+                product.description.includes("<") ? (
+                  <div
+                    className="text-warm-600 leading-relaxed text-base lg:text-body font-light prose prose-warm max-w-none"
+                    style={{ textAlign: "justify" }}
+                    dangerouslySetInnerHTML={{ __html: product.description }}
+                  />
+                ) : (
+                  <p className="text-warm-600 leading-relaxed text-base lg:text-body font-light" style={{ textAlign: "justify" }}>
+                    {product.description}
+                  </p>
+                )
               )}
 
               <button className="gtv-link mt-6 text-xs">
@@ -293,7 +308,7 @@ export default function ProductDetailPage() {
             <button
               key={item.id}
               onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" })}
-              className="uppercase text-[10px] tracking-[0.2em] text-warm-400 hover:text-warm-800 transition-colors font-light"
+              className="uppercase text-xs md:text-sm tracking-[0.15em] text-warm-900 hover:underline underline-offset-4 transition-all font-light"
             >
               {item.label}
             </button>
@@ -346,9 +361,17 @@ export default function ProductDetailPage() {
                   <p className="text-sm text-warm-600 mt-2">{product.designer.country}</p>
                 )}
                 {product.designer.bio && (
-                  <p className="text-warm-700 leading-relaxed mt-6 font-light text-sm lg:text-base" style={{ textAlign: "justify" }}>
-                    {product.designer.bio}
-                  </p>
+                  product.designer.bio.includes("<") ? (
+                    <div
+                      className="leading-relaxed mt-6 font-light text-sm lg:text-base prose prose-warm max-w-none"
+                      style={{ textAlign: "justify", color: "#000000" }}
+                      dangerouslySetInnerHTML={{ __html: product.designer.bio }}
+                    />
+                  ) : (
+                    <p className="leading-relaxed mt-6 font-light text-sm lg:text-base" style={{ textAlign: "justify", color: "#000000" }}>
+                      {product.designer.bio}
+                    </p>
+                  )
                 )}
                 <Link
                   href={`/designer/${product.designer.slug || product.designer.id}`}
@@ -376,13 +399,13 @@ export default function ProductDetailPage() {
             transition={{ duration: 0.6 }}
           >
             <div className="text-center mb-12">
-              <h2 className="font-sans text-xl md:text-2xl text-warm-800 font-light uppercase tracking-[0.15em]">
+              <h2 className="font-sans text-2xl md:text-3xl text-warm-900 font-light uppercase tracking-[0.15em]">
                 Specifiche Tecniche
               </h2>
             </div>
 
             {/* Accordion rows */}
-            <div className="divide-y divide-warm-200 border-t border-b border-warm-200">
+            <div className="divide-y divide-warm-900 border-t border-b border-warm-900">
 
               {/* --- VARIANTI PRODOTTO --- */}
               <div>
@@ -390,10 +413,10 @@ export default function ProductDetailPage() {
                   onClick={() => setOpenAccordion(openAccordion === "varianti" ? null : "varianti")}
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
-                  <span className="uppercase text-xs tracking-[0.15em] text-warm-600 group-hover:text-warm-800 transition-colors">
+                  <span className="uppercase text-xs tracking-[0.15em] text-warm-900 transition-colors">
                     Varianti prodotto
                   </span>
-                  <span className="w-8 h-8 border border-warm-300 flex items-center justify-center text-warm-500 flex-shrink-0">
+                  <span className="w-8 h-8 border border-warm-900 flex items-center justify-center text-warm-900 flex-shrink-0">
                     {openAccordion === "varianti" ? <Minus size={14} /> : <Plus size={14} />}
                   </span>
                 </button>
@@ -407,11 +430,18 @@ export default function ProductDetailPage() {
                       className="overflow-hidden"
                     >
                       <div className="px-2 pb-8">
-                        {gallery.length > 0 ? (
-                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                            {gallery.map((url, i) => (
-                              <div key={i} className="relative aspect-square border border-warm-200 overflow-hidden">
-                                <Image src={url} alt={`Variante ${i + 1}`} fill className="object-cover" sizes="120px" />
+                        {variants.length > 0 ? (
+                          <div className="flex gap-6 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                            {variants.map((v, i) => (
+                              <div key={i} className="flex-shrink-0 text-center" style={{ width: "140px" }}>
+                                <div className="relative aspect-square bg-warm-50 border border-warm-200 rounded overflow-hidden mb-2">
+                                  {v.image ? (
+                                    <Image src={v.image} alt={v.name || `Variante ${i + 1}`} fill className="object-contain p-2" sizes="140px" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-warm-300 text-xs">N/A</div>
+                                  )}
+                                </div>
+                                {v.name && <p className="text-[11px] text-warm-700 font-light">{v.name}</p>}
                               </div>
                             ))}
                           </div>
@@ -430,10 +460,10 @@ export default function ProductDetailPage() {
                   onClick={() => setOpenAccordion(openAccordion === "dimensioni" ? null : "dimensioni")}
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
-                  <span className="uppercase text-xs tracking-[0.15em] text-warm-600 group-hover:text-warm-800 transition-colors">
+                  <span className="uppercase text-xs tracking-[0.15em] text-warm-900 transition-colors">
                     Dimensioni
                   </span>
-                  <span className="w-8 h-8 border border-warm-300 flex items-center justify-center text-warm-500 flex-shrink-0">
+                  <span className="w-8 h-8 border border-warm-900 flex items-center justify-center text-warm-900 flex-shrink-0">
                     {openAccordion === "dimensioni" ? <Minus size={14} /> : <Plus size={14} />}
                   </span>
                 </button>
@@ -447,29 +477,46 @@ export default function ProductDetailPage() {
                       className="overflow-hidden"
                     >
                       <div className="px-2 pb-8">
-                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
-                          {/* Left — product image placeholder for technical drawing */}
-                          <div className="relative bg-white border border-warm-200 p-8" style={{ aspectRatio: "4 / 3" }}>
-                            <Image src={coverImg} alt={`${product.name} dimensioni`} fill className="object-contain p-6" sizes="(max-width: 768px) 100vw, 60vw" />
+                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-8 items-start">
+                          {/* Left — technical drawing (horizontal) */}
+                          <div className="relative bg-white p-6" style={{ aspectRatio: "2 / 1" }}>
+                            <Image src={dimImg} alt={`${product.name} dimensioni`} fill className="object-contain" sizes="(max-width: 768px) 100vw, 60vw" />
                           </div>
 
                           {/* Right — dimension values */}
-                          <div className="space-y-4">
-                            {product.dimensions ? (
-                              product.dimensions.split(/[,;/]/).map((dim, i) => {
-                                const parts = dim.trim().split(/:\s*|–\s*|-\s*/);
-                                const label = parts[0]?.trim();
-                                const value = parts[1]?.trim() || "";
-                                return (
-                                  <div key={i}>
-                                    <p className="text-xs font-semibold text-warm-800 uppercase">{label}</p>
-                                    {value && <p className="text-sm text-warm-500 font-light mt-0.5">{value}</p>}
-                                  </div>
-                                );
-                              })
-                            ) : (
-                              <p className="text-sm text-warm-400 font-light">Dimensioni non disponibili.</p>
-                            )}
+                          <div className="space-y-5 pt-2">
+                            {(() => {
+                              // Try dynamic dimensionValues JSON first
+                              if (product.dimensionValues) {
+                                try {
+                                  const vals: Record<string, string> = JSON.parse(product.dimensionValues);
+                                  const entries = Object.entries(vals).filter(([, v]) => v);
+                                  if (entries.length > 0) {
+                                    return entries.map(([label, value], i) => (
+                                      <div key={i}>
+                                        <p className="text-sm font-bold text-warm-900 uppercase">{label}</p>
+                                        <p className="text-sm text-warm-600 mt-0.5">{value}</p>
+                                      </div>
+                                    ));
+                                  }
+                                } catch { /* fallthrough to legacy */ }
+                              }
+                              // Fallback to legacy string parsing
+                              if (product.dimensions) {
+                                return product.dimensions.split(/[,;/]/).map((dim, i) => {
+                                  const parts = dim.trim().split(/:\s*|–\s*|-\s*/);
+                                  const label = parts[0]?.trim();
+                                  const value = parts[1]?.trim() || "";
+                                  return (
+                                    <div key={i}>
+                                      <p className="text-sm font-bold text-warm-900 uppercase">{label}</p>
+                                      {value && <p className="text-sm text-warm-600 mt-0.5">{value}</p>}
+                                    </div>
+                                  );
+                                });
+                              }
+                              return <p className="text-sm text-warm-400 font-light">Dimensioni non disponibili.</p>;
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -484,10 +531,10 @@ export default function ProductDetailPage() {
                   onClick={() => setOpenAccordion(openAccordion === "scheda" ? null : "scheda")}
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
-                  <span className="uppercase text-xs tracking-[0.15em] text-warm-600 group-hover:text-warm-800 transition-colors">
+                  <span className="uppercase text-xs tracking-[0.15em] text-warm-900 transition-colors">
                     {"Scheda tecnica, 2D, 3D, istruzioni d'uso, manutenzione"}
                   </span>
-                  <span className="w-8 h-8 border border-warm-300 flex items-center justify-center text-warm-500 flex-shrink-0">
+                  <span className="w-8 h-8 border border-warm-900 flex items-center justify-center text-warm-900 flex-shrink-0">
                     {openAccordion === "scheda" ? <Minus size={14} /> : <Plus size={14} />}
                   </span>
                 </button>
@@ -522,68 +569,109 @@ export default function ProductDetailPage() {
         </div>
       </section>
 
-      {/* ===== 7. PROJECT REFERENCE — image with overlay + right panel ===== */}
+      {/* ===== 7. PROJECT REFERENCE — dynamic projects linked to this product ===== */}
       <section id="progetti" className="mt-16 lg:mt-24">
-        {product.project && (
+        {product.projects && product.projects.length > 0 && (
           <div className="w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2">
-              {/* Left — project image with text overlay */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-                className="relative img-hover"
-                style={{ aspectRatio: "4 / 3" }}
-              >
-                <Image
-                  src={product.project.imageUrl}
-                  alt={product.project.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-8 lg:p-12">
-                  {product.project.country && (
-                    <p className="uppercase text-[10px] tracking-[0.2em] text-white/70 mb-2">
-                      {product.project.country}
-                    </p>
-                  )}
-                  <h3 className="font-sans text-lg md:text-xl lg:text-2xl text-white font-light uppercase tracking-wide leading-snug">
-                    {product.project.name}
+            {product.projects.length === 1 ? (
+              /* Single project — full-width split layout */
+              <div className="grid grid-cols-1 lg:grid-cols-2">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8 }}
+                  className="relative"
+                  style={{ aspectRatio: "4 / 3" }}
+                >
+                  <Image
+                    src={product.projects[0].imageUrl}
+                    alt={product.projects[0].name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 p-8 lg:p-12">
+                    {product.projects[0].country && (
+                      <p className="uppercase text-[10px] tracking-[0.2em] text-white/70 mb-2">
+                        {product.projects[0].country}
+                      </p>
+                    )}
+                    <h3 className="font-sans text-lg md:text-xl lg:text-2xl text-white font-light uppercase tracking-wide leading-snug">
+                      {product.projects[0].name}
+                    </h3>
+                    <Link
+                      href={`/progetti/${product.projects[0].slug}`}
+                      className="inline-flex items-center gap-2 uppercase text-[10px] tracking-[0.15em] text-white/80 hover:text-white transition-colors group mt-4"
+                    >
+                      Scopri di più
+                      <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                    </Link>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="flex flex-col justify-center items-center text-center p-10 lg:p-16 bg-white"
+                >
+                  <p className="uppercase text-[11px] tracking-[0.25em] text-warm-400 mb-4">Progetti</p>
+                  <h3 className="font-sans text-lg md:text-xl lg:text-2xl text-warm-900 font-light uppercase tracking-wide leading-snug">
+                    Gli ambienti si vestono<br />di eleganza con {product.name}
                   </h3>
                   <Link
                     href="/progetti"
-                    className="inline-flex items-center gap-2 uppercase text-[10px] tracking-[0.15em] text-white/80 hover:text-white transition-colors group mt-4"
+                    className="inline-flex items-center gap-2 uppercase text-xs tracking-[0.15em] text-warm-900 hover:text-accent transition-colors group mt-8"
                   >
-                    Scopri di più
+                    Esplora le realizzazioni
                     <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
                   </Link>
+                </motion.div>
+              </div>
+            ) : (
+              /* Multiple projects — grid */
+              <div className="gtv-container py-16 lg:py-24">
+                <div className="text-center mb-12">
+                  <p className="uppercase text-[11px] tracking-[0.25em] text-warm-400 mb-4">Progetti</p>
+                  <h3 className="font-sans text-lg md:text-xl lg:text-2xl text-warm-900 font-light uppercase tracking-wide leading-snug">
+                    Gli ambienti si vestono di eleganza con {product.name}
+                  </h3>
                 </div>
-              </motion.div>
-
-              {/* Right — text panel */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="flex flex-col justify-center items-center text-center p-10 lg:p-16 bg-white"
-              >
-                <p className="uppercase text-[11px] tracking-[0.25em] text-warm-400 mb-4">Progetti</p>
-                <h3 className="font-sans text-lg md:text-xl lg:text-2xl text-warm-800 font-light uppercase tracking-wide leading-snug">
-                  Gli ambienti si vestono<br />di eleganza con {product.name}
-                </h3>
-                <Link
-                  href="/progetti"
-                  className="inline-flex items-center gap-2 uppercase text-xs tracking-[0.15em] text-warm-800 hover:text-accent transition-colors group mt-8"
-                >
-                  Esplora le realizzazioni
-                  <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
-                </Link>
-              </motion.div>
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {product.projects.map((proj, i) => (
+                    <motion.div
+                      key={proj.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6, delay: i * 0.1 }}
+                    >
+                      <Link href={`/progetti/${proj.slug}`} className="group block relative" style={{ aspectRatio: "4 / 3" }}>
+                        <Image
+                          src={proj.imageUrl}
+                          alt={proj.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                        <div className="absolute bottom-0 left-0 p-6 lg:p-8">
+                          {proj.country && (
+                            <p className="uppercase text-[10px] tracking-[0.2em] text-white/70 mb-1">{proj.country}</p>
+                          )}
+                          <h4 className="font-sans text-base md:text-lg text-white font-light uppercase tracking-wide">
+                            {proj.name}
+                          </h4>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>

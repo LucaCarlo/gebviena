@@ -4,10 +4,17 @@ import { useEffect, useState, useCallback } from "react";
 import { Mail, MailOpen, Check, Download, Newspaper, Trash2, Reply, X, Send, Loader2 } from "lucide-react";
 import type { ContactSubmission } from "@/types";
 
+const TYPE_LABELS: Record<string, string> = {
+  info: "Informazioni",
+  collaboration: "Collaborazione",
+  store_contact: "Rete Vendita",
+};
+
 export default function AdminContactsPage() {
   const [contacts, setContacts] = useState<ContactSubmission[]>([]);
   const [newsletterEmails, setNewsletterEmails] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
   // Reply modal state
   const [replyTo, setReplyTo] = useState<ContactSubmission | null>(null);
@@ -76,13 +83,16 @@ export default function AdminContactsPage() {
   const exportCSV = () => {
     if (contacts.length === 0) return;
 
-    const headers = ["Nome", "Email", "Oggetto", "Messaggio", "Tipo", "Letto", "Data"];
+    const headers = ["Nome", "Email", "Azienda", "Telefono", "Motivo", "Oggetto", "Messaggio", "Tipo", "Letto", "Data"];
     const rows = contacts.map((c) => [
       `"${c.name.replace(/"/g, '""')}"`,
       `"${c.email}"`,
+      `"${(c.company || "").replace(/"/g, '""')}"`,
+      `"${c.phone || ""}"`,
+      `"${(c.contactReason || "").replace(/"/g, '""')}"`,
       `"${(c.subject || "").replace(/"/g, '""')}"`,
       `"${c.message.replace(/"/g, '""').replace(/\n/g, " ")}"`,
-      `"${c.type}"`,
+      `"${TYPE_LABELS[c.type] || c.type}"`,
       c.isRead ? "Si" : "No",
       new Date(c.createdAt).toLocaleDateString("it-IT"),
     ]);
@@ -150,6 +160,8 @@ export default function AdminContactsPage() {
   };
 
   const unreadCount = contacts.filter((c) => !c.isRead).length;
+  const filteredContacts = typeFilter === "all" ? contacts : contacts.filter((c) => c.type === typeFilter);
+  const types = Array.from(new Set(contacts.map((c) => c.type)));
 
   return (
     <div>
@@ -162,23 +174,35 @@ export default function AdminContactsPage() {
             </p>
           )}
         </div>
-        <button
-          onClick={exportCSV}
-          disabled={contacts.length === 0}
-          className="flex items-center gap-2 px-4 py-2 bg-warm-800 text-white text-sm rounded hover:bg-warm-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Download size={16} />
-          Esporta CSV
-        </button>
+        <div className="flex items-center gap-3">
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="border border-warm-300 rounded px-3 py-2 text-sm focus:border-warm-800 focus:outline-none"
+          >
+            <option value="all">Tutti i tipi</option>
+            {types.map((t) => (
+              <option key={t} value={t}>{TYPE_LABELS[t] || t}</option>
+            ))}
+          </select>
+          <button
+            onClick={exportCSV}
+            disabled={contacts.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-warm-800 text-white text-sm rounded hover:bg-warm-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download size={16} />
+            Esporta CSV
+          </button>
+        </div>
       </div>
 
       {loading ? (
         <div className="text-warm-400">Caricamento...</div>
-      ) : contacts.length === 0 ? (
+      ) : filteredContacts.length === 0 ? (
         <div className="text-center py-12 text-warm-400">Nessun messaggio ricevuto</div>
       ) : (
         <div className="space-y-4">
-          {contacts.map((c) => (
+          {filteredContacts.map((c) => (
             <div
               key={c.id}
               className={`bg-white rounded-xl shadow-sm border p-6 ${
@@ -203,11 +227,16 @@ export default function AdminContactsPage() {
                       )}
                     </div>
                     <p className="text-xs text-warm-500">{c.email}</p>
+                    {(c.company || c.phone) && (
+                      <p className="text-xs text-warm-400">
+                        {[c.company, c.phone].filter(Boolean).join(" — ")}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="text-right mr-2">
-                    <span className="px-2 py-1 bg-warm-100 text-warm-600 text-xs rounded">{c.type}</span>
+                    <span className={`px-2 py-1 text-xs rounded ${c.type === "store_contact" ? "bg-green-100 text-green-700" : "bg-warm-100 text-warm-600"}`}>{TYPE_LABELS[c.type] || c.type}</span>
                     <p className="text-xs text-warm-400 mt-1">
                       {new Date(c.createdAt).toLocaleDateString("it-IT", {
                         day: "numeric",
@@ -243,6 +272,11 @@ export default function AdminContactsPage() {
                   </button>
                 </div>
               </div>
+              {c.contactReason && (
+                <p className="text-xs text-warm-500 mb-1">
+                  <span className="font-medium">Motivo:</span> {c.contactReason}
+                </p>
+              )}
               {c.subject && <p className="text-sm font-medium text-warm-700 mb-2">{c.subject}</p>}
               <p className="text-sm text-warm-600 leading-relaxed">{c.message}</p>
             </div>

@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
 import type { PointOfSale } from "@/types";
+import AdminListFilters from "@/components/admin/AdminListFilters";
 
 export default function AdminAgentsPage() {
   const [agents, setAgents] = useState<PointOfSale[]>([]);
   const [loading, setLoading] = useState(true);
   const importRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
 
   const fetchAgents = () => {
     fetch("/api/stores?type=AGENT")
@@ -63,9 +66,27 @@ export default function AdminAgentsPage() {
     e.target.value = "";
   };
 
+  const filters = useMemo(() => {
+    const countries = Array.from(new Set(agents.map((a) => a.country).filter((v): v is string => !!v))).sort();
+    const cities = Array.from(new Set(agents.map((a) => a.city).filter((v): v is string => !!v))).sort();
+    return [
+      { key: "country", label: "Tutti i paesi", options: countries.map((c) => ({ value: c, label: c })) },
+      { key: "city", label: "Tutte le città", options: cities.map((c) => ({ value: c, label: c })) },
+    ];
+  }, [agents]);
+
+  const filteredAgents = useMemo(() => {
+    let result = agents;
+    const q = search.toLowerCase().trim();
+    if (q) result = result.filter((a) => a.name.toLowerCase().includes(q));
+    if (activeFilters.country) result = result.filter((a) => a.country === activeFilters.country);
+    if (activeFilters.city) result = result.filter((a) => a.city === activeFilters.city);
+    return result;
+  }, [agents, search, activeFilters]);
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold text-warm-800">Agenti & Distributori</h1>
         <div className="flex items-center gap-2">
           <button
@@ -93,6 +114,17 @@ export default function AdminAgentsPage() {
       {loading ? (
         <div className="text-warm-400">Caricamento...</div>
       ) : (
+        <>
+        <AdminListFilters
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Cerca agente..."
+          filters={filters}
+          activeFilters={activeFilters}
+          onFilterChange={(key, value) => setActiveFilters((prev) => ({ ...prev, [key]: value }))}
+          totalCount={agents.length}
+          filteredCount={filteredAgents.length}
+        />
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 border-b border-warm-200">
@@ -105,7 +137,7 @@ export default function AdminAgentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
-              {agents.map((agent) => (
+              {filteredAgents.map((agent) => (
                 <tr key={agent.id} className="hover:bg-warm-50 transition-colors">
                   <td className="px-6 py-4 font-medium text-warm-800">{agent.name}</td>
                   <td className="px-6 py-4 text-warm-600">{agent.city}</td>
@@ -125,10 +157,11 @@ export default function AdminAgentsPage() {
               ))}
             </tbody>
           </table>
-          {agents.length === 0 && (
+          {filteredAgents.length === 0 && (
             <div className="text-center py-12 text-warm-400">Nessun agente trovato</div>
           )}
         </div>
+        </>
       )}
     </div>
   );

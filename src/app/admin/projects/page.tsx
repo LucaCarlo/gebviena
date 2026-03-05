@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
 import type { Project } from "@/types";
+import AdminListFilters from "@/components/admin/AdminListFilters";
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const importRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
 
   const fetchProjects = () => {
     fetch("/api/projects?limit=100")
@@ -63,9 +66,27 @@ export default function AdminProjectsPage() {
     if (importRef.current) importRef.current.value = "";
   };
 
+  const filters = useMemo(() => {
+    const types = Array.from(new Set(projects.map((p) => p.type).filter((v): v is string => !!v))).sort();
+    const countries = Array.from(new Set(projects.map((p) => p.country).filter((v): v is string => !!v))).sort();
+    return [
+      { key: "type", label: "Tutte le tipologie", options: types.map((t) => ({ value: t, label: t.replace(/_/g, " ") })) },
+      { key: "country", label: "Tutti i paesi", options: countries.map((c) => ({ value: c, label: c })) },
+    ];
+  }, [projects]);
+
+  const filteredProjects = useMemo(() => {
+    let result = projects;
+    const q = search.toLowerCase().trim();
+    if (q) result = result.filter((p) => p.name.toLowerCase().includes(q));
+    if (activeFilters.type) result = result.filter((p) => p.type === activeFilters.type);
+    if (activeFilters.country) result = result.filter((p) => p.country === activeFilters.country);
+    return result;
+  }, [projects, search, activeFilters]);
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold text-warm-800">Progetti</h1>
         <div className="flex items-center gap-2">
           <button
@@ -93,6 +114,17 @@ export default function AdminProjectsPage() {
       {loading ? (
         <div className="text-warm-400">Caricamento...</div>
       ) : (
+        <>
+        <AdminListFilters
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Cerca progetto..."
+          filters={filters}
+          activeFilters={activeFilters}
+          onFilterChange={(key, value) => setActiveFilters((prev) => ({ ...prev, [key]: value }))}
+          totalCount={projects.length}
+          filteredCount={filteredProjects.length}
+        />
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 border-b border-warm-200">
@@ -105,7 +137,7 @@ export default function AdminProjectsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
-              {projects.map((p) => (
+              {filteredProjects.map((p) => (
                 <tr key={p.id} className="hover:bg-warm-50 transition-colors">
                   <td className="px-6 py-3">
                     <div className="w-12 h-12 relative rounded overflow-hidden bg-warm-100">
@@ -131,10 +163,11 @@ export default function AdminProjectsPage() {
               ))}
             </tbody>
           </table>
-          {projects.length === 0 && (
+          {filteredProjects.length === 0 && (
             <div className="text-center py-12 text-warm-400">Nessun progetto trovato</div>
           )}
         </div>
+        </>
       )}
     </div>
   );

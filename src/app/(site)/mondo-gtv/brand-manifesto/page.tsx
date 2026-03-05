@@ -1,0 +1,276 @@
+import Image from "next/image";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Brand Manifesto | Gebrüder Thonet Vienna",
+  description:
+    "Born in Vienna. Made in Italy. Designed around the world. Scopri la storia e i valori di GTV.",
+};
+
+const RELATED_PAGES = [
+  { page: "heritage", label: "Heritage", href: "/mondo-gtv/heritage" },
+  {
+    page: "curvatura-legno",
+    label: "La Curvatura del Legno",
+    href: "/mondo-gtv/curvatura-legno",
+  },
+  {
+    page: "sostenibilita",
+    label: "Sostenibilit\u00e0",
+    href: "/mondo-gtv/sostenibilita",
+  },
+];
+
+export default async function BrandManifestoPage() {
+  // Fetch cover images for related pages
+  const relatedSlides = await prisma.heroSlide.findMany({
+    where: {
+      page: { in: RELATED_PAGES.map((p) => p.page) },
+      isActive: true,
+    },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  const slidesByPage = new Map<string, (typeof relatedSlides)[0]>();
+  for (const slide of relatedSlides) {
+    if (!slidesByPage.has(slide.page)) {
+      slidesByPage.set(slide.page, slide);
+    }
+  }
+
+  // Fetch first 9 designers from DB (3x3 grid)
+  const designers = await prisma.designer.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: "asc" },
+    select: { id: true, name: true, slug: true, imageUrl: true },
+    take: 9,
+  });
+
+  return (
+    <>
+      {/* ── Title Section (no hero image) ─────────────────────────── */}
+      <section className="pt-16 md:pt-24 lg:pt-32 pb-12 md:pb-16">
+        <div className="gtv-container-narrow text-center">
+          <p className="label-text mb-6 md:mb-8">Brand Manifesto</p>
+          <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-dark leading-[1.2] tracking-tight">
+            <em>Born</em> in Vienna.
+            <br />
+            Made in <em>Italy.</em>
+            <br />
+            <em>Designed</em> around the world.
+          </h1>
+        </div>
+      </section>
+
+      {/* ── Intro paragraph ───────────────────────────────────────── */}
+      <section className="pb-20 md:pb-28">
+        <div className="gtv-container-narrow">
+          <p className="text-lg text-dark leading-[1.8] font-light">
+            Ogni parola riflette una parte fondamentale della nostra essenza: la
+            nostra origine storica, l&apos;eccellenza artigianale e la nostra
+            visione globale. Non &egrave; semplicemente un claim, ma un viaggio
+            che attraversa il tempo, la cultura e le tradizioni, per raccontare
+            un brand che nasce in un angolo dell&apos;Europa, si esprime in un
+            altro e si proietta verso il mondo intero. Ogni nostro prodotto
+            &egrave; un simbolo di questa fusione: un&apos;unione tra passato e
+            futuro, artigianato e design contemporaneo, locale e globale.
+          </p>
+        </div>
+      </section>
+
+      {/* ── Our Heritage – Born in Vienna ──────────────────────────── */}
+      <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "100vh" }}>
+          {/* Left: historical image — 50% width, full height */}
+          <div className="relative bg-warm-200 min-h-[400px]">
+            <Image
+              src="/images/michael-thonet-1853.jpg"
+              alt="Michael Thonet 1853 — Gebrüder Thonet"
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+            />
+          </div>
+
+          {/* Right: text — 50% width, vertically centered, generous padding */}
+          <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
+            <p className="label-text mb-1.5">Our Heritage</p>
+            <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark leading-[1.15] uppercase tracking-wide font-light">
+              Born in Vienna
+            </h2>
+            <p className="text-lg text-dark leading-[1.8] font-light mt-5">
+              La tradizione viennese, intrisa di arte e ingegno, &egrave; il
+              nostro fondamento, un&apos;eredit&agrave; che ci accompagna in ogni
+              creazione. Ma non ci fermiamo qui: il nostro sapere artigianale non
+              &egrave; mai statico, evolve e si rinnova per raccontare storie
+              nuove.
+            </p>
+            <Link
+              href="/mondo-gtv/heritage"
+              className="inline-flex items-center gap-2 mt-6 uppercase text-sm tracking-[0.15em] font-light text-dark hover:opacity-60 transition-opacity"
+            >
+              Le nostre origini
+              <span className="text-lg">&rarr;</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── La Produzione – Made in Italy ──────────────────────────── */}
+      <section className="section-padding">
+        <div className="gtv-container-narrow">
+          <p className="label-text mb-1.5">La Produzione</p>
+          <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark mb-8 uppercase tracking-wide font-light">
+            Made in Italy
+          </h2>
+          <p className="text-lg text-dark leading-[1.8] font-light">
+            L&apos;incontro perfetto tra la nostra eredit&agrave; e la maestria
+            artigianale italiana. In Italia, dove il design &egrave;
+            un&apos;arte quotidiana, ogni prodotto nasce dall&apos;incontro di
+            materiali pregiati e abilit&agrave; artigianali che definiscono una
+            qualit&agrave; senza tempo. Qui, la bellezza si mescola con la
+            funzionalit&agrave;, creando pezzi che diventano iconici e
+            resistenti, destinati a durare.
+          </p>
+        </div>
+      </section>
+
+      {/* ── L'Armonia del Legno (VIDEO) ────────────────────────────── */}
+      <section className="relative w-full" style={{ height: "90vh" }}>
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover brightness-[0.45]"
+        >
+          <source src="/images/armonia-del-legno.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute top-12 md:top-16 lg:top-20 left-8 md:left-16 lg:left-20 max-w-lg">
+          <h2 className="font-sans text-2xl md:text-3xl lg:text-[2.5rem] text-white font-light uppercase tracking-wide leading-snug">
+            L&apos;armonia del legno
+          </h2>
+          <Link
+            href="/mondo-gtv/curvatura-legno"
+            className="inline-flex items-center gap-2 mt-4 md:mt-5 uppercase text-sm tracking-[0.15em] font-light text-white/80 hover:text-white transition-colors"
+          >
+            Scopri l&apos;arte del legno curvato
+            <span className="text-lg">&rarr;</span>
+          </Link>
+        </div>
+      </section>
+
+      {/* ── I Nostri Designer – Designed Around the World ─────────── */}
+      <section className="w-full bg-warm-50 mt-20 md:mt-28" style={{ minHeight: "100vh" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0" style={{ minHeight: "100vh" }}>
+          {/* Left: text — 50%, vertically centered, same style as Heritage */}
+          <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
+            <p className="label-text mb-1.5">I Nostri Designer</p>
+            <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark leading-[1.15] mb-6 uppercase tracking-wide font-light">
+              Designed around
+              <br />
+              the world
+            </h2>
+            <p className="text-lg text-dark leading-[1.8] font-light">
+              Collaboriamo con alcuni dei pi&ugrave; grandi maestri del design
+              contemporaneo, provenienti da culture e background diversi, per
+              reinterpretare la nostra eredit&agrave; con uno sguardo sempre
+              nuovo. Ogni pezzo &egrave; il risultato di un dialogo tra
+              passato e futuro, tra il saper fare artigianale e
+              l&apos;innovazione estetica, dando vita a collezioni che si
+              inseriscono con naturalezza in contesti internazionali: un
+              racconto che continua a evolversi, senza mai perdere la propria
+              identit&agrave;.
+            </p>
+          </div>
+
+          {/* Right: 3x3 designer grid — 50%, fills entire right half, vertical images */}
+          <div className="grid grid-cols-3 grid-rows-3 gap-3 md:gap-4">
+            {designers.map((designer) => (
+              <Link
+                key={designer.id}
+                href={`/designers/${designer.slug}`}
+                className="group relative bg-warm-200 overflow-hidden"
+              >
+                {designer.imageUrl ? (
+                  <Image
+                    src={designer.imageUrl}
+                    alt={designer.name}
+                    fill
+                    className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                    sizes="(max-width: 768px) 33vw, 17vw"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="font-serif text-4xl text-warm-300">
+                      {designer.name.charAt(0)}
+                    </span>
+                  </div>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
+      <section className="py-20 md:py-28">
+        <div className="mx-auto w-[90%] max-w-[75%]">
+          <h3 className="text-center font-sans text-base md:text-lg uppercase tracking-[0.15em] text-dark mb-12">
+            Potrebbe interessarti anche
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {RELATED_PAGES.map((rp) => {
+              const slide = slidesByPage.get(rp.page);
+              const coverSrc =
+                slide?.coverImage || slide?.imageUrl || null;
+              return (
+                <Link key={rp.page} href={rp.href} className="group block">
+                  <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
+                    {coverSrc ? (
+                      <Image
+                        src={coverSrc}
+                        alt={rp.label}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-warm-200" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 flex items-end p-6">
+                      <h4 className="font-sans text-sm md:text-base uppercase tracking-[0.15em] text-white font-light">
+                        {rp.label}
+                      </h4>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Breadcrumbs ───────────────────────────────────────────── */}
+      <div className="gtv-container pb-12">
+        <nav className="flex items-center gap-2 text-xs text-warm-400">
+          <Link href="/" className="hover:text-warm-800 transition-colors">
+            Home
+          </Link>
+          <span>&gt;</span>
+          <Link
+            href="/mondo-gtv"
+            className="hover:text-warm-800 transition-colors"
+          >
+            Mondo GTV
+          </Link>
+          <span>&gt;</span>
+          <span className="text-warm-600">Brand Manifesto</span>
+        </nav>
+      </div>
+    </>
+  );
+}

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Upload } from "lucide-react";
 import { slugify } from "@/lib/utils";
+import RichTextEditor from "./RichTextEditor";
+import SeoPanel from "./SeoPanel";
 
 interface DesignerFormProps {
   designerId?: string;
@@ -22,6 +24,9 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
     bio: "",
     imageUrl: "",
     website: "",
+    seoTitle: "",
+    seoDescription: "",
+    seoKeywords: "[]",
   });
 
   const loadDesigner = useCallback(async () => {
@@ -37,6 +42,9 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
         bio: d.bio || "",
         imageUrl: d.imageUrl || "",
         website: d.website || "",
+        seoTitle: d.seoTitle || "",
+        seoDescription: d.seoDescription || "",
+        seoKeywords: d.seoKeywords || "[]",
       });
     }
   }, [designerId]);
@@ -51,12 +59,24 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
     }));
   };
 
+  const handleSlugChange = (value: string) => {
+    // Allow letters, numbers, hyphens — normalize as user types
+    const normalized = value
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
+    setForm((prev) => ({ ...prev, slug: normalized }));
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("purpose", "cover");
+    formData.append("folder", "designers");
     try {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
@@ -131,8 +151,9 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
             <input
               type="text"
               value={form.slug}
-              onChange={(e) => updateField("slug", e.target.value)}
+              onChange={(e) => handleSlugChange(e.target.value)}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none"
+              placeholder="es. nome-cognome"
             />
           </div>
           <div>
@@ -148,17 +169,11 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            Biografia
-          </label>
-          <textarea
-            value={form.bio}
-            onChange={(e) => updateField("bio", e.target.value)}
-            rows={4}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-          />
-        </div>
+        <RichTextEditor
+          label="Biografia"
+          value={form.bio}
+          onChange={(html) => updateField("bio", html)}
+        />
 
         {/* Image upload */}
         <div>
@@ -202,6 +217,21 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
           />
         </div>
       </div>
+
+      <SeoPanel
+        seoTitle={form.seoTitle}
+        seoDescription={form.seoDescription}
+        seoKeywords={(() => { try { return JSON.parse(form.seoKeywords); } catch { return []; } })()}
+        slug={form.slug}
+        content={form.bio}
+        onChange={(field, value) => {
+          if (field === "seoKeywords") {
+            updateField("seoKeywords", JSON.stringify(value));
+          } else {
+            updateField(field, value as string);
+          }
+        }}
+      />
 
       <div className="flex gap-3">
         <button

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -92,22 +92,35 @@ async function importPointsOfSale(items: any[], type: string) {
   return count;
 }
 
+async function importNews(items: any[]) {
+  let count = 0;
+  for (const item of items) {
+    const { id, createdAt, updatedAt, ...data } = item;
+    await prisma.newsArticle.upsert({
+      where: { slug: data.slug },
+      update: data,
+      create: data,
+    });
+    count++;
+  }
+  return count;
+}
+
 const IMPORT_MAP: Record<string, (items: any[]) => Promise<number>> = {
   products: importProducts,
   projects: importProjects,
   designers: importDesigners,
   campaigns: importCampaigns,
   awards: importAwards,
+  news: importNews,
   "hero-slides": importHeroSlides,
   stores: (items) => importPointsOfSale(items, "STORE"),
   agents: (items) => importPointsOfSale(items, "AGENT"),
 };
 
 export async function POST(req: Request, { params }: { params: { contentType: string } }) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("import_export", "create");
+  if (isErrorResponse(result)) return result;
 
   const importer = IMPORT_MAP[params.contentType];
   if (!importer) {

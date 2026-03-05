@@ -2,8 +2,9 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { Upload, X, Loader2, ImageIcon } from "lucide-react";
+import { Upload, X, Loader2, ImageIcon, Crop } from "lucide-react";
 import MediaPickerModal from "./MediaPickerModal";
+import ImageCropModal from "./ImageCropModal";
 
 interface ImageUploadFieldProps {
   label: string;
@@ -13,6 +14,8 @@ interface ImageUploadFieldProps {
   purpose?: string;
   folder?: string;
   helpText?: string;
+  recommendedSize?: string; // e.g. "960x1200px"
+  aspectRatio?: number; // width/height — enables crop tool
 }
 
 export default function ImageUploadField({
@@ -23,19 +26,23 @@ export default function ImageUploadField({
   purpose = "general",
   folder = "general",
   helpText,
+  recommendedSize,
+  aspectRatio,
 }: ImageUploadFieldProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [skipCompression, setSkipCompression] = useState(false);
   const [uploadInfo, setUploadInfo] = useState<{ size?: number; originalSize?: number; width?: number; height?: number } | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [cropSrc, setCropSrc] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpload = async (file: File) => {
+  const uploadBlob = async (blob: Blob, filename: string) => {
     setUploading(true);
     setUploadInfo(null);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", blob, filename);
     formData.append("purpose", purpose);
     formData.append("folder", folder);
     if (skipCompression) formData.append("skipCompression", "true");
@@ -53,6 +60,51 @@ export default function ImageUploadField({
       }
     } catch { /* silent */ } finally {
       setUploading(false);
+    }
+  };
+
+  const handleUpload = async (file: File) => {
+    // If aspectRatio is set, check if image needs cropping
+    if (aspectRatio) {
+      const url = URL.createObjectURL(file);
+      const img = new window.Image();
+      img.onload = () => {
+        const currentRatio = img.naturalWidth / img.naturalHeight;
+        const tolerance = 0.15; // 15% tolerance
+        if (Math.abs(currentRatio - aspectRatio) / aspectRatio > tolerance) {
+          // Needs cropping — show crop modal
+          setCropSrc(url);
+          setCropOpen(true);
+        } else {
+          // Aspect ratio is close enough — upload directly
+          URL.revokeObjectURL(url);
+          uploadBlob(file, file.name);
+        }
+      };
+      img.src = url;
+      return;
+    }
+    uploadBlob(file, file.name);
+  };
+
+  const handleCrop = (blob: Blob) => {
+    setCropOpen(false);
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc("");
+    uploadBlob(blob, `cropped-${Date.now()}.png`);
+  };
+
+  const handleCropClose = () => {
+    setCropOpen(false);
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc("");
+  };
+
+  // Manual crop on existing image
+  const handleManualCrop = () => {
+    if (value && aspectRatio) {
+      setCropSrc(value);
+      setCropOpen(true);
     }
   };
 
@@ -86,20 +138,37 @@ export default function ImageUploadField({
       <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
         {label}
       </label>
-      {helpText && <p className="text-[10px] text-warm-400 mb-2">{helpText}</p>}
+      {helpText && <p className="text-[10px] text-warm-400 mb-1">{helpText}</p>}
+      {recommendedSize && (
+        <p className="text-[10px] text-warm-500 mb-2 font-medium">
+          Dimensione consigliata: {recommendedSize}
+        </p>
+      )}
 
       {value ? (
         <div className="relative group">
           <div className="relative w-full h-40 rounded-lg overflow-hidden bg-warm-100 border border-warm-200">
-            <Image src={value} alt={label} fill className="object-contain" sizes="400px" />
+            <Image src={value} alt={label} fill className="object-contain" sizes="400px" unoptimized />
           </div>
-          <button
-            type="button"
-            onClick={() => { onRemove(); setUploadInfo(null); }}
-            className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-          >
-            <X size={14} />
-          </button>
+          <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {aspectRatio && (
+              <button
+                type="button"
+                onClick={handleManualCrop}
+                className="w-7 h-7 bg-warm-800 text-white rounded-full flex items-center justify-center hover:bg-warm-900"
+                title="Ritaglia"
+              >
+                <Crop size={13} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => { onRemove(); setUploadInfo(null); }}
+              className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+            >
+              <X size={14} />
+            </button>
+          </div>
           {uploadInfo && (
             <div className="flex gap-3 mt-1.5 text-[10px] text-warm-400">
               {uploadInfo.width && uploadInfo.height && (
@@ -172,6 +241,16 @@ export default function ImageUploadField({
         onClose={() => setPickerOpen(false)}
         onSelect={handleMediaSelect}
       />
+
+      {aspectRatio && (
+        <ImageCropModal
+          open={cropOpen}
+          imageSrc={cropSrc}
+          aspectRatio={aspectRatio}
+          onCrop={handleCrop}
+          onClose={handleCropClose}
+        />
+      )}
     </div>
   );
 }

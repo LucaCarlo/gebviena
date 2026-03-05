@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { readFile } from "fs/promises";
 import path from "path";
 import { processImage } from "@/lib/image";
 import { isS3Configured, uploadToS3, checkS3Connection } from "@/lib/s3";
 
 export async function GET() {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("media", "view");
+  if (isErrorResponse(result)) return result;
 
-  const configured = isS3Configured();
+  const configured = await isS3Configured();
   let connected = false;
   if (configured) {
     connected = await checkS3Connection();
@@ -31,15 +29,13 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("media", "edit");
+  if (isErrorResponse(result)) return result;
 
-  if (!isS3Configured()) {
+  if (!(await isS3Configured())) {
     return NextResponse.json({
       success: false,
-      error: "Wasabi S3 non configurato. Aggiungi le credenziali nel file .env",
+      error: "Wasabi S3 non configurato. Aggiungi le credenziali nelle Impostazioni → Storage Cloud",
     }, { status: 400 });
   }
 

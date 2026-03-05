@@ -26,16 +26,18 @@ export async function GET(req: Request) {
     include: { designer: true },
   });
 
-  // Fetch a random project for the "project reference" section
-  const projectCount = await prisma.project.count({ where: { isActive: true } });
-  const randomSkip = Math.floor(Math.random() * Math.max(projectCount, 1));
-  const project = await prisma.project.findFirst({
-    where: { isActive: true },
-    skip: randomSkip,
+  // Fetch projects that actually use this product
+  const projectLinks = await prisma.projectProduct.findMany({
+    where: { productId: data.id },
+    include: { project: true },
+    take: 4,
   });
+  const projects = projectLinks
+    .map((pp) => pp.project)
+    .filter((p) => p.isActive);
 
   return NextResponse.json({
     success: true,
-    data: { ...data, related, project },
+    data: { ...data, related, projects },
   });
 }

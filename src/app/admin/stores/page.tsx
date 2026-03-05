@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
 import type { PointOfSale } from "@/types";
+import AdminListFilters from "@/components/admin/AdminListFilters";
 
 export default function AdminStoresPage() {
   const [stores, setStores] = useState<PointOfSale[]>([]);
   const [loading, setLoading] = useState(true);
   const importRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
 
   const fetchStores = () => {
     fetch("/api/stores?type=STORE")
@@ -63,9 +66,27 @@ export default function AdminStoresPage() {
     e.target.value = "";
   };
 
+  const filters = useMemo(() => {
+    const countries = Array.from(new Set(stores.map((s) => s.country).filter((v): v is string => !!v))).sort();
+    const cities = Array.from(new Set(stores.map((s) => s.city).filter((v): v is string => !!v))).sort();
+    return [
+      { key: "country", label: "Tutti i paesi", options: countries.map((c) => ({ value: c, label: c })) },
+      { key: "city", label: "Tutte le città", options: cities.map((c) => ({ value: c, label: c })) },
+    ];
+  }, [stores]);
+
+  const filteredStores = useMemo(() => {
+    let result = stores;
+    const q = search.toLowerCase().trim();
+    if (q) result = result.filter((s) => s.name.toLowerCase().includes(q));
+    if (activeFilters.country) result = result.filter((s) => s.country === activeFilters.country);
+    if (activeFilters.city) result = result.filter((s) => s.city === activeFilters.city);
+    return result;
+  }, [stores, search, activeFilters]);
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold text-warm-800">Negozi</h1>
         <div className="flex items-center gap-2">
           <button
@@ -93,6 +114,17 @@ export default function AdminStoresPage() {
       {loading ? (
         <div className="text-warm-400">Caricamento...</div>
       ) : (
+        <>
+        <AdminListFilters
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Cerca negozio..."
+          filters={filters}
+          activeFilters={activeFilters}
+          onFilterChange={(key, value) => setActiveFilters((prev) => ({ ...prev, [key]: value }))}
+          totalCount={stores.length}
+          filteredCount={filteredStores.length}
+        />
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 border-b border-warm-200">
@@ -105,7 +137,7 @@ export default function AdminStoresPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
-              {stores.map((store) => (
+              {filteredStores.map((store) => (
                 <tr key={store.id} className="hover:bg-warm-50 transition-colors">
                   <td className="px-6 py-4 font-medium text-warm-800">{store.name}</td>
                   <td className="px-6 py-4 text-warm-600">{store.city}</td>
@@ -131,10 +163,11 @@ export default function AdminStoresPage() {
               ))}
             </tbody>
           </table>
-          {stores.length === 0 && (
+          {filteredStores.length === 0 && (
             <div className="text-center py-12 text-warm-400">Nessun negozio trovato</div>
           )}
         </div>
+        </>
       )}
     </div>
   );

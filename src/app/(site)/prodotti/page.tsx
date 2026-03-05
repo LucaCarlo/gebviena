@@ -38,12 +38,12 @@ function ProductsHero() {
   // Fallback: static hero if no slides configured
   if (loaded && slides.length === 0) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-100" style={{ height: "calc(100vh - 6rem)" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 6rem)" }}>
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.3 }}
-          className="font-serif text-[46px] md:text-[58px] lg:text-[70px] text-warm-800 tracking-wide"
+          className="font-serif text-[46px] md:text-[58px] lg:text-[70px] text-white tracking-wide"
         >
           Prodotti
         </motion.h1>
@@ -303,7 +303,7 @@ function ProductsContent() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-base md:text-lg text-warm-600 leading-relaxed max-w-4xl mx-auto text-center font-light"
+          className="text-base md:text-lg text-black leading-relaxed max-w-4xl mx-auto text-center font-light"
           style={{ textAlign: "justify" }}
         >
           I prodotti Gebrüder Thonet Vienna uniscono tradizione e innovazione in forme iconiche e senza
@@ -419,15 +419,15 @@ function ProductsContent() {
                       src={product.coverImage || product.imageUrl}
                       alt={product.name}
                       fill
-                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      className="object-cover"
                       sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                     />
                   </div>
                   <div className="mt-4">
-                    <p className="text-[9px] uppercase tracking-[0.15em] text-warm-400 font-normal">
+                    <p className="text-xs uppercase tracking-[0.15em] text-black font-normal">
                       {product.subcategory || (product.category === "CLASSICI" ? "Classici" : product.category?.charAt(0) + product.category?.slice(1).toLowerCase())}
                     </p>
-                    <h3 className="text-sm font-normal uppercase tracking-[0.08em] text-warm-800 mt-1 group-hover:text-warm-500 transition-colors">
+                    <h3 className="text-base md:text-lg font-normal uppercase tracking-[0.08em] text-black mt-1 group-hover:text-warm-500 transition-colors">
                       {product.name}
                     </h3>
                   </div>

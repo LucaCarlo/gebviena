@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { USER_ROLES } from "@/lib/constants";
+
+interface RoleOption {
+  id: string;
+  name: string;
+  label: string;
+}
 
 interface UserFormProps {
   userId?: string;
@@ -12,13 +17,32 @@ export default function UserForm({ userId }: UserFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [roles, setRoles] = useState<RoleOption[]>([]);
   const [form, setForm] = useState({
     email: "",
     name: "",
     role: "editor",
+    roleId: "",
     password: "",
     isActive: true,
   });
+
+  // Load available roles from DB
+  useEffect(() => {
+    fetch("/api/roles")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setRoles(data.data);
+          // Set default roleId to editor if no user loaded
+          if (!userId) {
+            const editor = data.data.find((r: RoleOption) => r.name === "editor");
+            if (editor) setForm((prev) => ({ ...prev, roleId: editor.id, role: editor.name }));
+          }
+        }
+      })
+      .catch(() => {});
+  }, [userId]);
 
   const loadUser = useCallback(async () => {
     if (!userId) return;
@@ -30,6 +54,7 @@ export default function UserForm({ userId }: UserFormProps) {
         email: u.email || "",
         name: u.name || "",
         role: u.role || "editor",
+        roleId: u.roleId || "",
         password: "",
         isActive: u.isActive ?? true,
       });
@@ -43,11 +68,11 @@ export default function UserForm({ userId }: UserFormProps) {
     setLoading(true);
     setError("");
 
-    // Build payload: only include password if it's not blank
     const payload: Record<string, string | boolean> = {
       email: form.email,
       name: form.name,
       role: form.role,
+      roleId: form.roleId,
       isActive: form.isActive,
     };
 
@@ -79,6 +104,15 @@ export default function UserForm({ userId }: UserFormProps) {
 
   const updateField = (field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleRoleChange = (roleId: string) => {
+    const selectedRole = roles.find((r) => r.id === roleId);
+    setForm((prev) => ({
+      ...prev,
+      roleId,
+      role: selectedRole?.name || prev.role,
+    }));
   };
 
   return (
@@ -121,12 +155,13 @@ export default function UserForm({ userId }: UserFormProps) {
             Ruolo *
           </label>
           <select
-            value={form.role}
-            onChange={(e) => updateField("role", e.target.value)}
+            value={form.roleId}
+            onChange={(e) => handleRoleChange(e.target.value)}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
           >
-            {USER_ROLES.map((r) => (
-              <option key={r.value} value={r.value}>{r.label}</option>
+            <option value="">Seleziona ruolo...</option>
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>{r.label}</option>
             ))}
           </select>
         </div>

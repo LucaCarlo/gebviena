@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import bcrypt from "bcryptjs";
 
 export async function GET() {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("users", "view");
+  if (isErrorResponse(result)) return result;
 
   const data = await prisma.adminUser.findMany({
     select: {
@@ -15,6 +13,8 @@ export async function GET() {
       email: true,
       name: true,
       role: true,
+      roleId: true,
+      roleRef: { select: { name: true, label: true } },
       avatar: true,
       isActive: true,
       lastLoginAt: true,
@@ -28,10 +28,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("users", "create");
+  if (isErrorResponse(result)) return result;
 
   try {
     const body = await req.json();

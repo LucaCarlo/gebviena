@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Upload } from "lucide-react";
 import { slugify } from "@/lib/utils";
+import RichTextEditor from "./RichTextEditor";
+import SeoPanel from "./SeoPanel";
 
 interface CampaignFormProps {
   campaignId?: string;
@@ -31,6 +33,9 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
     description: "",
     imageUrl: "",
     videoUrl: "",
+    seoTitle: "",
+    seoDescription: "",
+    seoKeywords: "[]",
   });
 
   useEffect(() => {
@@ -54,6 +59,9 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
         description: c.description || "",
         imageUrl: c.imageUrl || "",
         videoUrl: c.videoUrl || "",
+        seoTitle: c.seoTitle || "",
+        seoDescription: c.seoDescription || "",
+        seoKeywords: c.seoKeywords || "[]",
       });
     }
   }, [campaignId]);
@@ -193,17 +201,11 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            Descrizione
-          </label>
-          <textarea
-            value={form.description}
-            onChange={(e) => updateField("description", e.target.value)}
-            rows={4}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-          />
-        </div>
+        <RichTextEditor
+          label="Descrizione"
+          value={form.description}
+          onChange={(html) => updateField("description", html)}
+        />
 
         {/* Image upload */}
         <div>
@@ -247,6 +249,21 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
           />
         </div>
       </div>
+
+      <SeoPanel
+        seoTitle={form.seoTitle}
+        seoDescription={form.seoDescription}
+        seoKeywords={(() => { try { return JSON.parse(form.seoKeywords); } catch { return []; } })()}
+        slug={form.slug}
+        content={form.description}
+        onChange={(field, value) => {
+          if (field === "seoKeywords") {
+            updateField("seoKeywords", JSON.stringify(value));
+          } else {
+            updateField(field, value as string);
+          }
+        }}
+      />
 
       <div className="flex gap-3">
         <button

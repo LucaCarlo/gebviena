@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Project, HeroSlide } from "@/types";
 
+const ITEMS_PER_PAGE = 16;
 const HERO_AUTOPLAY = 5000;
 
 function ProjectsHero() {
@@ -25,7 +26,6 @@ function ProjectsHero() {
       .catch(() => setLoaded(true));
   }, []);
 
-  // Autoplay
   useEffect(() => {
     if (slides.length <= 1) return;
     const timer = setInterval(() => {
@@ -34,24 +34,24 @@ function ProjectsHero() {
     return () => clearInterval(timer);
   }, [slides.length, current]);
 
-  // Fallback: original static hero
   if (loaded && slides.length === 0) {
     return (
-      <section className="relative h-[calc(100vh-6rem)] flex items-center justify-center bg-warm-900">
-        <Image
-          src="https://images.unsplash.com/photo-1590490360182-c33d57733427?w=1920&h=600&fit=crop"
-          alt="Progetti"
-          fill
-          className="object-cover opacity-30"
-        />
-        <h1 className="relative font-serif text-4xl md:text-5xl text-white">Progetti</h1>
+      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 6rem)" }}>
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.3 }}
+          className="font-serif text-[46px] md:text-[58px] lg:text-[70px] text-white tracking-wide"
+        >
+          Progetti
+        </motion.h1>
       </section>
     );
   }
 
   if (!loaded) {
     return (
-      <section className="relative h-[calc(100vh-6rem)] flex items-center justify-center bg-warm-900">
+      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 6rem)" }}>
         <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
       </section>
     );
@@ -64,13 +64,13 @@ function ProjectsHero() {
     slide.position === "right" ? "items-end text-right pr-8 md:pr-20" :
     "items-center text-center";
 
-  const justifyV =
-    slide.verticalPosition === "top" ? "justify-start pt-12" :
-    slide.verticalPosition === "bottom" ? "justify-end pb-12" :
-    "justify-center";
+  const textAlignV =
+    slide.verticalPosition === "top" ? "top-20 bottom-auto" :
+    slide.verticalPosition === "bottom" ? "bottom-20 top-auto" :
+    "top-1/2 -translate-y-1/2";
 
   return (
-    <section className="relative h-[calc(100vh-6rem)] overflow-hidden">
+    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 6rem)" }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
@@ -94,30 +94,30 @@ function ProjectsHero() {
       {slide.darkOverlay ? (
         <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
       ) : (
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       )}
 
       <AnimatePresence mode="wait">
         <motion.div
           key={`text-${slide.id}`}
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className={`absolute inset-0 flex flex-col ${justifyV} ${textAlignH}`}
+          className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl text-white">
+          <h1 className="font-serif text-[40px] md:text-[50px] lg:text-[60px] text-white tracking-wide">
             {slide.title}
           </h1>
           {slide.subtitle && (
-            <p className="text-sm md:text-base text-white/70 mt-2 max-w-xl">
+            <p className="text-sm md:text-base text-white/70 mt-2 max-w-2xl">
               {slide.subtitle}
             </p>
           )}
           {slide.ctaText && slide.ctaLink && (
             <Link
               href={slide.ctaLink}
-              className="inline-block mt-3 uppercase text-xs tracking-[0.2em] text-white font-medium hover:text-white/80 transition-colors"
+              className="inline-block mt-4 uppercase text-sm tracking-[0.2em] text-white font-medium hover:text-white/80 transition-colors"
             >
               {slide.ctaText} <span className="ml-1">&rarr;</span>
             </Link>
@@ -125,36 +125,34 @@ function ProjectsHero() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Navigation arrows */}
       {slides.length > 1 && (
         <>
           <button
             onClick={() => setCurrent((prev) => (prev - 1 + slides.length) % slides.length)}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/20 backdrop-blur-sm text-white/70 flex items-center justify-center hover:bg-black/40 hover:text-white transition-all z-10"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm text-white/70 flex items-center justify-center hover:bg-black/40 hover:text-white transition-all z-10"
             aria-label="Slide precedente"
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={20} />
           </button>
           <button
             onClick={() => setCurrent((prev) => (prev + 1) % slides.length)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/20 backdrop-blur-sm text-white/70 flex items-center justify-center hover:bg-black/40 hover:text-white transition-all z-10"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm text-white/70 flex items-center justify-center hover:bg-black/40 hover:text-white transition-all z-10"
             aria-label="Slide successivo"
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={20} />
           </button>
         </>
       )}
 
-      {/* Dots */}
       {slides.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
           {slides.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrent(idx)}
               className={`rounded-full transition-all duration-300 ${
                 idx === current
-                  ? "w-5 h-1.5 bg-white"
+                  ? "w-6 h-1.5 bg-white"
                   : "w-1.5 h-1.5 bg-white/40 hover:bg-white/60"
               }`}
               aria-label={`Vai allo slide ${idx + 1}`}
@@ -183,8 +181,31 @@ function ProjectsContent() {
   const [countries, setCountries] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState("");
   const [projectCategories, setProjectCategories] = useState<CategoryItem[]>([]);
+  const separatorRef = useRef<HTMLDivElement>(null);
+  const typeButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [notchX, setNotchX] = useState<number | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
 
-  // Load categories from DB
+  // Calculate notch position when type changes
+  useEffect(() => {
+    const updateNotch = () => {
+      const sep = separatorRef.current;
+      const btn = typeButtonRefs.current[currentType];
+      if (sep && btn) {
+        const sRect = sep.getBoundingClientRect();
+        const bRect = btn.getBoundingClientRect();
+        setNotchX(bRect.left + bRect.width / 2 - sRect.left);
+        setContainerWidth(sRect.width);
+      }
+    };
+    const raf = requestAnimationFrame(updateNotch);
+    window.addEventListener("resize", updateNotch);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", updateNotch);
+    };
+  }, [currentType, projectCategories]);
+
   useEffect(() => {
     fetch("/api/categories?contentType=projects")
       .then((r) => r.json())
@@ -197,7 +218,7 @@ function ProjectsContent() {
     if (currentType !== "TUTTI") params.set("type", currentType);
     if (selectedCountry) params.set("country", selectedCountry);
     params.set("page", currentPage.toString());
-    params.set("limit", "16");
+    params.set("limit", ITEMS_PER_PAGE.toString());
 
     const res = await fetch(`/api/projects?${params}`);
     const data = await res.json();
@@ -210,7 +231,6 @@ function ProjectsContent() {
     fetchProjects();
   }, [fetchProjects]);
 
-  // Fetch all countries for filter
   useEffect(() => {
     fetch("/api/projects?limit=100")
       .then((r) => r.json())
@@ -223,45 +243,69 @@ function ProjectsContent() {
   const setType = (type: string) => {
     const params = new URLSearchParams();
     if (type !== "TUTTI") params.set("type", type);
-    router.push(`/progetti?${params}`);
+    router.push(`/progetti?${params}`, { scroll: false });
   };
 
   const setPage = (page: number) => {
     const params = new URLSearchParams();
     if (currentType !== "TUTTI") params.set("type", currentType);
+    if (selectedCountry) params.set("country", selectedCountry);
     params.set("page", page.toString());
-    router.push(`/progetti?${params}`);
+    router.push(`/progetti?${params}`, { scroll: false });
   };
 
-  // Build type labels from DB categories
   const typeLabels: Record<string, string> = {};
-  projectCategories.forEach((c) => { typeLabels[c.value] = c.label.toUpperCase(); });
+  projectCategories.forEach((c) => { typeLabels[c.value] = c.label; });
+
+  /* Pagination with ellipsis */
+  const getPaginationItems = () => {
+    const items: (number | "...")[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) items.push(i);
+    } else {
+      items.push(1);
+      if (currentPage > 3) items.push("...");
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        items.push(i);
+      }
+      if (currentPage < totalPages - 2) items.push("...");
+      items.push(totalPages);
+    }
+    return items;
+  };
 
   return (
     <>
-      {/* Dynamic Hero */}
       <ProjectsHero />
 
-      {/* Description */}
-      <section className="luxury-container py-12 text-center">
-        <p className="text-sm text-warm-600 leading-relaxed max-w-3xl mx-auto">
+      {/* ===== DESCRIPTION ===== */}
+      <section className="gtv-container py-14 md:py-20">
+        <motion.p
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-base md:text-lg text-black leading-relaxed max-w-4xl mx-auto text-center font-light"
+          style={{ textAlign: "justify" }}
+        >
           Uno sguardo sulle nostre realizzazioni nel mondo. Dai bistrot più ricercati agli hotel
           d&apos;avanguardia, dagli spazi culturali ai contesti residenziali, i nostri arredi contribuiscono a
           definire atmosfere inconfondibili. In questa sezione raccogliamo una selezione di progetti
           che raccontano come la nostra estetica e la nostra storia si intrecciano con le visioni di
           architetti e interior designer contemporanei.
-        </p>
+        </motion.p>
       </section>
 
-      {/* Type tabs */}
-      <section className="luxury-container pb-4">
-        <div className="flex flex-wrap gap-4 justify-center">
+      {/* ===== FILTERS SECTION ===== */}
+      <div className="gtv-container">
+        <div className="flex flex-wrap gap-6 md:gap-8 justify-center pb-6">
           <button
+            ref={(el) => { typeButtonRefs.current["TUTTI"] = el; }}
             onClick={() => setType("TUTTI")}
-            className={`text-xs font-medium uppercase tracking-[0.15em] pb-2 transition-colors ${
+            className={`text-sm tracking-[0.06em] text-dark pb-1 transition-all border-b ${
               currentType === "TUTTI"
-                ? "text-warm-800 border-b-2 border-warm-800"
-                : "text-warm-400 hover:text-warm-600"
+                ? "border-dark"
+                : "border-transparent hover:border-warm-400"
             }`}
           >
             Tutti
@@ -269,57 +313,98 @@ function ProjectsContent() {
           {projectCategories.map((cat) => (
             <button
               key={cat.value}
+              ref={(el) => { typeButtonRefs.current[cat.value] = el; }}
               onClick={() => setType(cat.value)}
-              className={`text-xs font-medium uppercase tracking-[0.15em] pb-2 transition-colors ${
+              className={`text-sm tracking-[0.06em] text-dark pb-1 transition-all border-b ${
                 currentType === cat.value
-                  ? "text-warm-800 border-b-2 border-warm-800"
-                  : "text-warm-400 hover:text-warm-600"
+                  ? "border-dark"
+                  : "border-transparent hover:border-warm-400"
               }`}
             >
               {cat.label}
             </button>
           ))}
         </div>
-      </section>
 
-      {/* Dropdown filters */}
-      <section className="luxury-container pb-8">
-        <div className="flex flex-wrap gap-4 justify-center">
-          <select
-            value={selectedCountry}
-            onChange={(e) => setSelectedCountry(e.target.value)}
-            className="border border-warm-300 rounded px-4 py-2 text-xs text-warm-600 focus:outline-none focus:border-warm-800"
-          >
-            <option value="">Filtra per Paese</option>
-            {countries.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+        {/* Separator with notch */}
+        <div className="relative h-[14px]" ref={separatorRef}>
+          {containerWidth > 0 && (
+            <svg
+              className="absolute bottom-0 left-0 w-full"
+              height="14"
+              style={{ overflow: "visible" }}
+            >
+              <path
+                d={
+                  notchX !== null
+                    ? `M0 13.5 L${notchX - 10} 13.5 L${notchX} 2 L${notchX + 10} 13.5 L${containerWidth} 13.5`
+                    : `M0 13.5 L${containerWidth} 13.5`
+                }
+                stroke="#000"
+                strokeWidth="1"
+                fill="none"
+              />
+            </svg>
+          )}
+          {containerWidth === 0 && (
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-dark" />
+          )}
         </div>
-      </section>
 
-      {/* Project Grid */}
-      <section className="luxury-container pb-20">
+        {/* Country filter pills */}
+        {countries.length > 0 && (
+          <div className="pt-5 pb-2">
+            <div className="flex flex-wrap gap-3 justify-center">
+              {selectedCountry && (
+                <button
+                  onClick={() => setSelectedCountry("")}
+                  className="px-4 py-1.5 rounded-full text-xs uppercase tracking-[0.1em] transition-all bg-warm-100 text-dark hover:bg-warm-200"
+                >
+                  Tutti i paesi
+                </button>
+              )}
+              {countries.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setSelectedCountry(selectedCountry === c ? "" : c)}
+                  className={`px-4 py-1.5 rounded-full text-xs uppercase tracking-[0.1em] transition-all ${
+                    selectedCountry === c
+                      ? "bg-dark text-white"
+                      : "bg-warm-100 text-dark hover:bg-warm-200"
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ===== PROJECT GRID ===== */}
+      <section className="gtv-container py-12 md:py-16">
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10 md:gap-x-8 md:gap-y-14">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="aspect-square bg-warm-200 rounded" />
-                <div className="h-3 bg-warm-200 rounded mt-3 w-20" />
-                <div className="h-4 bg-warm-200 rounded mt-2 w-32" />
+                <div className="aspect-square bg-warm-100" />
+                <div className="h-2 bg-warm-100 mt-4 w-16" />
+                <div className="h-3 bg-warm-100 mt-2 w-28" />
               </div>
             ))}
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
-              {projects.map((project) => (
-                <Link
-                  key={project.id}
-                  href={`/progetti?type=${project.type}`}
-                  className="group"
-                >
-                  <div className="image-hover aspect-square relative bg-warm-100 rounded-sm">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10 md:gap-x-8 md:gap-y-14">
+            {projects.map((project, i) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: (i % 4) * 0.05 }}
+              >
+                <Link href={`/progetti/${project.slug}`} className="group block">
+                  <div className="relative aspect-square bg-warm-50 overflow-hidden">
                     <Image
                       src={project.imageUrl}
                       alt={project.name}
@@ -328,43 +413,58 @@ function ProjectsContent() {
                       sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                     />
                   </div>
-                  <div className="mt-3">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-warm-400">
+                  <div className="mt-4">
+                    <p className="text-xs uppercase tracking-[0.15em] text-black font-normal">
                       {typeLabels[project.type] || project.type}
                     </p>
-                    <h3 className="text-sm font-medium text-warm-800 mt-0.5 group-hover:text-brand-500 transition-colors">
+                    <h3 className="text-base md:text-lg font-normal uppercase tracking-[0.08em] text-black mt-1 group-hover:text-warm-500 transition-colors">
                       {project.name}
                     </h3>
                   </div>
                 </Link>
-              ))}
-            </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-12">
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setPage(i + 1)}
-                    className={`w-8 h-8 rounded-full text-xs transition-colors ${
-                      currentPage === i + 1
-                        ? "bg-warm-800 text-white"
-                        : "text-warm-500 hover:bg-warm-200"
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-            )}
+        {!loading && projects.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-warm-400 text-sm">Nessun progetto trovato per questa selezione.</p>
+          </div>
+        )}
 
-            {projects.length === 0 && !loading && (
-              <div className="text-center py-12 text-warm-400">Nessun progetto trovato</div>
+        {/* ===== PAGINATION ===== */}
+        {totalPages > 1 && !loading && (
+          <div className="flex items-center justify-center gap-3 mt-16">
+            {getPaginationItems().map((item, i) =>
+              item === "..." ? (
+                <span key={`ellipsis-${i}`} className="text-xs text-warm-400 px-1">&hellip;</span>
+              ) : (
+                <button
+                  key={item}
+                  onClick={() => setPage(item as number)}
+                  className={`w-9 h-9 rounded-full text-xs transition-colors border ${
+                    currentPage === item
+                      ? "border-warm-800 text-warm-800"
+                      : "border-transparent text-warm-400 hover:text-warm-700"
+                  }`}
+                >
+                  {item}
+                </button>
+              )
             )}
-          </>
+          </div>
         )}
       </section>
+
+      {/* ===== BREADCRUMBS ===== */}
+      <div className="gtv-container pb-12">
+        <div className="flex items-center justify-start gap-2 text-[10px] uppercase tracking-[0.15em] text-warm-400">
+          <Link href="/" className="hover:text-warm-700 transition-colors">Home</Link>
+          <ChevronRight size={10} />
+          <span className="text-warm-600">Progetti</span>
+        </div>
+      </div>
     </>
   );
 }

@@ -19,6 +19,7 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
     ctaText: "",
     ctaLink: "",
     imageUrl: "",
+    coverImage: "",
     videoUrl: "",
     position: "center",
     verticalPosition: "center",
@@ -41,6 +42,7 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
         ctaText: s.ctaText || "",
         ctaLink: s.ctaLink || "",
         imageUrl: s.imageUrl || "",
+        coverImage: s.coverImage || "",
         videoUrl: s.videoUrl || "",
         position: s.position || "center",
         verticalPosition: s.verticalPosition || "center",
@@ -164,13 +166,24 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
 
         {/* Image upload using ImageUploadField */}
         <ImageUploadField
-          label="Immagine"
+          label="Immagine Hero"
           value={form.imageUrl}
           onChange={(url) => updateField("imageUrl", url)}
           onRemove={() => updateField("imageUrl", "")}
           purpose="hero"
           folder="hero"
           helpText="Immagine di sfondo per lo slide hero"
+        />
+
+        <ImageUploadField
+          label="Immagine di copertina (card)"
+          value={form.coverImage}
+          onChange={(url) => updateField("coverImage", url)}
+          onRemove={() => updateField("coverImage", "")}
+          purpose="hero"
+          folder="hero"
+          helpText="Immagine ridotta usata come card nella sezione 'Potrebbe interessarti anche'"
+          recommendedSize="800x500px"
         />
 
         <div>

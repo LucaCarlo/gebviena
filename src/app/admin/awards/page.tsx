@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
 import type { Award } from "@/types";
+import AdminListFilters from "@/components/admin/AdminListFilters";
 
 export default function AdminAwardsPage() {
   const [awards, setAwards] = useState<Award[]>([]);
   const [loading, setLoading] = useState(true);
   const importRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
 
   const fetchAwards = () => {
     fetch("/api/awards")
@@ -63,9 +66,27 @@ export default function AdminAwardsPage() {
     e.target.value = "";
   };
 
+  const filters = useMemo(() => {
+    const years = Array.from(new Set(awards.map((a) => a.year).filter((v): v is number => !!v))).sort((a, b) => b - a);
+    const orgs = Array.from(new Set(awards.map((a) => a.organization).filter((v): v is string => !!v))).sort();
+    return [
+      { key: "year", label: "Tutti gli anni", options: years.map((y) => ({ value: String(y), label: String(y) })) },
+      { key: "organization", label: "Tutte le organizzazioni", options: orgs.map((o) => ({ value: o, label: o })) },
+    ];
+  }, [awards]);
+
+  const filteredAwards = useMemo(() => {
+    let result = awards;
+    const q = search.toLowerCase().trim();
+    if (q) result = result.filter((a) => a.name.toLowerCase().includes(q) || a.productName?.toLowerCase().includes(q));
+    if (activeFilters.year) result = result.filter((a) => String(a.year) === activeFilters.year);
+    if (activeFilters.organization) result = result.filter((a) => a.organization === activeFilters.organization);
+    return result;
+  }, [awards, search, activeFilters]);
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold text-warm-800">Premi</h1>
         <div className="flex items-center gap-2">
           <button
@@ -93,6 +114,17 @@ export default function AdminAwardsPage() {
       {loading ? (
         <div className="text-warm-400">Caricamento...</div>
       ) : (
+        <>
+        <AdminListFilters
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Cerca premio o prodotto..."
+          filters={filters}
+          activeFilters={activeFilters}
+          onFilterChange={(key, value) => setActiveFilters((prev) => ({ ...prev, [key]: value }))}
+          totalCount={awards.length}
+          filteredCount={filteredAwards.length}
+        />
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 border-b border-warm-200">
@@ -105,7 +137,7 @@ export default function AdminAwardsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
-              {awards.map((a) => (
+              {filteredAwards.map((a) => (
                 <tr key={a.id} className="hover:bg-warm-50 transition-colors">
                   <td className="px-6 py-4 font-medium text-warm-800">{a.name}</td>
                   <td className="px-6 py-4 text-warm-600">{a.productName || "—"}</td>
@@ -125,10 +157,11 @@ export default function AdminAwardsPage() {
               ))}
             </tbody>
           </table>
-          {awards.length === 0 && (
+          {filteredAwards.length === 0 && (
             <div className="text-center py-12 text-warm-400">Nessun premio trovato</div>
           )}
         </div>
+        </>
       )}
     </div>
   );

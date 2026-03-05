@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { processImage, getWebpFilename, type ImagePurpose } from "@/lib/image";
 import { isS3Configured, uploadToS3 } from "@/lib/s3";
 
 export async function GET(req: NextRequest) {
+  const result = await requirePermission("media", "view");
+  if (isErrorResponse(result)) return result;
+
   const { searchParams } = new URL(req.url);
   const folder = searchParams.get("folder");
   const search = searchParams.get("search");
@@ -26,10 +29,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: Request) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("media", "create");
+  if (isErrorResponse(result)) return result;
 
   try {
     const formData = await req.formData();
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
       const mdName = `${timestamp}-md-${webpName}`;
       const thName = `${timestamp}-thumb-${webpName}`;
 
-      if (isS3Configured()) {
+      if (await isS3Configured()) {
         const key = `${folder}/${filename}`;
         wasabiUrl = await uploadToS3(processed, key, "image/webp");
         wasabiKey = key;
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
       width = meta.width || null;
       height = meta.height || null;
 
-      if (isS3Configured()) {
+      if (await isS3Configured()) {
         const key = `${folder}/${filename}`;
         wasabiUrl = await uploadToS3(buffer, key, file.type);
         wasabiKey = key;
@@ -113,7 +114,7 @@ export async function POST(req: Request) {
       filename = `${timestamp}-${sanitizedName}`;
       finalSize = buffer.length;
 
-      if (isS3Configured()) {
+      if (await isS3Configured()) {
         const key = `${folder}/${filename}`;
         wasabiUrl = await uploadToS3(buffer, key, file.type);
         wasabiKey = key;

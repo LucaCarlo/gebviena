@@ -48,6 +48,13 @@ const TYPOLOGY_CATEGORIES: Record<string, string[]> = {
   OUTDOOR: ["Sedie", "Tavoli da bar"],
 };
 
+const NEWS_CATEGORIES = [
+  { value: "exhibition", label: "Exhibition", sortOrder: 1 },
+  { value: "news", label: "News", sortOrder: 2 },
+  { value: "rassegna-stampa", label: "Rassegna stampa", sortOrder: 3 },
+  { value: "storia", label: "Storia", sortOrder: 4 },
+];
+
 const PROJECT_TYPOLOGIES = [
   { value: "BISTROT_RESTAURANT", label: "Bistrot & Restaurant", sortOrder: 1 },
   { value: "HOTELLERIE", label: "Hotellerie", sortOrder: 2 },
@@ -58,10 +65,20 @@ const PROJECT_TYPOLOGIES = [
 async function main() {
   console.log("Seeding content taxonomy...");
 
+  // Always upsert news categories (re-runnable)
+  for (const c of NEWS_CATEGORIES) {
+    await prisma.contentCategory.upsert({
+      where: { contentType_value: { contentType: "news", value: c.value } },
+      update: { label: c.label, sortOrder: c.sortOrder },
+      create: { contentType: "news", ...c },
+    });
+  }
+  console.log(`Upserted ${NEWS_CATEGORIES.length} news categories`);
+
   // Check if already seeded
   const existing = await prisma.contentTypology.count();
   if (existing > 0) {
-    console.log("Taxonomy already seeded, skipping.");
+    console.log("Taxonomy already seeded, skipping rest.");
     return;
   }
 

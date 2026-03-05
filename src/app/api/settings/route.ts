@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
+import { invalidateS3Cache } from "@/lib/s3";
 
 export async function GET(req: NextRequest) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("settings", "view");
+  if (isErrorResponse(result)) return result;
 
   const { searchParams } = new URL(req.url);
   const group = searchParams.get("group");
@@ -20,10 +19,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("settings", "edit");
+  if (isErrorResponse(result)) return result;
 
   try {
     const body = await req.json();
@@ -41,6 +38,12 @@ export async function POST(req: NextRequest) {
         create: { key: s.key, value: s.value, group: s.group },
       });
       results.push(result);
+    }
+
+    // Invalidate S3 cache if storage settings were changed
+    const hasStorageSettings = settings.some((s: { group: string }) => s.group === "storage");
+    if (hasStorageSettings) {
+      invalidateS3Cache();
     }
 
     return NextResponse.json({ success: true, data: results });

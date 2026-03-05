@@ -144,7 +144,9 @@ function SmtpTab({ showToast }: { showToast: (m: string, t: "success" | "error")
     smtp_pass: "",
     smtp_from_name: "",
     smtp_from_email: "",
+    admin_email: "",
   });
+  const [testEmail, setTestEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
 
@@ -188,7 +190,11 @@ function SmtpTab({ showToast }: { showToast: (m: string, t: "success" | "error")
   const handleTest = async () => {
     setTesting(true);
     try {
-      const res = await fetch("/api/settings/test-smtp", { method: "POST" });
+      const res = await fetch("/api/settings/test-smtp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: testEmail || undefined }),
+      });
       const data = await res.json();
       if (data.success) {
         showToast(data.data.message, "success");
@@ -249,17 +255,35 @@ function SmtpTab({ showToast }: { showToast: (m: string, t: "success" | "error")
             <input type="text" value={form.smtp_from_email} onChange={(e) => update("smtp_from_email", e.target.value)} className={inputClass} placeholder="noreply@gtv.it" />
           </div>
         </div>
+
+        <div>
+          <label className={labelClass}>Email amministratore (per notifiche)</label>
+          <input type="email" value={form.admin_email} onChange={(e) => update("admin_email", e.target.value)} className={inputClass} placeholder="admin@gebvienna.com" />
+          <p className="text-xs text-warm-400 mt-1">Riceverà le notifiche di contatto e messaggi dal sito.</p>
+        </div>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap items-end gap-3">
         <button onClick={handleSave} disabled={saving} className={btnPrimary}>
           {saving && <Loader2 size={16} className="animate-spin" />}
           Salva
         </button>
-        <button onClick={handleTest} disabled={testing} className={btnSecondary}>
-          {testing && <Loader2 size={16} className="animate-spin" />}
-          Invia email di test
-        </button>
+        <div className="flex items-end gap-2">
+          <div>
+            <label className={labelClass}>Destinatario test</label>
+            <input
+              type="email"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              className="border border-warm-300 rounded px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800 w-64"
+              placeholder="email@esempio.com"
+            />
+          </div>
+          <button onClick={handleTest} disabled={testing} className={btnSecondary}>
+            {testing && <Loader2 size={16} className="animate-spin" />}
+            Invia email di test
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -271,7 +295,9 @@ function RecaptchaTab({ showToast }: { showToast: (m: string, t: "success" | "er
   const [form, setForm] = useState({
     recaptcha_enabled: "false",
     recaptcha_site_key: "",
-    recaptcha_secret_key: "",
+    recaptcha_api_key: "",
+    recaptcha_project_id: "",
+    recaptcha_score_threshold: "0.5",
   });
   const [saving, setSaving] = useState(false);
 
@@ -313,18 +339,19 @@ function RecaptchaTab({ showToast }: { showToast: (m: string, t: "success" | "er
   };
 
   const update = (key: string, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
+  const threshold = parseFloat(form.recaptcha_score_threshold) || 0.5;
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-warm-800">Configurazione reCAPTCHA</h2>
-        <p className="text-sm text-warm-500 mt-1">Proteggi i form del sito dallo spam con Google reCAPTCHA v3.</p>
+        <h2 className="text-lg font-semibold text-warm-800">Configurazione reCAPTCHA Enterprise</h2>
+        <p className="text-sm text-warm-500 mt-1">Proteggi i form del sito dallo spam con Google reCAPTCHA Enterprise.</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
         <div className="flex items-center gap-3">
           <Toggle checked={form.recaptcha_enabled === "true"} onChange={(v) => update("recaptcha_enabled", v ? "true" : "false")} id="recaptcha_enabled" />
-          <label htmlFor="recaptcha_enabled" className="text-sm text-warm-600">Abilita reCAPTCHA</label>
+          <label htmlFor="recaptcha_enabled" className="text-sm text-warm-600">Abilita reCAPTCHA Enterprise</label>
         </div>
 
         <div>
@@ -333,14 +360,32 @@ function RecaptchaTab({ showToast }: { showToast: (m: string, t: "success" | "er
         </div>
 
         <div>
-          <label className={labelClass}>Secret Key</label>
-          <input type="password" value={form.recaptcha_secret_key} onChange={(e) => update("recaptcha_secret_key", e.target.value)} className={inputClass} placeholder="6Le..." />
+          <label className={labelClass}>API Key</label>
+          <input type="password" value={form.recaptcha_api_key} onChange={(e) => update("recaptcha_api_key", e.target.value)} className={inputClass} placeholder="AIza..." />
+          <p className="text-xs text-warm-400 mt-1">Chiave API di Google Cloud per reCAPTCHA Enterprise.</p>
         </div>
 
-        <div className="bg-warm-50 border border-warm-200 rounded-lg p-4">
-          <p className="text-xs text-warm-600">
-            Le chiavi reCAPTCHA vanno anche aggiunte nel file <code className="bg-warm-200 px-1.5 py-0.5 rounded text-warm-800">.env</code> per il frontend.
-          </p>
+        <div>
+          <label className={labelClass}>Project ID</label>
+          <input type="text" value={form.recaptcha_project_id} onChange={(e) => update("recaptcha_project_id", e.target.value)} className={inputClass} placeholder="my-project-123" />
+          <p className="text-xs text-warm-400 mt-1">ID del progetto Google Cloud.</p>
+        </div>
+
+        <div>
+          <label className={labelClass}>Soglia punteggio ({threshold.toFixed(1)})</label>
+          <input
+            type="range"
+            min="0.1"
+            max="1"
+            step="0.1"
+            value={form.recaptcha_score_threshold}
+            onChange={(e) => update("recaptcha_score_threshold", e.target.value)}
+            className="w-full accent-warm-800"
+          />
+          <div className="flex justify-between text-xs text-warm-400 mt-1">
+            <span>0.1 (permissivo)</span>
+            <span>1.0 (solo umani)</span>
+          </div>
         </div>
       </div>
 
@@ -734,9 +779,9 @@ function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "erro
           </div>
         </div>
 
-        <div className="bg-warm-50 border border-warm-200 rounded-lg p-4">
-          <p className="text-xs text-warm-600">
-            Per attivare Wasabi, configura anche le variabili nel file <code className="bg-warm-200 px-1.5 py-0.5 rounded text-warm-800">.env</code>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <p className="text-xs text-green-700">
+            Inserisci le credenziali qui e salva. La configurazione viene letta direttamente dal database, non serve modificare file di sistema.
           </p>
         </div>
       </div>

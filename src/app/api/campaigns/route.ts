@@ -1,21 +1,36 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
-export async function GET() {
-  const data = await prisma.campaign.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: "asc" },
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const category = searchParams.get("category");
+  const page = parseInt(searchParams.get("page") || "1");
+  const limit = parseInt(searchParams.get("limit") || "16");
+
+  const where: Record<string, unknown> = { isActive: true };
+  if (category && category !== "TUTTI") where.type = category;
+
+  const [data, total] = await Promise.all([
+    prisma.campaign.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.campaign.count({ where }),
+  ]);
+
+  return NextResponse.json({
+    success: true,
+    data,
+    meta: { total, page, totalPages: Math.ceil(total / limit), limit },
   });
-
-  return NextResponse.json({ success: true, data });
 }
 
 export async function POST(req: Request) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("campaigns", "create");
+  if (isErrorResponse(result)) return result;
 
   try {
     const body = await req.json();

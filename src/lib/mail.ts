@@ -8,7 +8,12 @@ async function getSmtpConfig() {
   return config;
 }
 
-export async function sendMail(to: string, subject: string, html: string): Promise<boolean> {
+interface SendMailOptions {
+  fromName?: string;
+  fromEmail?: string;
+}
+
+export async function sendMail(to: string, subject: string, html: string, options?: SendMailOptions): Promise<boolean> {
   try {
     const cfg = await getSmtpConfig();
     if (!cfg.smtp_host || !cfg.smtp_user) return false; // SMTP not configured
@@ -20,8 +25,12 @@ export async function sendMail(to: string, subject: string, html: string): Promi
       auth: { user: cfg.smtp_user, pass: cfg.smtp_pass },
     });
 
+    const fromName = options?.fromName || cfg.smtp_from_name || "GTV";
+    const fromEmail = cfg.smtp_from_email || cfg.smtp_user;
+
     await transporter.sendMail({
-      from: `"${cfg.smtp_from_name || "GTV"}" <${cfg.smtp_from_email || cfg.smtp_user}>`,
+      from: `"${fromName}" <${fromEmail}>`,
+      replyTo: options?.fromEmail ? `"${options.fromName || fromName}" <${options.fromEmail}>` : undefined,
       to,
       subject,
       html,
@@ -40,7 +49,9 @@ export async function sendContactNotification(
   message: string,
   type: string
 ): Promise<void> {
-  const adminEmail = process.env.ADMIN_EMAIL;
+  // Read admin email from DB settings, fallback to env
+  const adminSetting = await prisma.setting.findUnique({ where: { key: "admin_email" } });
+  const adminEmail = adminSetting?.value || process.env.ADMIN_EMAIL;
   if (!adminEmail) return;
 
   const html = `

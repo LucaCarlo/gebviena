@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
 import type { Campaign } from "@/types";
+import AdminListFilters from "@/components/admin/AdminListFilters";
 
 export default function AdminCampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const importRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
 
   const fetchCampaigns = () => {
     fetch("/api/campaigns")
@@ -64,9 +67,24 @@ export default function AdminCampaignsPage() {
     e.target.value = "";
   };
 
+  const filters = useMemo(() => {
+    const years = Array.from(new Set(campaigns.map((c) => c.year).filter((v): v is number => !!v))).sort((a, b) => b - a);
+    return [
+      { key: "year", label: "Tutti gli anni", options: years.map((y) => ({ value: String(y), label: String(y) })) },
+    ];
+  }, [campaigns]);
+
+  const filteredCampaigns = useMemo(() => {
+    let result = campaigns;
+    const q = search.toLowerCase().trim();
+    if (q) result = result.filter((c) => c.name.toLowerCase().includes(q));
+    if (activeFilters.year) result = result.filter((c) => String(c.year) === activeFilters.year);
+    return result;
+  }, [campaigns, search, activeFilters]);
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold text-warm-800">Campagne</h1>
         <div className="flex items-center gap-2">
           <button
@@ -94,6 +112,17 @@ export default function AdminCampaignsPage() {
       {loading ? (
         <div className="text-warm-400">Caricamento...</div>
       ) : (
+        <>
+        <AdminListFilters
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Cerca campagna..."
+          filters={filters}
+          activeFilters={activeFilters}
+          onFilterChange={(key, value) => setActiveFilters((prev) => ({ ...prev, [key]: value }))}
+          totalCount={campaigns.length}
+          filteredCount={filteredCampaigns.length}
+        />
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 border-b border-warm-200">
@@ -106,7 +135,7 @@ export default function AdminCampaignsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
-              {campaigns.map((c) => (
+              {filteredCampaigns.map((c) => (
                 <tr key={c.id} className="hover:bg-warm-50 transition-colors">
                   <td className="px-6 py-3">
                     <div className="w-12 h-12 relative rounded overflow-hidden bg-warm-100">
@@ -134,10 +163,11 @@ export default function AdminCampaignsPage() {
               ))}
             </tbody>
           </table>
-          {campaigns.length === 0 && (
+          {filteredCampaigns.length === 0 && (
             <div className="text-center py-12 text-warm-400">Nessuna campagna trovata</div>
           )}
         </div>
+        </>
       )}
     </div>
   );

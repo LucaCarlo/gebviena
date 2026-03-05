@@ -1,41 +1,79 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function UfficioStampaPage() {
   return (
     <>
-      <section className="relative h-[35vh] flex items-center justify-center bg-warm-900">
-        <Image src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop" alt="Ufficio Stampa" fill className="object-cover opacity-30" />
-        <h1 className="relative font-serif text-3xl md:text-5xl text-white">Ufficio Stampa</h1>
+      {/* ── TITLE SECTION ────────────────────────────────────── */}
+      <section className="pt-32 md:pt-40 pb-12 md:pb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="text-center px-8 max-w-4xl mx-auto"
+        >
+          <h1 className="font-serif text-3xl md:text-5xl lg:text-[4rem] text-dark leading-[1.15] tracking-tight">
+            Ufficio Stampa
+          </h1>
+        </motion.div>
       </section>
 
-      <section className="section-padding">
-        <div className="luxury-container max-w-3xl text-center">
-          <p className="text-sm text-warm-600 leading-relaxed mb-12">
-            Per richieste stampa, press kit, immagini in alta risoluzione e informazioni sui nostri
-            prodotti e progetti, vi invitiamo a contattare il nostro ufficio stampa.
-          </p>
+      {/* spacer */}
+      <div className="h-8 md:h-16" />
 
-          <div className="bg-brand-50 p-8 rounded-lg">
-            <h2 className="font-semibold text-warm-800 mb-4">Contatto Ufficio Stampa</h2>
-            <div className="space-y-2 text-sm text-warm-600">
-              <p>Gebrüder Thonet Vienna GmbH</p>
-              <p>Via Foggia 23/H – 10152 Torino (Italy)</p>
-              <p>T. +39 0116133330</p>
-              <p className="text-brand-500">press@gebruederthonetvienna.com</p>
+      {/* ── IMAGE + TEXT ─────────────────────────────────────── */}
+      <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "100vh" }}>
+          {/* Left: text */}
+          <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
+            <div className="text-lg text-dark leading-[1.8] font-light">
+              <p>
+                Per materiali stampa, interviste o altre informazioni ufficiali, contattateci a:
+              </p>
+              <p className="mt-8 font-sans text-xl md:text-2xl uppercase tracking-wide font-medium text-dark">
+                Agence Melchior
+              </p>
+              <p className="mt-4">
+                Debora Agostini:{" "}
+                <a href="mailto:debora@agencemelchior.com" className="underline underline-offset-4 hover:text-warm-500 transition-colors">
+                  debora@agencemelchior.com
+                </a>
+              </p>
+              <p className="mt-2">
+                Allegra Emilia Amatori:{" "}
+                <a href="mailto:allegra@agencemelchior.com" className="underline underline-offset-4 hover:text-warm-500 transition-colors">
+                  allegra@agencemelchior.com
+                </a>
+              </p>
             </div>
           </div>
-
-          <div className="mt-12">
-            <Link
-              href="/contatti/richiesta-info"
-              className="inline-block px-8 py-3 border border-warm-800 text-xs font-medium uppercase tracking-[0.2em] text-warm-800 hover:bg-warm-800 hover:text-white transition-all duration-300"
-            >
-              Richiedi informazioni
-            </Link>
+          {/* Right: image */}
+          <div className="relative bg-warm-200 min-h-[400px]">
+            <Image
+              src="/images/PEERS-design-by-Front-for-GTV-2-1024x768.jpg"
+              alt="Ufficio Stampa"
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+            />
           </div>
         </div>
       </section>
+
+      {/* ── BREADCRUMBS ──────────────────────────────────────── */}
+      <div className="gtv-container py-12">
+        <nav className="flex items-center gap-2 text-[10px] uppercase tracking-[0.15em] text-warm-400">
+          <Link href="/" className="hover:text-warm-700 transition-colors">Home</Link>
+          <ChevronRight size={10} />
+          <Link href="/contatti" className="hover:text-warm-700 transition-colors">Contatti</Link>
+          <ChevronRight size={10} />
+          <span className="text-warm-600">Ufficio Stampa</span>
+        </nav>
+      </div>
     </>
   );
 }

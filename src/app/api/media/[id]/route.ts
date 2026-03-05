@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { unlink } from "fs/promises";
 import path from "path";
 import { isS3Configured, deleteFromS3 } from "@/lib/s3";
@@ -14,10 +14,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("media", "delete");
+  if (isErrorResponse(result)) return result;
 
   const media = await prisma.mediaFile.findUnique({ where: { id: params.id } });
   if (!media) {
@@ -25,7 +23,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   }
 
   // Delete from S3 if synced
-  if (media.wasabiKey && isS3Configured()) {
+  if (media.wasabiKey && (await isS3Configured())) {
     try {
       await deleteFromS3(media.wasabiKey);
     } catch {

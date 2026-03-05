@@ -6,6 +6,10 @@ import { Download, Trash2, Shield, Bell, Send, Filter, X, Mail } from "lucide-re
 interface Subscriber {
   id: string;
   email: string;
+  firstName: string | null;
+  lastName: string | null;
+  company: string | null;
+  phone: string | null;
   acceptsPrivacy: boolean;
   acceptsUpdates: boolean;
   createdAt: string;
@@ -193,9 +197,13 @@ export default function AdminNewsletterPage() {
       ? subscribers.filter((s) => selected.has(s.id))
       : filtered;
     if (toExport.length === 0) return;
-    const headers = ["Email", "Privacy", "Aggiornamenti", "Data Iscrizione"];
+    const headers = ["Nome", "Cognome", "Email", "Azienda", "Telefono", "Privacy", "Aggiornamenti", "Data Iscrizione"];
     const rows = toExport.map((s) => [
+      `"${s.firstName || ""}"`,
+      `"${s.lastName || ""}"`,
       `"${s.email}"`,
+      `"${s.company || ""}"`,
+      `"${s.phone || ""}"`,
       s.acceptsPrivacy ? "Si" : "No",
       s.acceptsUpdates ? "Si" : "No",
       new Date(s.createdAt).toLocaleDateString("it-IT"),
@@ -416,6 +424,7 @@ export default function AdminNewsletterPage() {
                     className="rounded border-warm-300"
                   />
                 </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Nome</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Email</th>
                 <th className="text-center px-4 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">
                   <div className="flex items-center justify-center gap-1.5">
@@ -448,6 +457,13 @@ export default function AdminNewsletterPage() {
                       onChange={() => toggleSelect(s.id)}
                       className="rounded border-warm-300"
                     />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-warm-800 font-medium text-xs">
+                      {[s.firstName, s.lastName].filter(Boolean).join(" ") || "—"}
+                    </div>
+                    {s.company && <div className="text-warm-400 text-[10px]">{s.company}</div>}
+                    {s.phone && <div className="text-warm-400 text-[10px]">{s.phone}</div>}
                   </td>
                   <td className="px-4 py-3">
                     <span className="text-warm-800 font-medium">{s.email}</span>

@@ -1,18 +1,19 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth";
-import { checkS3Connection, isS3Configured } from "@/lib/s3";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
+import { checkS3Connection, isS3Configured, invalidateS3Cache } from "@/lib/s3";
 
 export async function POST() {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("settings", "edit");
+  if (isErrorResponse(result)) return result;
 
   try {
-    if (!isS3Configured()) {
+    // Force fresh config read
+    invalidateS3Cache();
+
+    if (!(await isS3Configured())) {
       return NextResponse.json({
         success: false,
-        error: "Wasabi S3 non configurato. Assicurati che le variabili WASABI_ACCESS_KEY, WASABI_SECRET_KEY e WASABI_BUCKET siano impostate nel file .env",
+        error: "Wasabi S3 non configurato. Inserisci Access Key, Secret Key e Bucket nelle impostazioni Storage Cloud.",
       }, { status: 400 });
     }
 

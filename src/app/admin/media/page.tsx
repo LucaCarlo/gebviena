@@ -62,6 +62,9 @@ export default function AdminMediaPage() {
   // Selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
+  // Lightbox
+  const [lightboxFile, setLightboxFile] = useState<MediaFile | null>(null);
+
   // Drag-and-drop
   const [dragOver, setDragOver] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
@@ -514,13 +517,18 @@ export default function AdminMediaPage() {
                   {/* Thumbnail */}
                   <div className="w-full h-40 relative bg-warm-50">
                     {isImage(file.mimeType) ? (
-                      <Image
-                        src={file.url}
-                        alt={file.altText || file.originalName}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                      />
+                      <button
+                        onClick={() => setLightboxFile(file)}
+                        className="w-full h-full relative cursor-zoom-in"
+                      >
+                        <Image
+                          src={file.url}
+                          alt={file.altText || file.originalName}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                        />
+                      </button>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-warm-300">
                         <FileText size={40} />
@@ -644,6 +652,46 @@ export default function AdminMediaPage() {
           </div>
         )}
       </div>
+
+      {/* Lightbox */}
+      {lightboxFile && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setLightboxFile(null)}
+          onKeyDown={(e) => e.key === "Escape" && setLightboxFile(null)}
+          role="dialog"
+          tabIndex={0}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setLightboxFile(null)}
+            className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white/80 hover:text-white hover:bg-black/70 transition-colors z-10"
+          >
+            <X size={24} />
+          </button>
+
+          {/* Image container */}
+          <div
+            className="relative max-w-[90vw] max-h-[85vh] flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lightboxFile.url}
+              alt={lightboxFile.altText || lightboxFile.originalName}
+              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+            />
+            {/* Info bar */}
+            <div className="mt-3 flex items-center gap-4 text-white/70 text-sm">
+              <span className="font-medium text-white">{lightboxFile.originalName}</span>
+              {lightboxFile.width && lightboxFile.height && (
+                <span>{lightboxFile.width} &times; {lightboxFile.height}px</span>
+              )}
+              <span>{formatSize(lightboxFile.size)}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

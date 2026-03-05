@@ -8,59 +8,114 @@ datasource db {
 }
 
 model AdminUser {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  name         String?
-  role         String    @default("admin")
-  avatar       String?
-  isActive     Boolean   @default(true)
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                  String             @id @default(cuid())
+  email               String             @unique
+  passwordHash        String
+  name                String?
+  role                String             @default("editor")
+  roleId              String?
+  roleRef             Role?              @relation(fields: [roleId], references: [id])
+  avatar              String?
+  isActive            Boolean            @default(true)
+  lastLoginAt         DateTime?
+  emailSignature      String?
+  signatureHtml       String?
+  signatureTemplateId String?
+  signatureTemplate   SignatureTemplate?  @relation(fields: [signatureTemplateId], references: [id])
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([signatureTemplateId])
+  @@index([roleId])
+}
+
+model Role {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  label       String
+  permissions String      @default("{}")
+  isSystem    Boolean     @default(false)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  users       AdminUser[]
+}
+
+model SignatureTemplate {
+  id             String      @id @default(cuid())
+  name           String
+  logoUrl        String?
+  bannerUrl      String?
+  showInstagram  Boolean     @default(true)
+  showFacebook   Boolean     @default(true)
+  showWeb        Boolean     @default(true)
+  instagramUrl   String?
+  facebookUrl    String?
+  webLinkUrl     String?
+  websiteUrl     String?
+  website        String?
+  disclaimerLang String      @default("it")
+  footerIt       String?
+  footerEn       String?
+  ecoText        String?
+  isDefault      Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  users          AdminUser[]
 }
 
 model Designer {
-  id        String    @id @default(cuid())
-  name      String
-  slug      String    @unique
-  bio       String?
-  country   String?
-  imageUrl  String?
-  website   String?
-  isActive  Boolean   @default(true)
-  sortOrder Int       @default(0)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  products  Product[]
+  id             String    @id @default(cuid())
+  name           String
+  slug           String    @unique
+  bio            String?
+  country        String?
+  imageUrl       String?
+  website        String?
+  isActive       Boolean   @default(true)
+  sortOrder      Int       @default(0)
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  products       Product[]
 
   @@index([slug])
 }
 
 model Product {
-  id            String           @id @default(cuid())
-  name          String
-  slug          String           @unique
-  designerId    String?
-  designerName  String
-  category      String
-  subcategory   String?
-  description   String?
-  materials     String?
-  dimensions    String?
-  coverImage    String?
-  heroImage     String?
-  sideImage     String?
-  galleryImages String?
-  imageUrl      String           @default("")
-  isFeatured    Boolean          @default(false)
-  isNew         Boolean          @default(false)
-  isActive      Boolean          @default(true)
-  sortOrder     Int              @default(0)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  designer      Designer?        @relation(fields: [designerId], references: [id])
-  projects      ProjectProduct[]
+  id               String           @id @default(cuid())
+  name             String
+  slug             String           @unique
+  designerId       String?
+  designerName     String
+  category         String
+  subcategory      String?
+  description      String?
+  materials        String?
+  dimensions       String?
+  dimensionBlockId String?
+  dimensionValues  String?
+  coverImage       String?
+  heroImage        String?
+  sideImage        String?
+  galleryImages    String?
+  variants         String?
+  dimensionImage   String?
+  techSheetUrl     String?
+  imageUrl         String           @default("")
+  isFeatured       Boolean          @default(false)
+  isNew            Boolean          @default(false)
+  isActive         Boolean          @default(true)
+  sortOrder        Int              @default(0)
+  seoTitle         String?
+  seoDescription   String?
+  seoKeywords      String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  designer         Designer?        @relation(fields: [designerId], references: [id])
+  projects         ProjectProduct[]
 
   @@index([category])
   @@index([subcategory])
@@ -69,22 +124,28 @@ model Product {
 }
 
 model Project {
-  id          String           @id @default(cuid())
-  name        String
-  slug        String           @unique
-  type        String
-  country     String
-  city        String?
-  year        Int?
-  architect   String?
-  description String?
-  imageUrl    String
-  galleryUrls String?
-  isActive    Boolean          @default(true)
-  sortOrder   Int              @default(0)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  products    ProjectProduct[]
+  id             String           @id @default(cuid())
+  name           String
+  slug           String           @unique
+  type           String
+  country        String
+  city           String?
+  year           Int?
+  architect      String?
+  description    String?
+  imageUrl       String
+  coverImage     String?
+  heroImage      String?
+  sideImage      String?
+  galleryUrls    String?
+  isActive       Boolean          @default(true)
+  sortOrder      Int              @default(0)
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  products       ProjectProduct[]
 
   @@index([type])
   @@index([country])
@@ -102,37 +163,72 @@ model ProjectProduct {
 }
 
 model Campaign {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  type        String   @default("")
-  subtitle    String?
-  description String?
-  imageUrl    String
-  galleryUrls String?
-  videoUrl    String?
-  year        Int?
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  type           String   @default("")
+  subtitle       String?
+  description    String?
+  imageUrl       String
+  galleryUrls    String?
+  videoUrl       String?
+  year           Int?
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([slug])
   @@index([type])
 }
 
+model NewsArticle {
+  id             String   @id @default(cuid())
+  title          String
+  slug           String   @unique
+  category       String   @default("")
+  subtitle       String?
+  excerpt        String?
+  content        String?
+  imageUrl       String
+  galleryUrls    String?
+  blocks         String?
+  tags           String?
+  source         String?
+  sourceUrl      String?
+  publishedAt    DateTime?
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([slug])
+  @@index([category])
+}
+
 model Award {
-  id           String   @id @default(cuid())
-  name         String
-  productName  String?
-  year         Int
-  organization String
-  description  String?
-  imageUrl     String?
-  url          String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  productName     String?
+  productSlug     String?
+  productCategory String?
+  year            Int
+  organization    String
+  description     String?
+  imageUrl        String?
+  url             String?
+  isActive        Boolean  @default(true)
+  seoTitle        String?
+  seoDescription  String?
+  seoKeywords     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([year])
 }
@@ -144,6 +240,7 @@ model HeroSlide {
   ctaText          String?
   ctaLink          String?
   imageUrl         String
+  coverImage       String?
   videoUrl         String?
   position         String   @default("center")
   verticalPosition String   @default("center")
@@ -218,20 +315,28 @@ model PointOfSale {
 model NewsletterSubscriber {
   id             String   @id @default(cuid())
   email          String   @unique
+  firstName      String?
+  lastName       String?
+  company        String?
+  phone          String?
   acceptsPrivacy Boolean  @default(false)
   acceptsUpdates Boolean  @default(false)
   createdAt      DateTime @default(now())
 }
 
 model ContactSubmission {
-  id        String   @id @default(cuid())
-  name      String
-  email     String
-  subject   String?
-  message   String
-  type      String   @default("general")
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  name          String
+  email         String
+  subject       String?
+  message       String
+  company       String?
+  phone         String?
+  storeId       String?
+  contactReason String?
+  type          String   @default("general")
+  isRead        Boolean  @default(false)
+  createdAt     DateTime @default(now())
 }
 
 model PageView {
@@ -308,4 +413,43 @@ model ContentSubcategory {
   category   ContentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@index([categoryId])
+}
+
+model DimensionBlock {
+  id        String   @id @default(cuid())
+  name      String
+  labels    String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Catalog {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  section     String   @default("")
+  pretitle    String?
+  title       String?
+  description String?
+  imageUrl    String   @default("")
+  pdfUrl      String   @default("")
+  linkText    String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([section])
+}
+
+model FormConfig {
+  id        String   @id @default(cuid())
+  formType  String   @unique
+  fields    String
+  updatedAt DateTime @updatedAt
+
+  @@index([formType])
 }

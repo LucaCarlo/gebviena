@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  const result = await requirePermission("contacts", "edit");
+  if (isErrorResponse(result)) return result;
+
   try {
     const body = await req.json();
     const { isRead } = body;
@@ -18,6 +22,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const result = await requirePermission("contacts", "delete");
+  if (isErrorResponse(result)) return result;
+
   try {
     await prisma.contactSubmission.delete({ where: { id: params.id } });
 

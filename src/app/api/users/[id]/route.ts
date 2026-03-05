@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import bcrypt from "bcryptjs";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const permResult = await requirePermission("users", "view");
+  if (isErrorResponse(permResult)) return permResult;
+
   const user = await prisma.adminUser.findUnique({ where: { id: params.id } });
   if (!user) {
     return NextResponse.json({ success: false, error: "Non trovato" }, { status: 404 });
@@ -15,10 +18,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 }
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("users", "edit");
+  if (isErrorResponse(result)) return result;
 
   try {
     const body = await req.json();
@@ -43,10 +44,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("users", "delete");
+  if (isErrorResponse(result)) return result;
 
   await prisma.adminUser.delete({ where: { id: params.id } });
   return NextResponse.json({ success: true });

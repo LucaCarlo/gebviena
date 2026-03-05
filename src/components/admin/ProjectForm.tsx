@@ -3,8 +3,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Upload, Search, X, Package } from "lucide-react";
+import { Search, X, Package } from "lucide-react";
 import { slugify } from "@/lib/utils";
+import RichTextEditor from "./RichTextEditor";
+import SeoPanel from "./SeoPanel";
+import ImageUploadField from "./ImageUploadField";
+import GalleryUploadField from "./GalleryUploadField";
 
 interface Product {
   id: string;
@@ -30,7 +34,6 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
   const [projectCategories, setProjectCategories] = useState<CategoryOption[]>([]);
   const [form, setForm] = useState({
     name: "",
@@ -42,6 +45,13 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
     architect: "",
     description: "",
     imageUrl: "",
+    coverImage: "",
+    heroImage: "",
+    sideImage: "",
+    galleryUrls: "[]",
+    seoTitle: "",
+    seoDescription: "",
+    seoKeywords: "[]",
   });
 
   // Products state
@@ -88,6 +98,13 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
         architect: p.architect || "",
         description: p.description || "",
         imageUrl: p.imageUrl,
+        coverImage: p.coverImage || "",
+        heroImage: p.heroImage || "",
+        sideImage: p.sideImage || "",
+        galleryUrls: p.galleryUrls || "[]",
+        seoTitle: p.seoTitle || "",
+        seoDescription: p.seoDescription || "",
+        seoKeywords: p.seoKeywords || "[]",
       });
       // Load associated product IDs
       if (p.products && Array.isArray(p.products)) {
@@ -108,24 +125,6 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
       name,
       slug: projectId ? prev.slug : slugify(name),
     }));
-  };
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (data.success)
-        setForm((prev) => ({ ...prev, imageUrl: data.data.url }));
-    } catch {
-      /* silent */
-    } finally {
-      setUploading(false);
-    }
   };
 
   const toggleProduct = (productId: string) => {
@@ -166,6 +165,8 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
         year: form.year ? parseInt(form.year) : null,
         city: form.city || null,
         architect: form.architect || null,
+        imageUrl: form.coverImage || form.heroImage || form.imageUrl || "",
+        galleryUrls: form.galleryUrls === "[]" ? null : form.galleryUrls,
         productIds: selectedProductIds,
       };
       const res = await fetch(url, {
@@ -183,8 +184,14 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
     }
   };
 
+  const galleryUrlsParsed: string[] = (() => {
+    try { return JSON.parse(form.galleryUrls); } catch { return []; }
+  })();
+
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+    <form onSubmit={handleSubmit} className="flex gap-6 items-start">
+      {/* Left: main form */}
+      <div className="flex-1 min-w-0 max-w-3xl space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">
           {error}
@@ -285,61 +292,64 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
           </div>
         </div>
 
+        <RichTextEditor
+          label="Descrizione"
+          value={form.description}
+          onChange={(html) => setForm((prev) => ({ ...prev, description: html }))}
+        />
+      </div>
+
+      {/* IMMAGINI PROGETTO */}
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-6">
         <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            Descrizione
-          </label>
-          <textarea
-            value={form.description}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, description: e.target.value }))
-            }
-            rows={3}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">
+            Immagini progetto
+          </h3>
+          <p className="text-[10px] text-warm-400 mt-0.5">
+            Tutte le immagini vengono automaticamente convertite in WebP e ottimizzate
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ImageUploadField
+            label="Immagine Cover"
+            value={form.coverImage}
+            onChange={(url) => setForm((prev) => ({ ...prev, coverImage: url }))}
+            onRemove={() => setForm((prev) => ({ ...prev, coverImage: "" }))}
+            purpose="cover"
+            folder="projects"
+            helpText="Mostrata nella griglia dei progetti"
+            recommendedSize="960 x 1200 px"
+          />
+          <ImageUploadField
+            label="Immagine Hero"
+            value={form.heroImage}
+            onChange={(url) => setForm((prev) => ({ ...prev, heroImage: url }))}
+            onRemove={() => setForm((prev) => ({ ...prev, heroImage: "" }))}
+            purpose="hero"
+            folder="projects"
+            helpText="Banner a tutta larghezza in cima alla pagina"
+            recommendedSize="1920 x 1080 px"
+          />
+          <ImageUploadField
+            label="Immagine Laterale"
+            value={form.sideImage}
+            onChange={(url) => setForm((prev) => ({ ...prev, sideImage: url }))}
+            onRemove={() => setForm((prev) => ({ ...prev, sideImage: "" }))}
+            purpose="side"
+            folder="projects"
+            helpText="Sezione descrizione, affiancata ai dettagli"
+            recommendedSize="1440 x 1920 px"
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            Immagine *
-          </label>
-          <div className="flex items-start gap-4">
-            {form.imageUrl && (
-              <div className="w-24 h-24 relative rounded overflow-hidden bg-warm-100 flex-shrink-0">
-                <Image
-                  src={form.imageUrl}
-                  alt="Preview"
-                  fill
-                  className="object-cover"
-                  sizes="96px"
-                />
-              </div>
-            )}
-            <div className="flex-1">
-              <label className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-warm-300 rounded cursor-pointer hover:border-warm-500 transition-colors">
-                <Upload size={16} className="text-warm-400" />
-                <span className="text-sm text-warm-500">
-                  {uploading ? "Caricamento..." : "Carica immagine"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleUpload}
-                  className="hidden"
-                />
-              </label>
-              <input
-                type="text"
-                value={form.imageUrl}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, imageUrl: e.target.value }))
-                }
-                className="w-full mt-2 border border-warm-300 rounded px-3 py-1.5 text-xs focus:border-warm-800 focus:outline-none"
-                placeholder="URL immagine"
-              />
-            </div>
-          </div>
-        </div>
+        <GalleryUploadField
+          label="Galleria immagini (Slideshow)"
+          value={galleryUrlsParsed}
+          onChange={(urls) => setForm((prev) => ({ ...prev, galleryUrls: JSON.stringify(urls) }))}
+          folder="projects"
+          helpText="Immagini per lo slideshow. Trascina per riordinare."
+        />
       </div>
 
       {/* Associated products section */}
@@ -495,6 +505,27 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
         >
           Annulla
         </button>
+      </div>
+      </div>
+
+      {/* Right: SEO sidebar */}
+      <div className="w-80 flex-shrink-0 hidden lg:block">
+        <div className="sticky top-4">
+          <SeoPanel
+            seoTitle={form.seoTitle}
+            seoDescription={form.seoDescription}
+            seoKeywords={(() => { try { return JSON.parse(form.seoKeywords); } catch { return []; } })()}
+            slug={form.slug}
+            content={form.description}
+            onChange={(field, value) => {
+              if (field === "seoKeywords") {
+                setForm((prev) => ({ ...prev, seoKeywords: JSON.stringify(value) }));
+              } else {
+                setForm((prev) => ({ ...prev, [field]: value as string }));
+              }
+            }}
+          />
+        </div>
       </div>
     </form>
   );

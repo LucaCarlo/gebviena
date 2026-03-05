@@ -1,21 +1,28 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { sendMail } from "@/lib/mail";
 import { prisma } from "@/lib/prisma";
 
-export async function POST() {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+export async function POST(request: Request) {
+  const result = await requirePermission("settings", "edit");
+  if (isErrorResponse(result)) return result;
 
   try {
+    // Parse optional email from body
+    let targetEmail = "";
+    try {
+      const body = await request.json();
+      targetEmail = body.email || "";
+    } catch {
+      // no body or invalid JSON — ok
+    }
+
     // Get the admin email from settings or from the authenticated user
     const smtpSettings = await prisma.setting.findMany({ where: { group: "smtp" } });
     const config: Record<string, string> = {};
     for (const s of smtpSettings) config[s.key] = s.value;
 
-    const adminEmail = config.smtp_from_email || auth.email;
+    const adminEmail = targetEmail || config.smtp_from_email || result.email;
     if (!adminEmail) {
       return NextResponse.json({ success: false, error: "Nessun indirizzo email configurato" }, { status: 400 });
     }

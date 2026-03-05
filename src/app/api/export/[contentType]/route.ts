@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
 const CONTENT_TYPE_MAP: Record<string, () => Promise<unknown[]>> = {
   products: () => prisma.product.findMany({ include: { designer: true }, orderBy: { sortOrder: "asc" } }),
@@ -8,16 +8,15 @@ const CONTENT_TYPE_MAP: Record<string, () => Promise<unknown[]>> = {
   designers: () => prisma.designer.findMany({ orderBy: { sortOrder: "asc" } }),
   campaigns: () => prisma.campaign.findMany({ orderBy: { sortOrder: "asc" } }),
   awards: () => prisma.award.findMany({ orderBy: { year: "desc" } }),
+  news: () => prisma.newsArticle.findMany({ orderBy: { sortOrder: "asc" } }),
   "hero-slides": () => prisma.heroSlide.findMany({ orderBy: { sortOrder: "asc" } }),
   stores: () => prisma.pointOfSale.findMany({ where: { type: "STORE" } }),
   agents: () => prisma.pointOfSale.findMany({ where: { type: "AGENT" } }),
 };
 
 export async function GET(_req: Request, { params }: { params: { contentType: string } }) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("import_export", "view");
+  if (isErrorResponse(result)) return result;
 
   const fetcher = CONTENT_TYPE_MAP[params.contentType];
   if (!fetcher) {

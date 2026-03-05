@@ -45,10 +45,18 @@ export interface Product {
   heroImage: string | null;
   sideImage: string | null;
   galleryImages: string | null;
+  variants: string | null;
+  dimensionImage: string | null;
+  techSheetUrl: string | null;
   imageUrl: string;
   isNew: boolean;
   isFeatured: boolean;
   isActive: boolean;
+  dimensionBlockId: string | null;
+  dimensionValues: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  seoKeywords: string | null;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -67,6 +75,9 @@ export interface Project {
   country: string;
   description: string | null;
   imageUrl: string;
+  coverImage: string | null;
+  heroImage: string | null;
+  sideImage: string | null;
   galleryUrls: string | null;
   isActive: boolean;
   sortOrder: number;
@@ -87,6 +98,7 @@ export interface Campaign {
   id: string;
   name: string;
   slug: string;
+  type: string;
   subtitle: string | null;
   description: string | null;
   imageUrl: string;
@@ -97,6 +109,89 @@ export interface Campaign {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface NewsArticle {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  subtitle: string | null;
+  excerpt: string | null;
+  content: string | null;
+  imageUrl: string;
+  galleryUrls: string | null;
+  blocks: string | null;
+  tags: string | null;
+  source: string | null;
+  sourceUrl: string | null;
+  publishedAt: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  seoKeywords: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NewsBlockType =
+  | "text"
+  | "image"
+  | "image_text"
+  | "gallery"
+  | "slideshow"
+  | "quote"
+  | "video"
+  | "separator";
+
+export interface NewsBlock {
+  id: string;
+  type: NewsBlockType;
+  data: TextBlockData | ImageBlockData | ImageTextBlockData | GalleryBlockData | SlideshowBlockData | QuoteBlockData | VideoBlockData | SeparatorBlockData;
+}
+
+export interface TextBlockData {
+  title?: string;
+  body: string;
+}
+
+export interface ImageBlockData {
+  images: string[];
+  layout: "full" | "contained" | "side-by-side";
+  caption?: string;
+}
+
+export interface ImageTextBlockData {
+  images: string[];
+  text: string;
+  title?: string;
+  imagePosition: "left" | "right";
+  layout: "50-50" | "40-60" | "60-40";
+}
+
+export interface GalleryBlockData {
+  images: string[];
+  columns: 2 | 3 | 4;
+}
+
+export interface SlideshowBlockData {
+  images: string[];
+}
+
+export interface QuoteBlockData {
+  text: string;
+  author?: string;
+  style: "default" | "handwritten";
+}
+
+export interface VideoBlockData {
+  url: string;
+  caption?: string;
+}
+
+export interface SeparatorBlockData {
+  height: "small" | "medium" | "large";
 }
 
 export interface Award {
@@ -113,6 +208,23 @@ export interface Award {
   updatedAt: string;
 }
 
+export interface Catalog {
+  id: string;
+  name: string;
+  slug: string;
+  section: string;
+  pretitle: string | null;
+  title: string | null;
+  description: string | null;
+  imageUrl: string;
+  pdfUrl: string;
+  linkText: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface HeroSlide {
   id: string;
   title: string;
@@ -120,6 +232,7 @@ export interface HeroSlide {
   ctaText: string | null;
   ctaLink: string | null;
   imageUrl: string;
+  coverImage: string | null;
   videoUrl: string | null;
   position: string;
   verticalPosition: string;
@@ -209,6 +322,10 @@ export interface ContactSubmission {
   subject: string | null;
   message: string;
   type: string;
+  company: string | null;
+  phone: string | null;
+  storeId: string | null;
+  contactReason: string | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -221,6 +338,8 @@ export interface AdminUser {
   avatar: string | null;
   isActive: boolean;
   lastLoginAt: string | null;
+  emailSignature: string | null;
+  signatureHtml: string | null;
   createdAt: string;
   updatedAt: string;
 }

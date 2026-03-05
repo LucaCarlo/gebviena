@@ -16,6 +16,7 @@ const FALLBACK_SLIDE: HeroSlide = {
   ctaText: "Kipferl by Antenna",
   ctaLink: "/prodotti",
   imageUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=2560&h=1707&fit=crop&q=90",
+  coverImage: null,
   videoUrl: null,
   position: "center",
   verticalPosition: "bottom",
@@ -128,11 +129,11 @@ export default function HeroSection() {
           transition={{ duration: 1, delay: 0.3 }}
           className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className="font-sans text-xl md:text-2xl lg:text-3xl text-white/80 leading-snug font-light uppercase tracking-wide max-w-3xl">
+          <h1 className="font-sans text-2xl md:text-3xl lg:text-[45px] text-white/80 leading-snug font-light uppercase tracking-wide whitespace-nowrap" style={{ marginTop: "-5px" }}>
             {slide.title}
           </h1>
           {slide.subtitle && (
-            <p className="text-sm md:text-base text-white/60 mt-2 max-w-2xl">
+            <p className="text-base md:text-lg text-white/60 mt-2 max-w-2xl">
               {slide.subtitle}
             </p>
           )}

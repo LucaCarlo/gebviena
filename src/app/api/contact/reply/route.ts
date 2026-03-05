@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { sendMail } from "@/lib/mail";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
-  const auth = await getAuthUser();
-  if (!auth) {
-    return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
-  }
+  const result = await requirePermission("contacts", "edit");
+  if (isErrorResponse(result)) return result;
 
   try {
     const { to, subject, html } = await req.json();
@@ -15,7 +14,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Destinatario, oggetto e corpo richiesti" }, { status: 400 });
     }
 
-    const sent = await sendMail(to, subject, html);
+    // Fetch admin user for reply-from info and signature
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: result.id },
+      select: { email: true, name: true, signatureHtml: true },
+    });
+
+    // Append signature if exists
+    let finalHtml = html;
+    if (adminUser?.signatureHtml) {
+      finalHtml += `<br/><br/>${adminUser.signatureHtml}`;
+    }
+
+    const sent = await sendMail(to, subject, finalHtml, {
+      fromName: adminUser?.name || undefined,
+      fromEmail: adminUser?.email || undefined,
+    });
 
     if (sent) {
       return NextResponse.json({ success: true });
