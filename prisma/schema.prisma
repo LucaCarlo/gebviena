@@ -284,7 +284,18 @@ model MediaFile {
   width        Int?
   height       Int?
   originalSize Int?
-  createdAt    DateTime  @default(now())
+
+  // Variant: thumbnail (400px)
+  thumbnailUrl  String?
+  thumbnailKey  String?
+  thumbnailSize Int?
+
+  // Variant: medium (800px)
+  mediumUrl  String?
+  mediumKey  String?
+  mediumSize Int?
+
+  createdAt DateTime @default(now())
 
   @@index([folder])
   @@index([isSynced])

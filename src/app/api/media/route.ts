@@ -59,6 +59,14 @@ export async function POST(req: Request) {
     let finalSize: number;
     let originalSize: number | null = null;
 
+    // Variant tracking
+    let thumbnailUrl: string | null = null;
+    let thumbnailKey: string | null = null;
+    let thumbnailSize: number | null = null;
+    let mediumUrl: string | null = null;
+    let mediumKey: string | null = null;
+    let mediumSize: number | null = null;
+
     if (isImage && !skipCompression) {
       const { processed, medium, thumbnail, metadata } = await processImage(buffer, purpose);
       const webpName = getWebpFilename(sanitizedName);
@@ -67,6 +75,8 @@ export async function POST(req: Request) {
       width = metadata.width;
       height = metadata.height;
       originalSize = metadata.originalSize;
+      thumbnailSize = thumbnail.length;
+      mediumSize = medium.length;
 
       const mdName = `${timestamp}-md-${webpName}`;
       const thName = `${timestamp}-thumb-${webpName}`;
@@ -77,8 +87,14 @@ export async function POST(req: Request) {
         wasabiKey = key;
         isSynced = true;
         url = wasabiUrl;
-        await uploadToS3(medium, `${folder}/${mdName}`, "image/webp");
-        await uploadToS3(thumbnail, `${folder}/thumbs/${thName}`, "image/webp");
+
+        const mdKey = `${folder}/${mdName}`;
+        mediumUrl = await uploadToS3(medium, mdKey, "image/webp");
+        mediumKey = mdKey;
+
+        const thKey = `${folder}/thumbs/${thName}`;
+        thumbnailUrl = await uploadToS3(thumbnail, thKey, "image/webp");
+        thumbnailKey = thKey;
       } else {
         const uploadsDir = path.join(process.cwd(), "public", "uploads");
         const thumbsDir = path.join(uploadsDir, "thumbs");
@@ -89,6 +105,8 @@ export async function POST(req: Request) {
         await writeFile(path.join(uploadsDir, mdName), medium);
         await writeFile(path.join(thumbsDir, thName), thumbnail);
         url = `/uploads/${filename}`;
+        mediumUrl = `/uploads/${mdName}`;
+        thumbnailUrl = `/uploads/thumbs/${thName}`;
       }
     } else if (isImage && skipCompression) {
       filename = `${timestamp}-${sanitizedName}`;
@@ -143,6 +161,12 @@ export async function POST(req: Request) {
         width,
         height,
         originalSize,
+        thumbnailUrl,
+        thumbnailKey,
+        thumbnailSize,
+        mediumUrl,
+        mediumKey,
+        mediumSize,
       },
     });
 

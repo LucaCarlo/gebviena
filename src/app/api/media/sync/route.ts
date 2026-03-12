@@ -28,6 +28,20 @@ export async function GET() {
   });
 }
 
+async function readLocalFile(url: string): Promise<Buffer | null> {
+  // Normalize: /api/uploads/... → /uploads/...
+  const normalized = url.startsWith("/api/uploads/")
+    ? url.replace("/api/uploads/", "/uploads/")
+    : url;
+  if (!normalized.startsWith("/uploads/")) return null;
+  try {
+    const localPath = path.join(process.cwd(), "public", normalized);
+    return await readFile(localPath);
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: Request) {
   const result = await requirePermission("media", "edit");
   if (isErrorResponse(result)) return result;
@@ -57,11 +71,8 @@ export async function POST(req: Request) {
     for (const file of files) {
       try {
         // Read local file
-        let buffer: Buffer;
-        if (file.url.startsWith("/uploads/")) {
-          const localPath = path.join(process.cwd(), "public", file.url);
-          buffer = await readFile(localPath);
-        } else {
+        const buffer = await readLocalFile(file.url);
+        if (!buffer) {
           // File might already be on S3, skip
           continue;
         }
@@ -70,8 +81,18 @@ export async function POST(req: Request) {
         const key = `${file.folder}/${file.filename}`;
 
         if (isImage) {
-          const { processed, metadata } = await processImage(buffer, "general");
+          const { processed, medium, thumbnail, metadata } = await processImage(buffer, "general");
           const wasabiUrl = await uploadToS3(processed, key, "image/webp");
+
+          // Sync medium variant
+          const mdFilename = file.filename.replace(/^(\d+-)/, "$1md-");
+          const mdKey = `${file.folder}/${mdFilename}`;
+          const mediumUrl = await uploadToS3(medium, mdKey, "image/webp");
+
+          // Sync thumbnail variant
+          const thFilename = file.filename.replace(/^(\d+-)/, "$1thumb-");
+          const thKey = `${file.folder}/thumbs/${thFilename}`;
+          const thumbnailUrl = await uploadToS3(thumbnail, thKey, "image/webp");
 
           await prisma.mediaFile.update({
             where: { id: file.id },
@@ -84,6 +105,12 @@ export async function POST(req: Request) {
               height: metadata.height,
               size: metadata.size,
               originalSize: metadata.originalSize,
+              mediumUrl,
+              mediumKey: mdKey,
+              mediumSize: medium.length,
+              thumbnailUrl,
+              thumbnailKey: thKey,
+              thumbnailSize: thumbnail.length,
             },
           });
         } else {

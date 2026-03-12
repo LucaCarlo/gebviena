@@ -312,6 +312,12 @@ export interface MediaFile {
   width: number | null;
   height: number | null;
   originalSize: number | null;
+  thumbnailUrl: string | null;
+  thumbnailKey: string | null;
+  thumbnailSize: number | null;
+  mediumUrl: string | null;
+  mediumKey: string | null;
+  mediumSize: number | null;
   createdAt: string;
 }
 

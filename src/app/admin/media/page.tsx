@@ -17,6 +17,12 @@ import {
   CheckSquare,
   Square,
   MinusSquare,
+  Copy,
+  Check,
+  ExternalLink,
+  Info,
+  Loader2,
+  Wand2,
 } from "lucide-react";
 import { MEDIA_FOLDERS } from "@/lib/constants";
 import type { MediaFile } from "@/types";
@@ -62,8 +68,15 @@ export default function AdminMediaPage() {
   // Selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  // Lightbox
-  const [lightboxFile, setLightboxFile] = useState<MediaFile | null>(null);
+  // Detail panel
+  const [detailFile, setDetailFile] = useState<MediaFile | null>(null);
+  const [editingAlt, setEditingAlt] = useState(false);
+  const [altText, setAltText] = useState("");
+  const [savingAlt, setSavingAlt] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  // Generate variants
+  const [generatingVariants, setGeneratingVariants] = useState(false);
 
   // Drag-and-drop
   const [dragOver, setDragOver] = useState(false);
@@ -87,7 +100,7 @@ export default function AdminMediaPage() {
     fetch("/api/media/sync")
       .then((r) => r.json())
       .then((data) => {
-        setWasabi(data);
+        setWasabi(data.data || data);
         setWasabiLoading(false);
       })
       .catch(() => setWasabiLoading(false));
@@ -158,6 +171,7 @@ export default function AdminMediaPage() {
       next.delete(id);
       return next;
     });
+    if (detailFile?.id === id) setDetailFile(null);
     fetchMedia(activeFolder);
     fetchWasabiStatus();
   };
@@ -169,7 +183,6 @@ export default function AdminMediaPage() {
     setSyncProgress({ done: 0, total: ids.length });
     setSyncResult(null);
 
-    // Sync in batches of 5 to show progress without overwhelming the API
     const batchSize = 5;
     let totalSynced = 0;
     let totalFailed = 0;
@@ -182,9 +195,9 @@ export default function AdminMediaPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids: batch }),
         });
-        const result: SyncResult = await res.json();
-        totalSynced += result.synced;
-        totalFailed += result.failed;
+        const result: { data: SyncResult } = await res.json();
+        totalSynced += result.data.synced;
+        totalFailed += result.data.failed;
       } catch {
         totalFailed += batch.length;
       }
@@ -195,14 +208,59 @@ export default function AdminMediaPage() {
     setSyncing(false);
     fetchMedia(activeFolder);
     fetchWasabiStatus();
-
-    // Clear result after 5 seconds
     setTimeout(() => setSyncResult(null), 5000);
   };
 
   const handleSyncSingle = (id: string) => syncItems([id]);
-
   const handleSyncSelected = () => syncItems(Array.from(selected));
+
+  /* --- alt text ------------------------------------------------------ */
+  const handleSaveAlt = async () => {
+    if (!detailFile) return;
+    setSavingAlt(true);
+    try {
+      const res = await fetch(`/api/media/${detailFile.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ altText }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDetailFile(data.data);
+        // Update in files list too
+        setFiles((prev) => prev.map((f) => f.id === data.data.id ? data.data : f));
+        setEditingAlt(false);
+      }
+    } catch { /* silent */ }
+    setSavingAlt(false);
+  };
+
+  /* --- generate variants --------------------------------------------- */
+  const handleGenerateVariants = async () => {
+    if (!detailFile) return;
+    setGeneratingVariants(true);
+    try {
+      const res = await fetch(`/api/media/${detailFile.id}/variants`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setDetailFile(data.data);
+        setFiles((prev) => prev.map((f) => f.id === data.data.id ? data.data : f));
+      } else {
+        alert(data.error || "Errore nella generazione delle varianti");
+      }
+    } catch (e) {
+      alert("Errore di rete nella generazione delle varianti");
+      console.error("Generate variants error:", e);
+    }
+    setGeneratingVariants(false);
+  };
+
+  /* --- clipboard ---------------------------------------------------- */
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(label);
+    setTimeout(() => setCopied(null), 2000);
+  };
 
   /* --- selection ---------------------------------------------------- */
   const toggleSelect = (id: string) => {
@@ -224,6 +282,13 @@ export default function AdminMediaPage() {
 
   const isAllSelected = files.length > 0 && selected.size === files.length;
   const isSomeSelected = selected.size > 0 && selected.size < files.length;
+
+  /* --- open detail -------------------------------------------------- */
+  const openDetail = (file: MediaFile) => {
+    setDetailFile(file);
+    setAltText(file.altText || "");
+    setEditingAlt(false);
+  };
 
   /* --- helpers ------------------------------------------------------ */
   const formatSize = (bytes: number) => {
@@ -251,6 +316,11 @@ export default function AdminMediaPage() {
     return Math.round(((original - processed) / original) * 100);
   };
 
+  const folderCounts = files.reduce<Record<string, number>>((acc, f) => {
+    acc[f.folder] = (acc[f.folder] || 0) + 1;
+    return acc;
+  }, {});
+
   /* --- render ------------------------------------------------------- */
   return (
     <div>
@@ -263,7 +333,6 @@ export default function AdminMediaPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Bulk sync button */}
           {selected.size > 0 && (
             <button
               onClick={handleSyncSelected}
@@ -274,7 +343,6 @@ export default function AdminMediaPage() {
               Sincronizza selezionati ({unsyncedSelected.length})
             </button>
           )}
-          {/* Upload button */}
           <input
             ref={fileInputRef}
             type="file"
@@ -304,7 +372,6 @@ export default function AdminMediaPage() {
                 <span className="ml-3 text-xs text-warm-400">Verifica connessione...</span>
               ) : wasabi ? (
                 <div className="flex items-center gap-4 mt-0.5">
-                  {/* Connection badge */}
                   {wasabi.configured ? (
                     wasabi.connected ? (
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
@@ -323,7 +390,6 @@ export default function AdminMediaPage() {
                       Non configurato
                     </span>
                   )}
-                  {/* Stats */}
                   {wasabi.configured && (
                     <span className="text-xs text-warm-500">
                       {wasabi.synced}/{wasabi.total} sincronizzati &middot;{" "}
@@ -412,6 +478,9 @@ export default function AdminMediaPage() {
         >
           <FolderOpen size={14} />
           Tutti
+          <span className={`text-xs ml-1 ${activeFolder === "__all__" ? "text-warm-300" : "text-warm-400"}`}>
+            ({files.length})
+          </span>
         </button>
         {MEDIA_FOLDERS.map((folder) => (
           <button
@@ -425,6 +494,11 @@ export default function AdminMediaPage() {
           >
             <FolderOpen size={14} />
             {folder.label}
+            {activeFolder === "__all__" && folderCounts[folder.value] ? (
+              <span className="text-xs ml-1 text-warm-400">
+                ({folderCounts[folder.value]})
+              </span>
+            ) : null}
           </button>
         ))}
       </div>
@@ -511,18 +585,20 @@ export default function AdminMediaPage() {
                   className={`bg-white rounded-xl shadow-sm border overflow-hidden group transition-all ${
                     isSelected
                       ? "border-warm-800 ring-1 ring-warm-800"
-                      : "border-warm-200 hover:border-warm-300"
+                      : detailFile?.id === file.id
+                        ? "border-blue-500 ring-1 ring-blue-500"
+                        : "border-warm-200 hover:border-warm-300"
                   }`}
                 >
                   {/* Thumbnail */}
                   <div className="w-full h-40 relative bg-warm-50">
                     {isImage(file.mimeType) ? (
                       <button
-                        onClick={() => setLightboxFile(file)}
-                        className="w-full h-full relative cursor-zoom-in"
+                        onClick={() => openDetail(file)}
+                        className="w-full h-full relative cursor-pointer"
                       >
                         <Image
-                          src={file.url}
+                          src={file.thumbnailUrl || file.url}
                           alt={file.altText || file.originalName}
                           fill
                           className="object-cover"
@@ -530,9 +606,12 @@ export default function AdminMediaPage() {
                         />
                       </button>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-warm-300">
+                      <button
+                        onClick={() => openDetail(file)}
+                        className="w-full h-full flex items-center justify-center text-warm-300 cursor-pointer"
+                      >
                         <FileText size={40} />
-                      </div>
+                      </button>
                     )}
 
                     {/* Top-left: checkbox */}
@@ -575,14 +654,6 @@ export default function AdminMediaPage() {
                       )}
                     </div>
 
-                    {/* Bottom-right: delete */}
-                    <button
-                      onClick={() => handleDelete(file.id)}
-                      className="absolute bottom-2 right-2 p-1.5 bg-white/90 rounded-lg text-warm-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all shadow-sm"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-
                     {/* Dimensions badge */}
                     {file.width && file.height && (
                       <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-all">
@@ -601,7 +672,6 @@ export default function AdminMediaPage() {
                       {file.originalName}
                     </p>
 
-                    {/* Size + date row */}
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-warm-400">{formatSize(file.size)}</span>
                       <span className="text-xs text-warm-400">{formatDate(file.createdAt)}</span>
@@ -631,8 +701,18 @@ export default function AdminMediaPage() {
                       </div>
                     )}
 
+                    {/* Variants indicator */}
+                    {(file.thumbnailUrl || file.mediumUrl) && (
+                      <div className="mt-1.5 flex items-center gap-1">
+                        <Info size={10} className="text-blue-400 shrink-0" />
+                        <span className="text-[10px] text-blue-500">
+                          {[file.thumbnailUrl && "thumb", file.mediumUrl && "medium"].filter(Boolean).join(" + ")} + large
+                        </span>
+                      </div>
+                    )}
+
                     {/* Sync status line */}
-                    <div className="mt-1.5 flex items-center gap-1">
+                    <div className="mt-1 flex items-center gap-1">
                       {file.isSynced ? (
                         <>
                           <CheckCircle2 size={11} className="text-emerald-500 shrink-0" />
@@ -653,41 +733,339 @@ export default function AdminMediaPage() {
         )}
       </div>
 
-      {/* Lightbox */}
-      {lightboxFile && (
+      {/* ============================================================= */}
+      {/*  DETAIL PANEL (replaces the old lightbox)                      */}
+      {/* ============================================================= */}
+      {detailFile && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={() => setLightboxFile(null)}
-          onKeyDown={(e) => e.key === "Escape" && setLightboxFile(null)}
+          className="fixed inset-0 z-50 flex items-stretch bg-black/60 backdrop-blur-sm"
+          onClick={() => setDetailFile(null)}
+          onKeyDown={(e) => e.key === "Escape" && setDetailFile(null)}
           role="dialog"
           tabIndex={0}
         >
-          {/* Close button */}
-          <button
-            onClick={() => setLightboxFile(null)}
-            className="absolute top-4 right-4 p-2 bg-black/50 rounded-full text-white/80 hover:text-white hover:bg-black/70 transition-colors z-10"
-          >
-            <X size={24} />
-          </button>
-
-          {/* Image container */}
+          {/* Panel container */}
           <div
-            className="relative max-w-[90vw] max-h-[85vh] flex flex-col items-center"
+            className="ml-auto w-full max-w-2xl bg-white shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={lightboxFile.url}
-              alt={lightboxFile.altText || lightboxFile.originalName}
-              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
-            />
-            {/* Info bar */}
-            <div className="mt-3 flex items-center gap-4 text-white/70 text-sm">
-              <span className="font-medium text-white">{lightboxFile.originalName}</span>
-              {lightboxFile.width && lightboxFile.height && (
-                <span>{lightboxFile.width} &times; {lightboxFile.height}px</span>
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200 bg-warm-50">
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-warm-800 truncate">
+                  {detailFile.originalName}
+                </h2>
+                <p className="text-xs text-warm-400 mt-0.5">
+                  {formatDate(detailFile.createdAt)} &middot; {detailFile.folder}
+                </p>
+              </div>
+              <button
+                onClick={() => setDetailFile(null)}
+                className="p-2 hover:bg-warm-200 rounded-lg transition-colors shrink-0 ml-3"
+              >
+                <X size={20} className="text-warm-500" />
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Image preview */}
+              {isImage(detailFile.mimeType) && (
+                <div className="relative bg-warm-100 flex items-center justify-center" style={{ minHeight: "300px" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={detailFile.url}
+                    alt={detailFile.altText || detailFile.originalName}
+                    className="max-w-full max-h-[50vh] object-contain"
+                  />
+                </div>
               )}
-              <span>{formatSize(lightboxFile.size)}</span>
+
+              <div className="p-6 space-y-6">
+                {/* Alt Text */}
+                <div>
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-2">
+                    Alt Text
+                  </label>
+                  {editingAlt ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={altText}
+                        onChange={(e) => setAltText(e.target.value)}
+                        placeholder="Descrizione dell'immagine per accessibilita e SEO..."
+                        className="w-full px-3 py-2 border border-warm-300 rounded-lg text-sm focus:outline-none focus:border-warm-500"
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleSaveAlt}
+                          disabled={savingAlt}
+                          className="px-3 py-1.5 bg-warm-800 text-white text-xs rounded-lg hover:bg-warm-900 transition-colors disabled:opacity-50"
+                        >
+                          {savingAlt ? "Salvataggio..." : "Salva"}
+                        </button>
+                        <button
+                          onClick={() => { setEditingAlt(false); setAltText(detailFile.altText || ""); }}
+                          className="px-3 py-1.5 text-xs text-warm-600 hover:text-warm-800 transition-colors"
+                        >
+                          Annulla
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => setEditingAlt(true)}
+                      className="px-3 py-2 border border-warm-200 rounded-lg text-sm text-warm-600 cursor-pointer hover:border-warm-400 transition-colors min-h-[38px] flex items-center"
+                    >
+                      {detailFile.altText || (
+                        <span className="text-warm-400 italic">Clicca per aggiungere alt text...</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* URL */}
+                <div>
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-2">
+                    URL Immagine
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 px-3 py-2 bg-warm-50 border border-warm-200 rounded-lg text-xs text-warm-600 font-mono truncate">
+                      {detailFile.wasabiUrl || detailFile.url}
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(detailFile.wasabiUrl || detailFile.url, "url")}
+                      className="p-2 border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors shrink-0"
+                      title="Copia URL"
+                    >
+                      {copied === "url" ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} className="text-warm-400" />}
+                    </button>
+                    <a
+                      href={detailFile.wasabiUrl || detailFile.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors shrink-0"
+                      title="Apri in nuova tab"
+                    >
+                      <ExternalLink size={14} className="text-warm-400" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Image info */}
+                <div>
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-2">
+                    Informazioni
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {detailFile.width && detailFile.height && (
+                      <div className="px-3 py-2.5 bg-warm-50 rounded-lg">
+                        <p className="text-[10px] text-warm-400 uppercase tracking-wider">Dimensioni</p>
+                        <p className="text-sm font-medium text-warm-800 mt-0.5">
+                          {detailFile.width} &times; {detailFile.height}px
+                        </p>
+                      </div>
+                    )}
+                    <div className="px-3 py-2.5 bg-warm-50 rounded-lg">
+                      <p className="text-[10px] text-warm-400 uppercase tracking-wider">Peso (Large)</p>
+                      <p className="text-sm font-medium text-warm-800 mt-0.5">{formatSize(detailFile.size)}</p>
+                    </div>
+                    {detailFile.originalSize && (
+                      <div className="px-3 py-2.5 bg-warm-50 rounded-lg">
+                        <p className="text-[10px] text-warm-400 uppercase tracking-wider">Originale</p>
+                        <p className="text-sm font-medium text-warm-800 mt-0.5">{formatSize(detailFile.originalSize)}</p>
+                      </div>
+                    )}
+                    <div className="px-3 py-2.5 bg-warm-50 rounded-lg">
+                      <p className="text-[10px] text-warm-400 uppercase tracking-wider">Formato</p>
+                      <p className="text-sm font-medium text-warm-800 mt-0.5">{detailFile.mimeType}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Variants section */}
+                {isImage(detailFile.mimeType) && (
+                  <div>
+                    <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-2">
+                      Varianti
+                    </label>
+                    <div className="space-y-2">
+                      {/* Large (the main processed file) */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-blue-50 border border-blue-100 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                            <ImageIcon size={14} className="text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-warm-800">Large</p>
+                            <p className="text-[10px] text-warm-400">Qualita massima &middot; Hero, zoom, full-screen</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-warm-800">{formatSize(detailFile.size)}</p>
+                          {detailFile.width && detailFile.height && (
+                            <p className="text-[10px] text-warm-400">{detailFile.width}&times;{detailFile.height}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Medium */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-warm-50 border border-warm-100 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-warm-100 rounded flex items-center justify-center">
+                            <ImageIcon size={14} className="text-warm-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-warm-800">Medium</p>
+                            <p className="text-[10px] text-warm-400">800px max &middot; Card, listing, anteprima</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {detailFile.mediumSize ? (
+                            <>
+                              <p className="text-sm font-semibold text-warm-800">{formatSize(detailFile.mediumSize)}</p>
+                              {detailFile.mediumUrl && (
+                                <button
+                                  onClick={() => copyToClipboard(detailFile.mediumUrl!, "medium")}
+                                  className="text-[10px] text-blue-500 hover:text-blue-700 flex items-center gap-0.5 ml-auto"
+                                >
+                                  {copied === "medium" ? <Check size={8} /> : <Copy size={8} />}
+                                  URL
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-xs text-warm-400 italic">Da generare</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Thumbnail */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-warm-50 border border-warm-100 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-warm-100 rounded flex items-center justify-center">
+                            <ImageIcon size={14} className="text-warm-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-warm-800">Thumbnail</p>
+                            <p className="text-[10px] text-warm-400">400px max &middot; Griglia, miniatura</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {detailFile.thumbnailSize ? (
+                            <>
+                              <p className="text-sm font-semibold text-warm-800">{formatSize(detailFile.thumbnailSize)}</p>
+                              {detailFile.thumbnailUrl && (
+                                <button
+                                  onClick={() => copyToClipboard(detailFile.thumbnailUrl!, "thumb")}
+                                  className="text-[10px] text-blue-500 hover:text-blue-700 flex items-center gap-0.5 ml-auto"
+                                >
+                                  {copied === "thumb" ? <Check size={8} /> : <Copy size={8} />}
+                                  URL
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-xs text-warm-400 italic">Da generare</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Generate variants button (when missing) */}
+                      {(!detailFile.mediumUrl || !detailFile.thumbnailUrl) && (
+                        <button
+                          onClick={handleGenerateVariants}
+                          disabled={generatingVariants}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-violet-50 border border-violet-200 rounded-lg text-sm font-medium text-violet-700 hover:bg-violet-100 transition-colors disabled:opacity-60"
+                        >
+                          {generatingVariants ? (
+                            <>
+                              <Loader2 size={15} className="animate-spin" />
+                              Generazione in corso...
+                            </>
+                          ) : (
+                            <>
+                              <Wand2 size={15} />
+                              Genera varianti mancanti
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Savings summary */}
+                      {detailFile.originalSize && detailFile.thumbnailSize && detailFile.mediumSize && (
+                        <div className="mt-2 px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-emerald-700 font-medium">Risparmio totale (3 varianti vs 3x originale)</span>
+                            <span className="text-xs font-bold text-emerald-700">
+                              -{Math.round((1 - (detailFile.size + detailFile.mediumSize + detailFile.thumbnailSize) / (detailFile.originalSize * 3)) * 100)}%
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-emerald-600 mt-0.5">
+                            {formatSize(detailFile.originalSize * 3)} &rarr; {formatSize(detailFile.size + detailFile.mediumSize + detailFile.thumbnailSize)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sync status */}
+                <div>
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-2">
+                    Cloud Storage
+                  </label>
+                  {detailFile.isSynced ? (
+                    <div className="px-4 py-3 bg-emerald-50 border border-emerald-100 rounded-lg flex items-center gap-3">
+                      <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-emerald-800">Sincronizzato su Wasabi</p>
+                        {detailFile.syncedAt && (
+                          <p className="text-[10px] text-emerald-600 mt-0.5">
+                            Ultimo sync: {formatDate(detailFile.syncedAt)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="px-4 py-3 bg-amber-50 border border-amber-100 rounded-lg flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <CloudOff size={18} className="text-amber-500 shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-amber-800">Non sincronizzato</p>
+                          <p className="text-[10px] text-amber-600 mt-0.5">Solo storage locale</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleSyncSingle(detailFile.id)}
+                        disabled={syncing}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      >
+                        <CloudUpload size={12} />
+                        Sincronizza
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Panel footer */}
+            <div className="px-6 py-4 border-t border-warm-200 bg-warm-50 flex items-center justify-between">
+              <button
+                onClick={() => handleDelete(detailFile.id)}
+                className="flex items-center gap-2 px-4 py-2 text-red-600 border border-red-200 rounded-lg text-sm hover:bg-red-50 transition-colors"
+              >
+                <Trash2 size={14} />
+                Elimina
+              </button>
+              <button
+                onClick={() => setDetailFile(null)}
+                className="px-4 py-2 bg-warm-800 text-white text-sm rounded-lg hover:bg-warm-900 transition-colors"
+              >
+                Chiudi
+              </button>
             </div>
           </div>
         </div>
