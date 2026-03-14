@@ -4,7 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-export default function BornInVienna() {
+interface BornInViennaProps {
+  historicalImage: string;
+}
+
+export default function BornInVienna({ historicalImage }: BornInViennaProps) {
   return (
     <section className="w-full py-20 md:py-28 lg:py-36">
       <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-0">
@@ -41,7 +45,7 @@ export default function BornInVienna() {
           style={{ aspectRatio: "16 / 10" }}
         >
           <Image
-            src="https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1400&h=900&fit=crop&q=85"
+            src={historicalImage}
             alt="Gebrüder Thonet Vienna — storia dal 1853"
             fill
             className="object-cover"

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import PageHero from "@/components/PageHero";
 import type { Catalog } from "@/types";
 
 export default function CataloghiPage() {
@@ -31,22 +32,12 @@ export default function CataloghiPage() {
 
   return (
     <>
-      {/* ── TITLE SECTION ────────────────────────────────────── */}
-      <section className="pt-32 md:pt-40 pb-12 md:pb-16">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-center px-8 max-w-4xl mx-auto"
-        >
-          <h1 className="font-serif text-3xl md:text-5xl lg:text-[4rem] text-dark leading-[1.15] tracking-tight">
-            Cataloghi
-          </h1>
-        </motion.div>
-      </section>
-
-      {/* spacer */}
-      <div className="h-8 md:h-16" />
+      {/* ── Hero Section ────────────────────────────────────── */}
+      <PageHero
+        page="cataloghi"
+        defaultTitle="Cataloghi"
+        defaultImage="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=800&fit=crop"
+      />
 
       {/* ── CATALOGHI SECTIONS ───────────────────────────────── */}
       {cataloghiItems.map((item, i) => (

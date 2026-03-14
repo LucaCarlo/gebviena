@@ -4,12 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-export default function FullWidthBanner() {
+interface FullWidthBannerProps {
+  bannerImage: string;
+}
+
+export default function FullWidthBanner({ bannerImage }: FullWidthBannerProps) {
   return (
     <section className="relative w-full" style={{ height: "90vh" }}>
       {/* Background image — dark scene */}
       <Image
-        src="https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=2560&h=1700&fit=crop&q=90"
+        src={bannerImage}
         alt="Sedute che invitano a restare"
         fill
         className="object-cover brightness-[0.6]"

@@ -4,7 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-export default function FeaturedProduct() {
+interface FeaturedProductProps {
+  ambianceImage: string;
+  productImage: string;
+}
+
+export default function FeaturedProduct({ ambianceImage, productImage }: FeaturedProductProps) {
   return (
     <section className="w-full">
       <div className="grid grid-cols-1 lg:grid-cols-2 items-start">
@@ -18,7 +23,7 @@ export default function FeaturedProduct() {
           style={{ aspectRatio: "3 / 4.2" }}
         >
           <Image
-            src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1200&h=2000&fit=crop&q=85"
+            src={ambianceImage}
             alt="Kipferl ambiance"
             fill
             className="object-cover"
@@ -36,7 +41,7 @@ export default function FeaturedProduct() {
             style={{ aspectRatio: "3 / 4" }}
           >
             <Image
-              src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=900&h=1200&fit=crop&q=85"
+              src={productImage}
               alt="Kipferl sofa"
               fill
               className="object-cover"

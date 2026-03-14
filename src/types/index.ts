@@ -321,6 +321,18 @@ export interface MediaFile {
   createdAt: string;
 }
 
+export interface PageImage {
+  id: string;
+  page: string;
+  section: string;
+  label: string;
+  imageUrl: string;
+  altText: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ContactSubmission {
   id: string;
   name: string;
@@ -388,6 +400,7 @@ export interface DashboardStats {
   contactSubmissionsCount: number;
   unreadContactsCount: number;
   heroSlidesCount: number;
+  pageImagesCount: number;
   languagesCount: number;
   mediaFilesCount: number;
   pageViewsCount: number;

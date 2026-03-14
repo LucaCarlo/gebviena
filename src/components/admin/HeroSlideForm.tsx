@@ -7,9 +7,10 @@ import ImageUploadField from "./ImageUploadField";
 
 interface HeroSlideFormProps {
   slideId?: string;
+  defaultPage?: string;
 }
 
-export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
+export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -25,7 +26,7 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
     verticalPosition: "center",
     darkOverlay: false,
     overlayOpacity: 60,
-    page: "homepage",
+    page: defaultPage || "homepage",
     isActive: true,
     sortOrder: 0,
   });
@@ -73,7 +74,7 @@ export default function HeroSlideForm({ slideId }: HeroSlideFormProps) {
       const data = await res.json();
 
       if (data.success) {
-        router.push("/admin/hero");
+        router.push("/admin/gestione-immagini");
       } else {
         setError(data.error || "Errore nel salvataggio");
       }

@@ -12,7 +12,6 @@ import {
   Trophy,
   Store,
   Users,
-  Image as LucideImage,
   ImageIcon,
   UserCog,
   Mail,
@@ -23,6 +22,7 @@ import {
   ChevronDown,
   Newspaper,
   FileDown,
+  Images,
   Menu,
   X,
   PenLine,
@@ -124,7 +124,7 @@ const navSections: NavSection[] = [
   {
     label: "Configurazione",
     items: [
-      { href: "/admin/hero", label: "Hero Slides", icon: LucideImage, permission: "hero.view" },
+      { href: "/admin/gestione-immagini", label: "Gestione Immagini", icon: Images, permission: "hero.view" },
       { href: "/admin/media", label: "Media", icon: ImageIcon, permission: "media.view" },
     ],
   },

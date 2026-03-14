@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import PageHero from "@/components/PageHero";
 import type { Metadata } from "next";
 import DesignerGrid from "./DesignerGrid";
 
@@ -79,14 +80,12 @@ export default async function DesignerPremiPage() {
 
   return (
     <>
-      {/* ── Titolo ───────────────────────────────────────────────── */}
-      <section className="pt-16 md:pt-24 lg:pt-32 pb-12 md:pb-16">
-        <div className="mx-auto w-[90%] max-w-[75%] text-center">
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-dark leading-[1.2] tracking-tight">
-            Designer e premi
-          </h1>
-        </div>
-      </section>
+      {/* ── Hero Section ───────────────────────────────────────── */}
+      <PageHero
+        page="designer-e-premi"
+        defaultTitle="Designer e premi"
+        defaultImage="https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1920&h=800&fit=crop"
+      />
 
       {/* ── Intro — text left-aligned ────────────────────────────── */}
       <section className="pb-16 md:pb-20">

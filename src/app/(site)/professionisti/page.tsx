@@ -1,19 +1,22 @@
-import Image from "next/image";
 import Link from "next/link";
+import { getPageImages } from "@/lib/page-images";
+import PageHero from "@/components/PageHero";
 
-export default function ProfessionistiPage() {
+const DEFAULTS: Record<string, string> = {
+  hero: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop",
+};
+
+export default async function ProfessionistiPage() {
+  const imgs = await getPageImages("professionisti", DEFAULTS);
+
   return (
     <>
       {/* Hero */}
-      <section className="relative h-[40vh] flex items-center justify-center bg-warm-900">
-        <Image
-          src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop"
-          alt="Professionisti"
-          fill
-          className="object-cover opacity-30"
-        />
-        <h1 className="relative font-serif text-4xl md:text-5xl text-white">Professionisti</h1>
-      </section>
+      <PageHero
+        page="professionisti"
+        defaultTitle="Professionisti"
+        defaultImage={imgs.hero}
+      />
 
       {/* Content */}
       <section className="section-padding">

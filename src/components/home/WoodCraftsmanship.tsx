@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-export default function WoodCraftsmanship() {
+interface WoodCraftsmanshipProps {
+  videoUrl: string;
+}
+
+export default function WoodCraftsmanship({ videoUrl }: WoodCraftsmanshipProps) {
   return (
     <section className="relative w-full" style={{ height: "90vh" }}>
       {/* Background video — full bleed, autoplay, muted, looping */}
@@ -15,7 +19,7 @@ export default function WoodCraftsmanship() {
         className="absolute inset-0 w-full h-full object-cover"
       >
         <source
-          src="https://assets.mixkit.co/videos/44862/44862-720.mp4"
+          src={videoUrl}
           type="video/mp4"
         />
       </video>

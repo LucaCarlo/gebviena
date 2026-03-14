@@ -456,6 +456,21 @@ model Catalog {
   @@index([section])
 }
 
+model PageImage {
+  id        String   @id @default(cuid())
+  page      String
+  section   String
+  label     String
+  imageUrl  String
+  altText   String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([page, section])
+  @@index([page])
+}
+
 model FormConfig {
   id        String   @id @default(cuid())
   formType  String   @unique

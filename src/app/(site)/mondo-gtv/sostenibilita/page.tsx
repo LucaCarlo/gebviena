@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getPageImages } from "@/lib/page-images";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -23,20 +24,25 @@ const RELATED_PAGES = [
   },
 ];
 
-export default async function SostenibilitaPage() {
-  // Fetch hero slide for this page
-  const heroSlide = await prisma.heroSlide.findFirst({
-    where: { page: "sostenibilita", isActive: true },
-    orderBy: { sortOrder: "asc" },
-  });
+const DEFAULTS: Record<string, string> = {
+  "legno-fsc": "/images/sostenibilita-legno.jpg",
+};
 
-  const relatedSlides = await prisma.heroSlide.findMany({
-    where: {
-      page: { in: RELATED_PAGES.map((p) => p.page) },
-      isActive: true,
-    },
-    orderBy: { sortOrder: "asc" },
-  });
+export default async function SostenibilitaPage() {
+  const [heroSlide, imgs, relatedSlides] = await Promise.all([
+    prisma.heroSlide.findFirst({
+      where: { page: "sostenibilita", isActive: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+    getPageImages("sostenibilita", DEFAULTS),
+    prisma.heroSlide.findMany({
+      where: {
+        page: { in: RELATED_PAGES.map((p) => p.page) },
+        isActive: true,
+      },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
 
   const slidesByPage = new Map<string, (typeof relatedSlides)[0]>();
   for (const slide of relatedSlides) {
@@ -108,7 +114,7 @@ export default async function SostenibilitaPage() {
             <div className="lg:col-span-5">
               <div className="relative aspect-square bg-warm-100 overflow-hidden">
                 <Image
-                  src="/images/sostenibilita-legno.jpg"
+                  src={imgs["legno-fsc"]}
                   alt="Legno Certificato FSC®"
                   fill
                   className="object-cover"

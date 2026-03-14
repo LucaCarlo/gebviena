@@ -75,6 +75,13 @@ export const HERO_PAGES = [
   { value: "campagne-video", label: "Campagne & Video" },
   { value: "news", label: "News & Rassegna Stampa" },
   { value: "collaborazioni", label: "Collaborazioni Designer" },
+  { value: "contatti", label: "Contatti" },
+  { value: "cataloghi", label: "Cataloghi" },
+  { value: "materiale-tecnico", label: "Schede Tecniche" },
+  { value: "realizzazioni-custom", label: "Realizzazioni Custom" },
+  { value: "ufficio-stampa", label: "Ufficio Stampa" },
+  { value: "rete-vendita", label: "Rete di Vendita" },
+  { value: "richiesta-info", label: "Richiesta Informazioni" },
 ] as const;
 
 /** @deprecated Usa i ruoli dal DB (tabella Role) */
@@ -107,6 +114,7 @@ export const PERMISSION_RESOURCES = [
   { key: "forms", label: "Forms" },
   { key: "media", label: "Media" },
   { key: "hero", label: "Hero Slides" },
+  { key: "page_images", label: "Immagini Pagine" },
   { key: "settings", label: "Impostazioni" },
   { key: "analytics", label: "Analisi Traffico" },
   { key: "firma", label: "Firma Email" },
@@ -141,6 +149,140 @@ export function buildPermissions(value: boolean): Record<string, boolean> {
   }
   return perms;
 }
+
+export const PAGE_IMAGES_CONFIG: {
+  page: string;
+  label: string;
+  images: { section: string; label: string; defaultUrl: string }[];
+}[] = [
+  {
+    page: "homepage",
+    label: "Homepage",
+    images: [
+      { section: "featured-ambiance", label: "Featured Product — Ambiance", defaultUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1200&h=2000&fit=crop&q=85" },
+      { section: "featured-product", label: "Featured Product — Prodotto", defaultUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=900&h=1200&fit=crop&q=85" },
+      { section: "category-novita", label: "Categoria — Novità 2025", defaultUrl: "https://images.unsplash.com/photo-1503602642458-232111445657?w=600&h=700&fit=crop&q=80" },
+      { section: "category-sedute", label: "Categoria — Sedute", defaultUrl: "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=600&h=700&fit=crop&q=80" },
+      { section: "category-imbottiti", label: "Categoria — Imbottiti", defaultUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&h=700&fit=crop&q=80" },
+      { section: "category-complementi", label: "Categoria — Complementi", defaultUrl: "https://images.unsplash.com/photo-1532372576444-dda954194ad0?w=600&h=700&fit=crop&q=80" },
+      { section: "category-tavoli", label: "Categoria — Tavoli", defaultUrl: "https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=600&h=700&fit=crop&q=80" },
+      { section: "category-outdoor", label: "Categoria — Outdoor", defaultUrl: "https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=600&h=700&fit=crop&q=80" },
+      { section: "banner-fullwidth", label: "Banner a tutta larghezza", defaultUrl: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=2560&h=1700&fit=crop&q=90" },
+      { section: "spotlight-ambiance", label: "Product Spotlight — Ambiance", defaultUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=2000&fit=crop&q=85" },
+      { section: "spotlight-product", label: "Product Spotlight — Prodotto", defaultUrl: "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=900&h=1200&fit=crop&q=85" },
+      { section: "born-in-vienna", label: "Born in Vienna — Immagine storica", defaultUrl: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1400&h=900&fit=crop&q=85" },
+      { section: "wood-craftsmanship-video", label: "L'armonia del legno — Video", defaultUrl: "https://assets.mixkit.co/videos/44862/44862-720.mp4" },
+    ],
+  },
+  {
+    page: "mondo-gtv",
+    label: "Mondo GTV",
+    images: [
+      { section: "hero", label: "Hero", defaultUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1920&h=800&fit=crop" },
+      { section: "heritage-section", label: "Sezione Heritage", defaultUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1920&h=1080&fit=crop" },
+      { section: "wood-craftsmanship", label: "L'arte del legno curvato", defaultUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&h=1000&fit=crop" },
+    ],
+  },
+  {
+    page: "professionisti",
+    label: "Professionisti",
+    images: [
+      { section: "hero", label: "Hero", defaultUrl: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop" },
+    ],
+  },
+  {
+    page: "contatti",
+    label: "Contatti",
+    images: [
+      { section: "hero", label: "Hero", defaultUrl: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop" },
+    ],
+  },
+  {
+    page: "heritage",
+    label: "Heritage",
+    images: [
+      { section: "thonet-family", label: "Michael Thonet e figli", defaultUrl: "/images/Michael-Thonet-centre-with-his-five-sons.jpg" },
+      { section: "sedia-n1", label: "Sedia N.1", defaultUrl: "/images/heritage-sedia-n1.webp" },
+      { section: "sedia-n4", label: "Sedia N.4", defaultUrl: "/images/heritage-sedia-n4.webp" },
+      { section: "hayworth-kelly", label: "Rita Hayworth e Gene Kelly", defaultUrl: "/images/hayworth-kelly.webp" },
+      { section: "le-corbusier", label: "Le Corbusier", defaultUrl: "/images/le-corbusier.webp" },
+      { section: "winston-churchill", label: "Winston Churchill", defaultUrl: "/images/winston-churchill.webp" },
+      { section: "heritage-journal", label: "Heritage Journal", defaultUrl: "/images/heritage-journal.webp" },
+      { section: "coin-authenticity", label: "La Moneta GTV", defaultUrl: "/images/GTV-coin-authenticity.jpg" },
+    ],
+  },
+  {
+    page: "brand-manifesto",
+    label: "Brand Manifesto",
+    images: [
+      { section: "born-in-vienna", label: "Born in Vienna — Michael Thonet 1853", defaultUrl: "/images/michael-thonet-1853.jpg" },
+    ],
+  },
+  {
+    page: "curvatura-legno",
+    label: "La Curvatura del Legno",
+    images: [
+      { section: "tecnica-legname", label: "La Tecnica", defaultUrl: "/images/tecnica-legname.webp" },
+      { section: "curvatura-detail", label: "Curvatura — dettaglio", defaultUrl: "/images/curvatura-img-1536x865.webp" },
+      { section: "brevetto", label: "Il Brevetto", defaultUrl: "/images/curvatura-brevetto.webp" },
+    ],
+  },
+  {
+    page: "sostenibilita",
+    label: "Sostenibilità",
+    images: [
+      { section: "legno-fsc", label: "Legno Certificato FSC", defaultUrl: "/images/sostenibilita-legno.jpg" },
+    ],
+  },
+  {
+    page: "gtv-experience",
+    label: "GTV Experience",
+    images: [
+      { section: "stories", label: "Storie, visioni, ispirazioni", defaultUrl: "/images/experience-stories.webp" },
+      { section: "lobby", label: "Lobby", defaultUrl: "/images/experience-lobby.webp" },
+      { section: "landscape-1", label: "Veduta 1", defaultUrl: "/images/foto-landscape-double-1.webp" },
+      { section: "landscape-2", label: "Veduta 2", defaultUrl: "/images/foto-landscape-double-2.webp" },
+      { section: "corridors", label: "I Corridoi", defaultUrl: "/images/experience-corridors.webp" },
+      { section: "camera-1", label: "Camera 1", defaultUrl: "/images/INTERNO_MARCHE_023_17-683x1024.jpg" },
+      { section: "camera-2", label: "Camera 2", defaultUrl: "/images/InternoMarche-34-751x1024.jpg" },
+      { section: "camera-3", label: "Camera 3", defaultUrl: "/images/INTERNO_MARCHE_023_16-742x1024.jpg" },
+      { section: "carousel-1", label: "Slideshow — Magistretti", defaultUrl: "/images/Magistretti-G03_1-2048x1365.jpg" },
+      { section: "carousel-2", label: "Slideshow — Secessione Viennese", defaultUrl: "/images/Secessione-Viennese-G07_1-2048x1861.jpg" },
+      { section: "carousel-3", label: "Slideshow — Arts & Crafts", defaultUrl: "/images/ArtsCrafts-G05_3-2048x1666.jpg" },
+      { section: "carousel-4", label: "Slideshow — Thonet 303 (1)", defaultUrl: "/images/Thonet-303_1-2048x1365.jpg" },
+      { section: "carousel-5", label: "Slideshow — Thonet 303 (2)", defaultUrl: "/images/Thonet-303_6-2048x1486.jpg" },
+      { section: "gamfratesi", label: "Vivi la GTV Experience", defaultUrl: "/images/GamFratesi.jpg" },
+    ],
+  },
+  {
+    page: "realizzazioni-custom",
+    label: "Realizzazioni Custom",
+    images: [
+      { section: "main", label: "Immagine principale", defaultUrl: "/images/professionisti-realizzazioni.webp" },
+    ],
+  },
+  {
+    page: "ufficio-stampa",
+    label: "Ufficio Stampa",
+    images: [
+      { section: "main", label: "Immagine principale", defaultUrl: "/images/PEERS-design-by-Front-for-GTV-2-1024x768.jpg" },
+    ],
+  },
+  {
+    page: "richiesta-info",
+    label: "Richiesta Informazioni",
+    images: [
+      { section: "hero", label: "Hero", defaultUrl: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop" },
+    ],
+  },
+  {
+    page: "rete-vendita",
+    label: "Rete di Vendita",
+    images: [
+      { section: "hero-bg", label: "Sfondo Hero", defaultUrl: "/foto-gebvienna/rete-di-vendita.png" },
+    ],
+  },
+];
 
 export const MEDIA_FOLDERS = [
   { value: "general", label: "Generale" },

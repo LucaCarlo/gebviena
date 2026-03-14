@@ -1,29 +1,24 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { getPageImages } from "@/lib/page-images";
+import PageHero from "@/components/PageHero";
 
-export default function UfficioStampaPage() {
+const DEFAULTS: Record<string, string> = {
+  main: "/images/PEERS-design-by-Front-for-GTV-2-1024x768.jpg",
+};
+
+export default async function UfficioStampaPage() {
+  const imgs = await getPageImages("ufficio-stampa", DEFAULTS);
+
   return (
     <>
-      {/* ── TITLE SECTION ────────────────────────────────────── */}
-      <section className="pt-32 md:pt-40 pb-12 md:pb-16">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-center px-8 max-w-4xl mx-auto"
-        >
-          <h1 className="font-serif text-3xl md:text-5xl lg:text-[4rem] text-dark leading-[1.15] tracking-tight">
-            Ufficio Stampa
-          </h1>
-        </motion.div>
-      </section>
-
-      {/* spacer */}
-      <div className="h-8 md:h-16" />
+      {/* ── Hero Section ────────────────────────────────────── */}
+      <PageHero
+        page="ufficio-stampa"
+        defaultTitle="Ufficio Stampa"
+        defaultImage="/images/PEERS-design-by-Front-for-GTV-2-1024x768.jpg"
+      />
 
       {/* ── IMAGE + TEXT ─────────────────────────────────────── */}
       <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
@@ -54,7 +49,7 @@ export default function UfficioStampaPage() {
           {/* Right: image */}
           <div className="relative bg-warm-200 min-h-[400px]">
             <Image
-              src="/images/PEERS-design-by-Front-for-GTV-2-1024x768.jpg"
+              src={imgs.main}
               alt="Ufficio Stampa"
               fill
               className="object-cover"

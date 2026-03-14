@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronRight, Download } from "lucide-react";
 import { motion } from "framer-motion";
+import PageHero from "@/components/PageHero";
 
 interface ProductSheet {
   id: string;
@@ -27,22 +28,12 @@ export default function MaterialeTecnicoPage() {
 
   return (
     <>
-      {/* ── TITLE SECTION ────────────────────────────────────── */}
-      <section className="pt-32 md:pt-40 pb-12 md:pb-16">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-center px-8 max-w-4xl mx-auto"
-        >
-          <h1 className="font-serif text-3xl md:text-5xl lg:text-[4rem] text-dark leading-[1.15] tracking-tight">
-            Schede Tecniche
-          </h1>
-        </motion.div>
-      </section>
-
-      {/* spacer */}
-      <div className="h-4 md:h-8" />
+      {/* ── Hero Section ────────────────────────────────────── */}
+      <PageHero
+        page="materiale-tecnico"
+        defaultTitle="Schede Tecniche"
+        defaultImage="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=800&fit=crop"
+      />
 
       {/* ── PRODUCT LIST ─────────────────────────────────────── */}
       <section className="gtv-container pb-16 lg:pb-24">

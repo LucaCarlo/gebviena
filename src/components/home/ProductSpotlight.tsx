@@ -4,7 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-export default function ProductSpotlight() {
+interface ProductSpotlightProps {
+  ambianceImage: string;
+  productImage: string;
+}
+
+export default function ProductSpotlight({ ambianceImage, productImage }: ProductSpotlightProps) {
   return (
     <section className="w-full">
       <div className="grid grid-cols-1 lg:grid-cols-2 items-start">
@@ -18,7 +23,7 @@ export default function ProductSpotlight() {
           style={{ aspectRatio: "3 / 4.2" }}
         >
           <Image
-            src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=2000&fit=crop&q=85"
+            src={ambianceImage}
             alt="Thonet ambiance"
             fill
             className="object-cover"
@@ -36,7 +41,7 @@ export default function ProductSpotlight() {
             style={{ aspectRatio: "3 / 4" }}
           >
             <Image
-              src="https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=900&h=1200&fit=crop&q=85"
+              src={productImage}
               alt="Sedia Thonet"
               fill
               className="object-cover"

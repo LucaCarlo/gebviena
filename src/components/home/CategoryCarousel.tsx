@@ -5,40 +5,27 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-const categories = [
-  {
-    name: "Novità 2025",
-    image: "https://images.unsplash.com/photo-1503602642458-232111445657?w=600&h=700&fit=crop&q=80",
-    href: "/prodotti?category=NOVITA",
-  },
-  {
-    name: "Sedute",
-    image: "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=600&h=700&fit=crop&q=80",
-    href: "/prodotti?category=SEDUTE",
-  },
-  {
-    name: "Imbottiti",
-    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&h=700&fit=crop&q=80",
-    href: "/prodotti?category=IMBOTTITI",
-  },
-  {
-    name: "Complementi",
-    image: "https://images.unsplash.com/photo-1532372576444-dda954194ad0?w=600&h=700&fit=crop&q=80",
-    href: "/prodotti?category=COMPLEMENTI",
-  },
-  {
-    name: "Tavoli",
-    image: "https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=600&h=700&fit=crop&q=80",
-    href: "/prodotti?category=TAVOLI",
-  },
-  {
-    name: "Outdoor",
-    image: "https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=600&h=700&fit=crop&q=80",
-    href: "/prodotti?category=OUTDOOR",
-  },
-];
+interface CategoryCarouselProps {
+  categoryImages: {
+    novita: string;
+    sedute: string;
+    imbottiti: string;
+    complementi: string;
+    tavoli: string;
+    outdoor: string;
+  };
+}
 
-export default function CategoryCarousel() {
+export default function CategoryCarousel({ categoryImages }: CategoryCarouselProps) {
+  const categories = [
+    { name: "Novità 2025", image: categoryImages.novita, href: "/prodotti?category=NOVITA" },
+    { name: "Sedute", image: categoryImages.sedute, href: "/prodotti?category=SEDUTE" },
+    { name: "Imbottiti", image: categoryImages.imbottiti, href: "/prodotti?category=IMBOTTITI" },
+    { name: "Complementi", image: categoryImages.complementi, href: "/prodotti?category=COMPLEMENTI" },
+    { name: "Tavoli", image: categoryImages.tavoli, href: "/prodotti?category=TAVOLI" },
+    { name: "Outdoor", image: categoryImages.outdoor, href: "/prodotti?category=OUTDOOR" },
+  ];
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);

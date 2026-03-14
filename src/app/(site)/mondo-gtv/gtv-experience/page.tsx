@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import type { Metadata } from "next";
+import { getPageImages } from "@/lib/page-images";
 import ExperienceCarousel from "./ExperienceCarousel";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "GTV Experience — Interno Marche Design Hotel | Gebrüder Thonet Vienna",
@@ -28,20 +29,38 @@ const RELATED_PAGES = [
   },
 ];
 
-export default async function GtvExperiencePage() {
-  // Fetch hero slide for this page
-  const heroSlide = await prisma.heroSlide.findFirst({
-    where: { page: "gtv-experience", isActive: true },
-    orderBy: { sortOrder: "asc" },
-  });
+const DEFAULTS: Record<string, string> = {
+  stories: "/images/experience-stories.webp",
+  lobby: "/images/experience-lobby.webp",
+  "landscape-1": "/images/foto-landscape-double-1.webp",
+  "landscape-2": "/images/foto-landscape-double-2.webp",
+  corridors: "/images/experience-corridors.webp",
+  "camera-1": "/images/INTERNO_MARCHE_023_17-683x1024.jpg",
+  "camera-2": "/images/InternoMarche-34-751x1024.jpg",
+  "camera-3": "/images/INTERNO_MARCHE_023_16-742x1024.jpg",
+  "carousel-1": "/images/Magistretti-G03_1-2048x1365.jpg",
+  "carousel-2": "/images/Secessione-Viennese-G07_1-2048x1861.jpg",
+  "carousel-3": "/images/ArtsCrafts-G05_3-2048x1666.jpg",
+  "carousel-4": "/images/Thonet-303_1-2048x1365.jpg",
+  "carousel-5": "/images/Thonet-303_6-2048x1486.jpg",
+  gamfratesi: "/images/GamFratesi.jpg",
+};
 
-  const relatedSlides = await prisma.heroSlide.findMany({
-    where: {
-      page: { in: RELATED_PAGES.map((p) => p.page) },
-      isActive: true,
-    },
-    orderBy: { sortOrder: "asc" },
-  });
+export default async function GtvExperiencePage() {
+  const [heroSlide, imgs, relatedSlides] = await Promise.all([
+    prisma.heroSlide.findFirst({
+      where: { page: "gtv-experience", isActive: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+    getPageImages("gtv-experience", DEFAULTS),
+    prisma.heroSlide.findMany({
+      where: {
+        page: { in: RELATED_PAGES.map((p) => p.page) },
+        isActive: true,
+      },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
 
   const slidesByPage = new Map<string, (typeof relatedSlides)[0]>();
   for (const slide of relatedSlides) {
@@ -135,7 +154,7 @@ export default async function GtvExperiencePage() {
           {/* Right: image */}
           <div className="relative bg-warm-200 min-h-[400px]">
             <Image
-              src="/images/experience-stories.webp"
+              src={imgs.stories}
               alt="Storie, visioni, ispirazioni — Interno Marche"
               fill
               className="object-cover"
@@ -187,7 +206,7 @@ export default async function GtvExperiencePage() {
             <div className="lg:col-span-5">
               <div className="relative aspect-square bg-warm-100 overflow-hidden">
                 <Image
-                  src="/images/experience-lobby.webp"
+                  src={imgs.lobby}
                   alt="Lobby — Interno Marche Design Hotel"
                   fill
                   className="object-cover"
@@ -205,7 +224,7 @@ export default async function GtvExperiencePage() {
           <div className="grid grid-cols-2 gap-3 md:gap-4">
           <div className="relative aspect-[16/10] bg-warm-100 overflow-hidden">
             <Image
-              src="/images/foto-landscape-double-1.webp"
+              src={imgs["landscape-1"]}
               alt="Interno Marche — veduta 1"
               fill
               className="object-cover"
@@ -214,7 +233,7 @@ export default async function GtvExperiencePage() {
           </div>
           <div className="relative aspect-[16/10] bg-warm-100 overflow-hidden">
             <Image
-              src="/images/foto-landscape-double-2.webp"
+              src={imgs["landscape-2"]}
               alt="Interno Marche — veduta 2"
               fill
               className="object-cover"
@@ -233,7 +252,7 @@ export default async function GtvExperiencePage() {
             <div className="lg:col-span-5">
               <div className="relative aspect-square bg-warm-100 overflow-hidden">
                 <Image
-                  src="/images/experience-corridors.webp"
+                  src={imgs.corridors}
                   alt="I corridoi — Interno Marche Design Hotel"
                   fill
                   className="object-cover"
@@ -264,7 +283,7 @@ export default async function GtvExperiencePage() {
           <div className="grid grid-cols-3 gap-3 md:gap-4">
             <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
               <Image
-                src="/images/INTERNO_MARCHE_023_17-683x1024.jpg"
+                src={imgs["camera-1"]}
                 alt="Interno Marche — camera 1"
                 fill
                 className="object-cover"
@@ -273,7 +292,7 @@ export default async function GtvExperiencePage() {
             </div>
             <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
               <Image
-                src="/images/InternoMarche-34-751x1024.jpg"
+                src={imgs["camera-2"]}
                 alt="Interno Marche — camera 2"
                 fill
                 className="object-cover"
@@ -282,7 +301,7 @@ export default async function GtvExperiencePage() {
             </div>
             <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
               <Image
-                src="/images/INTERNO_MARCHE_023_16-742x1024.jpg"
+                src={imgs["camera-3"]}
                 alt="Interno Marche — camera 3"
                 fill
                 className="object-cover"
@@ -305,11 +324,11 @@ export default async function GtvExperiencePage() {
       {/* ── Slideshow camere ────────────────────────────────────── */}
       <ExperienceCarousel
         images={[
-          { src: "/images/Magistretti-G03_1-2048x1365.jpg", alt: "Magistretti — Interno Marche" },
-          { src: "/images/Secessione-Viennese-G07_1-2048x1861.jpg", alt: "Secessione Viennese — Interno Marche" },
-          { src: "/images/ArtsCrafts-G05_3-2048x1666.jpg", alt: "Arts & Crafts — Interno Marche" },
-          { src: "/images/Thonet-303_1-2048x1365.jpg", alt: "Thonet 303 — Interno Marche" },
-          { src: "/images/Thonet-303_6-2048x1486.jpg", alt: "Thonet 303 — Interno Marche" },
+          { src: imgs["carousel-1"], alt: "Magistretti — Interno Marche" },
+          { src: imgs["carousel-2"], alt: "Secessione Viennese — Interno Marche" },
+          { src: imgs["carousel-3"], alt: "Arts & Crafts — Interno Marche" },
+          { src: imgs["carousel-4"], alt: "Thonet 303 — Interno Marche" },
+          { src: imgs["carousel-5"], alt: "Thonet 303 — Interno Marche" },
         ]}
       />
 
@@ -319,7 +338,7 @@ export default async function GtvExperiencePage() {
           {/* Left: image */}
           <div className="relative bg-warm-200 min-h-[400px]">
             <Image
-              src="/images/GamFratesi.jpg"
+              src={imgs.gamfratesi}
               alt="Vivi la GTV Experience"
               fill
               className="object-cover"

@@ -1,6 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Users, Newspaper, Mail } from "lucide-react";
+import { getPageImages } from "@/lib/page-images";
+import PageHero from "@/components/PageHero";
 
 const contactLinks = [
   {
@@ -29,19 +30,21 @@ const contactLinks = [
   },
 ];
 
-export default function ContattiPage() {
+const DEFAULTS: Record<string, string> = {
+  hero: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop",
+};
+
+export default async function ContattiPage() {
+  const imgs = await getPageImages("contatti", DEFAULTS);
+
   return (
     <>
       {/* Hero */}
-      <section className="relative h-[40vh] flex items-center justify-center bg-warm-900">
-        <Image
-          src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop"
-          alt="Contatti"
-          fill
-          className="object-cover opacity-30"
-        />
-        <h1 className="relative font-serif text-4xl md:text-5xl text-white">Contatti</h1>
-      </section>
+      <PageHero
+        page="contatti"
+        defaultTitle="Contatti"
+        defaultImage={imgs.hero}
+      />
 
       {/* Contact Cards */}
       <section className="section-padding">

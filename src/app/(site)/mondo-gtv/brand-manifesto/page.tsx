@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getPageImages } from "@/lib/page-images";
+import PageHero from "@/components/PageHero";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -23,15 +25,27 @@ const RELATED_PAGES = [
   },
 ];
 
+const DEFAULTS: Record<string, string> = {
+  "born-in-vienna": "/images/michael-thonet-1853.jpg",
+};
+
 export default async function BrandManifestoPage() {
-  // Fetch cover images for related pages
-  const relatedSlides = await prisma.heroSlide.findMany({
-    where: {
-      page: { in: RELATED_PAGES.map((p) => p.page) },
-      isActive: true,
-    },
-    orderBy: { sortOrder: "asc" },
-  });
+  const [imgs, relatedSlides, designers] = await Promise.all([
+    getPageImages("brand-manifesto", DEFAULTS),
+    prisma.heroSlide.findMany({
+      where: {
+        page: { in: RELATED_PAGES.map((p) => p.page) },
+        isActive: true,
+      },
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.designer.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, name: true, slug: true, imageUrl: true },
+      take: 9,
+    }),
+  ]);
 
   const slidesByPage = new Map<string, (typeof relatedSlides)[0]>();
   for (const slide of relatedSlides) {
@@ -40,29 +54,14 @@ export default async function BrandManifestoPage() {
     }
   }
 
-  // Fetch first 9 designers from DB (3x3 grid)
-  const designers = await prisma.designer.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: "asc" },
-    select: { id: true, name: true, slug: true, imageUrl: true },
-    take: 9,
-  });
-
   return (
     <>
-      {/* ── Title Section (no hero image) ─────────────────────────── */}
-      <section className="pt-16 md:pt-24 lg:pt-32 pb-12 md:pb-16">
-        <div className="gtv-container-narrow text-center">
-          <p className="label-text mb-6 md:mb-8">Brand Manifesto</p>
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-dark leading-[1.2] tracking-tight">
-            <em>Born</em> in Vienna.
-            <br />
-            Made in <em>Italy.</em>
-            <br />
-            <em>Designed</em> around the world.
-          </h1>
-        </div>
-      </section>
+      {/* ── Hero Section ─────────────────────────────────────────── */}
+      <PageHero
+        page="brand-manifesto"
+        defaultTitle="Born in Vienna. Made in Italy. Designed around the world."
+        defaultImage="/images/michael-thonet-1853.jpg"
+      />
 
       {/* ── Intro paragraph ───────────────────────────────────────── */}
       <section className="pb-20 md:pb-28">
@@ -86,7 +85,7 @@ export default async function BrandManifestoPage() {
           {/* Left: historical image — 50% width, full height */}
           <div className="relative bg-warm-200 min-h-[400px]">
             <Image
-              src="/images/michael-thonet-1853.jpg"
+              src={imgs["born-in-vienna"]}
               alt="Michael Thonet 1853 — Gebrüder Thonet"
               fill
               className="object-cover"

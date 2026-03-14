@@ -31,6 +31,8 @@ const DEFAULT_STORE_FIELDS: FieldConfig[] = [
 const MAP_CENTER = { lat: 41.9028, lng: 12.4964 };
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
+const DEFAULT_HERO_BG = "/foto-gebvienna/rete-di-vendita.png";
+
 export default function ReteVenditaPage() {
   const [activeTab, setActiveTab] = useState<"STORE" | "AGENT">("STORE");
   const [stores, setStores] = useState<PointOfSale[]>([]);
@@ -38,6 +40,7 @@ export default function ReteVenditaPage() {
   const [searchLocation, setSearchLocation] = useState("");
   const [resultCount, setResultCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [heroBg, setHeroBg] = useState(DEFAULT_HERO_BG);
   const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -66,6 +69,13 @@ export default function ReteVenditaPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success) setContactReasons(data.data);
+      })
+      .catch(() => {});
+    fetch("/api/hero-slides?page=rete-vendita")
+      .then((r) => r.json())
+      .then((data) => {
+        const slides = data.data || [];
+        if (slides.length > 0 && slides[0].imageUrl) setHeroBg(slides[0].imageUrl);
       })
       .catch(() => {});
   }, []);
@@ -251,7 +261,7 @@ export default function ReteVenditaPage() {
       <section
         className="relative w-full flex flex-col items-center justify-center py-24 md:py-32 lg:py-40"
         style={{
-          backgroundImage: "url('/foto-gebvienna/rete-di-vendita.png')",
+          backgroundImage: `url('${heroBg}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundColor: "#e8e6e3",

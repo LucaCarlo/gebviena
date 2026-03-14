@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
+import PageHero from "@/components/PageHero";
 
 interface FieldConfig {
   key: string;
@@ -26,6 +26,8 @@ const DEFAULT_FIELD_CONFIG: FieldConfig[] = [
   { key: "subscribeNewsletter", label: "Desidero ricevere aggiornamenti e novità", type: "checkbox", required: false, enabled: true, order: 9 },
 ];
 
+const DEFAULT_HERO = "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop";
+
 export default function RichiestaInfoPage() {
   const [fieldConfig, setFieldConfig] = useState<FieldConfig[] | null>(null);
   const [form, setForm] = useState<Record<string, string | boolean>>({});
@@ -33,6 +35,7 @@ export default function RichiestaInfoPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [contactReasons, setContactReasons] = useState<string[]>([]);
+  const [heroImage, setHeroImage] = useState(DEFAULT_HERO);
   const { executeRecaptcha } = useRecaptcha();
 
   useEffect(() => {
@@ -46,6 +49,15 @@ export default function RichiestaInfoPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success) setContactReasons(data.data);
+      })
+      .catch(() => {});
+    fetch("/api/page-images?page=richiesta-info")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          const hero = data.data?.find((i: { section: string }) => i.section === "hero");
+          if (hero?.imageUrl) setHeroImage(hero.imageUrl);
+        }
       })
       .catch(() => {});
   }, []);
@@ -250,10 +262,11 @@ export default function RichiestaInfoPage() {
 
   return (
     <>
-      <section className="relative h-[35vh] flex items-center justify-center bg-warm-900">
-        <Image src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop" alt="Richiesta Informazioni" fill className="object-cover opacity-30" />
-        <h1 className="relative font-serif text-3xl md:text-5xl text-white text-center">Richiesta informazioni</h1>
-      </section>
+      <PageHero
+        page="richiesta-info"
+        defaultTitle="Richiesta informazioni"
+        defaultImage={heroImage}
+      />
 
       <section className="section-padding">
         <div className="luxury-container max-w-2xl">

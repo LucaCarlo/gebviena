@@ -1,29 +1,24 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, ArrowRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { getPageImages } from "@/lib/page-images";
+import PageHero from "@/components/PageHero";
 
-export default function RealizzazioniCustomPage() {
+const DEFAULTS: Record<string, string> = {
+  main: "/images/professionisti-realizzazioni.webp",
+};
+
+export default async function RealizzazioniCustomPage() {
+  const imgs = await getPageImages("realizzazioni-custom", DEFAULTS);
+
   return (
     <>
-      {/* ── TITLE SECTION ────────────────────────────────────── */}
-      <section className="pt-32 md:pt-40 pb-12 md:pb-16">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-center px-8 max-w-4xl mx-auto"
-        >
-          <h1 className="font-serif text-3xl md:text-5xl lg:text-[4rem] text-dark leading-[1.15] tracking-tight">
-            Realizzazioni Custom
-          </h1>
-        </motion.div>
-      </section>
-
-      {/* spacer */}
-      <div className="h-8 md:h-16" />
+      {/* ── Hero Section ────────────────────────────────────── */}
+      <PageHero
+        page="realizzazioni-custom"
+        defaultTitle="Realizzazioni Custom"
+        defaultImage="/images/professionisti-realizzazioni.webp"
+      />
 
       {/* ── IMAGE + TEXT (same layout as rassegna stampa detail) ── */}
       <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
@@ -31,7 +26,7 @@ export default function RealizzazioniCustomPage() {
           {/* Left: image */}
           <div className="relative bg-warm-200 min-h-[400px]">
             <Image
-              src="/images/professionisti-realizzazioni.webp"
+              src={imgs.main}
               alt="Realizzazioni Custom"
               fill
               className="object-cover"

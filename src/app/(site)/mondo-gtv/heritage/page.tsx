@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getPageImages } from "@/lib/page-images";
+import PageHero from "@/components/PageHero";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -27,14 +29,28 @@ const RELATED_PAGES = [
   },
 ];
 
+const DEFAULTS: Record<string, string> = {
+  "thonet-family": "/images/Michael-Thonet-centre-with-his-five-sons.jpg",
+  "sedia-n1": "/images/heritage-sedia-n1.webp",
+  "sedia-n4": "/images/heritage-sedia-n4.webp",
+  "hayworth-kelly": "/images/hayworth-kelly.webp",
+  "le-corbusier": "/images/le-corbusier.webp",
+  "winston-churchill": "/images/winston-churchill.webp",
+  "heritage-journal": "/images/heritage-journal.webp",
+  "coin-authenticity": "/images/GTV-coin-authenticity.jpg",
+};
+
 export default async function HeritagePage() {
-  const relatedSlides = await prisma.heroSlide.findMany({
-    where: {
-      page: { in: RELATED_PAGES.map((p) => p.page) },
-      isActive: true,
-    },
-    orderBy: { sortOrder: "asc" },
-  });
+  const [imgs, relatedSlides] = await Promise.all([
+    getPageImages("heritage", DEFAULTS),
+    prisma.heroSlide.findMany({
+      where: {
+        page: { in: RELATED_PAGES.map((p) => p.page) },
+        isActive: true,
+      },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
 
   const slidesByPage = new Map<string, (typeof relatedSlides)[0]>();
   for (const slide of relatedSlides) {
@@ -45,14 +61,12 @@ export default async function HeritagePage() {
 
   return (
     <>
-      {/* ── Titolo centrato ───────────────────────────────────────── */}
-      <section className="pt-16 md:pt-24 lg:pt-32 pb-12 md:pb-16">
-        <div className="gtv-container text-center">
-          <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl text-dark leading-[1.2] tracking-tight">
-            Le origini di &ldquo;Gebrüder Thonet&rdquo;
-          </h1>
-        </div>
-      </section>
+      {/* ── Hero Section ───────────────────────────────────────── */}
+      <PageHero
+        page="heritage"
+        defaultTitle='Le origini di "Gebrüder Thonet"'
+        defaultImage="/images/Michael-Thonet-centre-with-his-five-sons.jpg"
+      />
 
       {/* ── Foto famiglia + testo ─────────────────────────────────── */}
       <section className="pb-20 md:pb-28">
@@ -62,7 +76,7 @@ export default async function HeritagePage() {
             <div className="lg:col-span-6">
               <div className="relative aspect-[16/9] bg-warm-100 overflow-hidden">
                 <Image
-                  src="/images/Michael-Thonet-centre-with-his-five-sons.jpg"
+                  src={imgs["thonet-family"]}
                   alt="Michael Thonet e i suoi cinque figli"
                   fill
                   className="object-cover"
@@ -113,7 +127,7 @@ export default async function HeritagePage() {
               <div>
                 <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
                   <Image
-                    src="/images/heritage-sedia-n1.webp"
+                    src={imgs["sedia-n1"]}
                     alt="Sedia Thonet N.1 — Michael Thonet"
                     fill
                     className="object-cover"
@@ -127,7 +141,7 @@ export default async function HeritagePage() {
               <div>
                 <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
                   <Image
-                    src="/images/heritage-sedia-n4.webp"
+                    src={imgs["sedia-n4"]}
                     alt="Sedia Thonet N.4 — Michael Thonet"
                     fill
                     className="object-cover"
@@ -166,7 +180,7 @@ export default async function HeritagePage() {
           <div className="grid grid-cols-3 gap-3 md:gap-4">
             <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
               <Image
-                src="/images/hayworth-kelly.webp"
+                src={imgs["hayworth-kelly"]}
                 alt="Rita Hayworth e Gene Kelly"
                 fill
                 className="object-cover"
@@ -175,7 +189,7 @@ export default async function HeritagePage() {
             </div>
             <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
               <Image
-                src="/images/le-corbusier.webp"
+                src={imgs["le-corbusier"]}
                 alt="Le Corbusier"
                 fill
                 className="object-cover"
@@ -184,7 +198,7 @@ export default async function HeritagePage() {
             </div>
             <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
               <Image
-                src="/images/winston-churchill.webp"
+                src={imgs["winston-churchill"]}
                 alt="Winston Churchill"
                 fill
                 className="object-cover"
@@ -226,7 +240,7 @@ export default async function HeritagePage() {
             {/* Right: image */}
             <div className="flex items-center justify-center">
               <Image
-                src="/images/heritage-journal.webp"
+                src={imgs["heritage-journal"]}
                 alt="Heritage — Gebrüder Thonet Vienna"
                 width={500}
                 height={500}
@@ -272,7 +286,7 @@ export default async function HeritagePage() {
           {/* Left: image — full height */}
           <div className="relative bg-warm-200 min-h-[500px]">
             <Image
-              src="/images/GTV-coin-authenticity.jpg"
+              src={imgs["coin-authenticity"]}
               alt="La Moneta GTV — simbolo di autenticità"
               fill
               className="object-cover"

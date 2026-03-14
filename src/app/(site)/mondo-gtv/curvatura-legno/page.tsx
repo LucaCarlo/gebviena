@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getPageImages } from "@/lib/page-images";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -23,20 +24,28 @@ const RELATED_PAGES = [
   },
 ];
 
+const DEFAULTS: Record<string, string> = {
+  "tecnica-legname": "/images/tecnica-legname.webp",
+  "curvatura-detail": "/images/curvatura-img-1536x865.webp",
+  brevetto: "/images/curvatura-brevetto.webp",
+};
+
 export default async function CurvaturaLegnoPage() {
   // Fetch hero slide for this page
-  const heroSlide = await prisma.heroSlide.findFirst({
-    where: { page: "curvatura-legno", isActive: true },
-    orderBy: { sortOrder: "asc" },
-  });
-
-  const relatedSlides = await prisma.heroSlide.findMany({
-    where: {
-      page: { in: RELATED_PAGES.map((p) => p.page) },
-      isActive: true,
-    },
-    orderBy: { sortOrder: "asc" },
-  });
+  const [heroSlide, imgs, relatedSlides] = await Promise.all([
+    prisma.heroSlide.findFirst({
+      where: { page: "curvatura-legno", isActive: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+    getPageImages("curvatura-legno", DEFAULTS),
+    prisma.heroSlide.findMany({
+      where: {
+        page: { in: RELATED_PAGES.map((p) => p.page) },
+        isActive: true,
+      },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
 
   const slidesByPage = new Map<string, (typeof relatedSlides)[0]>();
   for (const slide of relatedSlides) {
@@ -130,7 +139,7 @@ export default async function CurvaturaLegnoPage() {
             <div className="lg:col-span-5">
               <div className="relative aspect-square bg-warm-100 overflow-hidden">
                 <Image
-                  src="/images/tecnica-legname.webp"
+                  src={imgs["tecnica-legname"]}
                   alt="La tecnica della curvatura del legno"
                   fill
                   className="object-cover"
@@ -147,7 +156,7 @@ export default async function CurvaturaLegnoPage() {
         <div className="mx-auto w-[90%] max-w-[75%]">
           <div className="relative aspect-[16/9] bg-warm-100 overflow-hidden">
             <Image
-              src="/images/curvatura-img-1536x865.webp"
+              src={imgs["curvatura-detail"]}
               alt="La curvatura del legno — dettaglio"
               fill
               className="object-cover"
@@ -165,7 +174,7 @@ export default async function CurvaturaLegnoPage() {
             <div className="lg:col-span-5">
               <div className="relative aspect-square bg-warm-100 overflow-hidden">
                 <Image
-                  src="/images/curvatura-brevetto.webp"
+                  src={imgs.brevetto}
                   alt="Il brevetto Thonet"
                   fill
                   className="object-cover"

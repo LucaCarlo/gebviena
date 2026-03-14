@@ -1,21 +1,25 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getPageImages } from "@/lib/page-images";
+import PageHero from "@/components/PageHero";
 
-export default function MondoGTVPage() {
+const DEFAULTS: Record<string, string> = {
+  hero: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1920&h=800&fit=crop",
+  "heritage-section": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1920&h=1080&fit=crop",
+  "wood-craftsmanship": "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&h=1000&fit=crop",
+};
+
+export default async function MondoGTVPage() {
+  const imgs = await getPageImages("mondo-gtv", DEFAULTS);
+
   return (
     <>
       {/* Hero */}
-      <section className="relative h-[50vh] flex items-center justify-center bg-warm-900">
-        <Image
-          src="https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1920&h=800&fit=crop"
-          alt="Mondo GTV"
-          fill
-          className="object-cover opacity-30"
-        />
-        <h1 className="relative font-serif text-4xl md:text-6xl text-white text-center">
-          Mondo GTV
-        </h1>
-      </section>
+      <PageHero
+        page="mondo-gtv"
+        defaultTitle="Mondo GTV"
+        defaultImage={imgs.hero}
+      />
 
       {/* Intro */}
       <section className="section-padding">
@@ -35,7 +39,7 @@ export default function MondoGTVPage() {
       {/* Heritage Section */}
       <section className="relative h-[60vh] overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1920&h=1080&fit=crop"
+          src={imgs["heritage-section"]}
           alt="Heritage"
           fill
           className="object-cover"
@@ -71,7 +75,7 @@ export default function MondoGTVPage() {
             </div>
             <div className="aspect-[4/5] relative">
               <Image
-                src="https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&h=1000&fit=crop"
+                src={imgs["wood-craftsmanship"]}
                 alt="Lavorazione del legno"
                 fill
                 className="object-cover"
