@@ -831,7 +831,7 @@ function UserDataForm({
       <FieldInput label="Indirizzo" value={userData.address} onChange={(v) => onChange("address", v)} />
       <div className="grid grid-cols-2 gap-3">
         <FieldInput label="Telefono" value={userData.phone} onChange={(v) => onChange("phone", v)} placeholder="es. Tel. +39 011..." />
-        <FieldInput label="Mobile (solo Classico)" value={userData.mobile || ""} onChange={(v) => onChange("mobile", v)} placeholder="es. mobile +39 345..." />
+        <FieldInput label="Mobile" value={userData.mobile || ""} onChange={(v) => onChange("mobile", v)} placeholder="es. mobile +39 345..." />
       </div>
     </div>
   );

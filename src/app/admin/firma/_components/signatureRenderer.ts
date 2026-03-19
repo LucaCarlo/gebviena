@@ -262,28 +262,31 @@ export function renderSignatureHtmlGeb(
   const u = userData;
   const t = template;
 
+  // Font stack — Work Sans won't load in most email clients, so Arial is the real fallback
+  const fontMain = "Arial, Helvetica, sans-serif";
+
   // Build social icons (24px round B&W — pure black circle, white icon)
-  const iconSize = "24px";
+  const iconSize = "22";
   const socialIcons: string[] = [];
   if (t.showWeb && t.webLinkUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.webLinkUrl)}" style="display:inline-block;text-decoration:none;margin-right:4px;"><img src="${ICON_WEB_BW}" style="display:inline-block;width:${iconSize};height:${iconSize};vertical-align:middle;border:0;" alt="Web"></a>`);
+    socialIcons.push(`<a href="${escapeHtml(t.webLinkUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_WEB_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Web"></a>`);
   }
   if (t.showInstagram && t.instagramUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.instagramUrl)}" style="display:inline-block;text-decoration:none;margin-right:4px;"><img src="${ICON_INSTAGRAM_BW}" style="display:inline-block;width:${iconSize};height:${iconSize};vertical-align:middle;border:0;" alt="Instagram"></a>`);
+    socialIcons.push(`<a href="${escapeHtml(t.instagramUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_INSTAGRAM_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Instagram"></a>`);
   }
   if (t.showLinkedin && t.linkedinUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.linkedinUrl)}" style="display:inline-block;text-decoration:none;margin-right:4px;"><img src="${ICON_LINKEDIN_BW}" style="display:inline-block;width:${iconSize};height:${iconSize};vertical-align:middle;border:0;" alt="LinkedIn"></a>`);
+    socialIcons.push(`<a href="${escapeHtml(t.linkedinUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_LINKEDIN_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="LinkedIn"></a>`);
   }
   if (t.showFacebook && t.facebookUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.facebookUrl)}" style="display:inline-block;text-decoration:none;margin-right:4px;"><img src="${ICON_FACEBOOK_BW}" style="display:inline-block;width:${iconSize};height:${iconSize};vertical-align:middle;border:0;" alt="Facebook"></a>`);
+    socialIcons.push(`<a href="${escapeHtml(t.facebookUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_FACEBOOK_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Facebook"></a>`);
   }
   if (t.showPinterest && t.pinterestUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.pinterestUrl)}" style="display:inline-block;text-decoration:none;"><img src="${ICON_PINTEREST_BW}" style="display:inline-block;width:${iconSize};height:${iconSize};vertical-align:middle;border:0;" alt="Pinterest"></a>`);
+    socialIcons.push(`<a href="${escapeHtml(t.pinterestUrl)}" target="_blank" style="display:inline-block;text-decoration:none;"><img src="${ICON_PINTEREST_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Pinterest"></a>`);
   }
   const socialHtml = socialIcons.join("");
 
   const logoHtml = t.logoUrl
-    ? `<img alt="Logo" src="${t.logoUrl}" style="width:130px;height:auto;display:block;border:0;margin:0 auto;">`
+    ? `<img alt="Logo" src="${t.logoUrl}" width="130" style="display:block;border:0;outline:none;height:auto;margin:0 auto;" />`
     : "";
 
   let disclaimerHtml = "";
@@ -298,54 +301,69 @@ export function renderSignatureHtmlGeb(
   }
   const ecoText = t.ecoText || "";
 
-  // Info lines — black text, Work Sans Regular 9pt, tight line-height
+  // Info lines — black text, 9pt, tight line-height
   const infoLines: string[] = [];
   if (u.infoLine1) infoLines.push(escapeHtml(u.infoLine1));
-  if (u.infoLine2) infoLines.push(escapeHtml(u.infoLine2));
+  if (u.infoLine2) infoLines.push(`<strong style="font-weight:bold;">${escapeHtml(u.infoLine2)}</strong>`);
   if (u.address) infoLines.push(escapeHtml(u.address));
-  // Strip mobile part for GEB Modern
+  // Phone + mobile on the same line, separated by a space + pipe
   if (u.phone) {
-    const phoneOnly = u.phone.replace(/\s*-\s*mobile\s.*/i, "");
-    infoLines.push(escapeHtml(phoneOnly));
+    let phoneLine = escapeHtml(u.phone);
+    if (u.mobile && u.mobile.trim()) {
+      phoneLine += `&nbsp;&nbsp;|&nbsp;&nbsp;${escapeHtml(u.mobile)}`;
+    }
+    infoLines.push(phoneLine);
+  } else if (u.mobile && u.mobile.trim()) {
+    infoLines.push(escapeHtml(u.mobile));
   }
   const infoHtml = infoLines
-    .map((line) => `<span style="font-family:'Work Sans',Arial,sans-serif;font-size:9pt;font-weight:400;color:#000000;">${line}</span>`)
+    .map((line) => `<span style="font-family:${fontMain};font-size:9pt;color:#000000;line-height:1.4;">${line}</span>`)
     .join("<br>");
 
-  // Department forced uppercase
+  // Department forced uppercase + bold
   const deptText = escapeHtml(u.department).toUpperCase();
+
+  // Website line
+  const websiteHtml = t.website && t.websiteUrl
+    ? `<span style="font-family:${fontMain};font-size:9pt;color:#000000;line-height:1.4;"><a href="${escapeHtml(t.websiteUrl)}" target="_blank" style="color:#000000;text-decoration:none;">${escapeHtml(t.website)}</a></span>`
+    : "";
 
   return `<html>
 <head>
-<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
 </head>
-<body style="margin:0;padding:0;">
-<!-- Signature section (compact ~400px) -->
-<table border="0" cellspacing="0" cellpadding="0" style="white-space:normal;width:auto;font-family:'Work Sans',Arial,sans-serif;">
+<body style="margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
-<td style="width:148px;padding:0;border-right:1px solid #000000;vertical-align:top;">
-<div style="text-align:center;padding-right:12px;">${logoHtml}</div>
-</td>
-<td rowspan="2" style="padding:0 0 0 12px;vertical-align:top;">
-<div style="font-family:'Work Sans',Arial,sans-serif;font-size:16pt;font-weight:500;color:#000000;margin:0;padding:0;line-height:1.0;">${escapeHtml(u.fullName)}</div>
-<div style="font-family:'Work Sans',Arial,sans-serif;font-size:8pt;font-weight:500;color:#000000;margin:0 0 7px 0;padding:0;line-height:1.0;text-transform:uppercase;">${deptText}</div>
-<div style="font-family:'Work Sans',Arial,sans-serif;font-size:9pt;font-weight:300;color:#000000;line-height:1.15;">${infoLines.join("<br>")}</div>
-</td>
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;">
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;">
+<tr>
+<td style="text-align:center;padding:0 0 6px 0;">${logoHtml}</td>
 </tr>
 <tr>
-<td style="width:148px;padding:0;border-right:1px solid #000000;vertical-align:bottom;">
-<div style="white-space:nowrap;text-align:center;padding-right:12px;padding-top:4px;">${socialHtml}</div>
+<td style="text-align:center;padding:4px 0 0 0;">
+<!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
+<!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
 </td>
 </tr>
 </table>
-<!-- Banner section (much wider than signature above) -->
-${t.bannerUrl ? `<table border="0" cellspacing="0" cellpadding="0" style="margin-top:28px;"><tr><td><img src="${t.bannerUrl}" style="width:750px;height:auto;display:block;border:0;" alt="Banner"></td></tr></table>` : ""}
-<!-- Disclaimer -->
-<table border="0" cellspacing="0" cellpadding="0" style="width:750px;margin-top:8px;">
+</td>
+<td style="padding:0 0 0 12px;vertical-align:top;">
+<div style="font-family:${fontMain};font-size:16pt;font-weight:bold;color:#000000;margin:0;padding:0;line-height:1.1;mso-line-height-rule:exactly;">${escapeHtml(u.fullName)}</div>
+<div style="font-family:${fontMain};font-size:8pt;font-weight:bold;color:#000000;margin:0 0 7px 0;padding:0;line-height:1.1;text-transform:uppercase;mso-line-height-rule:exactly;">${deptText}</div>
+<div style="font-family:${fontMain};font-size:9pt;color:#000000;line-height:1.4;mso-line-height-rule:exactly;">${infoHtml}</div>
+${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
+</td>
+</tr>
+</table>
+${t.bannerUrl ? `<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin-top:20px;"><tr><td><img src="${t.bannerUrl}" width="560" style="display:block;border:0;outline:none;height:auto;max-width:560px;width:560px;" alt="Banner" /></td></tr></table>` : ""}
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;max-width:560px;margin-top:6px;">
 <tr>
 <td>
-<p style="font-family:'Work Sans',Arial,sans-serif;font-size:6pt;font-weight:400;color:#8f929b;margin:0;padding:0;line-height:1.4;">${disclaimerHtml}</p>
-<p style="font-family:'Work Sans',Arial,sans-serif;font-size:9pt;font-weight:400;color:#228b22;margin:4px 0 0 0;padding:0;">${ecoText}</p>
+<div style="font-family:${fontMain};font-size:6pt;color:#8f929b;margin:0;padding:0;line-height:1.4;mso-line-height-rule:exactly;">${disclaimerHtml}</div>
+<div style="font-family:${fontMain};font-size:9pt;color:#228b22;margin:4px 0 0 0;padding:0;mso-line-height-rule:exactly;">${ecoText}</div>
 </td>
 </tr>
 </table>
