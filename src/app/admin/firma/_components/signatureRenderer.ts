@@ -361,12 +361,9 @@ export function renderSignatureHtmlGeb(
 <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
 <td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;">
-<table border="0" cellspacing="0" cellpadding="0" width="140" role="presentation" style="border-collapse:collapse;">
+<table border="0" cellspacing="0" cellpadding="0" width="140" role="presentation" style="border-collapse:collapse;height:100%;">
 <tr>
 <td style="text-align:center;padding:0;vertical-align:top;">${logoHtml}</td>
-</tr>
-<tr>
-<td style="height:20px;font-size:1px;line-height:1px;">&nbsp;</td>
 </tr>
 <tr>
 <td style="text-align:center;padding:0;vertical-align:bottom;">
