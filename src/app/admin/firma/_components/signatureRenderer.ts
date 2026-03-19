@@ -262,9 +262,9 @@ export function renderSignatureHtmlGeb(
   const u = userData;
   const t = template;
 
-  // Work Sans font — embedded via @import for clients that support it (Apple Mail, iOS, Thunderbird)
-  // Falls back to Arial on Gmail, Outlook etc.
-  const fontStack = "'Work Sans', Arial, Helvetica, sans-serif";
+  // Work Sans via @import works on: Gmail (web), Apple Mail, iOS Mail, Thunderbird, Samsung Mail
+  // Outlook desktop (Word engine) CANNOT render Google Fonts — falls back to Aptos/Calibri/Arial
+  const fontStack = "'Work Sans', Aptos, Calibri, Arial, Helvetica, sans-serif";
 
   // Build social icons (22px round B&W)
   const iconSize = "22";
@@ -338,10 +338,22 @@ export function renderSignatureHtmlGeb(
 <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
 <style type="text/css">
 @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;700&display=swap');
+@font-face {
+  font-family: 'Work Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url('https://fonts.gstatic.com/s/worksans/v19/QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXNi8.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Work Sans';
+  font-style: normal;
+  font-weight: 500;
+  src: url('https://fonts.gstatic.com/s/worksans/v19/QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K3fXNi8.woff2') format('woff2');
+}
 </style>
 <!--[if mso]>
 <style type="text/css">
-* { font-family: Arial, Helvetica, sans-serif !important; }
+* { font-family: Aptos, Calibri, Arial, Helvetica, sans-serif !important; }
 </style>
 <![endif]-->
 </head>
@@ -349,13 +361,16 @@ export function renderSignatureHtmlGeb(
 <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
 <td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;">
-<table border="0" cellspacing="0" cellpadding="0" width="140" role="presentation" style="border-collapse:collapse;height:100%;">
+<table border="0" cellspacing="0" cellpadding="0" width="140" role="presentation" style="border-collapse:collapse;">
 <tr>
 <td style="text-align:center;padding:0;vertical-align:top;">${logoHtml}</td>
 </tr>
 <tr>
-<td style="text-align:center;padding:0;vertical-align:bottom;height:100%;">
-<!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
+<td style="height:20px;font-size:1px;line-height:1px;">&nbsp;</td>
+</tr>
+<tr>
+<td style="text-align:center;padding:0;vertical-align:bottom;">
+<!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
 <!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
 </td>
 </tr>
