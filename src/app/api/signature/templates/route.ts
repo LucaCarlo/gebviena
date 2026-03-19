@@ -41,6 +41,11 @@ export async function POST(req: Request) {
         footerIt: body.footerIt || null,
         footerEn: body.footerEn || null,
         ecoText: body.ecoText || null,
+        style: body.style || "geb",
+        showLinkedin: body.showLinkedin ?? true,
+        linkedinUrl: body.linkedinUrl || null,
+        showPinterest: body.showPinterest ?? true,
+        pinterestUrl: body.pinterestUrl || null,
       },
     });
     return NextResponse.json({ success: true, data }, { status: 201 });

@@ -16,11 +16,12 @@ import {
   Link,
 } from "lucide-react";
 import {
-  renderSignatureHtml,
+  renderSignature,
   DEFAULT_USER_DATA,
   EMPTY_TEMPLATE,
   type SignatureUserData,
   type SignatureTemplateData,
+  type SignatureStyle,
 } from "./_components/signatureRenderer";
 
 interface TemplateWithUsers extends SignatureTemplateData {
@@ -133,11 +134,16 @@ export default function AdminFirmaPage() {
       showInstagram: t.showInstagram ?? true,
       showFacebook: t.showFacebook ?? true,
       showWeb: t.showWeb ?? true,
+      showLinkedin: t.showLinkedin ?? true,
+      showPinterest: t.showPinterest ?? true,
       instagramUrl: t.instagramUrl ?? EMPTY_TEMPLATE.instagramUrl,
       facebookUrl: t.facebookUrl ?? EMPTY_TEMPLATE.facebookUrl,
       webLinkUrl: t.webLinkUrl ?? EMPTY_TEMPLATE.webLinkUrl,
+      linkedinUrl: t.linkedinUrl ?? EMPTY_TEMPLATE.linkedinUrl,
+      pinterestUrl: t.pinterestUrl ?? EMPTY_TEMPLATE.pinterestUrl,
       websiteUrl: t.websiteUrl ?? EMPTY_TEMPLATE.websiteUrl,
       website: t.website ?? EMPTY_TEMPLATE.website,
+      style: (t.style as SignatureStyle) ?? "geb",
       disclaimerLang: (t.disclaimerLang as "it" | "en" | "both") ?? "it",
       footerIt: t.footerIt,
       footerEn: t.footerEn,
@@ -162,6 +168,7 @@ export default function AdminFirmaPage() {
             infoLine2: ud.infoLine2 || DEFAULT_USER_DATA.infoLine2,
             address: ud.address || DEFAULT_USER_DATA.address,
             phone: ud.phone || DEFAULT_USER_DATA.phone,
+            mobile: ud.mobile || DEFAULT_USER_DATA.mobile || "",
           });
         } else {
           setUserData({ ...DEFAULT_USER_DATA });
@@ -204,7 +211,7 @@ export default function AdminFirmaPage() {
   // ─── Preview HTML ────────────────────────────────────────────────────────────
 
   const previewTemplate = canManageTemplates ? templateForm : myTemplate;
-  const previewHtml = renderSignatureHtml(userData, previewTemplate);
+  const previewHtml = renderSignature(userData, previewTemplate);
 
 
   // ─── Admin: Create template ──────────────────────────────────────────────────
@@ -278,7 +285,7 @@ export default function AdminFirmaPage() {
   const handleSaveUserData = async (targetUserId?: string) => {
     setSaving(true);
     try {
-      const htmlOutput = renderSignatureHtml(userData, canManageTemplates ? templateForm : myTemplate);
+      const htmlOutput = renderSignature(userData, canManageTemplates ? templateForm : myTemplate);
       const res = await fetch("/api/signature", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -301,7 +308,7 @@ export default function AdminFirmaPage() {
   const handleSaveOwnData = async () => {
     setSaving(true);
     try {
-      const htmlOutput = renderSignatureHtml(userData, myTemplate);
+      const htmlOutput = renderSignature(userData, myTemplate);
       const res = await fetch("/api/signature", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -511,6 +518,21 @@ export default function AdminFirmaPage() {
             {activeTab === "template" ? (
               /* ── Template fields ────────────────────────────────────── */
               <div className="space-y-4">
+                {/* Style selector */}
+                <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-3">
+                  <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">
+                    Stile Template
+                  </h3>
+                  <select
+                    value={templateForm.style || "geb"}
+                    onChange={(e) => updateTemplate("style", e.target.value as SignatureStyle)}
+                    className="w-full border border-warm-300 rounded px-3 py-2 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+                  >
+                    <option value="geb">GEB Modern</option>
+                    <option value="classic">Classico</option>
+                  </select>
+                </div>
+
                 {/* Images */}
                 <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
                   <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">
@@ -534,7 +556,7 @@ export default function AdminFirmaPage() {
                     <p className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-3">
                       Icone Social
                     </p>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-3">
                       <SocialToggle
                         label="Instagram"
                         checked={templateForm.showInstagram}
@@ -550,6 +572,20 @@ export default function AdminFirmaPage() {
                         checked={templateForm.showWeb}
                         onChange={(v) => setTemplateForm((prev) => ({ ...prev, showWeb: v }))}
                       />
+                      {templateForm.style === "geb" && (
+                        <>
+                          <SocialToggle
+                            label="LinkedIn"
+                            checked={templateForm.showLinkedin ?? true}
+                            onChange={(v) => setTemplateForm((prev) => ({ ...prev, showLinkedin: v }))}
+                          />
+                          <SocialToggle
+                            label="Pinterest"
+                            checked={templateForm.showPinterest ?? true}
+                            onChange={(v) => setTemplateForm((prev) => ({ ...prev, showPinterest: v }))}
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -577,6 +613,22 @@ export default function AdminFirmaPage() {
                     onChange={(v) => updateTemplate("webLinkUrl", v)}
                     placeholder="https://www...."
                   />
+                  {templateForm.style === "geb" && (
+                    <>
+                      <FieldInput
+                        label="LinkedIn URL"
+                        value={templateForm.linkedinUrl || ""}
+                        onChange={(v) => updateTemplate("linkedinUrl", v)}
+                        placeholder="https://www.linkedin.com/company/..."
+                      />
+                      <FieldInput
+                        label="Pinterest URL"
+                        value={templateForm.pinterestUrl || ""}
+                        onChange={(v) => updateTemplate("pinterestUrl", v)}
+                        placeholder="https://www.pinterest.com/..."
+                      />
+                    </>
+                  )}
                   <div className="border-t border-warm-100 pt-4">
                     <div className="grid grid-cols-2 gap-3">
                       <FieldInput
@@ -777,7 +829,10 @@ function UserDataForm({
       <FieldInput label="Riga info 1" value={userData.infoLine1} onChange={(v) => onChange("infoLine1", v)} placeholder="es. Offices of the trademarks' licensee" />
       <FieldInput label="Riga info 2 (Azienda)" value={userData.infoLine2} onChange={(v) => onChange("infoLine2", v)} placeholder="es. Production Furniture International S.p.A." />
       <FieldInput label="Indirizzo" value={userData.address} onChange={(v) => onChange("address", v)} />
-      <FieldInput label="Telefoni" value={userData.phone} onChange={(v) => onChange("phone", v)} placeholder="es. Tel. +39 011... - mobile +39 345..." />
+      <div className="grid grid-cols-2 gap-3">
+        <FieldInput label="Telefono" value={userData.phone} onChange={(v) => onChange("phone", v)} placeholder="es. Tel. +39 011..." />
+        <FieldInput label="Mobile (solo Classico)" value={userData.mobile || ""} onChange={(v) => onChange("mobile", v)} placeholder="es. mobile +39 345..." />
+      </div>
     </div>
   );
 }
@@ -850,10 +905,15 @@ function PreviewPanel({
             className="w-full h-72 border border-warm-300 rounded px-2 py-1.5 text-[10px] font-mono text-warm-700 focus:outline-none resize-y bg-warm-50"
           />
         ) : (
-          <div
-            className="overflow-auto w-full"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
-          />
+          <div style={{ transform: "scale(0.75)", transformOrigin: "top left", width: "133%", minHeight: "350px" }}>
+            <iframe
+              srcDoc={previewHtml}
+              className="w-full border-0"
+              style={{ height: "550px", overflow: "hidden" }}
+              title="Anteprima firma"
+              sandbox="allow-same-origin"
+            />
+          </div>
         )}
       </div>
     </div>

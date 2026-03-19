@@ -55,6 +55,11 @@ export async function PUT(
         footerIt: body.footerIt ?? undefined,
         footerEn: body.footerEn ?? undefined,
         ecoText: body.ecoText ?? undefined,
+        style: body.style ?? undefined,
+        showLinkedin: body.showLinkedin ?? undefined,
+        linkedinUrl: body.linkedinUrl ?? undefined,
+        showPinterest: body.showPinterest ?? undefined,
+        pinterestUrl: body.pinterestUrl ?? undefined,
       },
     });
     return NextResponse.json({ success: true, data });

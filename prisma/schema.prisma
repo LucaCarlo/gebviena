@@ -58,6 +58,11 @@ model SignatureTemplate {
   footerIt       String?
   footerEn       String?
   ecoText        String?
+  style          String      @default("geb")
+  showLinkedin   Boolean     @default(true)
+  linkedinUrl    String?
+  showPinterest  Boolean     @default(true)
+  pinterestUrl   String?
   isDefault      Boolean     @default(false)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
