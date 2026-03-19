@@ -262,10 +262,11 @@ export function renderSignatureHtmlGeb(
   const u = userData;
   const t = template;
 
-  // Font stack — Work Sans won't load in most email clients, so Arial is the real fallback
-  const fontMain = "Arial, Helvetica, sans-serif";
+  // Work Sans font — embedded via @import for clients that support it (Apple Mail, iOS, Thunderbird)
+  // Falls back to Arial on Gmail, Outlook etc.
+  const fontStack = "'Work Sans', Arial, Helvetica, sans-serif";
 
-  // Build social icons (24px round B&W — pure black circle, white icon)
+  // Build social icons (22px round B&W)
   const iconSize = "22";
   const socialIcons: string[] = [];
   if (t.showWeb && t.webLinkUrl) {
@@ -301,12 +302,12 @@ export function renderSignatureHtmlGeb(
   }
   const ecoText = t.ecoText || "";
 
-  // Info lines — black text, 9pt, tight line-height
+  // Info lines
   const infoLines: string[] = [];
   if (u.infoLine1) infoLines.push(escapeHtml(u.infoLine1));
   if (u.infoLine2) infoLines.push(`<strong style="font-weight:bold;">${escapeHtml(u.infoLine2)}</strong>`);
   if (u.address) infoLines.push(escapeHtml(u.address));
-  // Phone + mobile on the same line, separated by a space + pipe
+  // Phone + mobile on the same line
   if (u.phone) {
     let phoneLine = escapeHtml(u.phone);
     if (u.mobile && u.mobile.trim()) {
@@ -317,7 +318,7 @@ export function renderSignatureHtmlGeb(
     infoLines.push(escapeHtml(u.mobile));
   }
   const infoHtml = infoLines
-    .map((line) => `<span style="font-family:${fontMain};font-size:9pt;color:#000000;line-height:1.4;">${line}</span>`)
+    .map((line) => `<span style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#000000;line-height:1.4;">${line}</span>`)
     .join("<br>");
 
   // Department forced uppercase + bold
@@ -325,25 +326,35 @@ export function renderSignatureHtmlGeb(
 
   // Website line
   const websiteHtml = t.website && t.websiteUrl
-    ? `<span style="font-family:${fontMain};font-size:9pt;color:#000000;line-height:1.4;"><a href="${escapeHtml(t.websiteUrl)}" target="_blank" style="color:#000000;text-decoration:none;">${escapeHtml(t.website)}</a></span>`
+    ? `<span style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#000000;line-height:1.4;"><a href="${escapeHtml(t.websiteUrl)}" target="_blank" style="color:#000000;text-decoration:none;font-family:${fontStack};">${escapeHtml(t.website)}</a></span>`
     : "";
+
+  const bannerWidth = "620";
 
   return `<html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+<style type="text/css">
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;700&display=swap');
+</style>
+<!--[if mso]>
+<style type="text/css">
+* { font-family: Arial, Helvetica, sans-serif !important; }
+</style>
+<![endif]-->
 </head>
-<body style="margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+<body style="margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:${fontStack};">
 <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
 <td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;">
-<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;">
+<table border="0" cellspacing="0" cellpadding="0" width="140" role="presentation" style="border-collapse:collapse;height:100%;">
 <tr>
-<td style="text-align:center;padding:0 0 6px 0;">${logoHtml}</td>
+<td style="text-align:center;padding:0;vertical-align:top;">${logoHtml}</td>
 </tr>
 <tr>
-<td style="text-align:center;padding:4px 0 0 0;">
+<td style="text-align:center;padding:0;vertical-align:bottom;height:100%;">
 <!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
 <!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
 </td>
@@ -351,19 +362,19 @@ export function renderSignatureHtmlGeb(
 </table>
 </td>
 <td style="padding:0 0 0 12px;vertical-align:top;">
-<div style="font-family:${fontMain};font-size:16pt;font-weight:bold;color:#000000;margin:0;padding:0;line-height:1.1;mso-line-height-rule:exactly;">${escapeHtml(u.fullName)}</div>
-<div style="font-family:${fontMain};font-size:8pt;font-weight:bold;color:#000000;margin:0 0 7px 0;padding:0;line-height:1.1;text-transform:uppercase;mso-line-height-rule:exactly;">${deptText}</div>
-<div style="font-family:${fontMain};font-size:9pt;color:#000000;line-height:1.4;mso-line-height-rule:exactly;">${infoHtml}</div>
+<div style="font-family:${fontStack};font-size:16pt;font-weight:500;color:#000000;margin:0;padding:0;line-height:1.0;mso-line-height-rule:exactly;">${escapeHtml(u.fullName)}</div>
+<div style="font-family:${fontStack};font-size:8pt;font-weight:500;color:#000000;margin:0 0 7px 0;padding:0;line-height:1.0;text-transform:uppercase;mso-line-height-rule:exactly;">${deptText}</div>
+<div style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#000000;line-height:1.4;mso-line-height-rule:exactly;">${infoHtml}</div>
 ${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
 </td>
 </tr>
 </table>
-${t.bannerUrl ? `<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin-top:20px;"><tr><td><img src="${t.bannerUrl}" width="560" style="display:block;border:0;outline:none;height:auto;max-width:560px;width:560px;" alt="Banner" /></td></tr></table>` : ""}
-<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;max-width:560px;margin-top:6px;">
+${t.bannerUrl ? `<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin-top:20px;"><tr><td><img src="${t.bannerUrl}" width="${bannerWidth}" style="display:block;border:0;outline:none;height:auto;max-width:${bannerWidth}px;width:${bannerWidth}px;" alt="Banner" /></td></tr></table>` : ""}
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;max-width:${bannerWidth}px;margin-top:6px;">
 <tr>
 <td>
-<div style="font-family:${fontMain};font-size:6pt;color:#8f929b;margin:0;padding:0;line-height:1.4;mso-line-height-rule:exactly;">${disclaimerHtml}</div>
-<div style="font-family:${fontMain};font-size:9pt;color:#228b22;margin:4px 0 0 0;padding:0;mso-line-height-rule:exactly;">${ecoText}</div>
+<div style="font-family:${fontStack};font-size:6pt;font-weight:400;color:#8f929b;margin:0;padding:0;line-height:1.4;mso-line-height-rule:exactly;">${disclaimerHtml}</div>
+<div style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#228b22;margin:4px 0 0 0;padding:0;mso-line-height-rule:exactly;">${ecoText}</div>
 </td>
 </tr>
 </table>
