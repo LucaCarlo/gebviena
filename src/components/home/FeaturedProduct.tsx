@@ -56,7 +56,7 @@ export default function FeaturedProduct({ ambianceImage, productImage }: Feature
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-center mt-10 lg:mt-14"
           >
-            <p className="uppercase text-[11px] tracking-[0.2em] text-neutral-400 mb-5 font-light">
+            <p className="uppercase text-sm tracking-[0.08em] text-neutral-400 mb-5 font-light">
               Nuovo prodotto
             </p>
             <h2 className="font-sans text-xl md:text-2xl lg:text-3xl text-dark leading-snug font-light uppercase tracking-wide">
@@ -64,8 +64,8 @@ export default function FeaturedProduct({ ambianceImage, productImage }: Feature
               morbida<br />
               e accogliente
             </h2>
-            <Link href="/prodotti" className="gtv-link mt-8">
-              Scopri il prodotto →
+            <Link href="/prodotti" className="inline-block mt-8 uppercase text-sm tracking-[0.08em] text-dark font-normal border-b border-current transition-colors hover:text-accent" style={{ paddingBottom: "8px" }}>
+              Scopri il prodotto &rarr;
             </Link>
           </motion.div>
         </div>
