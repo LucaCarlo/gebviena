@@ -137,7 +137,7 @@ export default function HeroSection() {
           {slide.ctaText && slide.ctaLink && (
             <Link
               href={slide.ctaLink}
-              className="inline-block mt-4 uppercase text-sm md:text-base tracking-[0.25em] text-white font-light hover:text-white/80 transition-colors"
+              className="inline-block mt-4 uppercase text-sm md:text-base tracking-[0.08em] text-white font-light hover:text-white/80 transition-colors"
               style={{ textUnderlineOffset: "6px", textDecorationThickness: "1px" }}
               onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
               onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
