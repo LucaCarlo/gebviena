@@ -185,24 +185,6 @@ export default function HeroSection() {
           ))}
         </div>
       )}
-
-      {/* Scroll indicator (only when single slide or first slide) */}
-      {slides.length <= 1 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 0.8 }}
-          className="absolute bottom-8 right-8"
-        >
-          <div className="w-5 h-8 border border-white/50 rounded-full flex items-start justify-center p-1">
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              className="w-1 h-1 bg-white rounded-full"
-            />
-          </div>
-        </motion.div>
-      )}
     </section>
   );
 }
