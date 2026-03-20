@@ -86,10 +86,10 @@ export default function HeroSection() {
     slide.position === "right" ? "items-end text-right pr-8 md:pr-20" :
     "items-center text-center";
 
-  const textAlignV = "bottom-24";
+  const textAlignV = "bottom-[15vh]";
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "100vh" }}>
+    <section className="relative w-full overflow-hidden" style={{ height: "115vh" }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
