@@ -154,9 +154,12 @@ export default function ImageUploadField({
 
       {value ? (
         <div className="relative group">
-          <div className="relative w-full h-40 rounded-lg overflow-hidden bg-warm-100 border border-warm-200">
+          <div
+            className="relative w-full h-40 rounded-lg overflow-hidden bg-warm-100 border border-warm-200 cursor-pointer"
+            onClick={() => inputRef.current?.click()}
+          >
             {value.match(/\.(mp4|webm|ogg|mov)($|\?)/) ? (
-              <video src={value} className="w-full h-full object-contain" muted playsInline controls />
+              <video src={value} className="w-full h-full object-contain pointer-events-none" muted playsInline />
             ) : (
               <Image src={value} alt={label} fill className="object-contain" sizes="400px" unoptimized />
             )}
