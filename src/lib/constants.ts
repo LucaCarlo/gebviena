@@ -161,12 +161,6 @@ export const PAGE_IMAGES_CONFIG: {
     images: [
       { section: "featured-ambiance", label: "Featured Product — Ambiance", defaultUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1200&h=2000&fit=crop&q=85" },
       { section: "featured-product", label: "Featured Product — Prodotto", defaultUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=900&h=1200&fit=crop&q=85" },
-      { section: "category-novita", label: "Categoria — Novità 2025", defaultUrl: "https://images.unsplash.com/photo-1503602642458-232111445657?w=600&h=700&fit=crop&q=80" },
-      { section: "category-sedute", label: "Categoria — Sedute", defaultUrl: "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=600&h=700&fit=crop&q=80" },
-      { section: "category-imbottiti", label: "Categoria — Imbottiti", defaultUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&h=700&fit=crop&q=80" },
-      { section: "category-complementi", label: "Categoria — Complementi", defaultUrl: "https://images.unsplash.com/photo-1532372576444-dda954194ad0?w=600&h=700&fit=crop&q=80" },
-      { section: "category-tavoli", label: "Categoria — Tavoli", defaultUrl: "https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?w=600&h=700&fit=crop&q=80" },
-      { section: "category-outdoor", label: "Categoria — Outdoor", defaultUrl: "https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=600&h=700&fit=crop&q=80" },
       { section: "banner-fullwidth", label: "Banner a tutta larghezza", defaultUrl: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=2560&h=1700&fit=crop&q=90" },
       { section: "spotlight-ambiance", label: "Product Spotlight — Ambiance", defaultUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=2000&fit=crop&q=85" },
       { section: "spotlight-product", label: "Product Spotlight — Prodotto", defaultUrl: "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=900&h=1200&fit=crop&q=85" },
