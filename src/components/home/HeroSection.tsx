@@ -39,7 +39,7 @@ export default function HeroSection() {
       .then((r) => r.json())
       .then((data) => {
         const fetched = data.data || [];
-        setSlides(fetched.length > 0 ? fetched : [FALLBACK_SLIDE]);
+        setSlides(fetched.length > 0 ? [fetched[0]] : [FALLBACK_SLIDE]);
         setLoading(false);
       })
       .catch(() => {
@@ -89,7 +89,7 @@ export default function HeroSection() {
   const textAlignV =
     slide.verticalPosition === "top" ? "top-20 bottom-auto" :
     slide.verticalPosition === "bottom" ? "bottom-20 top-auto" :
-    "top-1/2 -translate-y-1/2";
+    "top-1/2 -translate-y-1/2 mt-[-20px]";
 
   return (
     <section className="relative w-full overflow-hidden" style={{ height: "100vh" }}>
@@ -140,7 +140,7 @@ export default function HeroSection() {
           {slide.ctaText && slide.ctaLink && (
             <Link
               href={slide.ctaLink}
-              className="inline-block mt-4 uppercase text-sm md:text-base tracking-[0.25em] text-white font-medium hover:text-white/80 transition-colors"
+              className="inline-block mt-4 uppercase text-sm md:text-base tracking-[0.25em] text-white font-medium hover:text-white/80 hover:underline transition-colors"
             >
               {slide.ctaText} <span className="ml-1">&rarr;</span>
             </Link>
