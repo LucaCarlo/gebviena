@@ -46,7 +46,7 @@ export default function Header() {
         style={{
           left: 'var(--site-margin)',
           right: 'var(--site-margin)',
-          ...(!isScrolled ? { textShadow: "0 1px 8px rgba(0,0,0,0.3)", background: "linear-gradient(to bottom, rgba(0,0,0,0.15), transparent)" } : {}),
+          ...(!isScrolled ? { textShadow: "0 1px 8px rgba(0,0,0,0.3)", background: "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.25) 60%, transparent 100%)" } : {}),
         }}
       >
         <div className="px-2 md:px-4 lg:px-5">
