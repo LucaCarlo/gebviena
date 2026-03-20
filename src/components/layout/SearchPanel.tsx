@@ -134,8 +134,8 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
             </div>
 
             {/* Search input */}
-            <div className="px-8 md:px-10 pt-4 pb-6 flex-shrink-0">
-              <p className="text-sm font-light mb-4" style={{ color: "#555" }}>
+            <div className="px-8 md:px-10 pt-16 pb-6 flex-shrink-0">
+              <p className="text-sm font-light mb-2 text-black">
                 Che cosa stai cercando?
               </p>
 
@@ -151,17 +151,25 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
                     style={{ color: "#000" }}
                     autoFocus
                   />
-                  {loading && (
+                  {loading ? (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <Loader2 size={16} className="animate-spin text-neutral-400" />
                     </div>
+                  ) : query.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black transition-colors"
+                    >
+                      <X size={16} strokeWidth={1.5} />
+                    </button>
                   )}
                 </div>
 
                 <button
                   type="submit"
-                  className="mt-5 text-sm font-medium uppercase tracking-[0.1em] hover:opacity-60 transition-opacity"
-                  style={{ color: "#000" }}
+                  className="mt-8 text-sm font-medium tracking-[0.1em] text-black hover:underline transition-colors"
+                  style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
                 >
                   Avvia la ricerca
                 </button>

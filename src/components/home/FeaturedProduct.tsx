@@ -37,7 +37,7 @@ export default function FeaturedProduct({ ambianceImage, productImage }: Feature
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="relative w-full max-w-[75%] img-hover"
+            className="relative w-full max-w-[82%] img-hover"
             style={{ aspectRatio: "3 / 4" }}
           >
             <Image
@@ -54,23 +54,22 @@ export default function FeaturedProduct({ ambianceImage, productImage }: Feature
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-center mt-10 lg:mt-14"
+            className="text-center mt-8 lg:mt-10"
           >
             <p
-              className="uppercase text-sm md:text-base tracking-[0.08em] text-dark mb-5 font-light underline"
-              style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "1px" }}
+              className="uppercase text-[16px] tracking-[0.03em] !text-black mb-[8px] mt-[6px] font-light"
             >
               Nuovo prodotto
             </p>
-            <h2 className="font-sans text-xl md:text-2xl lg:text-3xl text-dark leading-snug font-light uppercase tracking-wide">
+            <h2 className="font-sans text-[28px] !text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Una silhouette<br />
               morbida<br />
               e accogliente
             </h2>
             <Link
               href="/prodotti"
-              className="inline mt-8 uppercase text-sm md:text-base tracking-[0.08em] text-dark font-normal transition-colors hover:text-accent underline"
-              style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "1px" }}
+              className="inline-block mt-[20px] uppercase text-[16px] tracking-[0.03em] !text-black font-normal transition-colors hover:text-accent hover:underline"
+              style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
               Scopri il prodotto &rarr;
             </Link>

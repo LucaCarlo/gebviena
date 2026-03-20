@@ -40,7 +40,7 @@ export default function Header() {
       <header
         className={`fixed top-0 z-50 transition-all duration-500 ${
           isScrolled
-            ? isHomepage ? "bg-white border-b border-neutral-200" : "bg-white"
+            ? "bg-white"
             : ""
         }`}
         style={{

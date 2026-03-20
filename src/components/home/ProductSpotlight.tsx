@@ -37,7 +37,7 @@ export default function ProductSpotlight({ ambianceImage, productImage }: Produc
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="relative w-full max-w-[75%] img-hover"
+            className="relative w-full max-w-[82%] img-hover"
             style={{ aspectRatio: "3 / 4" }}
           >
             <Image
@@ -54,18 +54,24 @@ export default function ProductSpotlight({ ambianceImage, productImage }: Produc
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-center mt-10 lg:mt-14"
+            className="text-center mt-8 lg:mt-10"
           >
-            <p className="uppercase text-[11px] tracking-[0.2em] text-neutral-400 mb-5 font-light">
+            <p
+              className="uppercase text-[16px] tracking-[0.03em] !text-black mb-[8px] mt-[6px] font-light"
+            >
               Icona del design
             </p>
-            <h2 className="font-sans text-xl md:text-2xl lg:text-3xl text-dark leading-snug font-light uppercase tracking-wide">
+            <h2 className="font-sans text-[28px] !text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               L&apos;eleganza<br />
               senza tempo<br />
               del legno curvato
             </h2>
-            <Link href="/prodotti" className="gtv-link mt-8">
-              Scopri il prodotto →
+            <Link
+              href="/prodotti"
+              className="inline-block mt-[20px] uppercase text-[16px] tracking-[0.03em] !text-black font-normal transition-colors hover:text-accent hover:underline"
+              style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+            >
+              Scopri il prodotto &rarr;
             </Link>
           </motion.div>
         </div>

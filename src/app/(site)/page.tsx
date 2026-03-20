@@ -33,16 +33,7 @@ export default async function HomePage() {
         ambianceImage={images["featured-ambiance"]}
         productImage={images["featured-product"]}
       />
-      <CategoryCarousel
-        categoryImages={{
-          novita: images["category-novita"],
-          sedute: images["category-sedute"],
-          imbottiti: images["category-imbottiti"],
-          complementi: images["category-complementi"],
-          tavoli: images["category-tavoli"],
-          outdoor: images["category-outdoor"],
-        }}
-      />
+      <CategoryCarousel />
       <FullWidthBanner bannerImage={images["banner-fullwidth"]} />
       <ProductSpotlight
         ambianceImage={images["spotlight-ambiance"]}

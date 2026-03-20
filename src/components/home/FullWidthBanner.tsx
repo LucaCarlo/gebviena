@@ -10,7 +10,7 @@ interface FullWidthBannerProps {
 
 export default function FullWidthBanner({ bannerImage }: FullWidthBannerProps) {
   return (
-    <section className="relative w-full" style={{ height: "90vh" }}>
+    <section className="relative w-full" style={{ height: "85vh" }}>
       {/* Background image — dark scene */}
       <Image
         src={bannerImage}
@@ -25,18 +25,18 @@ export default function FullWidthBanner({ bannerImage }: FullWidthBannerProps) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="absolute top-16 md:top-24 lg:top-28 left-8 md:left-16 lg:left-20"
+        className="absolute top-14 md:top-18 lg:top-22 left-7 md:left-12 lg:left-16"
       >
-        <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-white font-light uppercase tracking-wide leading-snug">
+        <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug">
           Sedute che invitano a restare,<br />
           momenti che prendono forma
         </h2>
         <Link
           href="/progetti"
-          className="inline-flex items-center gap-2 mt-6 md:mt-8 uppercase text-sm tracking-[0.15em] font-light text-white hover:opacity-60 transition-opacity"
+          className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-normal transition-colors hover:underline"
+          style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
         >
-          I migliori progetti
-          <span className="text-lg">→</span>
+          I migliori progetti &rarr;
         </Link>
       </motion.div>
     </section>

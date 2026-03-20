@@ -9,43 +9,45 @@ interface WoodCraftsmanshipProps {
 
 export default function WoodCraftsmanship({ videoUrl }: WoodCraftsmanshipProps) {
   return (
-    <section className="relative w-full" style={{ height: "90vh" }}>
-      {/* Background video — full bleed, autoplay, muted, looping */}
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      >
-        <source
-          src={videoUrl}
-          type="video/mp4"
-        />
-      </video>
-
-      {/* Slight dark overlay for text readability */}
-      <div className="absolute inset-0 bg-black/20" />
-
-      {/* Text overlay — top left, directly on the video */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-        className="absolute top-16 md:top-24 lg:top-28 left-8 md:left-16 lg:left-20"
-      >
-        <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-white font-light uppercase tracking-wide leading-snug">
-          L&apos;armonia del legno
-        </h2>
-        <Link
-          href="/mondo-gtv"
-          className="inline-flex items-center gap-2 mt-6 md:mt-8 uppercase text-sm tracking-[0.15em] font-light text-white hover:opacity-60 transition-opacity"
+    <section className="w-full px-1 md:px-2 lg:px-3">
+      <div className="relative w-full" style={{ height: "90vh" }}>
+        {/* Background video */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
         >
-          Scopri l&apos;arte del legno curvato
-          <span className="text-lg">→</span>
-        </Link>
-      </motion.div>
+          <source
+            src={videoUrl}
+            type="video/mp4"
+          />
+        </video>
+
+        {/* Slight dark overlay for text readability */}
+        <div className="absolute inset-0 bg-black/20" />
+
+        {/* Text overlay — top left */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="absolute top-14 md:top-18 lg:top-22 left-7 md:left-12 lg:left-16"
+        >
+          <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug">
+            L&apos;armonia del legno
+          </h2>
+          <Link
+            href="/mondo-gtv"
+            className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-normal transition-colors hover:underline"
+            style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+          >
+            Scopri l&apos;arte del legno curvato &rarr;
+          </Link>
+        </motion.div>
+      </div>
     </section>
   );
 }

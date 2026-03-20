@@ -126,7 +126,7 @@ export default function HeroSection() {
           transition={{ duration: 1, delay: 0.3 }}
           className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 leading-snug font-light uppercase tracking-wide whitespace-nowrap" style={{ marginTop: "-5px" }}>
+          <h1 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 leading-snug font-light uppercase tracking-[inherit] whitespace-nowrap" style={{ marginTop: "-5px" }}>
             {slide.title}
           </h1>
           {slide.subtitle && (
@@ -137,10 +137,10 @@ export default function HeroSection() {
           {slide.ctaText && slide.ctaLink && (
             <Link
               href={slide.ctaLink}
-              className="inline mt-4 uppercase text-sm md:text-base tracking-[0.08em] text-white font-normal hover:text-white/80 transition-colors underline"
-              style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "1px" }}
+              className="inline mt-4 uppercase text-sm md:text-base tracking-[0.03em] text-white font-normal hover:text-white/80 transition-colors hover:underline"
+              style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
-              {slide.ctaText} <span className="ml-1">&rarr;</span>
+              {slide.ctaText} &rarr;
             </Link>
           )}
         </motion.div>

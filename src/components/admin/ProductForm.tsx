@@ -420,8 +420,8 @@ export default function ProductForm({ productId }: ProductFormProps) {
             purpose="cover"
             folder="products"
             helpText="Mostrata nella griglia prodotti dello shop"
-            recommendedSize="960 x 1200 px (verticale 4:5)"
-            aspectRatio={960 / 1200}
+            recommendedSize="960 x 960 px (quadrata 1:1)"
+            aspectRatio={1}
           />
 
           <ImageUploadField

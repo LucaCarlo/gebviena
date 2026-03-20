@@ -11,14 +11,14 @@ interface BornInViennaProps {
 export default function BornInVienna({ historicalImage }: BornInViennaProps) {
   return (
     <section className="w-full py-20 md:py-28 lg:py-36">
-      <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 items-start gap-0">
         {/* Left — big serif text (narrower, ~40%) */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 1 }}
-          className="lg:col-span-5 flex flex-col justify-center px-8 md:px-16 lg:px-20 py-16 lg:py-0"
+          className="lg:col-span-5 flex flex-col justify-start px-7 md:px-12 lg:px-16 py-16 lg:py-0"
         >
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-dark leading-[1.15] font-normal">
             <em>Born</em> in Vienna.<br />
@@ -28,10 +28,10 @@ export default function BornInVienna({ historicalImage }: BornInViennaProps) {
           </h2>
           <Link
             href="/mondo-gtv"
-            className="inline-flex items-center gap-3 mt-10 uppercase text-sm tracking-[0.15em] font-light text-dark hover:opacity-60 transition-opacity"
+            className="inline-block mt-[20px] uppercase text-[16px] tracking-[0.03em] !text-black font-normal transition-colors hover:text-accent hover:underline"
+            style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
           >
-            Scopri il mondo GTV
-            <span className="text-lg">→</span>
+            Scopri il mondo GTV &rarr;
           </Link>
         </motion.div>
 
@@ -42,7 +42,7 @@ export default function BornInVienna({ historicalImage }: BornInViennaProps) {
           viewport={{ once: true }}
           transition={{ duration: 1, delay: 0.2 }}
           className="lg:col-span-7 relative"
-          style={{ aspectRatio: "16 / 10" }}
+          style={{ aspectRatio: "16 / 9" }}
         >
           <Image
             src={historicalImage}

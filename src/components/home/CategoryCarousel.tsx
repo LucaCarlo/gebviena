@@ -5,30 +5,46 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-interface CategoryCarouselProps {
-  categoryImages: {
-    novita: string;
-    sedute: string;
-    imbottiti: string;
-    complementi: string;
-    tavoli: string;
-    outdoor: string;
-  };
+interface Category {
+  name: string;
+  image: string;
+  href: string;
 }
 
-export default function CategoryCarousel({ categoryImages }: CategoryCarouselProps) {
-  const categories = [
-    { name: "Novità 2025", image: categoryImages.novita, href: "/prodotti?category=NOVITA" },
-    { name: "Sedute", image: categoryImages.sedute, href: "/prodotti?category=SEDUTE" },
-    { name: "Imbottiti", image: categoryImages.imbottiti, href: "/prodotti?category=IMBOTTITI" },
-    { name: "Complementi", image: categoryImages.complementi, href: "/prodotti?category=COMPLEMENTI" },
-    { name: "Tavoli", image: categoryImages.tavoli, href: "/prodotti?category=TAVOLI" },
-    { name: "Outdoor", image: categoryImages.outdoor, href: "/prodotti?category=OUTDOOR" },
-  ];
+export default function CategoryCarousel() {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categories?contentType=product")
+      .then((r) => r.json())
+      .then(async (res) => {
+        const cats = (res.data || [])
+          .filter((c: { isActive: boolean }) => c.isActive)
+          .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder);
+
+        const mapped: Category[] = [];
+        for (const cat of cats) {
+          // Fetch first product of this category for the cover image
+          const prodRes = await fetch(`/api/products?category=${cat.value}&limit=1`);
+          const prodData = await prodRes.json();
+          const firstProduct = prodData.data?.[0];
+          const image = firstProduct?.coverImage || firstProduct?.imageUrl || "";
+
+          mapped.push({
+            name: cat.label,
+            image,
+            href: `/prodotti?category=${cat.value}`,
+          });
+        }
+        setCategories(mapped);
+      })
+      .catch(() => {});
+  }, []);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasDragged, setHasDragged] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
 
@@ -56,6 +72,7 @@ export default function CategoryCarousel({ categoryImages }: CategoryCarouselPro
     const el = scrollRef.current;
     if (!el) return;
     setIsDragging(true);
+    setHasDragged(false);
     setStartX(e.pageX - el.offsetLeft);
     setScrollLeft(el.scrollLeft);
   };
@@ -67,6 +84,7 @@ export default function CategoryCarousel({ categoryImages }: CategoryCarouselPro
     if (!el) return;
     const x = e.pageX - el.offsetLeft;
     const walk = (x - startX) * 1.5;
+    if (Math.abs(x - startX) > 5) setHasDragged(true);
     el.scrollLeft = scrollLeft - walk;
   };
 
@@ -113,20 +131,22 @@ export default function CategoryCarousel({ categoryImages }: CategoryCarouselPro
                 href={cat.href}
                 className="group block"
                 draggable={false}
-                onClick={(e) => isDragging && e.preventDefault()}
+                onClick={(e) => hasDragged && e.preventDefault()}
               >
                 {/* Product image — white background, no overlay */}
-                <div className="relative w-52 h-72 md:w-60 md:h-80 lg:w-72 lg:h-96 bg-white">
-                  <Image
-                    src={cat.image}
-                    alt={cat.name}
-                    fill
-                    className="object-contain"
-                    draggable={false}
-                  />
+                <div className="relative w-52 h-52 md:w-60 md:h-60 lg:w-72 lg:h-72 bg-white">
+                  {cat.image && (
+                    <Image
+                      src={cat.image}
+                      alt={cat.name}
+                      fill
+                      className="object-cover"
+                      draggable={false}
+                    />
+                  )}
                 </div>
-                {/* Category name below — black, centered */}
-                <p className="text-dark text-xs md:text-sm uppercase tracking-[0.2em] font-light text-center mt-6">
+                {/* Category name below */}
+                <p className="!text-black text-[16px] uppercase tracking-[0.03em] font-normal text-center mt-6">
                   {cat.name}
                 </p>
               </Link>
@@ -148,7 +168,7 @@ export default function CategoryCarousel({ categoryImages }: CategoryCarouselPro
         </div>
       </div>
 
-      {/* CTA button — outlined/bordered like original */}
+      {/* CTA button */}
       <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
@@ -158,7 +178,7 @@ export default function CategoryCarousel({ categoryImages }: CategoryCarouselPro
       >
         <Link
           href="/prodotti"
-          className="inline-block uppercase text-sm md:text-base tracking-[0.15em] font-light text-white bg-black border border-black px-10 py-4 hover:bg-white hover:text-black transition-all duration-300"
+          className="inline-block uppercase text-[16px] tracking-[0.03em] font-normal text-black bg-white border border-black px-7 py-2"
         >
           Scopri l&apos;intera collezione
         </Link>

@@ -58,7 +58,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             {/* Left column — FIXED width, never changes */}
             <div
               className="bg-white flex flex-col shrink-0 relative z-10"
-              style={{ width: "33vw", minWidth: "320px", maxWidth: "500px" }}
+              style={{ width: "32vw", minWidth: "310px", maxWidth: "485px" }}
             >
               {/* Close */}
               <div className="px-8 pt-6 pb-2">
@@ -83,8 +83,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                         {hasChildren ? (
                           <button
                             onClick={() => handleItemClick(item.label, true)}
-                            className={`font-sans text-lg md:text-xl lg:text-2xl uppercase tracking-wider font-light text-dark transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[1px] ${
-                              isActive ? "underline underline-offset-[10px] decoration-[1px]" : ""
+                            className={`font-sans text-lg md:text-xl lg:text-2xl uppercase tracking-wider font-light text-dark transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[0.5px] ${
+                              isActive ? "underline underline-offset-[10px] decoration-[0.5px]" : ""
                             }`}
                           >
                             {item.label}
@@ -93,7 +93,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           <Link
                             href={item.href}
                             onClick={onClose}
-                            className="font-sans text-lg md:text-xl lg:text-2xl uppercase tracking-wider font-light text-dark transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[1px]"
+                            className="font-sans text-lg md:text-xl lg:text-2xl uppercase tracking-wider font-light text-dark transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[0.5px]"
                           >
                             {item.label}
                           </Link>
@@ -105,7 +105,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               </nav>
 
               {/* Featured image */}
-              <div className="relative overflow-hidden mb-auto" style={{ width: "calc(100% - 80px)", height: "35vh", margin: "0 auto 40px auto" }}>
+              <div className="relative overflow-hidden mb-auto" style={{ width: "calc(100% - 60px)", aspectRatio: "1 / 0.85", margin: "60px 30px 30px 30px" }}>
                 <Image
                   src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600&h=600&fit=crop&q=80"
                   alt="Interno Marche"
@@ -113,8 +113,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                <div className="absolute bottom-4 left-5 right-5">
-                  <p className="text-white text-base md:text-lg font-light uppercase tracking-[0.15em] leading-snug">
+                <div className="absolute bottom-4 left-3 right-3">
+                  <p className="text-white text-[20px] font-light uppercase tracking-[0.03em] leading-snug">
                     Interno Marche | Scopri il nostro flagship hotel
                   </p>
                 </div>
@@ -130,7 +130,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   exit={{ x: "-100%" }}
                   transition={{ type: "tween", duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
                   className="bg-white flex items-start pt-32 shrink-0 overflow-hidden"
-                  style={{ borderLeft: "1px solid #000", paddingLeft: "15%", width: "33vw", minWidth: "320px", maxWidth: "500px" }}
+                  style={{ borderLeft: "1px solid #000", paddingLeft: "15%", width: "32vw", minWidth: "310px", maxWidth: "485px" }}
                 >
                   <AnimatePresence mode="wait">
                     <motion.ul
@@ -146,7 +146,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           <Link
                             href={child.href}
                             onClick={onClose}
-                            className="block font-sans text-sm md:text-base uppercase tracking-wider font-light transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[1px] whitespace-nowrap"
+                            className="block font-sans text-sm md:text-base uppercase tracking-wider font-light transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap"
                             style={{ color: "#000000" }}
                           >
                             {child.label}
