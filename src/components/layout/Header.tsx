@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import MobileMenu from "./MobileMenu";

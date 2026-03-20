@@ -211,7 +211,7 @@ export default function AdminFirmaPage() {
   // ─── Auto-generate glow logo for geb-gradient style ─────────────────────────
 
   const [logoGlowUrl, setLogoGlowUrl] = useState<string | null>(null);
-  const [glowLoading, setGlowLoading] = useState(false);
+  const [_glowLoading, setGlowLoading] = useState(false);
 
   useEffect(() => {
     if (templateForm.style === "geb-gradient" && templateForm.logoUrl) {
