@@ -59,7 +59,11 @@ export default function Header() {
               } hover:opacity-70`}
               aria-label="Apri menu"
             >
-              <Menu size={36} strokeWidth={1.1} />
+              <svg width="36" height="28" viewBox="0 0 36 28" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round">
+                <line x1="4" y1="9" x2="32" y2="9" />
+                <line x1="4" y1="14" x2="32" y2="14" />
+                <line x1="4" y1="19" x2="32" y2="19" />
+              </svg>
             </button>
 
             {/* Logo centered — switches between white and dark */}
@@ -70,7 +74,7 @@ export default function Header() {
                   alt="Wiener GTV Design"
                   width={95}
                   height={78}
-                  style={{ marginTop: "-4px" }}
+                  style={{ marginTop: "-8px" }}
                   priority
                   className="transition-opacity duration-300"
                 />
