@@ -86,7 +86,7 @@ export default function HeroSection() {
     slide.position === "right" ? "items-end text-right pr-8 md:pr-20" :
     "items-center text-center";
 
-  const textAlignV = "bottom-28";
+  const textAlignV = "bottom-24";
 
   return (
     <section className="relative w-full overflow-hidden" style={{ height: "100vh" }}>
@@ -134,15 +134,6 @@ export default function HeroSection() {
               {slide.subtitle}
             </p>
           )}
-          <Link
-            href="/prodotti"
-            className="inline-block mt-4 uppercase text-sm md:text-base tracking-[0.25em] text-white font-light hover:text-white/80 transition-colors"
-            style={{ textUnderlineOffset: "6px", textDecorationThickness: "1px" }}
-            onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
-            onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
-          >
-            Kipferl by Antenna <span className="ml-1">&rarr;</span>
-          </Link>
         </motion.div>
       </AnimatePresence>
 
