@@ -59,10 +59,10 @@ export default function Header() {
               } hover:opacity-70`}
               aria-label="Apri menu"
             >
-              <svg width="36" height="28" viewBox="0 0 36 28" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round">
-                <line x1="4" y1="9" x2="32" y2="9" />
-                <line x1="4" y1="14" x2="32" y2="14" />
-                <line x1="4" y1="19" x2="32" y2="19" />
+              <svg width="28" height="24" viewBox="0 0 28 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="4" y1="7" x2="24" y2="7" />
+                <line x1="4" y1="12" x2="24" y2="12" />
+                <line x1="4" y1="17" x2="24" y2="17" />
               </svg>
             </button>
 
@@ -72,8 +72,8 @@ export default function Header() {
                 <Image
                   src={isScrolled ? "/logo.webp" : "/logo-white.svg"}
                   alt="Wiener GTV Design"
-                  width={95}
-                  height={78}
+                  width={105}
+                  height={86}
                   style={{ marginTop: "-8px" }}
                   priority
                   className="transition-opacity duration-300"
@@ -89,7 +89,7 @@ export default function Header() {
               } hover:opacity-70`}
               aria-label="Cerca"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "scaleX(-1)" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "scaleX(-1)" }}>
                 <circle cx="11" cy="11" r="6.5" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
