@@ -418,6 +418,7 @@ export default function GestioneImmaginiPage() {
                               purpose="general"
                               folder="general"
                               helpText={`Sezione: ${imgConfig.section}`}
+                              acceptVideo={imgConfig.acceptVideo}
                             />
                           </div>
                         ))}

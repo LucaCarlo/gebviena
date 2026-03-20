@@ -16,6 +16,7 @@ interface ImageUploadFieldProps {
   helpText?: string;
   recommendedSize?: string; // e.g. "960x1200px"
   aspectRatio?: number; // width/height — enables crop tool
+  acceptVideo?: boolean; // accept video files (mp4, webm, etc.)
 }
 
 export default function ImageUploadField({
@@ -28,6 +29,7 @@ export default function ImageUploadField({
   helpText,
   recommendedSize,
   aspectRatio,
+  acceptVideo,
 }: ImageUploadFieldProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -64,6 +66,11 @@ export default function ImageUploadField({
   };
 
   const handleUpload = async (file: File) => {
+    // Videos skip cropping and compression
+    if (file.type.startsWith("video/")) {
+      uploadBlob(file, file.name);
+      return;
+    }
     // If aspectRatio is set, check if image needs cropping
     if (aspectRatio) {
       const url = URL.createObjectURL(file);
@@ -117,7 +124,7 @@ export default function ImageUploadField({
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("image/")) handleUpload(file);
+    if (file && (file.type.startsWith("image/") || (acceptVideo && file.type.startsWith("video/")))) handleUpload(file);
   };
 
   const handleMediaSelect = (urls: string[]) => {
@@ -148,7 +155,11 @@ export default function ImageUploadField({
       {value ? (
         <div className="relative group">
           <div className="relative w-full h-40 rounded-lg overflow-hidden bg-warm-100 border border-warm-200">
-            <Image src={value} alt={label} fill className="object-contain" sizes="400px" unoptimized />
+            {value.match(/\.(mp4|webm|ogg|mov)($|\?)/) ? (
+              <video src={value} className="w-full h-full object-contain" muted playsInline controls />
+            ) : (
+              <Image src={value} alt={label} fill className="object-contain" sizes="400px" unoptimized />
+            )}
           </div>
           <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
@@ -194,7 +205,7 @@ export default function ImageUploadField({
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
+            accept={acceptVideo ? "image/*,video/*" : "image/*"}
             onChange={handleFileChange}
             className="hidden"
           />
@@ -230,14 +241,14 @@ export default function ImageUploadField({
                 <Upload size={20} className="text-warm-400 mb-1" />
                 <span className="text-xs text-warm-500">Trascina o clicca per caricare</span>
                 <span className="text-[10px] text-warm-400 mt-0.5">
-                  {skipCompression ? "Originale • Nessuna compressione" : "WebP auto • Alta qualita"}
+                  {acceptVideo ? "Immagini e video • MP4, WebM" : skipCompression ? "Originale • Nessuna compressione" : "WebP auto • Alta qualita"}
                 </span>
               </>
             )}
             <input
               ref={inputRef}
               type="file"
-              accept="image/*"
+              accept={acceptVideo ? "image/*,video/*" : "image/*"}
               onChange={handleFileChange}
               className="hidden"
             />

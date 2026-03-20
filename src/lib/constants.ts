@@ -153,7 +153,7 @@ export function buildPermissions(value: boolean): Record<string, boolean> {
 export const PAGE_IMAGES_CONFIG: {
   page: string;
   label: string;
-  images: { section: string; label: string; defaultUrl: string }[];
+  images: { section: string; label: string; defaultUrl: string; acceptVideo?: boolean }[];
 }[] = [
   {
     page: "homepage",
@@ -165,7 +165,7 @@ export const PAGE_IMAGES_CONFIG: {
       { section: "spotlight-ambiance", label: "Product Spotlight — Ambiance", defaultUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=2000&fit=crop&q=85" },
       { section: "spotlight-product", label: "Product Spotlight — Prodotto", defaultUrl: "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=900&h=1200&fit=crop&q=85" },
       { section: "born-in-vienna", label: "Born in Vienna — Immagine storica", defaultUrl: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1400&h=900&fit=crop&q=85" },
-      { section: "wood-craftsmanship-video", label: "L'armonia del legno — Video", defaultUrl: "https://assets.mixkit.co/videos/44862/44862-720.mp4" },
+      { section: "wood-craftsmanship-video", label: "L'armonia del legno — Video", defaultUrl: "https://assets.mixkit.co/videos/44862/44862-720.mp4", acceptVideo: true },
     ],
   },
   {
