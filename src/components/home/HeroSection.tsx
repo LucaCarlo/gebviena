@@ -39,7 +39,7 @@ export default function HeroSection() {
       .then((r) => r.json())
       .then((data) => {
         const fetched = data.data || [];
-        setSlides(fetched.length > 0 ? [fetched[0]] : [FALLBACK_SLIDE]);
+        setSlides(fetched.length > 0 ? fetched : [FALLBACK_SLIDE]);
         setLoading(false);
       })
       .catch(() => {
@@ -133,6 +133,17 @@ export default function HeroSection() {
             <p className="text-[16px] text-white/60 mt-2 max-w-2xl">
               {slide.subtitle}
             </p>
+          )}
+          {slide.ctaText && slide.ctaLink && (
+            <Link
+              href={slide.ctaLink}
+              className="inline-block mt-4 uppercase text-sm md:text-base tracking-[0.25em] text-white font-light hover:text-white/80 transition-colors"
+              style={{ textUnderlineOffset: "6px", textDecorationThickness: "1px" }}
+              onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+              onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+            >
+              {slide.ctaText} <span className="ml-1">&rarr;</span>
+            </Link>
           )}
         </motion.div>
       </AnimatePresence>
