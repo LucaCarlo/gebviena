@@ -151,6 +151,22 @@ export default function ImageUploadField({
             <Image src={value} alt={label} fill className="object-contain" sizes="400px" unoptimized />
           </div>
           <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="w-7 h-7 bg-warm-800 text-white rounded-full flex items-center justify-center hover:bg-warm-900"
+              title="Carica nuova immagine"
+            >
+              <Upload size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="w-7 h-7 bg-warm-800 text-white rounded-full flex items-center justify-center hover:bg-warm-900"
+              title="Scegli dai Media"
+            >
+              <ImageIcon size={13} />
+            </button>
             {aspectRatio && (
               <button
                 type="button"
@@ -165,10 +181,23 @@ export default function ImageUploadField({
               type="button"
               onClick={() => { onRemove(); setUploadInfo(null); }}
               className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+              title="Rimuovi"
             >
               <X size={14} />
             </button>
           </div>
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
+              <Loader2 size={24} className="text-white animate-spin" />
+            </div>
+          )}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
           {uploadInfo && (
             <div className="flex gap-3 mt-1.5 text-[10px] text-warm-400">
               {uploadInfo.width && uploadInfo.height && (
