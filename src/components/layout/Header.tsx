@@ -46,7 +46,7 @@ export default function Header() {
         style={{
           left: 'var(--site-margin)',
           right: 'var(--site-margin)',
-          ...(!isScrolled ? { textShadow: "0 1px 8px rgba(0,0,0,0.3)" } : {}),
+          ...(!isScrolled ? { textShadow: "0 1px 8px rgba(0,0,0,0.3)", boxShadow: "0 1px 6px rgba(0,0,0,0.08)" } : {}),
         }}
       >
         <div className="px-2 md:px-4 lg:px-5">

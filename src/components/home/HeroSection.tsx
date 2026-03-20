@@ -92,7 +92,7 @@ export default function HeroSection() {
     "top-1/2 -translate-y-1/2";
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "115vh" }}>
+    <section className="relative w-full overflow-hidden" style={{ height: "100vh" }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
@@ -129,11 +129,11 @@ export default function HeroSection() {
           transition={{ duration: 1, delay: 0.3 }}
           className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className="font-sans text-2xl md:text-3xl lg:text-[45px] text-white/80 leading-snug font-light uppercase tracking-wide whitespace-nowrap" style={{ marginTop: "-5px" }}>
+          <h1 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 leading-snug font-light uppercase tracking-wide whitespace-nowrap" style={{ marginTop: "-5px" }}>
             {slide.title}
           </h1>
           {slide.subtitle && (
-            <p className="text-base md:text-lg text-white/60 mt-2 max-w-2xl">
+            <p className="text-[16px] text-white/60 mt-2 max-w-2xl">
               {slide.subtitle}
             </p>
           )}
