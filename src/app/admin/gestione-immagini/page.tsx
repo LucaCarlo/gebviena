@@ -419,6 +419,7 @@ export default function GestioneImmaginiPage() {
                               folder="general"
                               helpText={`Sezione: ${imgConfig.section}`}
                               acceptVideo={imgConfig.acceptVideo}
+                              aspectRatio={imgConfig.aspectRatio}
                             />
                           </div>
                         ))}
