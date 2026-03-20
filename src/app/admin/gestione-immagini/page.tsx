@@ -137,6 +137,8 @@ export default function GestioneImmaginiPage() {
         setEdits({});
         await fetchImages();
         setTimeout(() => setSaved(false), 3000);
+      } else {
+        alert("Errore: " + (data.error || "Salvataggio fallito"));
       }
     } catch {
       alert("Errore durante il salvataggio");

@@ -15,28 +15,20 @@ export default function CategoryCarousel() {
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    fetch("/api/categories?contentType=product")
+    fetch("/api/typologies?contentType=products")
       .then((r) => r.json())
-      .then(async (res) => {
-        const cats = (res.data || [])
-          .filter((c: { isActive: boolean }) => c.isActive)
+      .then((res) => {
+        const typos = (res.data || [])
+          .filter((t: { isActive: boolean; imageUrl?: string }) => t.isActive && t.imageUrl)
           .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder);
 
-        const mapped: Category[] = [];
-        for (const cat of cats) {
-          // Fetch first product of this category for the cover image
-          const prodRes = await fetch(`/api/products?category=${cat.value}&limit=1`);
-          const prodData = await prodRes.json();
-          const firstProduct = prodData.data?.[0];
-          const image = firstProduct?.coverImage || firstProduct?.imageUrl || "";
-
-          mapped.push({
-            name: cat.label,
-            image,
-            href: `/prodotti?category=${cat.value}`,
-          });
-        }
-        setCategories(mapped);
+        setCategories(
+          typos.map((t: { label: string; value: string; imageUrl: string }) => ({
+            name: t.label,
+            image: t.imageUrl,
+            href: `/prodotti?typology=${t.value}`,
+          }))
+        );
       })
       .catch(() => {});
   }, []);

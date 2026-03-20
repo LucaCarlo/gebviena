@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { contentType, value, label, sortOrder, isActive } = body;
+    const { contentType, value, label, sortOrder, isActive, imageUrl } = body;
 
     if (!contentType || !value || !label) {
       return NextResponse.json(
@@ -51,6 +51,7 @@ export async function POST(req: Request) {
         label,
         ...(sortOrder !== undefined && { sortOrder }),
         ...(isActive !== undefined && { isActive }),
+        ...(imageUrl !== undefined && { imageUrl }),
       },
       include: {
         categories: {

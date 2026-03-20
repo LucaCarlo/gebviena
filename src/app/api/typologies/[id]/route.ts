@@ -37,6 +37,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     if (updateData.label !== undefined) fields.label = updateData.label;
     if (updateData.sortOrder !== undefined) fields.sortOrder = updateData.sortOrder;
     if (updateData.isActive !== undefined) fields.isActive = updateData.isActive;
+    if (updateData.imageUrl !== undefined) fields.imageUrl = updateData.imageUrl || null;
 
     const data = await prisma.$transaction(async (tx) => {
       // Update the typology fields
