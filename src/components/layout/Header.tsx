@@ -60,9 +60,9 @@ export default function Header() {
               aria-label="Apri menu"
             >
               <svg width="30" height="26" viewBox="0 0 30 26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="4" y1="7" x2="26" y2="7" />
+                <line x1="4" y1="5" x2="26" y2="5" />
                 <line x1="4" y1="13" x2="26" y2="13" />
-                <line x1="4" y1="19" x2="26" y2="19" />
+                <line x1="4" y1="21" x2="26" y2="21" />
               </svg>
             </button>
 
@@ -74,7 +74,7 @@ export default function Header() {
                   alt="Wiener GTV Design"
                   width={100}
                   height={82}
-                  style={{ marginTop: "-8px" }}
+                  style={{ marginTop: "-2px" }}
                   priority
                   className="transition-opacity duration-300"
                 />
