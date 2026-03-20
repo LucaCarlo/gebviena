@@ -59,10 +59,10 @@ export default function Header() {
               } hover:opacity-70`}
               aria-label="Apri menu"
             >
-              <svg width="28" height="24" viewBox="0 0 28 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="4" y1="7" x2="24" y2="7" />
-                <line x1="4" y1="12" x2="24" y2="12" />
-                <line x1="4" y1="17" x2="24" y2="17" />
+              <svg width="30" height="26" viewBox="0 0 30 26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="4" y1="7" x2="26" y2="7" />
+                <line x1="4" y1="13" x2="26" y2="13" />
+                <line x1="4" y1="19" x2="26" y2="19" />
               </svg>
             </button>
 
@@ -72,8 +72,8 @@ export default function Header() {
                 <Image
                   src={isScrolled ? "/logo.webp" : "/logo-white.svg"}
                   alt="Wiener GTV Design"
-                  width={105}
-                  height={86}
+                  width={100}
+                  height={82}
                   style={{ marginTop: "-8px" }}
                   priority
                   className="transition-opacity duration-300"
