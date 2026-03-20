@@ -208,9 +208,37 @@ export default function AdminFirmaPage() {
     }
   }, [selectedTemplateId]);
 
+  // ─── Auto-generate glow logo for geb-gradient style ─────────────────────────
+
+  const [logoGlowUrl, setLogoGlowUrl] = useState<string | null>(null);
+  const [glowLoading, setGlowLoading] = useState(false);
+
+  useEffect(() => {
+    if (templateForm.style === "geb-gradient" && templateForm.logoUrl) {
+      setGlowLoading(true);
+      fetch("/api/signature/glow-logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ logoBase64: templateForm.logoUrl }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.glowLogoBase64) {
+            setLogoGlowUrl(data.glowLogoBase64);
+          }
+        })
+        .catch(() => setLogoGlowUrl(null))
+        .finally(() => setGlowLoading(false));
+    } else {
+      setLogoGlowUrl(null);
+    }
+  }, [templateForm.style, templateForm.logoUrl]);
+
   // ─── Preview HTML ────────────────────────────────────────────────────────────
 
-  const previewTemplate = canManageTemplates ? templateForm : myTemplate;
+  const previewTemplate = canManageTemplates
+    ? { ...templateForm, logoGlowUrl }
+    : myTemplate;
   const previewHtml = renderSignature(userData, previewTemplate);
 
 
@@ -285,7 +313,8 @@ export default function AdminFirmaPage() {
   const handleSaveUserData = async (targetUserId?: string) => {
     setSaving(true);
     try {
-      const htmlOutput = renderSignature(userData, canManageTemplates ? templateForm : myTemplate);
+      const templateForRender = canManageTemplates ? { ...templateForm, logoGlowUrl } : myTemplate;
+      const htmlOutput = renderSignature(userData, templateForRender);
       const res = await fetch("/api/signature", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -529,6 +558,7 @@ export default function AdminFirmaPage() {
                     className="w-full border border-warm-300 rounded px-3 py-2 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
                   >
                     <option value="geb">GEB Modern</option>
+                    <option value="geb-gradient">GEB Sfumato (Dark Mode)</option>
                     <option value="classic">Classico</option>
                   </select>
                 </div>
@@ -572,7 +602,7 @@ export default function AdminFirmaPage() {
                         checked={templateForm.showWeb}
                         onChange={(v) => setTemplateForm((prev) => ({ ...prev, showWeb: v }))}
                       />
-                      {templateForm.style === "geb" && (
+                      {(templateForm.style === "geb" || templateForm.style === "geb-gradient") && (
                         <>
                           <SocialToggle
                             label="LinkedIn"
@@ -613,7 +643,7 @@ export default function AdminFirmaPage() {
                     onChange={(v) => updateTemplate("webLinkUrl", v)}
                     placeholder="https://www...."
                   />
-                  {templateForm.style === "geb" && (
+                  {(templateForm.style === "geb" || templateForm.style === "geb-gradient") && (
                     <>
                       <FieldInput
                         label="LinkedIn URL"
@@ -850,6 +880,7 @@ function PreviewPanel({
   onCopy: () => void;
   copied: boolean;
 }) {
+  const [darkPreview, setDarkPreview] = useState(false);
   const handleDownloadHtm = () => {
     const blob = new Blob([previewHtml], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -886,6 +917,17 @@ function PreviewPanel({
           </button>
           <button
             type="button"
+            onClick={() => setDarkPreview(!darkPreview)}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium ${
+              darkPreview
+                ? "bg-gray-800 text-white"
+                : "bg-warm-100 text-warm-600 hover:bg-warm-200"
+            }`}
+          >
+            {darkPreview ? "☀️" : "🌙"} Dark
+          </button>
+          <button
+            type="button"
             onClick={onToggleSource}
             className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium ${
               showHtmlSource
@@ -907,7 +949,12 @@ function PreviewPanel({
         ) : (
           <div style={{ transform: "scale(0.75)", transformOrigin: "top left", width: "133%", minHeight: "350px" }}>
             <iframe
-              srcDoc={previewHtml}
+              srcDoc={darkPreview
+                ? previewHtml
+                    .replace("</style>", "* { color-scheme: light only !important; }\n</style>")
+                    .replace(/<body([^>]*)style="([^"]*)"/, `<body$1style="$2background-color:#1e1e1e;color-scheme:light only;"`)
+                : previewHtml
+              }
               className="w-full border-0"
               style={{ height: "550px", overflow: "hidden" }}
               title="Anteprima firma"

@@ -14,7 +14,7 @@ export interface SignatureUserData {
   mobile?: string;
 }
 
-export type SignatureStyle = "classic" | "geb";
+export type SignatureStyle = "classic" | "geb" | "geb-gradient";
 
 export interface SignatureTemplateData {
   id?: string;
@@ -38,6 +38,7 @@ export interface SignatureTemplateData {
   footerEn: string | null;
   ecoText: string | null;
   style?: SignatureStyle;
+  logoGlowUrl?: string | null;
 }
 
 export const DEFAULT_USER_DATA: SignatureUserData = {
@@ -388,9 +389,142 @@ ${t.bannerUrl ? `<table border="0" cellspacing="0" cellpadding="0" role="present
 </html>`;
 }
 
+export function renderSignatureHtmlGebGradient(
+  userData: SignatureUserData,
+  template: SignatureTemplateData
+): string {
+  // Identical to GEB Modern but with a white radial gradient behind the logo
+  // so it remains visible on dark-mode email clients
+  const u = userData;
+  const t = template;
+
+  const fontStack = "'Work Sans', Aptos, Calibri, Arial, Helvetica, sans-serif";
+
+  const iconSize = "22";
+  const socialIcons: string[] = [];
+  if (t.showWeb && t.webLinkUrl) {
+    socialIcons.push(`<a href="${escapeHtml(t.webLinkUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_WEB_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Web"></a>`);
+  }
+  if (t.showInstagram && t.instagramUrl) {
+    socialIcons.push(`<a href="${escapeHtml(t.instagramUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_INSTAGRAM_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Instagram"></a>`);
+  }
+  if (t.showLinkedin && t.linkedinUrl) {
+    socialIcons.push(`<a href="${escapeHtml(t.linkedinUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_LINKEDIN_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="LinkedIn"></a>`);
+  }
+  if (t.showFacebook && t.facebookUrl) {
+    socialIcons.push(`<a href="${escapeHtml(t.facebookUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_FACEBOOK_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Facebook"></a>`);
+  }
+  if (t.showPinterest && t.pinterestUrl) {
+    socialIcons.push(`<a href="${escapeHtml(t.pinterestUrl)}" target="_blank" style="display:inline-block;text-decoration:none;"><img src="${ICON_PINTEREST_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Pinterest"></a>`);
+  }
+  const socialHtml = socialIcons.join("");
+
+  // Logo: use pre-rendered PNG with baked-in white glow (works on all email clients)
+  const glowSrc = t.logoGlowUrl || t.logoUrl;
+  const logoHtml = glowSrc
+    ? `<img alt="Logo" src="${glowSrc}" width="130" style="display:block;border:0;outline:none;height:auto;margin:0 auto;" />`
+    : "";
+
+  let disclaimerHtml = "";
+  if (t.disclaimerLang === "both") {
+    const it = t.footerIt || "";
+    const en = t.footerEn || "";
+    disclaimerHtml = it + (it && en ? "<br>" : "") + en;
+  } else if (t.disclaimerLang === "en") {
+    disclaimerHtml = t.footerEn || "";
+  } else {
+    disclaimerHtml = t.footerIt || "";
+  }
+  const ecoText = t.ecoText || "";
+
+  const infoLines: string[] = [];
+  if (u.infoLine1) infoLines.push(escapeHtml(u.infoLine1));
+  if (u.infoLine2) infoLines.push(escapeHtml(u.infoLine2));
+  if (u.address) infoLines.push(escapeHtml(u.address));
+  if (u.phone) {
+    let phoneLine = escapeHtml(u.phone);
+    if (u.mobile && u.mobile.trim()) {
+      phoneLine += `&nbsp;&nbsp;|&nbsp;&nbsp;${escapeHtml(u.mobile)}`;
+    }
+    infoLines.push(phoneLine);
+  } else if (u.mobile && u.mobile.trim()) {
+    infoLines.push(escapeHtml(u.mobile));
+  }
+  const infoHtml = infoLines
+    .map((line) => `<span style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#000000;line-height:1.4;">${line}</span>`)
+    .join("<br>");
+
+  const deptText = escapeHtml(u.department).toUpperCase();
+
+  const websiteHtml = t.website && t.websiteUrl
+    ? `<span style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#000000;line-height:1.4;"><a href="${escapeHtml(t.websiteUrl)}" target="_blank" style="color:#000000;text-decoration:none;font-family:${fontStack};">${escapeHtml(t.website)}</a></span>`
+    : "";
+
+  const bannerWidth = "620";
+
+  return `<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+<style type="text/css">
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;700&display=swap');
+@font-face {
+  font-family: 'Work Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url('https://fonts.gstatic.com/s/worksans/v19/QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K0nXNi8.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Work Sans';
+  font-style: normal;
+  font-weight: 500;
+  src: url('https://fonts.gstatic.com/s/worksans/v19/QGY_z_wNahGAdqQ43RhVcIgYT2Xz5u32K3fXNi8.woff2') format('woff2');
+}
+</style>
+<!--[if mso]>
+<style type="text/css">
+* { font-family: Aptos, Calibri, Arial, Helvetica, sans-serif !important; }
+</style>
+<![endif]-->
+</head>
+<body style="margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:${fontStack};">
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+<tr>
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">${logoHtml}</td>
+<td rowspan="2" style="padding:0 0 0 12px;vertical-align:top;">
+<div style="font-family:${fontStack};font-size:16pt;font-weight:bold;color:#000000;margin:0;padding:0;line-height:1.0;mso-line-height-rule:exactly;"><b>${escapeHtml(u.fullName)}</b></div>
+<div style="font-family:${fontStack};font-size:8pt;font-weight:bold;color:#000000;margin:0 0 7px 0;padding:0;line-height:1.0;text-transform:uppercase;mso-line-height-rule:exactly;"><b>${deptText}</b></div>
+<div style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#000000;line-height:1.4;mso-line-height-rule:exactly;">${infoHtml}</div>
+${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
+</td>
+</tr>
+<tr>
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:bottom;text-align:center;">
+<!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
+<!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
+</td>
+</tr>
+</table>
+${t.bannerUrl ? `<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin-top:20px;"><tr><td><img src="${t.bannerUrl}" width="${bannerWidth}" style="display:block;border:0;outline:none;height:auto;max-width:${bannerWidth}px;width:${bannerWidth}px;" alt="Banner" /></td></tr></table>` : ""}
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;max-width:${bannerWidth}px;margin-top:6px;">
+<tr>
+<td>
+<div style="font-family:${fontStack};font-size:6pt;font-weight:400;color:#8f929b;margin:0;padding:0;line-height:1.4;mso-line-height-rule:exactly;">${disclaimerHtml}</div>
+<div style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#228b22;margin:4px 0 0 0;padding:0;mso-line-height-rule:exactly;">${ecoText}</div>
+</td>
+</tr>
+</table>
+</body>
+</html>`;
+}
+
 export function renderSignature(userData: SignatureUserData, template: SignatureTemplateData): string {
   if (template.style === "geb") {
     return renderSignatureHtmlGeb(userData, template);
+  }
+  if (template.style === "geb-gradient") {
+    return renderSignatureHtmlGebGradient(userData, template);
   }
   return renderSignatureHtml(userData, template);
 }
