@@ -332,6 +332,18 @@ export function renderSignatureHtmlGeb(
 
   const bannerWidth = "620";
 
+  // Calculate MSO spacer height so icons align with the bottom of the right column
+  // Right column heights (approximate for Outlook Word engine with Aptos/Calibri):
+  //   Name: 16pt line-height 1.0 ≈ 21px
+  //   Department: 8pt line-height 1.0 + 7px margin ≈ 18px
+  //   Info lines: 9pt line-height 1.4 ≈ 17px each
+  //   Website: 9pt line-height 1.4 + 2px margin ≈ 19px
+  // Left column: logo ≈ 107px, icons = 22px
+  const rightColHeight = 21 + 18 + (infoLines.length * 17) + (websiteHtml ? 19 : 0);
+  const logoHeight = 52; // actual: original 3472×1382 scaled to width 130 → height 52
+  const iconsHeight = 22;
+  const msoSpacer = Math.max(0, rightColHeight - logoHeight - iconsHeight);
+
   return `<html>
 <head>
 <meta charset="utf-8">
@@ -359,14 +371,15 @@ export function renderSignatureHtmlGeb(
 <![endif]-->
 </head>
 <body style="margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:${fontStack};">
+<!--[if mso]>
 <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
-<td style="width:140px;height:1px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">
-<table border="0" cellspacing="0" cellpadding="0" role="presentation" width="100%" style="border-collapse:collapse;height:100%;">
-<tr><td style="text-align:center;vertical-align:top;">${logoHtml}</td></tr>
-<tr><td style="text-align:center;vertical-align:bottom;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
-<!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
-<!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" width="100%" style="border-collapse:collapse;">
+<tr><td style="text-align:center;">${logoHtml}</td></tr>
+<tr><td height="${msoSpacer}" style="font-size:1px;line-height:1px;">&nbsp;</td></tr>
+<tr><td style="text-align:center;font-size:0;">
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table>
 </td></tr>
 </table>
 </td>
@@ -378,6 +391,25 @@ ${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
 </td>
 </tr>
 </table>
+<![endif]-->
+<!--[if !mso]><!-->
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;">
+<tr>
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">${logoHtml}</td>
+<td rowspan="2" style="padding:0 0 0 12px;vertical-align:top;">
+<div style="font-family:${fontStack};font-size:16pt;font-weight:bold;color:#000000;margin:0;padding:0;line-height:1.0;"><b>${escapeHtml(u.fullName)}</b></div>
+<div style="font-family:${fontStack};font-size:8pt;font-weight:bold;color:#000000;margin:0 0 7px 0;padding:0;line-height:1.0;text-transform:uppercase;"><b>${deptText}</b></div>
+<div style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#000000;line-height:1.4;">${infoHtml}</div>
+${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
+</td>
+</tr>
+<tr>
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:bottom;text-align:center;font-size:0;line-height:0;">
+<div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div>
+</td>
+</tr>
+</table>
+<!--<![endif]-->
 ${t.bannerUrl ? `<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin-top:20px;"><tr><td><img src="${t.bannerUrl}" width="${bannerWidth}" style="display:block;border:0;outline:none;height:auto;max-width:${bannerWidth}px;width:${bannerWidth}px;" alt="Banner" /></td></tr></table>` : ""}
 <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;max-width:${bannerWidth}px;margin-top:6px;">
 <tr>
@@ -464,6 +496,18 @@ export function renderSignatureHtmlGebGradient(
 
   const bannerWidth = "620";
 
+  // Calculate MSO spacer height so icons align with the bottom of the right column
+  // Right column heights (approximate for Outlook Word engine with Aptos/Calibri):
+  //   Name: 16pt line-height 1.0 ≈ 21px
+  //   Department: 8pt line-height 1.0 + 7px margin ≈ 18px
+  //   Info lines: 9pt line-height 1.4 ≈ 17px each
+  //   Website: 9pt line-height 1.4 + 2px margin ≈ 19px
+  // Left column: logo ≈ 107px, icons = 22px
+  const rightColHeight = 21 + 18 + (infoLines.length * 17) + (websiteHtml ? 19 : 0);
+  const logoHeight = 52; // actual: original 3472×1382 scaled to width 130 → height 52
+  const iconsHeight = 22;
+  const msoSpacer = Math.max(0, rightColHeight - logoHeight - iconsHeight);
+
   return `<html>
 <head>
 <meta charset="utf-8">
@@ -491,14 +535,15 @@ export function renderSignatureHtmlGebGradient(
 <![endif]-->
 </head>
 <body style="margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:${fontStack};">
+<!--[if mso]>
 <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
-<td style="width:140px;height:1px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">
-<table border="0" cellspacing="0" cellpadding="0" role="presentation" width="100%" style="border-collapse:collapse;height:100%;">
-<tr><td style="text-align:center;vertical-align:top;">${logoHtml}</td></tr>
-<tr><td style="text-align:center;vertical-align:bottom;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
-<!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
-<!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" width="100%" style="border-collapse:collapse;">
+<tr><td style="text-align:center;">${logoHtml}</td></tr>
+<tr><td height="${msoSpacer}" style="font-size:1px;line-height:1px;">&nbsp;</td></tr>
+<tr><td style="text-align:center;font-size:0;">
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table>
 </td></tr>
 </table>
 </td>
@@ -510,6 +555,25 @@ ${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
 </td>
 </tr>
 </table>
+<![endif]-->
+<!--[if !mso]><!-->
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;">
+<tr>
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">${logoHtml}</td>
+<td rowspan="2" style="padding:0 0 0 12px;vertical-align:top;">
+<div style="font-family:${fontStack};font-size:16pt;font-weight:bold;color:#000000;margin:0;padding:0;line-height:1.0;"><b>${escapeHtml(u.fullName)}</b></div>
+<div style="font-family:${fontStack};font-size:8pt;font-weight:bold;color:#000000;margin:0 0 7px 0;padding:0;line-height:1.0;text-transform:uppercase;"><b>${deptText}</b></div>
+<div style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#000000;line-height:1.4;">${infoHtml}</div>
+${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
+</td>
+</tr>
+<tr>
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:bottom;text-align:center;font-size:0;line-height:0;">
+<div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div>
+</td>
+</tr>
+</table>
+<!--<![endif]-->
 ${t.bannerUrl ? `<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin-top:20px;"><tr><td><img src="${t.bannerUrl}" width="${bannerWidth}" style="display:block;border:0;outline:none;height:auto;max-width:${bannerWidth}px;width:${bannerWidth}px;" alt="Banner" /></td></tr></table>` : ""}
 <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;max-width:${bannerWidth}px;margin-top:6px;">
 <tr>
