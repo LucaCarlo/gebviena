@@ -361,10 +361,10 @@ export function renderSignatureHtmlGeb(
 <body style="margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:${fontStack};">
 <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
-<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">
-<table border="0" cellspacing="0" cellpadding="0" role="presentation" width="100%" height="100%" style="border-collapse:collapse;width:100%;height:100%;">
+<td style="width:140px;height:1px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" width="100%" style="border-collapse:collapse;height:100%;">
 <tr><td style="text-align:center;vertical-align:top;">${logoHtml}</td></tr>
-<tr><td style="text-align:center;vertical-align:bottom;padding-top:8px;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
+<tr><td style="text-align:center;vertical-align:bottom;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
 <!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
 <!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
 </td></tr>
@@ -493,10 +493,10 @@ export function renderSignatureHtmlGebGradient(
 <body style="margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:${fontStack};">
 <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
-<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">
-<table border="0" cellspacing="0" cellpadding="0" role="presentation" width="100%" height="100%" style="border-collapse:collapse;width:100%;height:100%;">
+<td style="width:140px;height:1px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" width="100%" style="border-collapse:collapse;height:100%;">
 <tr><td style="text-align:center;vertical-align:top;">${logoHtml}</td></tr>
-<tr><td style="text-align:center;vertical-align:bottom;padding-top:8px;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
+<tr><td style="text-align:center;vertical-align:bottom;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
 <!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
 <!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
 </td></tr>
