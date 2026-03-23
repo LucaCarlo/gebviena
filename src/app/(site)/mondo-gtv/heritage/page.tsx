@@ -60,6 +60,11 @@ export default async function HeritagePage() {
 
   return (
     <>
+      <section className="gtv-container pt-16 pb-10">
+        <h1 className="font-serif text-[38px] md:text-[48px] text-black tracking-tight text-center font-light">
+          Le origini di &ldquo;Gebrüder Thonet&rdquo;
+        </h1>
+      </section>
 
       {/* ── Foto famiglia + testo ─────────────────────────────────── */}
       <section className="pb-20 md:pb-28">

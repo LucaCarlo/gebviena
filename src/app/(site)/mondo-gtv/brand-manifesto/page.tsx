@@ -55,6 +55,11 @@ export default async function BrandManifestoPage() {
 
   return (
     <>
+      <section className="gtv-container pt-16 pb-10">
+        <h1 className="font-serif text-[38px] md:text-[48px] text-black tracking-tight text-center font-light">
+          Born in Vienna. Made in Italy. Designed around the world.
+        </h1>
+      </section>
 
       {/* ── Intro paragraph ───────────────────────────────────────── */}
       <section className="pb-20 md:pb-28">
