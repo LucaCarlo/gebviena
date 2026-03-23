@@ -12,6 +12,11 @@ export default async function RealizzazioniCustomPage() {
 
   return (
     <>
+      <section className="gtv-container pt-16 pb-10">
+        <h1 className="font-serif text-[38px] md:text-[48px] text-black tracking-tight text-center font-light">
+          Realizzazioni Custom
+        </h1>
+      </section>
 
       {/* ── IMAGE + TEXT (same layout as rassegna stampa detail) ── */}
       <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
