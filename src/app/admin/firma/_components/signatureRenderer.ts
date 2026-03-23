@@ -361,18 +361,20 @@ export function renderSignatureHtmlGeb(
 <body style="margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:${fontStack};">
 <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
-<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">${logoHtml}</td>
-<td rowspan="2" style="padding:0 0 0 12px;vertical-align:top;">
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;width:100%;">
+<tr><td style="text-align:center;vertical-align:top;">${logoHtml}</td></tr>
+<tr><td style="text-align:center;vertical-align:bottom;padding-top:8px;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
+<!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
+<!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
+</td></tr>
+</table>
+</td>
+<td style="padding:0 0 0 12px;vertical-align:top;">
 <div style="font-family:${fontStack};font-size:16pt;font-weight:bold;color:#000000;margin:0;padding:0;line-height:1.0;mso-line-height-rule:exactly;"><b>${escapeHtml(u.fullName)}</b></div>
 <div style="font-family:${fontStack};font-size:8pt;font-weight:bold;color:#000000;margin:0 0 7px 0;padding:0;line-height:1.0;text-transform:uppercase;mso-line-height-rule:exactly;"><b>${deptText}</b></div>
 <div style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#000000;line-height:1.4;mso-line-height-rule:exactly;">${infoHtml}</div>
 ${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
-</td>
-</tr>
-<tr>
-<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:bottom;text-align:center;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
-<!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
-<!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
 </td>
 </tr>
 </table>
@@ -491,18 +493,20 @@ export function renderSignatureHtmlGebGradient(
 <body style="margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:${fontStack};">
 <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr>
-<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">${logoHtml}</td>
-<td rowspan="2" style="padding:0 0 0 12px;vertical-align:top;">
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:top;text-align:center;">
+<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;width:100%;">
+<tr><td style="text-align:center;vertical-align:top;">${logoHtml}</td></tr>
+<tr><td style="text-align:center;vertical-align:bottom;padding-top:8px;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
+<!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
+<!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
+</td></tr>
+</table>
+</td>
+<td style="padding:0 0 0 12px;vertical-align:top;">
 <div style="font-family:${fontStack};font-size:16pt;font-weight:bold;color:#000000;margin:0;padding:0;line-height:1.0;mso-line-height-rule:exactly;"><b>${escapeHtml(u.fullName)}</b></div>
 <div style="font-family:${fontStack};font-size:8pt;font-weight:bold;color:#000000;margin:0 0 7px 0;padding:0;line-height:1.0;text-transform:uppercase;mso-line-height-rule:exactly;"><b>${deptText}</b></div>
 <div style="font-family:${fontStack};font-size:9pt;font-weight:400;color:#000000;line-height:1.4;mso-line-height-rule:exactly;">${infoHtml}</div>
 ${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
-</td>
-</tr>
-<tr>
-<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:bottom;text-align:center;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
-<!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
-<!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
 </td>
 </tr>
 </table>
