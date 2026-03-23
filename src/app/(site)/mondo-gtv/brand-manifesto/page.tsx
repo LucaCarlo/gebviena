@@ -55,14 +55,6 @@ export default async function BrandManifestoPage() {
 
   return (
     <>
-      {/* ── Hero Section ─────────────────────────────────────────── */}
-      <section className="relative w-full flex items-center justify-center bg-warm-900 overflow-hidden" style={{ minHeight: "110vh" }}>
-        <Image src="/images/michael-thonet-1853.jpg" alt="Brand Manifesto" fill className="object-cover" sizes="100vw" priority />
-        <div className="absolute inset-0 bg-black/40" />
-        <h1 className="relative font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight text-center px-8">
-          Born in Vienna. Made in Italy. Designed around the world.
-        </h1>
-      </section>
 
       {/* ── Intro paragraph ───────────────────────────────────────── */}
       <section className="pb-20 md:pb-28">

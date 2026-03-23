@@ -12,14 +12,6 @@ export default async function RealizzazioniCustomPage() {
 
   return (
     <>
-      {/* ── Hero Section ────────────────────────────────────── */}
-      <section className="relative w-full flex items-center justify-center bg-warm-900 overflow-hidden" style={{ minHeight: "110vh" }}>
-        <Image src="/images/professionisti-realizzazioni.webp" alt="Realizzazioni Custom" fill className="object-cover" sizes="100vw" priority />
-        <div className="absolute inset-0 bg-black/40" />
-        <h1 className="relative font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight text-center px-8">
-          Realizzazioni Custom
-        </h1>
-      </section>
 
       {/* ── IMAGE + TEXT (same layout as rassegna stampa detail) ── */}
       <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
