@@ -370,7 +370,7 @@ ${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
 </td>
 </tr>
 <tr>
-<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:bottom;text-align:center;">
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:bottom;text-align:center;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
 <!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
 <!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
 </td>
@@ -500,7 +500,7 @@ ${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
 </td>
 </tr>
 <tr>
-<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:bottom;text-align:center;">
+<td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:bottom;text-align:center;font-size:0;line-height:${iconSize}px;mso-line-height-rule:exactly;">
 <!--[if mso]><table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table><![endif]-->
 <!--[if !mso]><!--><div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div><!--<![endif]-->
 </td>
