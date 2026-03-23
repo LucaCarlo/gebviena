@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getPageImages } from "@/lib/page-images";
-import PageHero from "@/components/PageHero";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -62,11 +61,13 @@ export default async function HeritagePage() {
   return (
     <>
       {/* ── Hero Section ───────────────────────────────────────── */}
-      <PageHero
-        page="heritage"
-        defaultTitle='Le origini di "Gebrüder Thonet"'
-        defaultImage="/images/Michael-Thonet-centre-with-his-five-sons.jpg"
-      />
+      <section className="relative w-full flex items-center justify-center bg-warm-900 overflow-hidden" style={{ minHeight: "110vh" }}>
+        <Image src="/images/Michael-Thonet-centre-with-his-five-sons.jpg" alt="Heritage" fill className="object-cover" sizes="100vw" priority />
+        <div className="absolute inset-0 bg-black/40" />
+        <h1 className="relative font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight text-center px-8">
+          Le origini di &ldquo;Gebrüder Thonet&rdquo;
+        </h1>
+      </section>
 
       {/* ── Foto famiglia + testo ─────────────────────────────────── */}
       <section className="pb-20 md:pb-28">

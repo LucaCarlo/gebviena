@@ -8,7 +8,7 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Product, HeroSlide } from "@/types";
 
-const ITEMS_PER_PAGE = 16;
+const ITEMS_PER_PAGE = 24;
 const HERO_AUTOPLAY = 5000;
 
 function ProductsHero() {
@@ -38,12 +38,12 @@ function ProductsHero() {
   // Fallback: static hero if no slides configured
   if (loaded && slides.length === 0) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 6rem)" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 7.5rem)" }}>
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.3 }}
-          className="font-serif text-[46px] md:text-[58px] lg:text-[70px] text-white tracking-wide"
+          className="font-serif text-[58px] text-white tracking-wide"
         >
           Prodotti
         </motion.h1>
@@ -53,7 +53,7 @@ function ProductsHero() {
 
   if (!loaded) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-100" style={{ height: "calc(100vh - 6rem)" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-100" style={{ height: "calc(100vh - 7.5rem)" }}>
         <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
       </section>
     );
@@ -69,10 +69,10 @@ function ProductsHero() {
   const textAlignV =
     slide.verticalPosition === "top" ? "top-20 bottom-auto" :
     slide.verticalPosition === "bottom" ? "bottom-20 top-auto" :
-    "top-1/2 -translate-y-1/2";
+    "top-[46%] -translate-y-1/2";
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 6rem)" }}>
+    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 7.5rem)" }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
@@ -93,11 +93,7 @@ function ProductsHero() {
         </motion.div>
       </AnimatePresence>
 
-      {slide.darkOverlay ? (
-        <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-      )}
+      <div className="absolute inset-0 bg-black/60" />
 
       <AnimatePresence mode="wait">
         <motion.div
@@ -108,7 +104,7 @@ function ProductsHero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className="font-serif text-[40px] md:text-[50px] lg:text-[60px] text-white tracking-wide">
+          <h1 className="font-serif text-[58px] text-white tracking-wide">
             {slide.title}
           </h1>
           {slide.subtitle && (
@@ -303,7 +299,7 @@ function ProductsContent() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-base md:text-lg text-black leading-relaxed max-w-4xl mx-auto text-center font-light"
+          className="text-[20px] text-black leading-snug max-w-4xl mx-auto text-center font-light tracking-normal"
           style={{ textAlign: "justify" }}
         >
           I prodotti Gebrüder Thonet Vienna uniscono tradizione e innovazione in forme iconiche e senza
@@ -320,10 +316,10 @@ function ProductsContent() {
           <button
             ref={(el) => { typoButtonRefs.current["TUTTI"] = el; }}
             onClick={() => setCategory("TUTTI")}
-            className={`text-sm tracking-[0.06em] text-dark pb-1 transition-all border-b ${
+            className={`text-[16px] font-light tracking-[0.03em] text-dark pb-1 transition-all border-b ${
               currentCategory === "TUTTI"
                 ? "border-dark"
-                : "border-transparent hover:border-warm-400"
+                : "border-transparent hover:border-dark"
             }`}
           >
             Tutti
@@ -333,10 +329,10 @@ function ProductsContent() {
               key={t.value}
               ref={(el) => { typoButtonRefs.current[t.value] = el; }}
               onClick={() => setCategory(t.value)}
-              className={`text-sm tracking-[0.06em] text-dark pb-1 transition-all border-b ${
+              className={`text-[16px] font-light tracking-[0.03em] text-dark pb-1 transition-all border-b ${
                 currentCategory === t.value
                   ? "border-dark"
-                  : "border-transparent hover:border-warm-400"
+                  : "border-transparent hover:border-dark"
               }`}
             >
               {t.label}
@@ -377,7 +373,7 @@ function ProductsContent() {
                 <button
                   key={cat.value}
                   onClick={() => setSubcategory(currentSubcategory === cat.value ? null : cat.value)}
-                  className={`px-4 py-1.5 rounded-full text-xs uppercase tracking-[0.1em] transition-all ${
+                  className={`px-4 py-1.5 rounded-full text-[16px] font-light uppercase tracking-[0.03em] transition-all ${
                     currentSubcategory === cat.value
                       ? "bg-dark text-white"
                       : "bg-warm-100 text-dark hover:bg-warm-200"
@@ -394,17 +390,17 @@ function ProductsContent() {
       {/* ===== PRODUCT GRID ===== */}
       <section className="gtv-container py-12 md:py-16">
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10 md:gap-x-8 md:gap-y-14">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="aspect-square bg-warm-100" />
+                <div className="bg-warm-100" style={{ aspectRatio: "4/5" }} />
                 <div className="h-2 bg-warm-100 mt-4 w-16" />
                 <div className="h-3 bg-warm-100 mt-2 w-28" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10 md:gap-x-8 md:gap-y-14">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12">
             {products.map((product, i) => (
               <motion.div
                 key={product.id}
@@ -414,7 +410,7 @@ function ProductsContent() {
                 transition={{ duration: 0.4, delay: (i % 4) * 0.05 }}
               >
                 <Link href={`/prodotti/${product.slug}`} className="group block">
-                  <div className="relative aspect-square bg-warm-50 overflow-hidden">
+                  <div className="relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "4/5" }}>
                     <Image
                       src={product.coverImage || product.imageUrl}
                       alt={product.name}
@@ -424,10 +420,10 @@ function ProductsContent() {
                     />
                   </div>
                   <div className="mt-4">
-                    <p className="text-xs uppercase tracking-[0.15em] text-black font-normal">
+                    <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">
                       {product.subcategory || (product.category === "CLASSICI" ? "Classici" : product.category?.charAt(0) + product.category?.slice(1).toLowerCase())}
                     </p>
-                    <h3 className="text-base md:text-lg font-normal uppercase tracking-[0.08em] text-black mt-1 group-hover:text-warm-500 transition-colors">
+                    <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                       {product.name}
                     </h3>
                   </div>
@@ -445,16 +441,16 @@ function ProductsContent() {
         )}
 
         {/* ===== PAGINATION ===== */}
-        {totalPages > 1 && !loading && (
+        {totalPages >= 1 && !loading && (
           <div className="flex items-center justify-center gap-3 mt-16">
             {getPaginationItems().map((item, i) =>
               item === "..." ? (
-                <span key={`ellipsis-${i}`} className="text-xs text-warm-400 px-1">&hellip;</span>
+                <span key={`ellipsis-${i}`} className="text-sm text-warm-400 px-1">&hellip;</span>
               ) : (
                 <button
                   key={item}
                   onClick={() => setPage(item as number)}
-                  className={`w-9 h-9 rounded-full text-xs transition-colors border ${
+                  className={`w-9 h-9 rounded-full text-base transition-colors border ${
                     currentPage === item
                       ? "border-warm-800 text-warm-800"
                       : "border-transparent text-warm-400 hover:text-warm-700"
@@ -469,11 +465,11 @@ function ProductsContent() {
       </section>
 
       {/* ===== BREADCRUMBS ===== */}
-      <div className="gtv-container pb-12">
-        <div className="flex items-center justify-start gap-2 text-[10px] uppercase tracking-[0.15em] text-warm-400">
-          <Link href="/" className="hover:text-warm-700 transition-colors">Home</Link>
-          <ChevronRight size={10} />
-          <span className="text-warm-600">Prodotti</span>
+      <div className="gtv-container pb-2 -mt-10">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
+          <ChevronRight size={12} />
+          <span>Prodotti</span>
         </div>
       </div>
     </>

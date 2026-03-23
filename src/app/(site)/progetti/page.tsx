@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Project, HeroSlide } from "@/types";
 
-const ITEMS_PER_PAGE = 16;
+const ITEMS_PER_PAGE = 24;
 const HERO_AUTOPLAY = 5000;
 
 function ProjectsHero() {
@@ -36,12 +36,12 @@ function ProjectsHero() {
 
   if (loaded && slides.length === 0) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 6rem)" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 7.5rem)" }}>
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.3 }}
-          className="font-serif text-[46px] md:text-[58px] lg:text-[70px] text-white tracking-wide"
+          className="font-serif text-[58px] text-white tracking-wide"
         >
           Progetti
         </motion.h1>
@@ -51,7 +51,7 @@ function ProjectsHero() {
 
   if (!loaded) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 6rem)" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 7.5rem)" }}>
         <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
       </section>
     );
@@ -67,10 +67,10 @@ function ProjectsHero() {
   const textAlignV =
     slide.verticalPosition === "top" ? "top-20 bottom-auto" :
     slide.verticalPosition === "bottom" ? "bottom-20 top-auto" :
-    "top-1/2 -translate-y-1/2";
+    "top-[46%] -translate-y-1/2";
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 6rem)" }}>
+    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 7.5rem)" }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
@@ -91,11 +91,7 @@ function ProjectsHero() {
         </motion.div>
       </AnimatePresence>
 
-      {slide.darkOverlay ? (
-        <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-      )}
+      <div className="absolute inset-0 bg-black/60" />
 
       <AnimatePresence mode="wait">
         <motion.div
@@ -106,7 +102,7 @@ function ProjectsHero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className="font-serif text-[40px] md:text-[50px] lg:text-[60px] text-white tracking-wide">
+          <h1 className="font-serif text-[58px] text-white tracking-wide">
             {slide.title}
           </h1>
           {slide.subtitle && (
@@ -164,6 +160,80 @@ function ProjectsHero() {
   );
 }
 
+interface FilterOption {
+  value: string;
+  label: string;
+  count: number;
+}
+
+function FilterDropdown({ label, options, value, onChange }: {
+  label: string;
+  options: FilterOption[];
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = options.filter((o) =>
+    o.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectedLabel = options.find((o) => o.value === value)?.label;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-between gap-3 px-4 py-3 border border-black text-[16px] font-light text-black tracking-normal min-w-[220px] bg-white"
+      >
+        <span>{selectedLabel || label}</span>
+        <ChevronDown size={26} strokeWidth={1} className={`transition-transform duration-300 ${open ? "-rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 right-0 bg-white border border-black border-t-0 z-30 max-h-[280px] overflow-hidden flex flex-col">
+          <div className="px-1 py-0.5 bg-warm-50">
+            <input
+              type="text"
+              placeholder="Cerca"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full text-[14px] font-light text-warm-500 placeholder:text-warm-400 tracking-normal px-1 py-0 bg-warm-50 focus:outline-none"
+              autoFocus
+            />
+          </div>
+          <div className="overflow-y-auto">
+            <button
+              onClick={() => { onChange(""); setOpen(false); setSearch(""); }}
+              className="w-full text-left px-2 py-0.5 text-[16px] font-light tracking-normal text-black"
+            >
+              {label}
+            </button>
+            {filtered.map((o) => (
+              <button
+                key={o.value}
+                onClick={() => { onChange(o.value); setOpen(false); setSearch(""); }}
+                className="w-full text-left px-2 py-0.5 text-[16px] font-light tracking-normal text-black"
+              >
+                {o.label} ({o.count})
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface CategoryItem {
   value: string;
   label: string;
@@ -178,8 +248,10 @@ function ProjectsContent() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [countries, setCountries] = useState<string[]>([]);
+  const [countryOptions, setCountryOptions] = useState<FilterOption[]>([]);
   const [selectedCountry, setSelectedCountry] = useState("");
+  const [productOptions, setProductOptions] = useState<FilterOption[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState("");
   const [projectCategories, setProjectCategories] = useState<CategoryItem[]>([]);
   const separatorRef = useRef<HTMLDivElement>(null);
   const typeButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -217,6 +289,7 @@ function ProjectsContent() {
     const params = new URLSearchParams();
     if (currentType !== "TUTTI") params.set("type", currentType);
     if (selectedCountry) params.set("country", selectedCountry);
+    if (selectedProduct) params.set("productId", selectedProduct);
     params.set("page", currentPage.toString());
     params.set("limit", ITEMS_PER_PAGE.toString());
 
@@ -225,18 +298,34 @@ function ProjectsContent() {
     setProjects(data.data || []);
     setTotalPages(data.meta?.totalPages || 1);
     setLoading(false);
-  }, [currentType, currentPage, selectedCountry]);
+  }, [currentType, currentPage, selectedCountry, selectedProduct]);
 
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
 
   useEffect(() => {
-    fetch("/api/projects?limit=100")
+    fetch("/api/projects?limit=500")
       .then((r) => r.json())
       .then((data) => {
-        const allCountries = Array.from(new Set((data.data || []).map((p: Project) => p.country))).sort();
-        setCountries(allCountries as string[]);
+        const projects = data.data || [];
+        // Count per country
+        const countryCounts: Record<string, number> = {};
+        projects.forEach((p: Project) => {
+          countryCounts[p.country] = (countryCounts[p.country] || 0) + 1;
+        });
+        setCountryOptions(
+          Object.entries(countryCounts)
+            .sort(([, a], [, b]) => b - a)
+            .map(([country, count]) => ({ value: country, label: country, count }))
+        );
+      });
+    fetch("/api/products?limit=500")
+      .then((r) => r.json())
+      .then((data) => {
+        setProductOptions(
+          (data.data || []).map((p: { id: string; name: string }) => ({ value: p.id, label: p.name, count: 0 }))
+        );
       });
   }, []);
 
@@ -279,20 +368,18 @@ function ProjectsContent() {
       <ProjectsHero />
 
       {/* ===== DESCRIPTION ===== */}
-      <section className="gtv-container py-14 md:py-20">
+      <section className="gtv-container py-10 md:py-14">
         <motion.p
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-base md:text-lg text-black leading-relaxed max-w-4xl mx-auto text-center font-light"
+          className="text-[20px] text-black leading-snug max-w-4xl mx-auto text-center font-light tracking-normal"
           style={{ textAlign: "justify" }}
         >
-          Uno sguardo sulle nostre realizzazioni nel mondo. Dai bistrot più ricercati agli hotel
-          d&apos;avanguardia, dagli spazi culturali ai contesti residenziali, i nostri arredi contribuiscono a
-          definire atmosfere inconfondibili. In questa sezione raccogliamo una selezione di progetti
-          che raccontano come la nostra estetica e la nostra storia si intrecciano con le visioni di
-          architetti e interior designer contemporanei.
+          Uno sguardo sulle nostre realizzazioni nel mondo.<br />
+          Dai bistrot più ricercati agli hotel d&apos;avanguardia, dagli spazi culturali ai contesti residenziali, i nostri arredi contribuiscono a definire atmosfere inconfondibili.<br />
+          In questa sezione raccogliamo una selezione di progetti che raccontano come la nostra estetica e la nostra storia si intrecciano con le visioni di architetti e interior designer contemporanei.
         </motion.p>
       </section>
 
@@ -302,10 +389,10 @@ function ProjectsContent() {
           <button
             ref={(el) => { typeButtonRefs.current["TUTTI"] = el; }}
             onClick={() => setType("TUTTI")}
-            className={`text-sm tracking-[0.06em] text-dark pb-1 transition-all border-b ${
+            className={`text-[16px] font-light tracking-[0.03em] text-dark pb-1 transition-all border-b ${
               currentType === "TUTTI"
                 ? "border-dark"
-                : "border-transparent hover:border-warm-400"
+                : "border-transparent hover:border-dark"
             }`}
           >
             Tutti
@@ -315,10 +402,10 @@ function ProjectsContent() {
               key={cat.value}
               ref={(el) => { typeButtonRefs.current[cat.value] = el; }}
               onClick={() => setType(cat.value)}
-              className={`text-sm tracking-[0.06em] text-dark pb-1 transition-all border-b ${
+              className={`text-[16px] font-light tracking-[0.03em] text-dark pb-1 transition-all border-b ${
                 currentType === cat.value
                   ? "border-dark"
-                  : "border-transparent hover:border-warm-400"
+                  : "border-transparent hover:border-dark"
               }`}
             >
               {cat.label}
@@ -351,50 +438,37 @@ function ProjectsContent() {
           )}
         </div>
 
-        {/* Country filter pills */}
-        {countries.length > 0 && (
-          <div className="pt-5 pb-2">
-            <div className="flex flex-wrap gap-3 justify-center">
-              {selectedCountry && (
-                <button
-                  onClick={() => setSelectedCountry("")}
-                  className="px-4 py-1.5 rounded-full text-xs uppercase tracking-[0.1em] transition-all bg-warm-100 text-dark hover:bg-warm-200"
-                >
-                  Tutti i paesi
-                </button>
-              )}
-              {countries.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setSelectedCountry(selectedCountry === c ? "" : c)}
-                  className={`px-4 py-1.5 rounded-full text-xs uppercase tracking-[0.1em] transition-all ${
-                    selectedCountry === c
-                      ? "bg-dark text-white"
-                      : "bg-warm-100 text-dark hover:bg-warm-200"
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Dropdown filters */}
+        <div className="flex justify-center gap-3 md:gap-4 pt-16 pb-2">
+          <FilterDropdown
+            label="Filtra per Paese"
+            options={countryOptions}
+            value={selectedCountry}
+            onChange={setSelectedCountry}
+          />
+          <FilterDropdown
+            label="Filtra per prodotto"
+            options={productOptions}
+            value={selectedProduct}
+            onChange={setSelectedProduct}
+          />
+        </div>
       </div>
 
       {/* ===== PROJECT GRID ===== */}
-      <section className="gtv-container py-12 md:py-16">
+      <section className="gtv-container pt-2 pb-8 md:pt-3 md:pb-10">
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10 md:gap-x-8 md:gap-y-14">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="aspect-square bg-warm-100" />
+                <div className="bg-warm-100" style={{ aspectRatio: "4/5" }} />
                 <div className="h-2 bg-warm-100 mt-4 w-16" />
                 <div className="h-3 bg-warm-100 mt-2 w-28" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10 md:gap-x-8 md:gap-y-14">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12">
             {projects.map((project, i) => (
               <motion.div
                 key={project.id}
@@ -404,7 +478,7 @@ function ProjectsContent() {
                 transition={{ duration: 0.4, delay: (i % 4) * 0.05 }}
               >
                 <Link href={`/progetti/${project.slug}`} className="group block">
-                  <div className="relative aspect-square bg-warm-50 overflow-hidden">
+                  <div className="relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "4/5" }}>
                     <Image
                       src={project.imageUrl}
                       alt={project.name}
@@ -414,10 +488,10 @@ function ProjectsContent() {
                     />
                   </div>
                   <div className="mt-4">
-                    <p className="text-xs uppercase tracking-[0.15em] text-black font-normal">
+                    <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">
                       {typeLabels[project.type] || project.type}
                     </p>
-                    <h3 className="text-base md:text-lg font-normal uppercase tracking-[0.08em] text-black mt-1 group-hover:text-warm-500 transition-colors">
+                    <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                       {project.name}
                     </h3>
                   </div>
@@ -434,16 +508,16 @@ function ProjectsContent() {
         )}
 
         {/* ===== PAGINATION ===== */}
-        {totalPages > 1 && !loading && (
+        {totalPages >= 1 && !loading && (
           <div className="flex items-center justify-center gap-3 mt-16">
             {getPaginationItems().map((item, i) =>
               item === "..." ? (
-                <span key={`ellipsis-${i}`} className="text-xs text-warm-400 px-1">&hellip;</span>
+                <span key={`ellipsis-${i}`} className="text-sm text-warm-400 px-1">&hellip;</span>
               ) : (
                 <button
                   key={item}
                   onClick={() => setPage(item as number)}
-                  className={`w-9 h-9 rounded-full text-xs transition-colors border ${
+                  className={`w-9 h-9 rounded-full text-base transition-colors border ${
                     currentPage === item
                       ? "border-warm-800 text-warm-800"
                       : "border-transparent text-warm-400 hover:text-warm-700"
@@ -458,11 +532,11 @@ function ProjectsContent() {
       </section>
 
       {/* ===== BREADCRUMBS ===== */}
-      <div className="gtv-container pb-12">
-        <div className="flex items-center justify-start gap-2 text-[10px] uppercase tracking-[0.15em] text-warm-400">
-          <Link href="/" className="hover:text-warm-700 transition-colors">Home</Link>
-          <ChevronRight size={10} />
-          <span className="text-warm-600">Progetti</span>
+      <div className="gtv-container pb-2 -mt-10">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
+          <ChevronRight size={12} />
+          <span>Progetti</span>
         </div>
       </div>
     </>

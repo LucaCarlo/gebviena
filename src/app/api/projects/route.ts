@@ -6,12 +6,14 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type");
   const country = searchParams.get("country");
+  const productId = searchParams.get("productId");
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "12");
 
   const where: Record<string, unknown> = { isActive: true };
   if (type && type !== "TUTTI") where.type = type;
   if (country) where.country = country;
+  if (productId) where.products = { some: { productId } };
 
   const [data, total] = await Promise.all([
     prisma.project.findMany({
