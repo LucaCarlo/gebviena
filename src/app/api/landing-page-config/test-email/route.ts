@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { testEmail, emailSubject, emailTitle, emailBody, emailFooter } = body;
+    const { testEmail, emailSubject, emailTitle, emailBody, emailFooter, bannerImage } = body;
 
     if (!testEmail) {
       return NextResponse.json(
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
         emailTitle: emailTitle || "Registration Confirmed",
         emailBody: emailBody || "Thank you for registering.",
         emailFooter: emailFooter || "Gebrüder Thonet Vienna GmbH",
+        bannerImage: bannerImage || "",
       }
     );
 

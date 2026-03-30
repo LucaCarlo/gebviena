@@ -140,7 +140,7 @@ const navSections: NavSection[] = [
   {
     label: "Sistema",
     items: [
-      { href: "/admin/users", label: "Utenti", icon: UserCog, permission: "users.view" },
+      { href: "/admin/users", label: "Admin", icon: UserCog, permission: "users.view" },
       { href: "/admin/roles", label: "Ruoli", icon: Shield, permission: "roles.view" },
       { href: "/admin/analytics", label: "Analisi Traffico", icon: BarChart3, permission: "analytics.view" },
     ],

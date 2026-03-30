@@ -1,20 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Check,
   ExternalLink,
   Send,
   Loader2,
-  Search,
-  Download,
-  Trash2,
   CheckCircle2,
-  XCircle,
-  QrCode,
   Settings2,
   Mail,
-  Users,
   ScanLine,
   Camera,
   AlertCircle,
@@ -42,23 +36,6 @@ interface FormState {
   isActive: boolean;
 }
 
-interface Registration {
-  id: string;
-  uuid: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  profile: string | null;
-  country: string;
-  state: string | null;
-  city: string;
-  zipCode: string;
-  qrCode: string;
-  checkedIn: boolean;
-  checkedInAt: string | null;
-  createdAt: string;
-}
-
 const DEFAULT_FORM: FormState = {
   heroTitle: "Milan Design Week 2026",
   heroSubtitle: "Come and experience the True Over Time Collection with us.",
@@ -78,12 +55,11 @@ const DEFAULT_FORM: FormState = {
   isActive: true,
 };
 
-type Tab = "config" | "email" | "registrations" | "scanner";
+type Tab = "config" | "email" | "scanner";
 
 const TABS: { key: Tab; label: string; icon: typeof Settings2 }[] = [
   { key: "config", label: "Configurazione", icon: Settings2 },
   { key: "email", label: "Email", icon: Mail },
-  { key: "registrations", label: "Registrazioni", icon: Users },
   { key: "scanner", label: "Scannerizza", icon: ScanLine },
 ];
 
@@ -98,28 +74,33 @@ function EmailPreview({ emailTitle, emailBody, emailFooter }: { emailTitle: stri
       <div className="bg-warm-50 px-4 py-2 border-b border-warm-200">
         <span className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Anteprima Email</span>
       </div>
-      <div className="p-6 text-center" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
-        <h1 style={{ fontSize: "20px", fontWeight: "bold", color: "#000", marginBottom: "16px" }}>
-          {emailTitle || "Registration Confirmed"}
-        </h1>
-        <div style={{ marginBottom: "24px" }}>
+      <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", maxWidth: "100%" }}>
+        {/* Banner placeholder */}
+        <div style={{ background: "#3a5a6a", height: "60px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "10px", letterSpacing: "2px" }}>BANNER</span>
+        </div>
+        {/* Teal content */}
+        <div style={{ background: "#3a5a6a", padding: "20px 24px 16px", textAlign: "center" }}>
+          <h1 style={{ fontSize: "16px", fontWeight: "normal", color: "#fff", marginBottom: "12px" }}>
+            {emailTitle || "Registration Confirmed"}
+          </h1>
           {bodyLines.map((line, i) => (
-            <p key={i} style={{ fontSize: "14px", color: "#333", margin: "0 0 6px 0" }}>{line}</p>
+            <p key={i} style={{ fontSize: "12px", color: "#fff", margin: "0 0 4px 0", fontStyle: "italic" }}>{line}</p>
           ))}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.3)", margin: "14px 0 0 0" }} />
         </div>
-        <div style={{ display: "inline-block", border: "2px solid #e5e5e5", borderRadius: "8px", padding: "16px", marginBottom: "16px" }}>
-          <div style={{ width: "120px", height: "120px", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }}>
-            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1">
-              <path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-            </svg>
+        {/* QR section */}
+        <div style={{ padding: "16px", textAlign: "center", background: "#fff" }}>
+          <div style={{ display: "inline-block", width: "80px", height: "80px", background: "#f5f5f5", borderRadius: "4px" }} />
+          <p style={{ fontSize: "9px", color: "#666", marginTop: "8px", fontFamily: "monospace" }}>TEST-QR-a1b2c3d4</p>
+        </div>
+        {/* Footer */}
+        <div style={{ background: "#f5f4f2", padding: "10px 16px", textAlign: "center" }}>
+          <div style={{ fontSize: "9px", color: "#999" }}>
+            {footerLines.map((line, i) => (
+              <span key={i}>{line}{i < footerLines.length - 1 && <br />}</span>
+            ))}
           </div>
-        </div>
-        <p style={{ fontSize: "10px", color: "#999", marginTop: "12px" }}>QR Code ID: TEST-QR-a1b2c3d4</p>
-        <hr style={{ border: "none", borderTop: "1px solid #e5e5e5", margin: "20px 0" }} />
-        <div style={{ fontSize: "11px", color: "#999" }}>
-          {footerLines.map((line, i) => (
-            <span key={i}>{line}{i < footerLines.length - 1 && <br />}</span>
-          ))}
         </div>
       </div>
     </div>
@@ -351,11 +332,6 @@ export default function AdminLandingPage() {
   const [sendingTest, setSendingTest] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  // Registrations state
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [regLoading, setRegLoading] = useState(false);
-  const [regSearch, setRegSearch] = useState("");
-  const [regTotal, setRegTotal] = useState(0);
 
   useEffect(() => {
     fetch("/api/landing-page-config?admin=true")
@@ -386,24 +362,6 @@ export default function AdminLandingPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const fetchRegistrations = useCallback(async () => {
-    setRegLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (regSearch) params.set("search", regSearch);
-      const res = await fetch(`/api/event-registrations?${params}`);
-      const data = await res.json();
-      if (data.success) {
-        setRegistrations(data.data);
-        setRegTotal(data.total);
-      }
-    } catch { /* silent */ }
-    setRegLoading(false);
-  }, [regSearch]);
-
-  useEffect(() => {
-    if (activeTab === "registrations") fetchRegistrations();
-  }, [activeTab, fetchRegistrations]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -430,7 +388,7 @@ export default function AdminLandingPage() {
       const res = await fetch("/api/landing-page-config/test-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ testEmail, emailSubject: form.emailSubject, emailTitle: form.emailTitle, emailBody: form.emailBody, emailFooter: form.emailFooter }),
+        body: JSON.stringify({ testEmail, emailSubject: form.emailSubject, emailTitle: form.emailTitle, emailBody: form.emailBody, emailFooter: form.emailFooter, bannerImage: form.bannerImage }),
       });
       const data = await res.json();
       setTestResult(data.success ? { ok: true, msg: "Email inviata!" } : { ok: false, msg: data.error || "Errore invio" });
@@ -441,20 +399,6 @@ export default function AdminLandingPage() {
     setTimeout(() => setTestResult(null), 4000);
   };
 
-  const handleCheckIn = async (id: string, checkedIn: boolean) => {
-    try {
-      const res = await fetch(`/api/event-registrations/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ checkedIn }) });
-      if ((await res.json()).success) fetchRegistrations();
-    } catch { /* silent */ }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Eliminare questa registrazione?")) return;
-    try {
-      const res = await fetch(`/api/event-registrations/${id}`, { method: "DELETE" });
-      if ((await res.json()).success) fetchRegistrations();
-    } catch { /* silent */ }
-  };
 
   const updateField = (key: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -470,8 +414,6 @@ export default function AdminLandingPage() {
       </div>
     );
   }
-
-  const checkedInCount = registrations.filter((r) => r.checkedIn).length;
 
   return (
     <div className="p-6 md:p-8 max-w-5xl">
@@ -500,11 +442,6 @@ export default function AdminLandingPage() {
           >
             <tab.icon size={16} />
             {tab.label}
-            {tab.key === "registrations" && regTotal > 0 && (
-              <span className="ml-1 bg-warm-100 text-warm-600 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
-                {regTotal}
-              </span>
-            )}
           </button>
         ))}
       </div>
@@ -660,79 +597,6 @@ export default function AdminLandingPage() {
         <ScannerTab />
       )}
 
-      {/* ═══ Tab: Registrazioni ═══ */}
-      {activeTab === "registrations" && (
-        <div>
-          <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <p className="text-sm text-warm-500">
-              {regTotal} registrazioni totali &middot; {checkedInCount} check-in effettuati
-            </p>
-            <button onClick={() => window.open("/api/event-registrations?format=csv", "_blank")} className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors">
-              <Download size={16} /> Esporta CSV
-            </button>
-          </div>
-
-          <div className="mb-6 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-            <input type="text" value={regSearch} onChange={(e) => setRegSearch(e.target.value)} placeholder="Cerca per nome, email o QR code..." className="w-full sm:w-96 pl-10 pr-4 py-2.5 border border-warm-300 rounded-lg text-sm focus:border-warm-800 focus:outline-none" />
-          </div>
-
-          {regLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="w-6 h-6 border-2 border-warm-300 border-t-warm-800 rounded-full animate-spin" />
-            </div>
-          ) : registrations.length === 0 ? (
-            <div className="text-center py-20 text-warm-500">
-              <QrCode size={48} className="mx-auto mb-4 opacity-30" />
-              <p>Nessuna registrazione trovata</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-warm-200 bg-warm-50">
-                    <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider">Nome</th>
-                    <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider">Email</th>
-                    <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider hidden md:table-cell">Profilo</th>
-                    <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider hidden lg:table-cell">Luogo</th>
-                    <th className="text-center px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider">Check-in</th>
-                    <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider hidden md:table-cell">Data</th>
-                    <th className="text-right px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider">Azioni</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-warm-100">
-                  {registrations.map((r) => (
-                    <tr key={r.id} className="hover:bg-warm-50/50 transition-colors">
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-warm-800">{r.firstName} {r.lastName}</div>
-                        <div className="text-[10px] text-warm-400 font-mono mt-0.5">{r.qrCode.slice(0, 8)}...</div>
-                      </td>
-                      <td className="px-4 py-3 text-warm-600">{r.email}</td>
-                      <td className="px-4 py-3 text-warm-600 hidden md:table-cell">
-                        {r.profile ? <span className="inline-block text-[10px] font-medium bg-warm-100 text-warm-600 px-2 py-0.5 rounded">{r.profile}</span> : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-warm-600 hidden lg:table-cell">{r.city}, {r.country}</td>
-                      <td className="px-4 py-3 text-center">
-                        <button onClick={() => handleCheckIn(r.id, !r.checkedIn)} title={r.checkedIn ? "Annulla check-in" : "Effettua check-in"}>
-                          {r.checkedIn ? <CheckCircle2 size={20} className="text-green-500 mx-auto" /> : <XCircle size={20} className="text-warm-300 hover:text-warm-500 mx-auto transition-colors" />}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 text-warm-500 text-xs hidden md:table-cell">
-                        {new Date(r.createdAt).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button onClick={() => handleDelete(r.id)} className="text-warm-400 hover:text-red-500 transition-colors" title="Elimina">
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
