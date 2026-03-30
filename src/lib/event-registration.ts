@@ -77,7 +77,7 @@ async function getMailConfig() {
 }
 
 function getSiteUrl() {
-  return process.env.NEXTAUTH_URL || "http://192.168.150.52:3002";
+  return process.env.SITE_URL || process.env.NEXTAUTH_URL || "https://dev.gebruederthonetvienna.com";
 }
 
 async function sendViaBrevoApi(
