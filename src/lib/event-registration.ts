@@ -114,7 +114,8 @@ export async function sendRegistrationEmailWithConfig(
   if (cfg.brevo_api_key) {
     const html = buildRegistrationEmailHtml(
       firstName, lastName, qrCode,
-      emailConfig.emailTitle, emailConfig.emailBody, emailConfig.emailFooter
+      emailConfig.emailTitle, emailConfig.emailBody, emailConfig.emailFooter,
+      base64Data
     );
 
     // Attach QR code as PDF-style attachment (Brevo sends it as attachment)
