@@ -167,12 +167,12 @@ export default function LandingPage() {
       )}
 
       {/* Hero text */}
-      <section className="text-center px-6 py-12 md:py-16">
-        <h1 className="font-serif text-[22px] md:text-[26px] text-dark font-bold mb-2">
+      <section className="text-center px-6 py-10 md:py-14 mx-auto" style={{ maxWidth: "600px" }}>
+        <h1 className="text-[19px] text-dark font-bold mb-1">
           {config.heroTitle}
         </h1>
         {config.heroSubtitle && (
-          <p className="text-[15px] md:text-[17px] text-dark font-bold mb-8">
+          <p className="text-[16px] text-dark font-semibold mb-6">
             {config.heroSubtitle}
           </p>
         )}
@@ -181,7 +181,7 @@ export default function LandingPage() {
             {config.heroLocation.split("\n").map((line, i) => (
               <p
                 key={i}
-                className="text-[15px] font-bold text-dark leading-[1.6]"
+                className="text-[15px] text-dark leading-[1.6]"
               >
                 {line}
               </p>
@@ -189,7 +189,7 @@ export default function LandingPage() {
           </div>
         )}
         {config.heroLocation && config.heroDescription && (
-          <div className="text-dark mb-4 text-base">———</div>
+          <div className="text-dark mb-4 text-[15px]">———</div>
         )}
         {config.heroDescription && (
           <div>
@@ -204,7 +204,7 @@ export default function LandingPage() {
 
       {/* Form or Success */}
       <section className="px-6 pb-20 md:pb-32">
-        <div className="mx-auto" style={{ maxWidth: "580px" }}>
+        <div className="mx-auto" style={{ maxWidth: "600px" }}>
           {success ? (
             <div className="text-center py-16">
               <div className="w-20 h-20 mx-auto mb-8 rounded-full bg-green-50 flex items-center justify-center">
@@ -267,7 +267,7 @@ export default function LandingPage() {
 
               {/* First Name */}
               <div>
-                <label className="block text-[14px] font-bold text-dark mb-2">
+                <label className="block text-[16px] font-semibold text-dark mb-2">
                   First Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -287,7 +287,7 @@ export default function LandingPage() {
 
               {/* Last Name */}
               <div>
-                <label className="block text-[14px] font-bold text-dark mb-2">
+                <label className="block text-[16px] font-semibold text-dark mb-2">
                   Last Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -307,7 +307,7 @@ export default function LandingPage() {
 
               {/* Email */}
               <div>
-                <label className="block text-[14px] font-bold text-dark mb-2">
+                <label className="block text-[16px] font-semibold text-dark mb-2">
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -327,7 +327,7 @@ export default function LandingPage() {
 
               {/* Profile */}
               <div>
-                <label className="block text-[14px] font-bold text-dark mb-2">
+                <label className="block text-[16px] font-semibold text-dark mb-2">
                   Profile <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -350,7 +350,7 @@ export default function LandingPage() {
 
               {/* Country */}
               <div>
-                <label className="block text-[14px] font-bold text-dark mb-2">
+                <label className="block text-[16px] font-semibold text-dark mb-2">
                   Country or Region <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -370,7 +370,7 @@ export default function LandingPage() {
 
               {/* State */}
               <div>
-                <label className="block text-[14px] font-bold text-dark mb-2">
+                <label className="block text-[16px] font-semibold text-dark mb-2">
                   State or Province
                 </label>
                 <input
@@ -383,7 +383,7 @@ export default function LandingPage() {
 
               {/* City */}
               <div>
-                <label className="block text-[14px] font-bold text-dark mb-2">
+                <label className="block text-[16px] font-semibold text-dark mb-2">
                   City <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -403,7 +403,7 @@ export default function LandingPage() {
 
               {/* ZIP */}
               <div>
-                <label className="block text-[14px] font-bold text-dark mb-2">
+                <label className="block text-[16px] font-semibold text-dark mb-2">
                   ZIP <span className="text-red-500">*</span>
                 </label>
                 <input
