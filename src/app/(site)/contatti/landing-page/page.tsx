@@ -137,11 +137,10 @@ export default function LandingPage() {
     }
   };
 
-  // Inactive state
   if (!config.isActive) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <p className="text-warm-500 text-sm">
+      <div className="section-padding flex items-center justify-center">
+        <p className="text-warm-400 text-lg font-light">
           This page is currently not available.
         </p>
       </div>
@@ -149,86 +148,53 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Banner */}
-      <header
-        className="relative w-full overflow-hidden"
-        style={{ backgroundColor: "#3a5a6a" }}
-      >
-        {/* Background pattern text */}
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden opacity-10 select-none pointer-events-none">
-          <div className="whitespace-nowrap text-[120px] font-serif font-light text-white tracking-wider leading-none">
-            TRUE OVER TIME TRUE OVER TIME TRUE OVER TIME
-          </div>
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.07] select-none pointer-events-none translate-y-12">
-          <div className="whitespace-nowrap text-[120px] font-serif font-light text-white tracking-wider leading-none">
-            TRUE OVER TIME TRUE OVER TIME TRUE OVER TIME
-          </div>
-        </div>
-
-        {config.bannerImage && (
-          <Image
-            src={config.bannerImage}
-            alt="Banner"
-            fill
-            className="object-cover"
-            priority
-          />
-        )}
-
-        <div className="relative z-10 flex items-center justify-center py-6 md:py-8 px-8">
-          <div className="flex items-center gap-6">
-            {config.logoImage ? (
+    <>
+      {/* Banner — not full width, centered with max-width */}
+      {config.bannerImage && (
+        <section className="pt-6 md:pt-10">
+          <div className="mx-auto" style={{ maxWidth: "860px" }}>
+            <div className="relative w-full overflow-hidden rounded-sm" style={{ aspectRatio: "860 / 140" }}>
               <Image
-                src={config.logoImage}
-                alt="Logo"
-                width={200}
-                height={60}
-                className="h-12 md:h-16 w-auto"
+                src={config.bannerImage}
+                alt="Event banner"
+                fill
+                className="object-cover"
+                priority
               />
-            ) : (
-              <Image
-                src="/logo-white.svg"
-                alt="Gebrüder Thonet Vienna"
-                width={200}
-                height={60}
-                className="h-12 md:h-16 w-auto"
-              />
-            )}
+            </div>
           </div>
-        </div>
-      </header>
+        </section>
+      )}
 
-      {/* Hero text */}
-      <section className="text-center px-6 py-10 md:py-14">
-        <h1 className="font-serif text-2xl md:text-3xl text-warm-900 font-semibold mb-3">
+      {/* Hero text — mondo-gtv style */}
+      <section className="text-center px-6 py-14 md:py-20">
+        <h1 className="font-serif text-[32px] md:text-[42px] text-dark tracking-tight font-light mb-4">
           {config.heroTitle}
         </h1>
         {config.heroSubtitle && (
-          <p className="text-sm md:text-base text-warm-600 italic mb-6">
+          <p className="text-lg text-dark leading-[1.8] font-light mb-8">
             {config.heroSubtitle}
           </p>
         )}
         {config.heroLocation && (
-          <div className="mb-4">
+          <div className="mb-6">
             {config.heroLocation.split("\n").map((line, i) => (
               <p
                 key={i}
-                className="text-sm font-semibold text-warm-800"
+                className="text-base font-semibold text-dark leading-relaxed"
               >
                 {line}
               </p>
             ))}
           </div>
         )}
-        {config.heroLocation && (
-          <div className="text-warm-300 mb-4">———</div>
+        {config.heroLocation && config.heroDescription && (
+          <div className="text-warm-300 mb-6 text-xl">———</div>
         )}
         {config.heroDescription && (
-          <div className="text-warm-600">
+          <div>
             {config.heroDescription.split("\n").map((line, i) => (
-              <p key={i} className="text-sm italic">
+              <p key={i} className="text-base text-dark font-light italic leading-[1.8]">
                 {line}
               </p>
             ))}
@@ -237,11 +203,11 @@ export default function LandingPage() {
       </section>
 
       {/* Form or Success */}
-      <section className="px-6 pb-16 md:pb-24">
-        <div className="max-w-lg mx-auto">
+      <section className="px-6 pb-20 md:pb-32">
+        <div className="mx-auto" style={{ maxWidth: "580px" }}>
           {success ? (
-            <div className="text-center py-12 animate-in fade-in duration-500">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-50 flex items-center justify-center">
+            <div className="text-center py-16">
+              <div className="w-20 h-20 mx-auto mb-8 rounded-full bg-green-50 flex items-center justify-center">
                 <svg
                   className="w-10 h-10 text-green-500"
                   fill="none"
@@ -256,20 +222,19 @@ export default function LandingPage() {
                   />
                 </svg>
               </div>
-              <h2 className="font-serif text-2xl text-warm-900 mb-4">
+              <h2 className="font-serif text-[28px] md:text-[36px] text-dark tracking-tight font-light mb-4">
                 {config.successTitle}
               </h2>
               {config.successMessage && (
-                <p className="text-sm text-warm-600 mb-6">
+                <p className="text-base text-dark font-light leading-[1.8] mb-8">
                   {config.successMessage}
                 </p>
               )}
-              {/* QR Code placeholder */}
-              <div className="inline-block border-2 border-warm-200 rounded-lg p-4 mb-4">
+              <div className="inline-block border border-warm-200 rounded p-6 mb-4">
                 <div className="w-48 h-48 bg-warm-50 flex items-center justify-center rounded">
                   <div className="text-center">
                     <svg
-                      className="w-24 h-24 text-warm-400 mx-auto mb-2"
+                      className="w-24 h-24 text-warm-300 mx-auto mb-2"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -287,92 +252,92 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-warm-400 mt-4">
+              <p className="text-xs text-warm-400 mt-4 font-light">
                 Your personal QR code ID:{" "}
                 <span className="font-mono">{qrCode}</span>
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-8" noValidate>
+            <form onSubmit={handleSubmit} className="space-y-10" noValidate>
               {serverError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-4 py-3 font-light">
                   {serverError}
                 </div>
               )}
 
               {/* First Name */}
               <div>
-                <label className="block text-sm font-semibold text-warm-800 mb-2">
+                <label className="block text-sm font-semibold text-dark mb-2">
                   First Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.firstName}
                   onChange={(e) => updateField("firstName", e.target.value)}
-                  className={`w-full border-b-2 ${
+                  className={`w-full border-b ${
                     errors.firstName
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-warm-800"
-                  } bg-transparent py-2.5 text-sm outline-none transition-colors`}
+                      : "border-warm-300 focus:border-dark"
+                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
                 />
                 {errors.firstName && (
-                  <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
+                  <p className="text-red-500 text-xs mt-1 font-light">{errors.firstName}</p>
                 )}
               </div>
 
               {/* Last Name */}
               <div>
-                <label className="block text-sm font-semibold text-warm-800 mb-2">
+                <label className="block text-sm font-semibold text-dark mb-2">
                   Last Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.lastName}
                   onChange={(e) => updateField("lastName", e.target.value)}
-                  className={`w-full border-b-2 ${
+                  className={`w-full border-b ${
                     errors.lastName
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-warm-800"
-                  } bg-transparent py-2.5 text-sm outline-none transition-colors`}
+                      : "border-warm-300 focus:border-dark"
+                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
                 />
                 {errors.lastName && (
-                  <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
+                  <p className="text-red-500 text-xs mt-1 font-light">{errors.lastName}</p>
                 )}
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-semibold text-warm-800 mb-2">
+                <label className="block text-sm font-semibold text-dark mb-2">
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
                   value={form.email}
                   onChange={(e) => updateField("email", e.target.value)}
-                  className={`w-full border-b-2 ${
+                  className={`w-full border-b ${
                     errors.email
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-warm-800"
-                  } bg-transparent py-2.5 text-sm outline-none transition-colors`}
+                      : "border-warm-300 focus:border-dark"
+                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
                 />
                 {errors.email && (
-                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                  <p className="text-red-500 text-xs mt-1 font-light">{errors.email}</p>
                 )}
               </div>
 
               {/* Profile */}
               <div>
-                <label className="block text-sm font-semibold text-warm-800 mb-2">
+                <label className="block text-sm font-semibold text-dark mb-2">
                   Profile <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={form.profile}
                   onChange={(e) => updateField("profile", e.target.value)}
-                  className={`w-full border-b-2 ${
+                  className={`w-full border-b ${
                     errors.profile
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-warm-800"
-                  } bg-transparent py-2.5 text-sm outline-none transition-colors appearance-none cursor-pointer`}
+                      : "border-warm-300 focus:border-dark"
+                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors appearance-none cursor-pointer`}
                 >
                   <option value="">Select...</option>
                   {PROFILE_OPTIONS.map((opt) => (
@@ -385,79 +350,79 @@ export default function LandingPage() {
 
               {/* Country */}
               <div>
-                <label className="block text-sm font-semibold text-warm-800 mb-2">
+                <label className="block text-sm font-semibold text-dark mb-2">
                   Country or Region <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.country}
                   onChange={(e) => updateField("country", e.target.value)}
-                  className={`w-full border-b-2 ${
+                  className={`w-full border-b ${
                     errors.country
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-warm-800"
-                  } bg-transparent py-2.5 text-sm outline-none transition-colors`}
+                      : "border-warm-300 focus:border-dark"
+                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
                 />
                 {errors.country && (
-                  <p className="text-red-500 text-xs mt-1">{errors.country}</p>
+                  <p className="text-red-500 text-xs mt-1 font-light">{errors.country}</p>
                 )}
               </div>
 
               {/* State */}
               <div>
-                <label className="block text-sm font-semibold text-warm-800 mb-2">
+                <label className="block text-sm font-semibold text-dark mb-2">
                   State or Province
                 </label>
                 <input
                   type="text"
                   value={form.state}
                   onChange={(e) => updateField("state", e.target.value)}
-                  className="w-full border-b-2 border-warm-300 focus:border-warm-800 bg-transparent py-2.5 text-sm outline-none transition-colors"
+                  className="w-full border-b border-warm-300 focus:border-dark bg-transparent py-3 text-base font-light text-dark outline-none transition-colors"
                 />
               </div>
 
               {/* City */}
               <div>
-                <label className="block text-sm font-semibold text-warm-800 mb-2">
+                <label className="block text-sm font-semibold text-dark mb-2">
                   City <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.city}
                   onChange={(e) => updateField("city", e.target.value)}
-                  className={`w-full border-b-2 ${
+                  className={`w-full border-b ${
                     errors.city
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-warm-800"
-                  } bg-transparent py-2.5 text-sm outline-none transition-colors`}
+                      : "border-warm-300 focus:border-dark"
+                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
                 />
                 {errors.city && (
-                  <p className="text-red-500 text-xs mt-1">{errors.city}</p>
+                  <p className="text-red-500 text-xs mt-1 font-light">{errors.city}</p>
                 )}
               </div>
 
               {/* ZIP */}
               <div>
-                <label className="block text-sm font-semibold text-warm-800 mb-2">
+                <label className="block text-sm font-semibold text-dark mb-2">
                   ZIP <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.zipCode}
                   onChange={(e) => updateField("zipCode", e.target.value)}
-                  className={`w-full border-b-2 ${
+                  className={`w-full border-b ${
                     errors.zipCode
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-warm-800"
-                  } bg-transparent py-2.5 text-sm outline-none transition-colors`}
+                      : "border-warm-300 focus:border-dark"
+                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
                 />
                 {errors.zipCode && (
-                  <p className="text-red-500 text-xs mt-1">{errors.zipCode}</p>
+                  <p className="text-red-500 text-xs mt-1 font-light">{errors.zipCode}</p>
                 )}
               </div>
 
               {/* Divider */}
-              <div className="border-t border-warm-200 pt-6" />
+              <div className="border-t border-warm-200" />
 
               {/* Privacy checkbox */}
               <label className="flex items-start gap-3 cursor-pointer">
@@ -467,17 +432,17 @@ export default function LandingPage() {
                   onChange={(e) =>
                     updateField("privacyAccepted", e.target.checked)
                   }
-                  className="mt-1 w-4 h-4 accent-warm-800 shrink-0"
+                  className="mt-1 w-4 h-4 accent-dark shrink-0"
                 />
                 <span
-                  className={`text-xs leading-relaxed ${
-                    errors.privacyAccepted ? "text-red-600" : "text-warm-600"
+                  className={`text-xs leading-relaxed font-light ${
+                    errors.privacyAccepted ? "text-red-600" : "text-dark"
                   }`}
                 >
                   {config.privacyLabel}{" "}
                   <Link
                     href="/privacy-policy"
-                    className="underline hover:text-warm-800"
+                    className="underline hover:opacity-60 transition-opacity"
                     target="_blank"
                   >
                     Privacy Policy
@@ -495,20 +460,20 @@ export default function LandingPage() {
                     onChange={(e) =>
                       updateField("marketingConsent", e.target.checked)
                     }
-                    className="mt-1 w-4 h-4 accent-warm-800 shrink-0"
+                    className="mt-1 w-4 h-4 accent-dark shrink-0"
                   />
-                  <span className="text-xs leading-relaxed text-warm-600">
+                  <span className="text-xs leading-relaxed font-light text-dark">
                     {config.marketingLabel}
                   </span>
                 </label>
               )}
 
               {/* Submit */}
-              <div className="pt-4 text-center">
+              <div className="pt-2 text-center">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-[#2a3a4a] text-white px-12 py-3 rounded text-sm font-medium uppercase tracking-wider hover:bg-[#1a2a3a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-dark text-white px-14 py-3.5 text-sm font-medium uppercase tracking-[0.15em] hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? "Submitting..." : config.buttonLabel}
                 </button>
@@ -517,6 +482,6 @@ export default function LandingPage() {
           )}
         </div>
       </section>
-    </div>
+    </>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Check, ExternalLink } from "lucide-react";
+import ImageUploadField from "@/components/admin/ImageUploadField";
 
 interface LandingConfig {
   id: string;
@@ -171,7 +172,7 @@ export default function AdminLandingPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                Location (usa \n per andare a capo)
+                Location (ogni riga va a capo)
               </label>
               <textarea
                 value={form.heroLocation || ""}
@@ -194,35 +195,19 @@ export default function AdminLandingPage() {
           </div>
         </div>
 
-        {/* Images */}
+        {/* Banner Image */}
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-          <h2 className="text-lg font-semibold text-warm-900 mb-4">Immagini</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                URL Banner (immagine sfondo header)
-              </label>
-              <input
-                type="text"
-                value={form.bannerImage || ""}
-                onChange={(e) => updateField("bannerImage", e.target.value)}
-                placeholder="https://..."
-                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                URL Logo (nel banner)
-              </label>
-              <input
-                type="text"
-                value={form.logoImage || ""}
-                onChange={(e) => updateField("logoImage", e.target.value)}
-                placeholder="https://..."
-                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-              />
-            </div>
-          </div>
+          <h2 className="text-lg font-semibold text-warm-900 mb-4">Banner</h2>
+          <ImageUploadField
+            label="Immagine Banner"
+            value={form.bannerImage || ""}
+            onChange={(url) => updateField("bannerImage", url)}
+            onRemove={() => updateField("bannerImage", "")}
+            purpose="landing-banner"
+            folder="landing-page"
+            helpText="Il banner viene mostrato centrato nella pagina, sotto l'header del sito"
+            recommendedSize="860x140px"
+          />
         </div>
 
         {/* Form labels */}
