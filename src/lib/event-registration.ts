@@ -16,7 +16,8 @@ export function buildRegistrationEmailHtml(
   qrCode: string,
   emailTitle: string,
   emailBody: string,
-  emailFooter: string
+  emailFooter: string,
+  qrBase64?: string
 ): string {
   const bodyLines = emailBody
     .replace(/\{\{firstName\}\}/g, firstName)
@@ -27,6 +28,11 @@ export function buildRegistrationEmailHtml(
 
   const footerLines = emailFooter.split("\n").join("<br/>");
 
+  // Use base64 data URL for QR code image (works with Brevo API)
+  const qrSrc = qrBase64
+    ? `data:image/png;base64,${qrBase64}`
+    : "cid:qrcode";
+
   return `
     <div style="font-family: Georgia, 'Times New Roman', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; text-align: center;">
       <h1 style="font-size: 22px; font-weight: bold; color: #000; margin-bottom: 20px;">
@@ -36,7 +42,7 @@ export function buildRegistrationEmailHtml(
         ${bodyLines}
       </div>
       <div style="display: inline-block; border: 2px solid #e5e5e5; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-        <img src="cid:qrcode" alt="QR Code" width="250" height="250" style="display: block;" />
+        <img src="${qrSrc}" alt="QR Code" width="250" height="250" style="display: block;" />
       </div>
       <p style="font-size: 11px; color: #999; margin-top: 16px;">
         QR Code ID: ${qrCode}
@@ -49,11 +55,45 @@ export function buildRegistrationEmailHtml(
   `;
 }
 
-async function getSmtpConfig() {
+async function getMailConfig() {
   const settings = await prisma.setting.findMany({ where: { group: "smtp" } });
   const config: Record<string, string> = {};
   for (const s of settings) config[s.key] = s.value;
   return config;
+}
+
+async function sendViaBrevoApi(
+  apiKey: string,
+  fromName: string,
+  fromEmail: string,
+  toEmail: string,
+  subject: string,
+  html: string,
+  attachments?: { name: string; content: string }[]
+) {
+  const body = JSON.stringify({
+    sender: { name: fromName, email: fromEmail },
+    to: [{ email: toEmail }],
+    subject,
+    htmlContent: html,
+    ...(attachments && attachments.length > 0 ? { attachment: attachments.map(a => ({ name: a.name, content: a.content })) } : {}),
+  });
+
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "Content-Type": "application/json",
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Brevo API error (${res.status}): ${err}`);
+  }
+
+  return res.json();
 }
 
 export async function sendRegistrationEmailWithConfig(
@@ -65,21 +105,40 @@ export async function sendRegistrationEmailWithConfig(
   emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; emailFooter: string }
 ) {
   const base64Data = qrDataUrl.replace(/^data:image\/png;base64,/, "");
+  const cfg = await getMailConfig();
+
+  const fromName = cfg.smtp_from_name || "GTV";
+  const fromEmail = cfg.smtp_from_email || "noreply@localhost";
+
+  // Prefer Brevo HTTP API if api key is set
+  if (cfg.brevo_api_key) {
+    const html = buildRegistrationEmailHtml(
+      firstName, lastName, qrCode,
+      emailConfig.emailTitle, emailConfig.emailBody, emailConfig.emailFooter
+    );
+
+    // Attach QR code as PDF-style attachment (Brevo sends it as attachment)
+    await sendViaBrevoApi(
+      cfg.brevo_api_key,
+      fromName,
+      fromEmail,
+      toEmail,
+      emailConfig.emailSubject,
+      html,
+      [{ name: "qrcode.png", content: base64Data }]
+    );
+    return;
+  }
+
+  // Fallback: SMTP via nodemailer
+  if (!cfg.smtp_host) throw new Error("Email not configured (no Brevo API key or SMTP host)");
+
   const html = buildRegistrationEmailHtml(
-    firstName,
-    lastName,
-    qrCode,
-    emailConfig.emailTitle,
-    emailConfig.emailBody,
-    emailConfig.emailFooter
+    firstName, lastName, qrCode,
+    emailConfig.emailTitle, emailConfig.emailBody, emailConfig.emailFooter
   );
 
-  const cfg = await getSmtpConfig();
-  if (!cfg.smtp_host) throw new Error("SMTP not configured");
-
   const nodemailer = (await import("nodemailer")).default;
-
-  // Support local SMTP without auth (e.g. Postfix on localhost)
   const transportConfig: Record<string, unknown> = {
     host: cfg.smtp_host,
     port: parseInt(cfg.smtp_port || "25"),
@@ -93,20 +152,13 @@ export async function sendRegistrationEmailWithConfig(
 
   const transporter = nodemailer.createTransport(transportConfig);
 
-  const fromName = cfg.smtp_from_name || "GTV";
-  const fromEmail = cfg.smtp_from_email || cfg.smtp_user || "noreply@localhost";
-
   await transporter.sendMail({
     from: `"${fromName}" <${fromEmail}>`,
     to: toEmail,
     subject: emailConfig.emailSubject,
     html,
     attachments: [
-      {
-        filename: "qrcode.png",
-        content: Buffer.from(base64Data, "base64"),
-        cid: "qrcode",
-      },
+      { filename: "qrcode.png", content: Buffer.from(base64Data, "base64"), cid: "qrcode" },
     ],
   });
 }

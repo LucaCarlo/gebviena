@@ -16,9 +16,36 @@ interface SendMailOptions {
 export async function sendMail(to: string, subject: string, html: string, options?: SendMailOptions): Promise<boolean> {
   try {
     const cfg = await getSmtpConfig();
-    if (!cfg.smtp_host) return false; // SMTP not configured
 
-    // Support local SMTP without auth (e.g. Postfix on localhost)
+    const fromName = options?.fromName || cfg.smtp_from_name || "GTV";
+    const fromEmail = options?.fromEmail || cfg.smtp_from_email || cfg.smtp_user || "noreply@localhost";
+
+    // Prefer Brevo HTTP API
+    if (cfg.brevo_api_key) {
+      const body = JSON.stringify({
+        sender: { name: fromName, email: fromEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      });
+
+      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: { "api-key": cfg.brevo_api_key, "Content-Type": "application/json" },
+        body,
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        console.error("Brevo API error:", err);
+        return false;
+      }
+      return true;
+    }
+
+    // Fallback: SMTP via nodemailer
+    if (!cfg.smtp_host) return false;
+
     const transportConfig: Record<string, unknown> = {
       host: cfg.smtp_host,
       port: parseInt(cfg.smtp_port || "25"),
@@ -31,9 +58,6 @@ export async function sendMail(to: string, subject: string, html: string, option
     }
 
     const transporter = nodemailer.createTransport(transportConfig);
-
-    const fromName = options?.fromName || cfg.smtp_from_name || "GTV";
-    const fromEmail = cfg.smtp_from_email || cfg.smtp_user || "noreply@localhost";
 
     await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
@@ -56,7 +80,6 @@ export async function sendContactNotification(
   message: string,
   type: string
 ): Promise<void> {
-  // Read admin email from DB settings, fallback to env
   const adminSetting = await prisma.setting.findUnique({ where: { key: "admin_email" } });
   const adminEmail = adminSetting?.value || process.env.ADMIN_EMAIL;
   if (!adminEmail) return;
