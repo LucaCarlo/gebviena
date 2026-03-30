@@ -16,17 +16,24 @@ interface SendMailOptions {
 export async function sendMail(to: string, subject: string, html: string, options?: SendMailOptions): Promise<boolean> {
   try {
     const cfg = await getSmtpConfig();
-    if (!cfg.smtp_host || !cfg.smtp_user) return false; // SMTP not configured
+    if (!cfg.smtp_host) return false; // SMTP not configured
 
-    const transporter = nodemailer.createTransport({
+    // Support local SMTP without auth (e.g. Postfix on localhost)
+    const transportConfig: Record<string, unknown> = {
       host: cfg.smtp_host,
-      port: parseInt(cfg.smtp_port || "587"),
+      port: parseInt(cfg.smtp_port || "25"),
       secure: cfg.smtp_secure === "true",
-      auth: { user: cfg.smtp_user, pass: cfg.smtp_pass },
-    });
+    };
+    if (cfg.smtp_user) {
+      transportConfig.auth = { user: cfg.smtp_user, pass: cfg.smtp_pass };
+    } else {
+      transportConfig.tls = { rejectUnauthorized: false };
+    }
+
+    const transporter = nodemailer.createTransport(transportConfig);
 
     const fromName = options?.fromName || cfg.smtp_from_name || "GTV";
-    const fromEmail = cfg.smtp_from_email || cfg.smtp_user;
+    const fromEmail = cfg.smtp_from_email || cfg.smtp_user || "noreply@localhost";
 
     await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,

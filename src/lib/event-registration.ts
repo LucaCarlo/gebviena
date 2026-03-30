@@ -75,18 +75,26 @@ export async function sendRegistrationEmailWithConfig(
   );
 
   const cfg = await getSmtpConfig();
-  if (!cfg.smtp_host || !cfg.smtp_user) throw new Error("SMTP not configured");
+  if (!cfg.smtp_host) throw new Error("SMTP not configured");
 
   const nodemailer = (await import("nodemailer")).default;
-  const transporter = nodemailer.createTransport({
+
+  // Support local SMTP without auth (e.g. Postfix on localhost)
+  const transportConfig: Record<string, unknown> = {
     host: cfg.smtp_host,
-    port: parseInt(cfg.smtp_port || "587"),
+    port: parseInt(cfg.smtp_port || "25"),
     secure: cfg.smtp_secure === "true",
-    auth: { user: cfg.smtp_user, pass: cfg.smtp_pass },
-  });
+  };
+  if (cfg.smtp_user) {
+    transportConfig.auth = { user: cfg.smtp_user, pass: cfg.smtp_pass };
+  } else {
+    transportConfig.tls = { rejectUnauthorized: false };
+  }
+
+  const transporter = nodemailer.createTransport(transportConfig);
 
   const fromName = cfg.smtp_from_name || "GTV";
-  const fromEmail = cfg.smtp_from_email || cfg.smtp_user;
+  const fromEmail = cfg.smtp_from_email || cfg.smtp_user || "noreply@localhost";
 
   await transporter.sendMail({
     from: `"${fromName}" <${fromEmail}>`,
