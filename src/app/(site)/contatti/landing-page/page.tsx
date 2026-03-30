@@ -65,6 +65,7 @@ export default function LandingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [qrCode, setQrCode] = useState("");
+  const [qrDataUrl, setQrDataUrl] = useState("");
   const [serverError, setServerError] = useState("");
 
   useEffect(() => {
@@ -114,6 +115,7 @@ export default function LandingPage() {
 
       if (data.success) {
         setQrCode(data.data.qrCode);
+        setQrDataUrl(data.data.qrDataUrl || "");
         setSuccess(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
@@ -230,28 +232,18 @@ export default function LandingPage() {
                   {config.successMessage}
                 </p>
               )}
-              <div className="inline-block border border-warm-200 rounded p-6 mb-4">
-                <div className="w-48 h-48 bg-warm-50 flex items-center justify-center rounded">
-                  <div className="text-center">
-                    <svg
-                      className="w-24 h-24 text-warm-300 mx-auto mb-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1}
-                        d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
-                      />
-                    </svg>
-                    <p className="text-[10px] font-mono text-warm-400">
-                      {qrCode.slice(0, 8)}...
-                    </p>
-                  </div>
+              {qrDataUrl && (
+                <div className="inline-block border border-warm-200 rounded-lg p-4 mb-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={qrDataUrl}
+                    alt="Your QR Code"
+                    width={250}
+                    height={250}
+                    className="block"
+                  />
                 </div>
-              </div>
+              )}
               <p className="text-xs text-warm-400 mt-4 font-light">
                 Your personal QR code ID:{" "}
                 <span className="font-mono">{qrCode}</span>
