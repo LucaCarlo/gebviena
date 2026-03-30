@@ -15,6 +15,9 @@ import {
   Settings2,
   Mail,
   Users,
+  ScanLine,
+  Camera,
+  AlertCircle,
 } from "lucide-react";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 
@@ -75,12 +78,13 @@ const DEFAULT_FORM: FormState = {
   isActive: true,
 };
 
-type Tab = "config" | "email" | "registrations";
+type Tab = "config" | "email" | "registrations" | "scanner";
 
 const TABS: { key: Tab; label: string; icon: typeof Settings2 }[] = [
   { key: "config", label: "Configurazione", icon: Settings2 },
   { key: "email", label: "Email", icon: Mail },
   { key: "registrations", label: "Registrazioni", icon: Users },
+  { key: "scanner", label: "Scannerizza", icon: ScanLine },
 ];
 
 /* ───── Email Preview ───── */
@@ -118,6 +122,219 @@ function EmailPreview({ emailTitle, emailBody, emailFooter }: { emailTitle: stri
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ───── QR Scanner Tab ───── */
+
+interface ScanResult {
+  success: boolean;
+  alreadyCheckedIn?: boolean;
+  error?: string;
+  data?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    profile: string | null;
+    checkedInAt: string | null;
+  };
+}
+
+function ScannerTab() {
+  const [scanning, setScanning] = useState(false);
+  const [manualCode, setManualCode] = useState("");
+  const [result, setResult] = useState<ScanResult | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [scanHistory, setScanHistory] = useState<{ name: string; time: string; isNew: boolean }[]>([]);
+
+  const processQrCode = async (code: string) => {
+    if (processing) return;
+    setProcessing(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/event-registrations/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qrCode: code.trim() }),
+      });
+      const data: ScanResult = await res.json();
+      setResult(data);
+      if (data.success && data.data) {
+        setScanHistory((prev) => [
+          { name: `${data.data!.firstName} ${data.data!.lastName}`, time: new Date().toLocaleTimeString("it-IT"), isNew: !data.alreadyCheckedIn },
+          ...prev.slice(0, 19),
+        ]);
+      }
+    } catch {
+      setResult({ success: false, error: "Errore di connessione" });
+    }
+    setProcessing(false);
+  };
+
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualCode.trim()) {
+      processQrCode(manualCode.trim());
+      setManualCode("");
+    }
+  };
+
+  // Dynamic import of html5-qrcode to avoid SSR issues
+  useEffect(() => {
+    if (!scanning) return;
+
+    let scanner: { stop: () => Promise<void>; clear: () => void } | null = null;
+
+    import("html5-qrcode").then(({ Html5Qrcode }) => {
+      const qr = new Html5Qrcode("qr-reader");
+      scanner = qr as unknown as { stop: () => Promise<void>; clear: () => void };
+      qr.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => {
+          processQrCode(decodedText);
+          qr.stop().catch(() => {});
+          setScanning(false);
+        },
+        () => {} // ignore errors during scanning
+      ).catch((err: Error) => {
+        console.error("Camera error:", err);
+        setScanning(false);
+      });
+    });
+
+    return () => {
+      if (scanner) {
+        scanner.stop().catch(() => {});
+        scanner.clear();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanning]);
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 mb-6">
+        <h2 className="text-lg font-semibold text-warm-900 mb-1">Scansiona QR Code</h2>
+        <p className="text-xs text-warm-500 mb-6">
+          Usa la fotocamera per scansionare il QR code stampato dall&apos;utente, oppure inserisci il codice manualmente.
+        </p>
+
+        {/* Camera scanner */}
+        <div className="mb-6">
+          {scanning ? (
+            <div>
+              <div id="qr-reader" className="rounded-lg overflow-hidden mb-3" style={{ maxWidth: "400px", margin: "0 auto" }} />
+              <div className="text-center">
+                <button onClick={() => setScanning(false)} className="text-sm text-warm-600 hover:text-warm-800 transition-colors">
+                  Chiudi fotocamera
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setResult(null); setScanning(true); }}
+              className="w-full flex items-center justify-center gap-3 bg-warm-800 text-white py-4 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
+            >
+              <Camera size={20} />
+              Apri fotocamera per scansione
+            </button>
+          )}
+        </div>
+
+        {/* Manual input */}
+        <div className="border-t border-warm-200 pt-4">
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+            Oppure inserisci il codice manualmente
+          </label>
+          <form onSubmit={handleManualSubmit} className="flex gap-2">
+            <input
+              type="text"
+              value={manualCode}
+              onChange={(e) => setManualCode(e.target.value)}
+              placeholder="UUID del QR code..."
+              className="flex-1 border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none font-mono"
+            />
+            <button
+              type="submit"
+              disabled={processing || !manualCode.trim()}
+              className="flex items-center gap-2 bg-warm-100 text-warm-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-200 disabled:opacity-50 transition-colors shrink-0"
+            >
+              {processing ? <Loader2 size={14} className="animate-spin" /> : <ScanLine size={14} />}
+              Check-in
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* Result */}
+      {result && (
+        <div className={`rounded-xl shadow-sm border p-6 mb-6 ${
+          !result.success
+            ? "bg-red-50 border-red-200"
+            : result.alreadyCheckedIn
+            ? "bg-yellow-50 border-yellow-200"
+            : "bg-green-50 border-green-200"
+        }`}>
+          {!result.success ? (
+            <div className="flex items-center gap-3">
+              <AlertCircle size={24} className="text-red-500 shrink-0" />
+              <div>
+                <p className="font-semibold text-red-800">QR Code non valido</p>
+                <p className="text-sm text-red-600 mt-0.5">{result.error}</p>
+              </div>
+            </div>
+          ) : result.alreadyCheckedIn ? (
+            <div className="flex items-center gap-3">
+              <AlertCircle size={24} className="text-yellow-600 shrink-0" />
+              <div>
+                <p className="font-semibold text-yellow-800">Già registrato</p>
+                <p className="text-sm text-yellow-700 mt-0.5">
+                  {result.data?.firstName} {result.data?.lastName} ha già effettuato il check-in
+                  {result.data?.checkedInAt && ` il ${new Date(result.data.checkedInAt).toLocaleString("it-IT")}`}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <CheckCircle2 size={24} className="text-green-500 shrink-0" />
+              <div>
+                <p className="font-semibold text-green-800">Check-in completato!</p>
+                <p className="text-sm text-green-700 mt-0.5">
+                  {result.data?.firstName} {result.data?.lastName}
+                  {result.data?.profile && ` — ${result.data.profile}`}
+                </p>
+                <p className="text-xs text-green-600 mt-0.5">{result.data?.email}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Scan history */}
+      {scanHistory.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-warm-200">
+          <div className="p-4 border-b border-warm-200">
+            <h3 className="text-sm font-semibold text-warm-900">Ultimi check-in</h3>
+          </div>
+          <div className="divide-y divide-warm-100">
+            {scanHistory.map((item, i) => (
+              <div key={i} className="px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {item.isNew ? (
+                    <CheckCircle2 size={16} className="text-green-500" />
+                  ) : (
+                    <AlertCircle size={16} className="text-yellow-500" />
+                  )}
+                  <span className="text-sm text-warm-800">{item.name}</span>
+                </div>
+                <span className="text-xs text-warm-400">{item.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -436,6 +653,11 @@ export default function AdminLandingPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* ═══ Tab: Scanner ═══ */}
+      {activeTab === "scanner" && (
+        <ScannerTab />
       )}
 
       {/* ═══ Tab: Registrazioni ═══ */}

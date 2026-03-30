@@ -116,7 +116,7 @@ const navSections: NavSection[] = [
   {
     label: "Clienti",
     items: [
-      { href: "/admin/newsletter", label: "Newsletter", icon: Newspaper, permission: "newsletter.view" },
+      { href: "/admin/utenti", label: "Utenti", icon: Users, permission: "newsletter.view" },
       { href: "/admin/contacts", label: "Messaggi", icon: Mail, permission: "contacts.view" },
       {
         href: "/admin/forms",
