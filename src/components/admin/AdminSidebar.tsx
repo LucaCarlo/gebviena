@@ -27,7 +27,6 @@ import {
   X,
   PenLine,
   Shield,
-  QrCode,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -129,7 +128,6 @@ const navSections: NavSection[] = [
           { href: "/admin/landing-page", label: "Landing Page" },
         ],
       },
-      { href: "/admin/registrations", label: "Registrazioni", icon: QrCode, permission: "registrations.view" },
     ],
   },
   {

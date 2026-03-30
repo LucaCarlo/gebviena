@@ -1,28 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Check, ExternalLink, Send, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Check,
+  ExternalLink,
+  Send,
+  Loader2,
+  Search,
+  Download,
+  Trash2,
+  CheckCircle2,
+  XCircle,
+  QrCode,
+  Settings2,
+  Mail,
+  Users,
+} from "lucide-react";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 
-interface LandingConfig {
-  id: string;
-  heroTitle: string;
-  heroSubtitle: string | null;
-  heroLocation: string | null;
-  heroDescription: string | null;
-  successTitle: string;
-  successMessage: string | null;
-  privacyLabel: string;
-  marketingLabel: string | null;
-  buttonLabel: string;
-  bannerImage: string | null;
-  logoImage: string | null;
-  emailSubject: string | null;
-  emailTitle: string | null;
-  emailBody: string | null;
-  emailFooter: string | null;
-  isActive: boolean;
-}
+/* ───── Types ───── */
 
 interface FormState {
   heroTitle: string;
@@ -41,6 +37,23 @@ interface FormState {
   emailBody: string;
   emailFooter: string;
   isActive: boolean;
+}
+
+interface Registration {
+  id: string;
+  uuid: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  profile: string | null;
+  country: string;
+  state: string | null;
+  city: string;
+  zipCode: string;
+  qrCode: string;
+  checkedIn: boolean;
+  checkedInAt: string | null;
+  createdAt: string;
 }
 
 const DEFAULT_FORM: FormState = {
@@ -62,11 +75,18 @@ const DEFAULT_FORM: FormState = {
   isActive: true,
 };
 
+type Tab = "config" | "email" | "registrations";
+
+const TABS: { key: Tab; label: string; icon: typeof Settings2 }[] = [
+  { key: "config", label: "Configurazione", icon: Settings2 },
+  { key: "email", label: "Email", icon: Mail },
+  { key: "registrations", label: "Registrazioni", icon: Users },
+];
+
+/* ───── Email Preview ───── */
+
 function EmailPreview({ emailTitle, emailBody, emailFooter }: { emailTitle: string; emailBody: string; emailFooter: string }) {
-  const bodyLines = emailBody
-    .replace(/\{\{firstName\}\}/g, "Mario")
-    .replace(/\{\{lastName\}\}/g, "Rossi")
-    .split("\n");
+  const bodyLines = emailBody.replace(/\{\{firstName\}\}/g, "Mario").replace(/\{\{lastName\}\}/g, "Rossi").split("\n");
   const footerLines = emailFooter.split("\n");
 
   return (
@@ -80,35 +100,17 @@ function EmailPreview({ emailTitle, emailBody, emailFooter }: { emailTitle: stri
         </h1>
         <div style={{ marginBottom: "24px" }}>
           {bodyLines.map((line, i) => (
-            <p key={i} style={{ fontSize: "14px", color: "#333", margin: "0 0 6px 0" }}>
-              {line}
-            </p>
+            <p key={i} style={{ fontSize: "14px", color: "#333", margin: "0 0 6px 0" }}>{line}</p>
           ))}
         </div>
-        <div style={{
-          display: "inline-block",
-          border: "2px solid #e5e5e5",
-          borderRadius: "8px",
-          padding: "16px",
-          marginBottom: "16px",
-        }}>
-          <div style={{
-            width: "120px",
-            height: "120px",
-            background: "#f5f5f5",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "4px",
-          }}>
+        <div style={{ display: "inline-block", border: "2px solid #e5e5e5", borderRadius: "8px", padding: "16px", marginBottom: "16px" }}>
+          <div style={{ width: "120px", height: "120px", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px" }}>
             <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1">
               <path d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
             </svg>
           </div>
         </div>
-        <p style={{ fontSize: "10px", color: "#999", marginTop: "12px" }}>
-          QR Code ID: TEST-QR-a1b2c3d4
-        </p>
+        <p style={{ fontSize: "10px", color: "#999", marginTop: "12px" }}>QR Code ID: TEST-QR-a1b2c3d4</p>
         <hr style={{ border: "none", borderTop: "1px solid #e5e5e5", margin: "20px 0" }} />
         <div style={{ fontSize: "11px", color: "#999" }}>
           {footerLines.map((line, i) => (
@@ -120,8 +122,10 @@ function EmailPreview({ emailTitle, emailBody, emailFooter }: { emailTitle: stri
   );
 }
 
+/* ───── Main Component ───── */
+
 export default function AdminLandingPage() {
-  const [, setConfig] = useState<LandingConfig | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("config");
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -130,12 +134,17 @@ export default function AdminLandingPage() {
   const [sendingTest, setSendingTest] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
+  // Registrations state
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [regLoading, setRegLoading] = useState(false);
+  const [regSearch, setRegSearch] = useState("");
+  const [regTotal, setRegTotal] = useState(0);
+
   useEffect(() => {
     fetch("/api/landing-page-config?admin=true")
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.data) {
-          setConfig(data.data);
           setForm({
             heroTitle: data.data.heroTitle || "",
             heroSubtitle: data.data.heroSubtitle || "",
@@ -160,6 +169,25 @@ export default function AdminLandingPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const fetchRegistrations = useCallback(async () => {
+    setRegLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (regSearch) params.set("search", regSearch);
+      const res = await fetch(`/api/event-registrations?${params}`);
+      const data = await res.json();
+      if (data.success) {
+        setRegistrations(data.data);
+        setRegTotal(data.total);
+      }
+    } catch { /* silent */ }
+    setRegLoading(false);
+  }, [regSearch]);
+
+  useEffect(() => {
+    if (activeTab === "registrations") fetchRegistrations();
+  }, [activeTab, fetchRegistrations]);
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -170,7 +198,6 @@ export default function AdminLandingPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setConfig(data.data);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       }
@@ -186,25 +213,30 @@ export default function AdminLandingPage() {
       const res = await fetch("/api/landing-page-config/test-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          testEmail,
-          emailSubject: form.emailSubject,
-          emailTitle: form.emailTitle,
-          emailBody: form.emailBody,
-          emailFooter: form.emailFooter,
-        }),
+        body: JSON.stringify({ testEmail, emailSubject: form.emailSubject, emailTitle: form.emailTitle, emailBody: form.emailBody, emailFooter: form.emailFooter }),
       });
       const data = await res.json();
-      if (data.success) {
-        setTestResult({ ok: true, msg: "Email inviata!" });
-      } else {
-        setTestResult({ ok: false, msg: data.error || "Errore invio" });
-      }
+      setTestResult(data.success ? { ok: true, msg: "Email inviata!" } : { ok: false, msg: data.error || "Errore invio" });
     } catch {
       setTestResult({ ok: false, msg: "Errore di connessione" });
     }
     setSendingTest(false);
     setTimeout(() => setTestResult(null), 4000);
+  };
+
+  const handleCheckIn = async (id: string, checkedIn: boolean) => {
+    try {
+      const res = await fetch(`/api/event-registrations/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ checkedIn }) });
+      if ((await res.json()).success) fetchRegistrations();
+    } catch { /* silent */ }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Eliminare questa registrazione?")) return;
+    try {
+      const res = await fetch(`/api/event-registrations/${id}`, { method: "DELETE" });
+      if ((await res.json()).success) fetchRegistrations();
+    } catch { /* silent */ }
   };
 
   const updateField = (key: string, value: string | boolean) => {
@@ -222,298 +254,263 @@ export default function AdminLandingPage() {
     );
   }
 
+  const checkedInCount = registrations.filter((r) => r.checkedIn).length;
+
   return (
     <div className="p-6 md:p-8 max-w-5xl">
-      <div className="mb-8 flex items-center justify-between">
+      {/* Header */}
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-warm-900">Landing Page</h1>
-          <p className="text-sm text-warm-500 mt-1">
-            Configura testi, immagini e email della landing page evento
-          </p>
+          <p className="text-sm text-warm-500 mt-1">Gestisci la landing page evento, email e registrazioni</p>
         </div>
-        <a
-          href="/contatti/landing-page"
-          target="_blank"
-          className="flex items-center gap-2 text-sm text-warm-600 hover:text-warm-800 transition-colors"
-        >
-          <ExternalLink size={16} />
-          Anteprima
+        <a href="/contatti/landing-page" target="_blank" className="flex items-center gap-2 text-sm text-warm-600 hover:text-warm-800 transition-colors">
+          <ExternalLink size={16} /> Anteprima
         </a>
       </div>
 
-      <div className="space-y-6">
-        {/* Active toggle */}
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-warm-900">Stato</h2>
-              <p className="text-xs text-warm-500 mt-0.5">Abilita o disabilita la landing page</p>
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 border-b border-warm-200">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === tab.key
+                ? "border-warm-800 text-warm-900"
+                : "border-transparent text-warm-400 hover:text-warm-600"
+            }`}
+          >
+            <tab.icon size={16} />
+            {tab.label}
+            {tab.key === "registrations" && regTotal > 0 && (
+              <span className="ml-1 bg-warm-100 text-warm-600 text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
+                {regTotal}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* ═══ Tab: Configurazione ═══ */}
+      {activeTab === "config" && (
+        <div className="space-y-6">
+          {/* Active toggle */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-warm-900">Stato</h2>
+                <p className="text-xs text-warm-500 mt-0.5">Abilita o disabilita la landing page</p>
+              </div>
+              <button type="button" onClick={() => updateField("isActive", !form.isActive)} className={`relative w-12 h-6 rounded-full transition-colors ${form.isActive ? "bg-green-500" : "bg-warm-300"}`}>
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${form.isActive ? "left-6" : "left-0.5"}`} />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => updateField("isActive", !form.isActive)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                form.isActive ? "bg-green-500" : "bg-warm-300"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                  form.isActive ? "left-6" : "left-0.5"
-                }`}
-              />
+          </div>
+
+          {/* Hero */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+            <h2 className="text-lg font-semibold text-warm-900 mb-4">Sezione Hero</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo principale *</label>
+                <input type="text" value={form.heroTitle} onChange={(e) => updateField("heroTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Sottotitolo</label>
+                <input type="text" value={form.heroSubtitle} onChange={(e) => updateField("heroSubtitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Location (ogni riga va a capo)</label>
+                <textarea value={form.heroLocation} onChange={(e) => updateField("heroLocation", e.target.value)} rows={3} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Descrizione (sotto location)</label>
+                <textarea value={form.heroDescription} onChange={(e) => updateField("heroDescription", e.target.value)} rows={3} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Banner */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+            <h2 className="text-lg font-semibold text-warm-900 mb-4">Banner</h2>
+            <ImageUploadField label="Immagine Banner" value={form.bannerImage} onChange={(url) => updateField("bannerImage", url)} onRemove={() => updateField("bannerImage", "")} purpose="landing-banner" folder="landing-page" helpText="Il banner viene mostrato centrato nella pagina, sotto l'header del sito" recommendedSize="900x178px" />
+          </div>
+
+          {/* Form labels */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+            <h2 className="text-lg font-semibold text-warm-900 mb-4">Testi Form</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Label Privacy (checkbox obbligatorio) *</label>
+                <textarea value={form.privacyLabel} onChange={(e) => updateField("privacyLabel", e.target.value)} rows={3} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Label Marketing (checkbox opzionale)</label>
+                <textarea value={form.marketingLabel} onChange={(e) => updateField("marketingLabel", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo pulsante</label>
+                <input type="text" value={form.buttonLabel} onChange={(e) => updateField("buttonLabel", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Success */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+            <h2 className="text-lg font-semibold text-warm-900 mb-4">Stato Successo</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo conferma *</label>
+                <input type="text" value={form.successTitle} onChange={(e) => updateField("successTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Messaggio aggiuntivo</label>
+                <textarea value={form.successMessage} onChange={(e) => updateField("successMessage", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Save */}
+          <div className="flex items-center justify-end gap-3">
+            {saved && <span className="text-sm text-green-600 font-medium flex items-center gap-1"><Check size={16} /> Salvato</span>}
+            <button type="button" onClick={handleSave} disabled={saving} className="bg-warm-800 text-white px-8 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50 transition-colors">
+              {saving ? "Salvataggio..." : "Salva configurazione"}
             </button>
           </div>
         </div>
+      )}
 
-        {/* Hero section */}
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-          <h2 className="text-lg font-semibold text-warm-900 mb-4">Sezione Hero</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                Titolo principale *
-              </label>
-              <input
-                type="text"
-                value={form.heroTitle}
-                onChange={(e) => updateField("heroTitle", e.target.value)}
-                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                Sottotitolo
-              </label>
-              <input
-                type="text"
-                value={form.heroSubtitle}
-                onChange={(e) => updateField("heroSubtitle", e.target.value)}
-                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                Location (ogni riga va a capo)
-              </label>
-              <textarea
-                value={form.heroLocation}
-                onChange={(e) => updateField("heroLocation", e.target.value)}
-                rows={3}
-                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                Descrizione (sotto location)
-              </label>
-              <textarea
-                value={form.heroDescription}
-                onChange={(e) => updateField("heroDescription", e.target.value)}
-                rows={3}
-                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
+      {/* ═══ Tab: Email ═══ */}
+      {activeTab === "email" && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+            <h2 className="text-lg font-semibold text-warm-900 mb-1">Email di Conferma</h2>
+            <p className="text-xs text-warm-500 mb-6">
+              Personalizza l&apos;email inviata dopo la registrazione. Usa <code className="bg-warm-100 px-1 rounded text-[10px]">{"{{firstName}}"}</code> e <code className="bg-warm-100 px-1 rounded text-[10px]">{"{{lastName}}"}</code> per inserire il nome.
+            </p>
 
-        {/* Banner Image */}
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-          <h2 className="text-lg font-semibold text-warm-900 mb-4">Banner</h2>
-          <ImageUploadField
-            label="Immagine Banner"
-            value={form.bannerImage}
-            onChange={(url) => updateField("bannerImage", url)}
-            onRemove={() => updateField("bannerImage", "")}
-            purpose="landing-banner"
-            folder="landing-page"
-            helpText="Il banner viene mostrato centrato nella pagina, sotto l'header del sito"
-            recommendedSize="900x178px"
-          />
-        </div>
-
-        {/* Form labels */}
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-          <h2 className="text-lg font-semibold text-warm-900 mb-4">Testi Form</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                Label Privacy (checkbox obbligatorio) *
-              </label>
-              <textarea
-                value={form.privacyLabel}
-                onChange={(e) => updateField("privacyLabel", e.target.value)}
-                rows={3}
-                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                Label Marketing (checkbox opzionale)
-              </label>
-              <textarea
-                value={form.marketingLabel}
-                onChange={(e) => updateField("marketingLabel", e.target.value)}
-                rows={2}
-                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                Testo pulsante
-              </label>
-              <input
-                type="text"
-                value={form.buttonLabel}
-                onChange={(e) => updateField("buttonLabel", e.target.value)}
-                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Success state */}
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-          <h2 className="text-lg font-semibold text-warm-900 mb-4">Stato Successo</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                Titolo conferma *
-              </label>
-              <input
-                type="text"
-                value={form.successTitle}
-                onChange={(e) => updateField("successTitle", e.target.value)}
-                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                Messaggio aggiuntivo
-              </label>
-              <textarea
-                value={form.successMessage}
-                onChange={(e) => updateField("successMessage", e.target.value)}
-                rows={2}
-                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Email di conferma */}
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-          <h2 className="text-lg font-semibold text-warm-900 mb-1">Email di Conferma</h2>
-          <p className="text-xs text-warm-500 mb-6">
-            Personalizza l&apos;email che viene inviata dopo la registrazione. Usa <code className="bg-warm-100 px-1 rounded text-[10px]">{"{{firstName}}"}</code> e <code className="bg-warm-100 px-1 rounded text-[10px]">{"{{lastName}}"}</code> per inserire il nome.
-          </p>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: fields */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                  Oggetto email
-                </label>
-                <input
-                  type="text"
-                  value={form.emailSubject}
-                  onChange={(e) => updateField("emailSubject", e.target.value)}
-                  className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                  Titolo email
-                </label>
-                <input
-                  type="text"
-                  value={form.emailTitle}
-                  onChange={(e) => updateField("emailTitle", e.target.value)}
-                  className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                  Corpo email (ogni riga va a capo)
-                </label>
-                <textarea
-                  value={form.emailBody}
-                  onChange={(e) => updateField("emailBody", e.target.value)}
-                  rows={5}
-                  className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                  Footer email
-                </label>
-                <textarea
-                  value={form.emailFooter}
-                  onChange={(e) => updateField("emailFooter", e.target.value)}
-                  rows={3}
-                  className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
-                />
-              </div>
-
-              {/* Test email */}
-              <div className="pt-2 border-t border-warm-100">
-                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                  Invia email di prova
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    value={testEmail}
-                    onChange={(e) => setTestEmail(e.target.value)}
-                    placeholder="email@esempio.com"
-                    className="flex-1 border border-warm-300 rounded-lg px-4 py-2 text-sm focus:border-warm-800 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSendTest}
-                    disabled={sendingTest || !testEmail}
-                    className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 disabled:opacity-50 transition-colors shrink-0"
-                  >
-                    {sendingTest ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                    Invia prova
-                  </button>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Oggetto email</label>
+                  <input type="text" value={form.emailSubject} onChange={(e) => updateField("emailSubject", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
                 </div>
-                {testResult && (
-                  <p className={`text-xs mt-2 ${testResult.ok ? "text-green-600" : "text-red-600"}`}>
-                    {testResult.msg}
-                  </p>
-                )}
+                <div>
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo email</label>
+                  <input type="text" value={form.emailTitle} onChange={(e) => updateField("emailTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Corpo email (ogni riga va a capo)</label>
+                  <textarea value={form.emailBody} onChange={(e) => updateField("emailBody", e.target.value)} rows={5} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Footer email</label>
+                  <textarea value={form.emailFooter} onChange={(e) => updateField("emailFooter", e.target.value)} rows={3} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+                </div>
+
+                <div className="pt-2 border-t border-warm-100">
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Invia email di prova</label>
+                  <div className="flex gap-2">
+                    <input type="email" value={testEmail} onChange={(e) => setTestEmail(e.target.value)} placeholder="email@esempio.com" className="flex-1 border border-warm-300 rounded-lg px-4 py-2 text-sm focus:border-warm-800 focus:outline-none" />
+                    <button type="button" onClick={handleSendTest} disabled={sendingTest || !testEmail} className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 disabled:opacity-50 transition-colors shrink-0">
+                      {sendingTest ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                      Invia prova
+                    </button>
+                  </div>
+                  {testResult && <p className={`text-xs mt-2 ${testResult.ok ? "text-green-600" : "text-red-600"}`}>{testResult.msg}</p>}
+                </div>
+              </div>
+
+              <div>
+                <EmailPreview emailTitle={form.emailTitle} emailBody={form.emailBody} emailFooter={form.emailFooter} />
               </div>
             </div>
+          </div>
 
-            {/* Right: preview */}
-            <div>
-              <EmailPreview
-                emailTitle={form.emailTitle}
-                emailBody={form.emailBody}
-                emailFooter={form.emailFooter}
-              />
-            </div>
+          {/* Save */}
+          <div className="flex items-center justify-end gap-3">
+            {saved && <span className="text-sm text-green-600 font-medium flex items-center gap-1"><Check size={16} /> Salvato</span>}
+            <button type="button" onClick={handleSave} disabled={saving} className="bg-warm-800 text-white px-8 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50 transition-colors">
+              {saving ? "Salvataggio..." : "Salva configurazione"}
+            </button>
           </div>
         </div>
+      )}
 
-        {/* Save button */}
-        <div className="flex items-center justify-end gap-3">
-          {saved && (
-            <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-              <Check size={16} /> Salvato
-            </span>
+      {/* ═══ Tab: Registrazioni ═══ */}
+      {activeTab === "registrations" && (
+        <div>
+          <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <p className="text-sm text-warm-500">
+              {regTotal} registrazioni totali &middot; {checkedInCount} check-in effettuati
+            </p>
+            <button onClick={() => window.open("/api/event-registrations?format=csv", "_blank")} className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors">
+              <Download size={16} /> Esporta CSV
+            </button>
+          </div>
+
+          <div className="mb-6 relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+            <input type="text" value={regSearch} onChange={(e) => setRegSearch(e.target.value)} placeholder="Cerca per nome, email o QR code..." className="w-full sm:w-96 pl-10 pr-4 py-2.5 border border-warm-300 rounded-lg text-sm focus:border-warm-800 focus:outline-none" />
+          </div>
+
+          {regLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-6 h-6 border-2 border-warm-300 border-t-warm-800 rounded-full animate-spin" />
+            </div>
+          ) : registrations.length === 0 ? (
+            <div className="text-center py-20 text-warm-500">
+              <QrCode size={48} className="mx-auto mb-4 opacity-30" />
+              <p>Nessuna registrazione trovata</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-warm-200 bg-warm-50">
+                    <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider">Nome</th>
+                    <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider">Email</th>
+                    <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider hidden md:table-cell">Profilo</th>
+                    <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider hidden lg:table-cell">Luogo</th>
+                    <th className="text-center px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider">Check-in</th>
+                    <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider hidden md:table-cell">Data</th>
+                    <th className="text-right px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-warm-100">
+                  {registrations.map((r) => (
+                    <tr key={r.id} className="hover:bg-warm-50/50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-warm-800">{r.firstName} {r.lastName}</div>
+                        <div className="text-[10px] text-warm-400 font-mono mt-0.5">{r.qrCode.slice(0, 8)}...</div>
+                      </td>
+                      <td className="px-4 py-3 text-warm-600">{r.email}</td>
+                      <td className="px-4 py-3 text-warm-600 hidden md:table-cell">
+                        {r.profile ? <span className="inline-block text-[10px] font-medium bg-warm-100 text-warm-600 px-2 py-0.5 rounded">{r.profile}</span> : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-warm-600 hidden lg:table-cell">{r.city}, {r.country}</td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => handleCheckIn(r.id, !r.checkedIn)} title={r.checkedIn ? "Annulla check-in" : "Effettua check-in"}>
+                          {r.checkedIn ? <CheckCircle2 size={20} className="text-green-500 mx-auto" /> : <XCircle size={20} className="text-warm-300 hover:text-warm-500 mx-auto transition-colors" />}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-warm-500 text-xs hidden md:table-cell">
+                        {new Date(r.createdAt).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={() => handleDelete(r.id)} className="text-warm-400 hover:text-red-500 transition-colors" title="Elimina">
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-warm-800 text-white px-8 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50 transition-colors"
-          >
-            {saving ? "Salvataggio..." : "Salva configurazione"}
-          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
