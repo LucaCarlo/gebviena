@@ -148,7 +148,7 @@ export default function LandingPage() {
   }
 
   return (
-    <>
+    <div className="font-serif">
       {/* Banner — not full width, centered with max-width */}
       {config.bannerImage && (
         <section className="pt-6 md:pt-10">
@@ -482,6 +482,6 @@ export default function LandingPage() {
           )}
         </div>
       </section>
-    </>
+    </div>
   );
 }
