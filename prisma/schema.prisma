@@ -500,6 +500,10 @@ model LandingPageConfig {
   privacyLabel    String   @db.Text @default("I have read and understood the Privacy Policy on processing of my personal data and I confirm that I am over 18.")
   marketingLabel  String?  @db.Text
   buttonLabel     String   @default("Register")
+  emailSubject    String?  @db.Text
+  emailTitle      String?  @db.Text
+  emailBody       String?  @db.Text
+  emailFooter     String?  @db.Text
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

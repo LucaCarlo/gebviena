@@ -1,0 +1,114 @@
+import QRCode from "qrcode";
+import { prisma } from "@/lib/prisma";
+
+export async function generateQRCodeDataUrl(text: string): Promise<string> {
+  return QRCode.toDataURL(text, {
+    width: 300,
+    margin: 2,
+    color: { dark: "#000000", light: "#ffffff" },
+    errorCorrectionLevel: "H",
+  });
+}
+
+export function buildRegistrationEmailHtml(
+  firstName: string,
+  lastName: string,
+  qrCode: string,
+  emailTitle: string,
+  emailBody: string,
+  emailFooter: string
+): string {
+  const bodyLines = emailBody
+    .replace(/\{\{firstName\}\}/g, firstName)
+    .replace(/\{\{lastName\}\}/g, lastName)
+    .split("\n")
+    .map((line) => `<p style="font-size: 15px; color: #333; margin: 0 0 8px 0;">${line}</p>`)
+    .join("");
+
+  const footerLines = emailFooter.split("\n").join("<br/>");
+
+  return `
+    <div style="font-family: Georgia, 'Times New Roman', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; text-align: center;">
+      <h1 style="font-size: 22px; font-weight: bold; color: #000; margin-bottom: 20px;">
+        ${emailTitle}
+      </h1>
+      <div style="margin-bottom: 30px;">
+        ${bodyLines}
+      </div>
+      <div style="display: inline-block; border: 2px solid #e5e5e5; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <img src="cid:qrcode" alt="QR Code" width="250" height="250" style="display: block;" />
+      </div>
+      <p style="font-size: 11px; color: #999; margin-top: 16px;">
+        QR Code ID: ${qrCode}
+      </p>
+      <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 30px 0;" />
+      <p style="font-size: 12px; color: #999;">
+        ${footerLines}
+      </p>
+    </div>
+  `;
+}
+
+async function getSmtpConfig() {
+  const settings = await prisma.setting.findMany({ where: { group: "smtp" } });
+  const config: Record<string, string> = {};
+  for (const s of settings) config[s.key] = s.value;
+  return config;
+}
+
+export async function sendRegistrationEmailWithConfig(
+  toEmail: string,
+  firstName: string,
+  lastName: string,
+  qrCode: string,
+  qrDataUrl: string,
+  emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; emailFooter: string }
+) {
+  const base64Data = qrDataUrl.replace(/^data:image\/png;base64,/, "");
+  const html = buildRegistrationEmailHtml(
+    firstName,
+    lastName,
+    qrCode,
+    emailConfig.emailTitle,
+    emailConfig.emailBody,
+    emailConfig.emailFooter
+  );
+
+  const cfg = await getSmtpConfig();
+  if (!cfg.smtp_host || !cfg.smtp_user) throw new Error("SMTP not configured");
+
+  const nodemailer = (await import("nodemailer")).default;
+  const transporter = nodemailer.createTransport({
+    host: cfg.smtp_host,
+    port: parseInt(cfg.smtp_port || "587"),
+    secure: cfg.smtp_secure === "true",
+    auth: { user: cfg.smtp_user, pass: cfg.smtp_pass },
+  });
+
+  const fromName = cfg.smtp_from_name || "GTV";
+  const fromEmail = cfg.smtp_from_email || cfg.smtp_user;
+
+  await transporter.sendMail({
+    from: `"${fromName}" <${fromEmail}>`,
+    to: toEmail,
+    subject: emailConfig.emailSubject,
+    html,
+    attachments: [
+      {
+        filename: "qrcode.png",
+        content: Buffer.from(base64Data, "base64"),
+        cid: "qrcode",
+      },
+    ],
+  });
+}
+
+export async function getEmailConfig() {
+  const config = await prisma.landingPageConfig.findFirst({ where: { slug: "default" } });
+  return {
+    emailSubject: config?.emailSubject || "Your Event Registration - QR Code",
+    emailTitle: config?.emailTitle || "Registration Confirmed",
+    emailBody: config?.emailBody || "Thank you for registering. Please find below your personal QR code to show at the entrance.\nThe QR code is personal and can't be shared.",
+    emailFooter: config?.emailFooter || "Gebrüder Thonet Vienna GmbH\nVia Foggia 23/H – 10152 Torino (Italy)",
+  };
+}

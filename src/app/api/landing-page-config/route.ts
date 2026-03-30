@@ -46,6 +46,10 @@ export async function PUT(req: Request) {
       bannerImage,
       logoImage,
       isActive,
+      emailSubject,
+      emailTitle,
+      emailBody,
+      emailFooter,
     } = body;
 
     const config = await prisma.landingPageConfig.upsert({
@@ -63,6 +67,10 @@ export async function PUT(req: Request) {
         bannerImage: bannerImage ?? undefined,
         logoImage: logoImage ?? undefined,
         isActive: isActive ?? undefined,
+        emailSubject: emailSubject ?? undefined,
+        emailTitle: emailTitle ?? undefined,
+        emailBody: emailBody ?? undefined,
+        emailFooter: emailFooter ?? undefined,
       },
       create: {
         slug: "default",
