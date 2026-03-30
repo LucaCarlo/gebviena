@@ -172,11 +172,18 @@ function ScannerTab() {
       scanner = qr as unknown as { stop: () => Promise<void>; clear: () => void };
       qr.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        {
+          fps: 15,
+          qrbox: { width: 280, height: 280 },
+          aspectRatio: 1,
+          videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 1280 },
+          },
+        },
         (decodedText) => {
           processQrCode(decodedText);
-          qr.stop().catch(() => {});
-          setScanning(false);
         },
         () => {} // ignore errors during scanning
       ).catch((err: Error) => {

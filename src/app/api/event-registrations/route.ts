@@ -133,7 +133,7 @@ async function sendAdminNotification(
 
 // Admin GET - list all registrations
 export async function GET(req: Request) {
-  const result = await requirePermission("registrations", "view");
+  const result = await requirePermission("newsletter", "view");
   if (isErrorResponse(result)) return result;
 
   const { searchParams } = new URL(req.url);

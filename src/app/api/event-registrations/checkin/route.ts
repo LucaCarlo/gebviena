@@ -4,7 +4,7 @@ import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
 // POST - check in by QR code value
 export async function POST(req: Request) {
-  const result = await requirePermission("registrations", "edit");
+  const result = await requirePermission("newsletter", "edit");
   if (isErrorResponse(result)) return result;
 
   try {
