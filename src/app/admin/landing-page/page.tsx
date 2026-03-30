@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Check,
   ExternalLink,
@@ -128,6 +128,7 @@ function ScannerTab() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [processing, setProcessing] = useState(false);
   const [scanHistory, setScanHistory] = useState<{ name: string; time: string; isNew: boolean }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const processQrCode = async (code: string) => {
     if (processing) return;
@@ -161,7 +162,24 @@ function ScannerTab() {
     }
   };
 
-  // Dynamic import of html5-qrcode to avoid SSR issues
+  // Scan QR from uploaded image file
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const qr = new Html5Qrcode("qr-file-reader");
+      const decoded = await qr.scanFile(file, true);
+      processQrCode(decoded);
+      qr.clear();
+    } catch {
+      setResult({ success: false, error: "QR code non trovato nell'immagine. Riprova con una foto più nitida." });
+    }
+    // Reset file input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // Dynamic import of html5-qrcode for camera
   useEffect(() => {
     if (!scanning) return;
 
@@ -170,23 +188,34 @@ function ScannerTab() {
     import("html5-qrcode").then(({ Html5Qrcode }) => {
       const qr = new Html5Qrcode("qr-reader");
       scanner = qr as unknown as { stop: () => Promise<void>; clear: () => void };
+
+      // Use advanced constraints for better focus on screens
       qr.start(
         { facingMode: "environment" },
         {
-          fps: 15,
+          fps: 10,
           qrbox: { width: 280, height: 280 },
           aspectRatio: 1,
-          videoConstraints: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 1280 },
-          },
         },
         (decodedText) => {
           processQrCode(decodedText);
         },
-        () => {} // ignore errors during scanning
-      ).catch((err: Error) => {
+        () => {}
+      ).then(() => {
+        // Try to enable continuous autofocus after camera starts
+        try {
+          const videoElem = document.querySelector("#qr-reader video") as HTMLVideoElement;
+          if (videoElem?.srcObject) {
+            const track = (videoElem.srcObject as MediaStream).getVideoTracks()[0];
+            const capabilities = track.getCapabilities?.() as Record<string, unknown> | undefined;
+            if (capabilities?.focusMode) {
+              track.applyConstraints({
+                advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet],
+              }).catch(() => {});
+            }
+          }
+        } catch { /* ignore */ }
+      }).catch((err: Error) => {
         console.error("Camera error:", err);
         setScanning(false);
       });
@@ -221,14 +250,27 @@ function ScannerTab() {
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => { setResult(null); setScanning(true); }}
-              className="w-full flex items-center justify-center gap-3 bg-warm-800 text-white py-4 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
-            >
-              <Camera size={20} />
-              Apri fotocamera per scansione
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                onClick={() => { setResult(null); setScanning(true); }}
+                className="flex items-center justify-center gap-3 bg-warm-800 text-white py-4 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
+              >
+                <Camera size={20} />
+                Scansiona con fotocamera
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center justify-center gap-3 bg-warm-100 text-warm-700 py-4 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
+              >
+                <ScanLine size={20} />
+                Carica foto / screenshot QR
+              </button>
+            </div>
           )}
+          {/* Hidden file input for QR image upload */}
+          <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileUpload} className="hidden" />
+          {/* Hidden div for file-based QR scanning */}
+          <div id="qr-file-reader" className="hidden" />
         </div>
 
         {/* Manual input */}
