@@ -206,7 +206,7 @@ export default function AdminLandingPage() {
             purpose="landing-banner"
             folder="landing-page"
             helpText="Il banner viene mostrato centrato nella pagina, sotto l'header del sito"
-            recommendedSize="860x140px"
+            recommendedSize="900x178px"
           />
         </div>
 

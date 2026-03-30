@@ -152,8 +152,8 @@ export default function LandingPage() {
       {/* Banner — not full width, centered with max-width */}
       {config.bannerImage && (
         <section className="pt-6 md:pt-10">
-          <div className="mx-auto" style={{ maxWidth: "860px" }}>
-            <div className="relative w-full overflow-hidden rounded-sm" style={{ aspectRatio: "860 / 140" }}>
+          <div className="mx-auto" style={{ maxWidth: "900px" }}>
+            <div className="relative w-full overflow-hidden" style={{ aspectRatio: "900 / 178" }}>
               <Image
                 src={config.bannerImage}
                 alt="Event banner"
@@ -166,22 +166,22 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* Hero text — mondo-gtv style */}
-      <section className="text-center px-6 py-14 md:py-20">
-        <h1 className="font-serif text-[32px] md:text-[42px] text-dark tracking-tight font-light mb-4">
+      {/* Hero text */}
+      <section className="text-center px-6 py-12 md:py-16">
+        <h1 className="font-serif text-[22px] md:text-[26px] text-dark font-bold mb-2">
           {config.heroTitle}
         </h1>
         {config.heroSubtitle && (
-          <p className="text-lg text-dark leading-[1.8] font-light mb-8">
+          <p className="text-[15px] md:text-[17px] text-dark font-bold mb-8">
             {config.heroSubtitle}
           </p>
         )}
         {config.heroLocation && (
-          <div className="mb-6">
+          <div className="mb-4">
             {config.heroLocation.split("\n").map((line, i) => (
               <p
                 key={i}
-                className="text-base font-semibold text-dark leading-relaxed"
+                className="text-[15px] font-bold text-dark leading-[1.6]"
               >
                 {line}
               </p>
@@ -189,12 +189,12 @@ export default function LandingPage() {
           </div>
         )}
         {config.heroLocation && config.heroDescription && (
-          <div className="text-warm-300 mb-6 text-xl">———</div>
+          <div className="text-dark mb-4 text-base">———</div>
         )}
         {config.heroDescription && (
           <div>
             {config.heroDescription.split("\n").map((line, i) => (
-              <p key={i} className="text-base text-dark font-light italic leading-[1.8]">
+              <p key={i} className="text-[15px] text-dark leading-[1.8]">
                 {line}
               </p>
             ))}
@@ -267,18 +267,18 @@ export default function LandingPage() {
 
               {/* First Name */}
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">
+                <label className="block text-[14px] font-bold text-dark mb-2">
                   First Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.firstName}
                   onChange={(e) => updateField("firstName", e.target.value)}
-                  className={`w-full border-b ${
+                  className={`w-full border ${
                     errors.firstName
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-dark"
-                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
+                      : "border-warm-200 focus:border-warm-400"
+                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
                 />
                 {errors.firstName && (
                   <p className="text-red-500 text-xs mt-1 font-light">{errors.firstName}</p>
@@ -287,18 +287,18 @@ export default function LandingPage() {
 
               {/* Last Name */}
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">
+                <label className="block text-[14px] font-bold text-dark mb-2">
                   Last Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.lastName}
                   onChange={(e) => updateField("lastName", e.target.value)}
-                  className={`w-full border-b ${
+                  className={`w-full border ${
                     errors.lastName
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-dark"
-                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
+                      : "border-warm-200 focus:border-warm-400"
+                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
                 />
                 {errors.lastName && (
                   <p className="text-red-500 text-xs mt-1 font-light">{errors.lastName}</p>
@@ -307,18 +307,18 @@ export default function LandingPage() {
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">
+                <label className="block text-[14px] font-bold text-dark mb-2">
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
                   value={form.email}
                   onChange={(e) => updateField("email", e.target.value)}
-                  className={`w-full border-b ${
+                  className={`w-full border ${
                     errors.email
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-dark"
-                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
+                      : "border-warm-200 focus:border-warm-400"
+                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
                 />
                 {errors.email && (
                   <p className="text-red-500 text-xs mt-1 font-light">{errors.email}</p>
@@ -327,17 +327,17 @@ export default function LandingPage() {
 
               {/* Profile */}
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">
+                <label className="block text-[14px] font-bold text-dark mb-2">
                   Profile <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={form.profile}
                   onChange={(e) => updateField("profile", e.target.value)}
-                  className={`w-full border-b ${
+                  className={`w-full border ${
                     errors.profile
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-dark"
-                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors appearance-none cursor-pointer`}
+                      : "border-warm-200 focus:border-warm-400"
+                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors cursor-pointer`}
                 >
                   <option value="">Select...</option>
                   {PROFILE_OPTIONS.map((opt) => (
@@ -350,18 +350,18 @@ export default function LandingPage() {
 
               {/* Country */}
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">
+                <label className="block text-[14px] font-bold text-dark mb-2">
                   Country or Region <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.country}
                   onChange={(e) => updateField("country", e.target.value)}
-                  className={`w-full border-b ${
+                  className={`w-full border ${
                     errors.country
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-dark"
-                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
+                      : "border-warm-200 focus:border-warm-400"
+                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
                 />
                 {errors.country && (
                   <p className="text-red-500 text-xs mt-1 font-light">{errors.country}</p>
@@ -370,31 +370,31 @@ export default function LandingPage() {
 
               {/* State */}
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">
+                <label className="block text-[14px] font-bold text-dark mb-2">
                   State or Province
                 </label>
                 <input
                   type="text"
                   value={form.state}
                   onChange={(e) => updateField("state", e.target.value)}
-                  className="w-full border-b border-warm-300 focus:border-dark bg-transparent py-3 text-base font-light text-dark outline-none transition-colors"
+                  className="w-full border border-warm-200 focus:border-warm-400 rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors"
                 />
               </div>
 
               {/* City */}
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">
+                <label className="block text-[14px] font-bold text-dark mb-2">
                   City <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.city}
                   onChange={(e) => updateField("city", e.target.value)}
-                  className={`w-full border-b ${
+                  className={`w-full border ${
                     errors.city
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-dark"
-                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
+                      : "border-warm-200 focus:border-warm-400"
+                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
                 />
                 {errors.city && (
                   <p className="text-red-500 text-xs mt-1 font-light">{errors.city}</p>
@@ -403,18 +403,18 @@ export default function LandingPage() {
 
               {/* ZIP */}
               <div>
-                <label className="block text-sm font-semibold text-dark mb-2">
+                <label className="block text-[14px] font-bold text-dark mb-2">
                   ZIP <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.zipCode}
                   onChange={(e) => updateField("zipCode", e.target.value)}
-                  className={`w-full border-b ${
+                  className={`w-full border ${
                     errors.zipCode
                       ? "border-red-400"
-                      : "border-warm-300 focus:border-dark"
-                  } bg-transparent py-3 text-base font-light text-dark outline-none transition-colors`}
+                      : "border-warm-200 focus:border-warm-400"
+                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
                 />
                 {errors.zipCode && (
                   <p className="text-red-500 text-xs mt-1 font-light">{errors.zipCode}</p>
