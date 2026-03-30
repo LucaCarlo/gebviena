@@ -1,5 +1,7 @@
 import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
+import { mkdir } from "fs/promises";
+import path from "path";
 
 export async function generateQRCodeDataUrl(text: string): Promise<string> {
   return QRCode.toDataURL(text, {
@@ -10,6 +12,21 @@ export async function generateQRCodeDataUrl(text: string): Promise<string> {
   });
 }
 
+export async function generateQRCodeFile(text: string, filename: string): Promise<string> {
+  const dir = path.join(process.cwd(), "public", "uploads", "qrcodes");
+  await mkdir(dir, { recursive: true });
+
+  const filePath = path.join(dir, filename);
+  await QRCode.toFile(filePath, text, {
+    width: 300,
+    margin: 2,
+    color: { dark: "#000000", light: "#ffffff" },
+    errorCorrectionLevel: "H",
+  });
+
+  return `/uploads/qrcodes/${filename}`;
+}
+
 export function buildRegistrationEmailHtml(
   firstName: string,
   lastName: string,
@@ -17,7 +34,7 @@ export function buildRegistrationEmailHtml(
   emailTitle: string,
   emailBody: string,
   emailFooter: string,
-  qrBase64?: string
+  qrImageUrl?: string
 ): string {
   const bodyLines = emailBody
     .replace(/\{\{firstName\}\}/g, firstName)
@@ -28,10 +45,7 @@ export function buildRegistrationEmailHtml(
 
   const footerLines = emailFooter.split("\n").join("<br/>");
 
-  // Use base64 data URL for QR code image (works with Brevo API)
-  const qrSrc = qrBase64
-    ? `data:image/png;base64,${qrBase64}`
-    : "cid:qrcode";
+  const qrSrc = qrImageUrl || "cid:qrcode";
 
   return `
     <div style="font-family: Georgia, 'Times New Roman', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; text-align: center;">
@@ -62,21 +76,23 @@ async function getMailConfig() {
   return config;
 }
 
+function getSiteUrl() {
+  return process.env.NEXTAUTH_URL || "http://192.168.150.52:3002";
+}
+
 async function sendViaBrevoApi(
   apiKey: string,
   fromName: string,
   fromEmail: string,
   toEmail: string,
   subject: string,
-  html: string,
-  attachments?: { name: string; content: string }[]
+  html: string
 ) {
   const body = JSON.stringify({
     sender: { name: fromName, email: fromEmail },
     to: [{ email: toEmail }],
     subject,
     htmlContent: html,
-    ...(attachments && attachments.length > 0 ? { attachment: attachments.map(a => ({ name: a.name, content: a.content })) } : {}),
   });
 
   const res = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -110,28 +126,27 @@ export async function sendRegistrationEmailWithConfig(
   const fromName = cfg.smtp_from_name || "GTV";
   const fromEmail = cfg.smtp_from_email || "noreply@localhost";
 
-  // Prefer Brevo HTTP API if api key is set
+  // Save QR code as file on server for email usage
+  const qrFilename = `qr-${qrCode}.png`;
+  const qrPath = await generateQRCodeFile(qrCode, qrFilename);
+  const qrFullUrl = `${getSiteUrl()}${qrPath}`;
+
+  // Prefer Brevo HTTP API
   if (cfg.brevo_api_key) {
     const html = buildRegistrationEmailHtml(
       firstName, lastName, qrCode,
       emailConfig.emailTitle, emailConfig.emailBody, emailConfig.emailFooter,
-      base64Data
+      qrFullUrl
     );
 
-    // Attach QR code as PDF-style attachment (Brevo sends it as attachment)
     await sendViaBrevoApi(
-      cfg.brevo_api_key,
-      fromName,
-      fromEmail,
-      toEmail,
-      emailConfig.emailSubject,
-      html,
-      [{ name: "qrcode.png", content: base64Data }]
+      cfg.brevo_api_key, fromName, fromEmail, toEmail,
+      emailConfig.emailSubject, html
     );
     return;
   }
 
-  // Fallback: SMTP via nodemailer
+  // Fallback: SMTP via nodemailer with CID
   if (!cfg.smtp_host) throw new Error("Email not configured (no Brevo API key or SMTP host)");
 
   const html = buildRegistrationEmailHtml(
