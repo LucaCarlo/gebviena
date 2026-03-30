@@ -3,23 +3,23 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "mysql"
+  url       = env("DATABASE_URL")
 }
 
 model AdminUser {
   id                  String             @id @default(cuid())
   email               String             @unique
-  passwordHash        String
+  passwordHash        String @db.Text
   name                String?
   role                String             @default("editor")
   roleId              String?
   roleRef             Role?              @relation(fields: [roleId], references: [id])
-  avatar              String?
+  avatar              String? @db.Text
   isActive            Boolean            @default(true)
   lastLoginAt         DateTime?
-  emailSignature      String?
-  signatureHtml       String?
+  emailSignature      String? @db.MediumText
+  signatureHtml       String? @db.MediumText
   signatureTemplateId String?
   signatureTemplate   SignatureTemplate?  @relation(fields: [signatureTemplateId], references: [id])
   createdAt           DateTime           @default(now())
@@ -33,7 +33,7 @@ model Role {
   id          String      @id @default(cuid())
   name        String      @unique
   label       String
-  permissions String      @default("{}")
+  permissions String @db.Text      @default("{}")
   isSystem    Boolean     @default(false)
   sortOrder   Int         @default(0)
   createdAt   DateTime    @default(now())
@@ -44,20 +44,20 @@ model Role {
 model SignatureTemplate {
   id             String      @id @default(cuid())
   name           String
-  logoUrl        String?
-  bannerUrl      String?
+  logoUrl        String? @db.MediumText
+  bannerUrl      String? @db.MediumText
   showInstagram  Boolean     @default(true)
   showFacebook   Boolean     @default(true)
   showWeb        Boolean     @default(true)
-  instagramUrl   String?
-  facebookUrl    String?
-  webLinkUrl     String?
-  websiteUrl     String?
-  website        String?
-  disclaimerLang String      @default("it")
-  footerIt       String?
-  footerEn       String?
-  ecoText        String?
+  instagramUrl   String? @db.Text
+  facebookUrl    String? @db.Text
+  webLinkUrl     String? @db.Text
+  websiteUrl     String? @db.Text
+  website        String? @db.Text
+  disclaimerLang String @db.Text      @default("it")
+  footerIt       String? @db.Text
+  footerEn       String? @db.Text
+  ecoText        String? @db.Text
   style          String      @default("geb")
   showLinkedin   Boolean     @default(true)
   linkedinUrl    String?
@@ -73,15 +73,15 @@ model Designer {
   id             String    @id @default(cuid())
   name           String
   slug           String    @unique
-  bio            String?
-  country        String?
-  imageUrl       String?
-  website        String?
+  bio            String? @db.Text
+  country        String? @db.Text
+  imageUrl       String? @db.Text
+  website        String? @db.Text
   isActive       Boolean   @default(true)
   sortOrder      Int       @default(0)
-  seoTitle       String?
-  seoDescription String?
-  seoKeywords    String?
+  seoTitle       String? @db.Text
+  seoDescription String? @db.Text
+  seoKeywords    String? @db.Text
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   products       Product[]
@@ -94,29 +94,29 @@ model Product {
   name             String
   slug             String           @unique
   designerId       String?
-  designerName     String
+  designerName     String @db.Text
   category         String
   subcategory      String?
-  description      String?
-  materials        String?
-  dimensions       String?
-  dimensionBlockId String?
-  dimensionValues  String?
-  coverImage       String?
-  heroImage        String?
-  sideImage        String?
-  galleryImages    String?
-  variants         String?
-  dimensionImage   String?
-  techSheetUrl     String?
-  imageUrl         String           @default("")
+  description      String? @db.Text
+  materials        String? @db.Text
+  dimensions       String? @db.Text
+  dimensionBlockId String? @db.Text
+  dimensionValues  String? @db.Text
+  coverImage       String? @db.Text
+  heroImage        String? @db.Text
+  sideImage        String? @db.Text
+  galleryImages    String? @db.Text
+  variants         String? @db.Text
+  dimensionImage   String? @db.Text
+  techSheetUrl     String? @db.Text
+  imageUrl         String @db.Text           @default("")
   isFeatured       Boolean          @default(false)
   isNew            Boolean          @default(false)
   isActive         Boolean          @default(true)
   sortOrder        Int              @default(0)
-  seoTitle         String?
-  seoDescription   String?
-  seoKeywords      String?
+  seoTitle         String? @db.Text
+  seoDescription   String? @db.Text
+  seoKeywords      String? @db.Text
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   designer         Designer?        @relation(fields: [designerId], references: [id])
@@ -134,20 +134,20 @@ model Project {
   slug           String           @unique
   type           String
   country        String
-  city           String?
+  city           String? @db.Text
   year           Int?
-  architect      String?
-  description    String?
-  imageUrl       String
-  coverImage     String?
-  heroImage      String?
-  sideImage      String?
-  galleryUrls    String?
+  architect      String? @db.Text
+  description    String? @db.Text
+  imageUrl       String @db.Text
+  coverImage     String? @db.Text
+  heroImage      String? @db.Text
+  sideImage      String? @db.Text
+  galleryUrls    String? @db.Text
   isActive       Boolean          @default(true)
   sortOrder      Int              @default(0)
-  seoTitle       String?
-  seoDescription String?
-  seoKeywords    String?
+  seoTitle       String? @db.Text
+  seoDescription String? @db.Text
+  seoKeywords    String? @db.Text
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   products       ProjectProduct[]
@@ -172,17 +172,17 @@ model Campaign {
   name           String
   slug           String   @unique
   type           String   @default("")
-  subtitle       String?
-  description    String?
-  imageUrl       String
-  galleryUrls    String?
-  videoUrl       String?
+  subtitle       String? @db.Text
+  description    String? @db.Text
+  imageUrl       String @db.Text
+  galleryUrls    String? @db.Text
+  videoUrl       String? @db.Text
   year           Int?
   isActive       Boolean  @default(true)
   sortOrder      Int      @default(0)
-  seoTitle       String?
-  seoDescription String?
-  seoKeywords    String?
+  seoTitle       String? @db.Text
+  seoDescription String? @db.Text
+  seoKeywords    String? @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -195,21 +195,21 @@ model NewsArticle {
   title          String
   slug           String   @unique
   category       String   @default("")
-  subtitle       String?
-  excerpt        String?
-  content        String?
-  imageUrl       String
-  galleryUrls    String?
-  blocks         String?
-  tags           String?
-  source         String?
-  sourceUrl      String?
+  subtitle       String? @db.Text
+  excerpt        String? @db.Text
+  content        String? @db.Text
+  imageUrl       String @db.Text
+  galleryUrls    String? @db.Text
+  blocks         String? @db.Text
+  tags           String? @db.Text
+  source         String? @db.Text
+  sourceUrl      String? @db.Text
   publishedAt    DateTime?
   isActive       Boolean  @default(true)
   sortOrder      Int      @default(0)
-  seoTitle       String?
-  seoDescription String?
-  seoKeywords    String?
+  seoTitle       String? @db.Text
+  seoDescription String? @db.Text
+  seoKeywords    String? @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -220,18 +220,18 @@ model NewsArticle {
 model Award {
   id              String   @id @default(cuid())
   name            String
-  productName     String?
-  productSlug     String?
-  productCategory String?
+  productName     String? @db.Text
+  productSlug     String? @db.Text
+  productCategory String? @db.Text
   year            Int
-  organization    String
-  description     String?
-  imageUrl        String?
-  url             String?
+  organization    String @db.Text
+  description     String? @db.Text
+  imageUrl        String? @db.Text
+  url             String? @db.Text
   isActive        Boolean  @default(true)
-  seoTitle        String?
-  seoDescription  String?
-  seoKeywords     String?
+  seoTitle        String? @db.Text
+  seoDescription  String? @db.Text
+  seoKeywords     String? @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -241,14 +241,14 @@ model Award {
 model HeroSlide {
   id               String   @id @default(cuid())
   title            String
-  subtitle         String?
-  ctaText          String?
-  ctaLink          String?
-  imageUrl         String
-  coverImage       String?
-  videoUrl         String?
-  position         String   @default("center")
-  verticalPosition String   @default("center")
+  subtitle         String? @db.Text
+  ctaText          String? @db.Text
+  ctaLink          String? @db.Text
+  imageUrl         String @db.Text
+  coverImage       String? @db.Text
+  videoUrl         String? @db.Text
+  position         String @db.Text   @default("center")
+  verticalPosition String @db.Text   @default("center")
   darkOverlay      Boolean  @default(false)
   overlayOpacity   Int      @default(60)
   page             String   @default("homepage")
@@ -264,8 +264,8 @@ model Language {
   id         String   @id @default(cuid())
   code       String   @unique
   name       String
-  nativeName String?
-  flag       String?
+  nativeName String? @db.Text
+  flag       String? @db.Text
   isDefault  Boolean  @default(false)
   isActive   Boolean  @default(true)
   sortOrder  Int      @default(0)
@@ -275,16 +275,16 @@ model Language {
 
 model MediaFile {
   id           String    @id @default(cuid())
-  filename     String
-  originalName String
-  mimeType     String
+  filename     String @db.Text
+  originalName String @db.Text
+  mimeType     String @db.Text
   size         Int
-  url          String
-  wasabiUrl    String?
-  wasabiKey    String?
+  url          String @db.Text
+  wasabiUrl    String? @db.Text
+  wasabiKey    String? @db.Text
   isSynced     Boolean   @default(false)
   syncedAt     DateTime?
-  altText      String?
+  altText      String? @db.Text
   folder       String    @default("general")
   width        Int?
   height       Int?
@@ -310,13 +310,13 @@ model PointOfSale {
   id        String   @id @default(cuid())
   name      String
   type      String
-  address   String
+  address   String @db.Text
   city      String
   country   String
-  phone     String?
+  phone     String? @db.Text
   email     String?
-  website   String?
-  imageUrl  String?
+  website   String? @db.Text
+  imageUrl  String? @db.Text
   latitude  Float
   longitude Float
   isActive  Boolean  @default(true)
@@ -331,10 +331,10 @@ model PointOfSale {
 model NewsletterSubscriber {
   id             String   @id @default(cuid())
   email          String   @unique
-  firstName      String?
-  lastName       String?
-  company        String?
-  phone          String?
+  firstName      String? @db.Text
+  lastName       String? @db.Text
+  company        String? @db.Text
+  phone          String? @db.Text
   acceptsPrivacy Boolean  @default(false)
   acceptsUpdates Boolean  @default(false)
   createdAt      DateTime @default(now())
@@ -344,13 +344,13 @@ model ContactSubmission {
   id            String   @id @default(cuid())
   name          String
   email         String
-  subject       String?
-  message       String
-  company       String?
-  phone         String?
-  storeId       String?
-  contactReason String?
-  type          String   @default("general")
+  subject       String? @db.Text
+  message       String @db.Text
+  company       String? @db.Text
+  phone         String? @db.Text
+  storeId       String? @db.Text
+  contactReason String? @db.Text
+  type          String @db.Text   @default("general")
   isRead        Boolean  @default(false)
   createdAt     DateTime @default(now())
 }
@@ -358,9 +358,9 @@ model ContactSubmission {
 model PageView {
   id        String   @id @default(cuid())
   path      String
-  referrer  String?
-  userAgent String?
-  ipHash    String?
+  referrer  String? @db.Text
+  userAgent String? @db.Text
+  ipHash    String? @db.Text
   createdAt DateTime @default(now())
 
   @@index([path])
@@ -381,7 +381,7 @@ model ContentTypology {
   contentType String
   value       String
   label       String
-  imageUrl    String?
+  imageUrl    String? @db.Text
   sortOrder   Int                       @default(0)
   isActive    Boolean                   @default(true)
   createdAt   DateTime                  @default(now())
@@ -435,7 +435,7 @@ model ContentSubcategory {
 model DimensionBlock {
   id        String   @id @default(cuid())
   name      String
-  labels    String
+  labels    String @db.Text
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
@@ -447,12 +447,12 @@ model Catalog {
   name        String
   slug        String   @unique
   section     String   @default("")
-  pretitle    String?
-  title       String?
-  description String?
-  imageUrl    String   @default("")
-  pdfUrl      String   @default("")
-  linkText    String?
+  pretitle    String? @db.Text
+  title       String? @db.Text
+  description String? @db.Text
+  imageUrl    String @db.Text   @default("")
+  pdfUrl      String @db.Text   @default("")
+  linkText    String? @db.Text
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
@@ -480,8 +480,50 @@ model PageImage {
 model FormConfig {
   id        String   @id @default(cuid())
   formType  String   @unique
-  fields    String
+  fields    String   @db.Text
   updatedAt DateTime @updatedAt
 
   @@index([formType])
+}
+
+model LandingPageConfig {
+  id              String   @id @default(cuid())
+  slug            String   @unique @default("default")
+  bannerImage     String?  @db.Text
+  logoImage       String?  @db.Text
+  heroTitle       String   @db.Text @default("Milan Design Week 2026")
+  heroSubtitle    String?  @db.Text
+  heroLocation    String?  @db.Text
+  heroDescription String?  @db.Text
+  successTitle    String   @db.Text @default("Thank you. Your QR code has been generated.")
+  successMessage  String?  @db.Text
+  privacyLabel    String   @db.Text @default("I have read and understood the Privacy Policy on processing of my personal data and I confirm that I am over 18.")
+  marketingLabel  String?  @db.Text
+  buttonLabel     String   @default("Register")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model EventRegistration {
+  id               String    @id @default(cuid())
+  uuid             String    @unique @default(cuid())
+  firstName        String
+  lastName         String
+  email            String
+  profile          String?
+  country          String
+  state            String?
+  city             String
+  zipCode          String
+  privacyAccepted  Boolean   @default(false)
+  marketingConsent Boolean   @default(false)
+  qrCode           String    @unique
+  checkedIn        Boolean   @default(false)
+  checkedInAt      DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([email])
+  @@index([qrCode])
+  @@index([createdAt])
 }

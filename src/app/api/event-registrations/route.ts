@@ -1,0 +1,137 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requirePermission, isErrorResponse } from "@/lib/permissions";
+
+function generateUUID(): string {
+  return crypto.randomUUID();
+}
+
+// Public POST - register for event
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const {
+      firstName,
+      lastName,
+      email,
+      profile,
+      country,
+      state,
+      city,
+      zipCode,
+      privacyAccepted,
+      marketingConsent,
+    } = body;
+
+    // Validate required fields
+    if (!firstName || !lastName || !email || !country || !city || !zipCode) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid email address" },
+        { status: 400 }
+      );
+    }
+
+    if (!privacyAccepted) {
+      return NextResponse.json(
+        { success: false, error: "Privacy policy must be accepted" },
+        { status: 400 }
+      );
+    }
+
+    // Generate unique QR code
+    const qrCode = generateUUID();
+    const uuid = generateUUID();
+
+    const registration = await prisma.eventRegistration.create({
+      data: {
+        uuid,
+        firstName,
+        lastName,
+        email,
+        profile: profile || null,
+        country,
+        state: state || null,
+        city,
+        zipCode,
+        privacyAccepted: true,
+        marketingConsent: !!marketingConsent,
+        qrCode,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          id: registration.id,
+          uuid: registration.uuid,
+          qrCode: registration.qrCode,
+          firstName: registration.firstName,
+          lastName: registration.lastName,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Event registration error:", error);
+    return NextResponse.json(
+      { success: false, error: "Server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// Admin GET - list all registrations
+export async function GET(req: Request) {
+  const result = await requirePermission("registrations", "view");
+  if (isErrorResponse(result)) return result;
+
+  const { searchParams } = new URL(req.url);
+  const search = searchParams.get("search") || "";
+  const format = searchParams.get("format");
+
+  const where = search
+    ? {
+        OR: [
+          { firstName: { contains: search } },
+          { lastName: { contains: search } },
+          { email: { contains: search } },
+          { qrCode: { contains: search } },
+        ],
+      }
+    : {};
+
+  const data = await prisma.eventRegistration.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+  });
+
+  // CSV export
+  if (format === "csv") {
+    const header =
+      "ID,UUID,First Name,Last Name,Email,Profile,Country,State,City,ZIP,Privacy,Marketing,QR Code,Checked In,Checked In At,Created At";
+    const rows = data.map(
+      (r) =>
+        `"${r.id}","${r.uuid}","${r.firstName}","${r.lastName}","${r.email}","${r.profile || ""}","${r.country}","${r.state || ""}","${r.city}","${r.zipCode}","${r.privacyAccepted}","${r.marketingConsent}","${r.qrCode}","${r.checkedIn}","${r.checkedInAt || ""}","${r.createdAt.toISOString()}"`
+    );
+    const csv = [header, ...rows].join("\n");
+
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv",
+        "Content-Disposition": `attachment; filename="registrations-${new Date().toISOString().split("T")[0]}.csv"`,
+      },
+    });
+  }
+
+  return NextResponse.json({ success: true, data, total: data.length });
+}

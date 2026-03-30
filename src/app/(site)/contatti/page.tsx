@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, Users, Newspaper, Mail } from "lucide-react";
+import { MapPin, Users, Newspaper, Mail, QrCode } from "lucide-react";
 import { getPageImages } from "@/lib/page-images";
 import PageHero from "@/components/PageHero";
 
@@ -27,6 +27,12 @@ const contactLinks = [
     title: "Richiesta informazioni",
     description: "Per qualsiasi altra informazione, scrivici.",
     href: "/contatti/richiesta-info",
+  },
+  {
+    icon: QrCode,
+    title: "Landing Page",
+    description: "Registrati per ricevere il tuo QR code personale per l'evento.",
+    href: "/contatti/landing-page",
   },
 ];
 
