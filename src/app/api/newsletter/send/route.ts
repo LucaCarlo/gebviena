@@ -41,9 +41,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Oggetto e corpo email richiesti" }, { status: 400 });
     }
 
-    // Check if template uses {{eventLink}} and we have a landing page → enable tracking
-    const hasEventLink = template?.blocks?.includes("eventLink") || false;
-    const enableTracking = hasEventLink && !!landingPageId;
+    // Enable tracking when a landing page is selected (regardless of template content)
+    const enableTracking = !!landingPageId;
 
     // Resolve landing page URL for tracking
     let landingPageUrl = "";
@@ -89,6 +88,17 @@ export async function POST(req: Request) {
           email: sub.email,
           eventLink,
         });
+
+        // Replace any hardcoded landing page URLs in the template with tracked link
+        if (enableTracking) {
+          emailHtml = emailHtml.replace(/https?:\/\/[^"]*\/contatti\/landing-page/g, eventLink);
+          emailHtml = emailHtml.replace(/https?:\/\/[^"]*\/lp\/[^"&]*/g, eventLink);
+          // Also replace permalink-based URLs for this specific landing page
+          if (landingPageUrl) {
+            const baseUrl = landingPageUrl.replace(/\?.*$/, "");
+            emailHtml = emailHtml.replace(new RegExp(baseUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?!\\?inv=)", "g"), eventLink);
+          }
+        }
 
         // Append tracking pixel
         if (pixelTag) {
