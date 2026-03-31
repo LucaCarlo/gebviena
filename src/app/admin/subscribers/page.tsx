@@ -248,7 +248,25 @@ export default function AdminSubscribersPage() {
   const openInviteModal = async () => {
     setShowInviteModal(true); setInviteResult(null);
     setInviteSubject(""); setInviteMessage(""); setInviteCampaign(""); setInviteLpId("");
-    try { const r = await fetch("/api/landing-page-config?admin=true"); const d = await r.json(); if (d.success) setLandingPages(d.data || []); } catch {}
+    try {
+      // Try admin endpoint first, fallback to public list
+      let lps: { id: string; name: string }[] = [];
+      const r1 = await fetch("/api/landing-page-config?admin=true");
+      const d1 = await r1.json();
+      if (d1.success && d1.data) {
+        lps = d1.data.map((lp: { id: string; name: string }) => ({ id: lp.id, name: lp.name }));
+      }
+      if (!lps.length) {
+        // Fallback: get all active landing pages via public endpoint
+        const r2 = await fetch("/api/landing-page-config");
+        const d2 = await r2.json();
+        if (d2.success && d2.data) {
+          const data = Array.isArray(d2.data) ? d2.data : [d2.data];
+          lps = data.map((lp: { id: string; name: string }) => ({ id: lp.id, name: lp.name }));
+        }
+      }
+      setLandingPages(lps);
+    } catch {}
   };
 
   const sendInvites = async () => {
