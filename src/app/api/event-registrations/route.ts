@@ -46,6 +46,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check for duplicate registration
+    const existing = await prisma.eventRegistration.findFirst({
+      where: { email: email.toLowerCase().trim(), landingPageId: landingPageId || undefined },
+    });
+    if (existing) {
+      return NextResponse.json(
+        { success: false, error: "You are already registered for this event" },
+        { status: 409 }
+      );
+    }
+
     if (!privacyAccepted) {
       return NextResponse.json(
         { success: false, error: "Privacy policy must be accepted" },

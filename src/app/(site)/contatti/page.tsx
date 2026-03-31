@@ -32,7 +32,7 @@ const contactLinks = [
     icon: QrCode,
     title: "Landing Page",
     description: "Registrati per ricevere il tuo QR code personale per l'evento.",
-    href: "/contatti/landing-page",
+    href: "/lp/evento-mdw-2026",
   },
 ];
 
