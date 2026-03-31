@@ -33,10 +33,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
 
             if (!hasAnyOtherPerm) {
-              // Scanner-only: no sidebar, redirect to landing-page
+              // Scanner-only: no sidebar, redirect to scanner
               setHideSidebar(true);
-              if (pathname === "/admin" || !pathname.startsWith("/admin/landing-page")) {
-                router.replace("/admin/landing-page");
+              if (pathname === "/admin" || (!pathname.startsWith("/admin/scanner") && !pathname.startsWith("/admin/landing-page"))) {
+                router.replace("/admin/scanner");
                 return;
               }
             } else if (pathname === "/admin") {
@@ -70,11 +70,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   if (hideSidebar) {
-    return (
-      <div className="min-h-screen bg-warm-50">
-        <main className="min-h-screen">{children}</main>
-      </div>
-    );
+    return <>{children}</>;
   }
 
   return (

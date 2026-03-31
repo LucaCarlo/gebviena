@@ -22,11 +22,14 @@ model AdminUser {
   signatureHtml       String? @db.MediumText
   signatureTemplateId String?
   signatureTemplate   SignatureTemplate?  @relation(fields: [signatureTemplateId], references: [id])
+  scanLandingPageId   String?
+  scanLandingPage     LandingPageConfig? @relation(fields: [scanLandingPageId], references: [id])
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
   @@index([signatureTemplateId])
   @@index([roleId])
+  @@index([scanLandingPageId])
 }
 
 model Role {
@@ -521,6 +524,7 @@ model LandingPageConfig {
   updatedAt       DateTime @updatedAt
   registrations   EventRegistration[]
   invitations     EventInvitation[]
+  scanUsers       AdminUser[]
 }
 
 model EventRegistration {

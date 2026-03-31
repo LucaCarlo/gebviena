@@ -20,6 +20,7 @@ export async function GET() {
       roleRef: {
         select: { name: true, label: true, permissions: true },
       },
+      scanLandingPageId: true,
     },
   });
 
@@ -43,6 +44,7 @@ export async function GET() {
 
   return NextResponse.json({
     success: true,
+    scanLandingPageId: user.scanLandingPageId || null,
     data: {
       id: user.id,
       email: user.email,
