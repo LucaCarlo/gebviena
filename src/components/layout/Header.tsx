@@ -43,12 +43,12 @@ export default function Header() {
             : ""
         }`}
         style={{
-          left: 'var(--site-margin)',
-          right: 'var(--site-margin)',
+          left: 0,
+          right: 0,
           ...(!isScrolled ? { textShadow: "0 1px 8px rgba(0,0,0,0.3)", background: "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.25) 60%, transparent 100%)" } : {}),
         }}
       >
-        <div className="px-2 md:px-4 lg:px-5">
+        <div className="mx-auto px-2 md:px-4 lg:px-5" style={{ maxWidth: '1670px' }}>
           <div className="flex items-center justify-between h-20 md:h-24">
             {/* Hamburger left */}
             <button

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Work_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const workSans = Work_Sans({
@@ -33,6 +34,17 @@ export default function RootLayout({
       </head>
       <body className={`${workSans.variable} antialiased bg-white`}>
         {children}
+        <Script id="iubenda-config" strategy="afterInteractive">{`
+            var _iub = _iub || [];
+            _iub.csConfiguration = {
+              "siteId": 4004725,
+              "cookiePolicyId": 24997138,
+              "lang": "it",
+              "storage": { "useSiteId": true }
+            };
+          `}</Script>
+        <Script src="https://cs.iubenda.com/autoblocking/4004725.js" strategy="afterInteractive" />
+        <Script src="https://cdn.iubenda.com/cs/iubenda_cs.js" strategy="afterInteractive" charSet="UTF-8" />
       </body>
     </html>
   );

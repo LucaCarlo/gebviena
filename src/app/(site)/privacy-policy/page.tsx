@@ -6,7 +6,6 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="pt-32 pb-20">
       <div className="luxury-container max-w-3xl">
-        <h1 className="font-serif text-3xl md:text-4xl text-warm-800 mb-8">Privacy Policy</h1>
         <div className="prose prose-sm text-warm-600">
           <a
             href="https://www.iubenda.com/privacy-policy/24997138"

@@ -5,11 +5,6 @@
 :root {
   --site-margin: 0px;
 }
-@media (min-width: 1670px) {
-  :root {
-    --site-margin: calc((100vw - 1670px) / 2);
-  }
-}
 
 @layer base {
   html {
