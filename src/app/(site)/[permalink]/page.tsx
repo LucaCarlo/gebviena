@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -52,7 +52,10 @@ const DEFAULT_CONFIG: LandingConfig = {
 
 export default function LandingPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const permalink = params.permalink as string;
+  const inviteToken = searchParams.get("inv") || "";
+  const trackedRef = useRef(false);
   const [config, setConfig] = useState<LandingConfig>(DEFAULT_CONFIG);
   const [form, setForm] = useState({
     firstName: "",
@@ -89,6 +92,20 @@ export default function LandingPage() {
       .finally(() => setLoading(false));
   }, [permalink]);
 
+  // Track invitation click and pre-fill email
+  useEffect(() => {
+    if (!inviteToken || trackedRef.current) return;
+    trackedRef.current = true;
+    fetch(`/api/event-invitations/track?token=${inviteToken}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.data?.email) {
+          setForm((prev) => ({ ...prev, email: data.data.email }));
+        }
+      })
+      .catch(() => {});
+  }, [inviteToken]);
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -119,7 +136,7 @@ export default function LandingPage() {
       const res = await fetch("/api/event-registrations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, landingPageId: config.id }),
+        body: JSON.stringify({ ...form, landingPageId: config.id, inviteToken: inviteToken || undefined }),
       });
       const data = await res.json();
 

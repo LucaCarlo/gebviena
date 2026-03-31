@@ -358,7 +358,7 @@ export const NAV_ITEMS = [
       { label: "COLLABORAZIONI NUOVI DESIGNER", href: "/contatti/collaborazioni" },
       { label: "UFFICIO STAMPA", href: "/contatti/ufficio-stampa" },
       { label: "RICHIESTA INFORMAZIONI", href: "/contatti/richiesta-info" },
-      { label: "LANDING PAGE", href: "/lp/evento-mdw-2026" },
+      { label: "LANDING PAGE", href: "/evento-mdw-2026" },
     ],
   },
 ] as const;

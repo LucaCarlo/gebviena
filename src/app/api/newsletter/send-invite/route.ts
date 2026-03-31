@@ -29,7 +29,7 @@ export async function POST(req: Request) {
         select: { permalink: true },
       });
       if (lp) {
-        landingPageUrl = `${siteUrl}/lp/${lp.permalink}`;
+        landingPageUrl = `${siteUrl}/${lp.permalink}`;
       }
     }
 
