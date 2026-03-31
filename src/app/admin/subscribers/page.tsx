@@ -64,7 +64,6 @@ export default function AdminSubscribersPage() {
   const [showImport, setShowImport] = useState(false);
   const [showEmailChoice, setShowEmailChoice] = useState(false);
   const [showEditContact, setShowEditContact] = useState(false);
-  const [showInviteModal, setShowInviteModal] = useState(false);
   const [viewContact, setViewContact] = useState<UnifiedContact | null>(null);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [editSaving, setEditSaving] = useState(false);
@@ -76,10 +75,6 @@ export default function AdminSubscribersPage() {
 
   // Invite to event
   const [landingPages, setLandingPages] = useState<{ id: string; name: string }[]>([]);
-  const [inviteLpId, setInviteLpId] = useState("");
-  const [inviteCampaign, setInviteCampaign] = useState("");
-  const [inviteSending, setInviteSending] = useState(false);
-  const [inviteResult, setInviteResult] = useState<{ sent: number; failed: number } | null>(null);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ sent: number; failed: number } | null>(null);
   const [importResult, setImportResult] = useState<{ imported: number; skipped: number; tagged: number } | null>(null);
@@ -222,39 +217,16 @@ export default function AdminSubscribersPage() {
 
   /* ───── Send via template ───── */
 
+  const [templateLpId, setTemplateLpId] = useState("");
+
   const openTemplateModal = async () => {
-    setShowTemplateModal(true); setTemplatesLoading(true); setSendResult(null);
-    try { const r = await fetch("/api/email-templates"); const d = await r.json(); if (d.success) setTemplates(d.data || []); } catch {}
-    setTemplatesLoading(false);
-  };
-
-  const sendWithTemplate = async (templateId: string) => {
-    if (!selected.size) return;
-    const ids = getSelectedSubscriberIds();
-    if (!ids.length) { alert("Nessun iscritto newsletter selezionato"); return; }
-    setSending(true); setSendResult(null);
+    setShowTemplateModal(true); setTemplatesLoading(true); setSendResult(null); setTemplateLpId("");
     try {
-      const r = await fetch("/api/newsletter/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscriberIds: ids, templateId }) });
-      const d = await r.json();
-      if (d.success) setSendResult(d.data); else alert(d.error);
-    } catch { alert("Errore"); }
-    setSending(false);
-  };
-
-  /* ───── Invite to event ───── */
-
-  const [inviteTemplates, setInviteTemplates] = useState<EmailTemplate[]>([]);
-  const [inviteTemplateId, setInviteTemplateId] = useState("");
-
-  const openInviteModal = async () => {
-    setShowInviteModal(true); setInviteResult(null);
-    setInviteCampaign(""); setInviteLpId(""); setInviteTemplateId("");
-    try {
-      // Fetch landing pages and templates in parallel
-      const [lpRes, tplRes] = await Promise.all([
-        fetch("/api/landing-page-config?admin=true").then(r => r.json()).catch(() => ({ success: false })),
+      const [tplRes, lpRes] = await Promise.all([
         fetch("/api/email-templates").then(r => r.json()).catch(() => ({ success: false })),
+        fetch("/api/landing-page-config?admin=true").then(r => r.json()).catch(() => ({ success: false })),
       ]);
+      if (tplRes.success) setTemplates(tplRes.data || []);
       let lps: { id: string; name: string }[] = [];
       if (lpRes.success && lpRes.data) {
         lps = (Array.isArray(lpRes.data) ? lpRes.data : [lpRes.data]).map((lp: { id: string; name: string }) => ({ id: lp.id, name: lp.name }));
@@ -267,26 +239,26 @@ export default function AdminSubscribersPage() {
         }
       }
       setLandingPages(lps);
-      if (tplRes.success) setInviteTemplates(tplRes.data || []);
     } catch {}
+    setTemplatesLoading(false);
   };
 
-  const sendInvites = async () => {
+  const sendWithTemplate = async (templateId: string) => {
     if (!selected.size) return;
-    if (!inviteLpId) { alert("Seleziona un evento/landing page"); return; }
-    if (!inviteTemplateId) { alert("Seleziona un template email"); return; }
-    setInviteSending(true); setInviteResult(null);
-    const emails = Array.from(selected);
+    const ids = getSelectedSubscriberIds();
+    if (!ids.length) { alert("Nessun iscritto newsletter selezionato"); return; }
+    setSending(true); setSendResult(null);
     try {
-      const r = await fetch("/api/newsletter/send-invite", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emails, templateId: inviteTemplateId, landingPageId: inviteLpId, campaign: inviteCampaign || undefined }),
-      });
+      const body: Record<string, unknown> = { subscriberIds: ids, templateId };
+      if (templateLpId) body.landingPageId = templateLpId;
+      const r = await fetch("/api/newsletter/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const d = await r.json();
-      if (d.success) setInviteResult({ sent: d.sent, failed: d.failed }); else alert(d.error);
+      if (d.success) setSendResult(d.data); else alert(d.error);
     } catch { alert("Errore"); }
-    setInviteSending(false);
+    setSending(false);
   };
+
+  /* ───── Invite to event ───── */
 
   /* ───── Tags ───── */
 
@@ -467,7 +439,6 @@ export default function AdminSubscribersPage() {
 
         {/* Edit/email modals still accessible */}
         {renderEditModal()}
-        {renderInviteModal()}
         {renderEmailChoiceModal()}
         {renderTemplateModal()}
         {renderSimpleEmailModal()}
@@ -710,11 +681,6 @@ export default function AdminSubscribersPage() {
             <div className="w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center shrink-0"><Mail size={18} className="text-warm-600" /></div>
             <div className="flex-1"><div className="font-medium text-warm-800 text-sm">Email semplice</div><div className="text-xs text-warm-500">Scrivi oggetto e messaggio personalizzato</div></div>
           </button>
-          <button onClick={() => { setShowEmailChoice(false); openInviteModal(); }}
-            className="w-full flex items-center gap-4 p-4 rounded-lg border border-purple-200 hover:border-purple-400 hover:bg-purple-50 transition-colors text-left">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center shrink-0"><Send size={18} className="text-purple-600" /></div>
-            <div className="flex-1"><div className="font-medium text-warm-800 text-sm">Invita a evento</div><div className="text-xs text-warm-500">Invia invito con link di registrazione tracciato</div></div>
-          </button>
         </div>
       </Modal>
     );
@@ -731,16 +697,29 @@ export default function AdminSubscribersPage() {
             <a href="/admin/email-templates/new" className="text-sm text-warm-700 underline mt-2 inline-block">Crea il primo</a>
           </div>
         ) : (
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-            {templates.map((t) => (
-              <button key={t.id} onClick={() => sendWithTemplate(t.id)} disabled={sending}
-                className="w-full flex items-center gap-4 p-4 rounded-lg border border-warm-200 hover:border-warm-400 hover:bg-warm-50 transition-colors text-left disabled:opacity-50">
-                <div className="w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center shrink-0"><FileText size={18} className="text-warm-600" /></div>
-                <div className="flex-1 min-w-0"><div className="font-medium text-warm-800 text-sm">{t.name}</div><div className="text-xs text-warm-500 truncate">{t.subject || "Nessun oggetto"}</div></div>
-                <Send size={16} className="text-warm-400 shrink-0" />
-              </button>
-            ))}
-          </div>
+          <>
+            {landingPages.length > 0 && (
+              <div className="mb-4 p-3 bg-purple-50 rounded-lg">
+                <label className="block text-xs font-semibold text-purple-700 uppercase tracking-wider mb-1.5">Tracking invito evento (opzionale)</label>
+                <select value={templateLpId} onChange={(e) => setTemplateLpId(e.target.value)}
+                  className="w-full border border-purple-200 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none bg-white">
+                  <option value="">Nessun tracking (email normale)</option>
+                  {landingPages.map((lp) => <option key={lp.id} value={lp.id}>{lp.name} — con tracking invito</option>)}
+                </select>
+                <p className="text-[10px] text-purple-500 mt-1">Se selezioni un evento, il link nel template viene tracciato e l&apos;utente riceve il tag &quot;Invitato&quot;</p>
+              </div>
+            )}
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+              {templates.map((t) => (
+                <button key={t.id} onClick={() => sendWithTemplate(t.id)} disabled={sending}
+                  className="w-full flex items-center gap-4 p-4 rounded-lg border border-warm-200 hover:border-warm-400 hover:bg-warm-50 transition-colors text-left disabled:opacity-50">
+                  <div className="w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center shrink-0"><FileText size={18} className="text-warm-600" /></div>
+                  <div className="flex-1 min-w-0"><div className="font-medium text-warm-800 text-sm">{t.name}</div><div className="text-xs text-warm-500 truncate">{t.subject || "Nessun oggetto"}</div></div>
+                  <Send size={16} className="text-warm-400 shrink-0" />
+                </button>
+              ))}
+            </div>
+          </>
         )}
         {sendResult && <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">Inviate: {sendResult.sent} &middot; Fallite: {sendResult.failed}</div>}
         {sending && <div className="mt-4 flex items-center gap-2 text-warm-500 text-sm"><Loader2 size={16} className="animate-spin" /> Invio in corso...</div>}
@@ -831,56 +810,6 @@ export default function AdminSubscribersPage() {
     );
   }
 
-  function renderInviteModal() {
-    if (!showInviteModal) return null;
-    return (
-      <Modal onClose={() => setShowInviteModal(false)} title="Invita a Evento" subtitle={`${selected.size} destinatari`}>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Evento / Landing Page <span className="text-red-400">*</span></label>
-            <select value={inviteLpId} onChange={(e) => setInviteLpId(e.target.value)}
-              className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white">
-              <option value="">Seleziona evento...</option>
-              {landingPages.map((lp) => <option key={lp.id} value={lp.id}>{lp.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Template Email <span className="text-red-400">*</span></label>
-            {inviteTemplates.length === 0 ? (
-              <p className="text-sm text-warm-400">Nessun template disponibile. <a href="/admin/email-templates/new" className="underline">Creane uno</a></p>
-            ) : (
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {inviteTemplates.map((t) => (
-                  <button key={t.id} onClick={() => setInviteTemplateId(t.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors ${inviteTemplateId === t.id ? "border-purple-400 bg-purple-50" : "border-warm-200 hover:border-warm-400 hover:bg-warm-50"}`}>
-                    <div className="w-8 h-8 rounded bg-warm-100 flex items-center justify-center shrink-0"><FileText size={14} className="text-warm-600" /></div>
-                    <div className="flex-1 min-w-0"><div className="font-medium text-warm-800 text-sm">{t.name}</div><div className="text-xs text-warm-500 truncate">{t.subject || "Nessun oggetto"}</div></div>
-                    {inviteTemplateId === t.id && <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M5 13l4 4L19 7" /></svg></div>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Campagna (opzionale)</label>
-            <input type="text" value={inviteCampaign} onChange={(e) => setInviteCampaign(e.target.value)} placeholder="Es. MDW 2026 - Batch 1"
-              className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
-          </div>
-          <div className="bg-purple-50 rounded-lg p-3 text-xs text-purple-700">
-            <b>Tracking attivo:</b> il link nel template verrà personalizzato per ogni destinatario con un token unico. Potrai tracciare apertura, click e registrazione nelle Analitiche Evento.
-          </div>
-        </div>
-        {inviteResult && <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">Inviate: {inviteResult.sent} &middot; Fallite: {inviteResult.failed}</div>}
-        <div className="mt-6 flex justify-end gap-3">
-          <button onClick={() => setShowInviteModal(false)} className="px-4 py-2 text-sm text-warm-600">Annulla</button>
-          <button onClick={sendInvites} disabled={inviteSending || !inviteLpId || !inviteTemplateId}
-            className="flex items-center gap-2 bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors">
-            {inviteSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} {inviteSending ? "Invio..." : "Invia inviti"}
-          </button>
-        </div>
-      </Modal>
-    );
-  }
 }
 
 /* ───── Helpers ───── */

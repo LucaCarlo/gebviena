@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 import { sendMail } from "@/lib/mail";
 import { renderEmailTemplate, parseBlocks } from "@/lib/email-template-renderer";
+import { assignTagBySlug } from "@/lib/tags";
+import crypto from "crypto";
 
 export async function POST(req: Request) {
   const auth = await getAuthUser();
@@ -11,7 +13,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { subscriberIds, subject, html, templateId } = await req.json();
+    const { subscriberIds, subject, html, templateId, landingPageId } = await req.json();
 
     if (!subscriberIds || !Array.isArray(subscriberIds) || subscriberIds.length === 0) {
       return NextResponse.json({ success: false, error: "Seleziona almeno un destinatario" }, { status: 400 });
@@ -39,28 +41,77 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Oggetto e corpo email richiesti" }, { status: 400 });
     }
 
+    // Check if template uses {{eventLink}} and we have a landing page → enable tracking
+    const hasEventLink = template?.blocks?.includes("eventLink") || false;
+    const enableTracking = hasEventLink && !!landingPageId;
+
+    // Resolve landing page URL for tracking
+    let landingPageUrl = "";
+    const siteUrl = process.env.SITE_URL || process.env.NEXTAUTH_URL || "https://dev.gebruederthonetvienna.com";
+    if (enableTracking) {
+      const lp = await prisma.landingPageConfig.findUnique({
+        where: { id: landingPageId },
+        select: { permalink: true },
+      });
+      landingPageUrl = lp ? `${siteUrl}/${lp.permalink}` : `${siteUrl}/contatti/landing-page`;
+    }
+
     let sent = 0;
     let failed = 0;
-    const siteUrl = process.env.SITE_URL || process.env.NEXTAUTH_URL || "https://dev.gebruederthonetvienna.com";
 
     for (const sub of subscribers) {
       let emailHtml: string;
 
       if (template) {
+        // Generate per-subscriber tracking if enabled
+        let eventLink = `${siteUrl}/contatti/landing-page`;
+        let pixelTag = "";
+
+        if (enableTracking) {
+          const token = crypto.randomUUID();
+          eventLink = `${landingPageUrl}?inv=${token}`;
+          pixelTag = `<img src="${siteUrl}/api/event-invitations/pixel?token=${token}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;" />`;
+
+          // Create invitation record
+          await prisma.eventInvitation.create({
+            data: {
+              email: sub.email.toLowerCase().trim(),
+              landingPageId,
+              token,
+            },
+          }).catch((err) => console.error("Failed to create invitation:", err));
+        }
+
         // Render template with per-subscriber variables
         emailHtml = renderEmailTemplate(parseBlocks(template.blocks), {
           firstName: sub.firstName || "",
           lastName: sub.lastName || "",
           email: sub.email,
-          eventLink: `${siteUrl}/contatti/landing-page`,
+          eventLink,
         });
+
+        // Append tracking pixel
+        if (pixelTag) {
+          if (emailHtml.includes("</body>")) {
+            emailHtml = emailHtml.replace("</body>", `${pixelTag}</body>`);
+          } else {
+            emailHtml += pixelTag;
+          }
+        }
       } else {
         emailHtml = html;
       }
 
       const ok = await sendMail(sub.email, emailSubject, emailHtml);
-      if (ok) sent++;
-      else failed++;
+      if (ok) {
+        sent++;
+        // Assign "invitato" tag when tracking is enabled
+        if (enableTracking) {
+          await assignTagBySlug(sub.email.toLowerCase().trim(), "invitato", "Invitato").catch(() => {});
+        }
+      } else {
+        failed++;
+      }
     }
 
     return NextResponse.json({
