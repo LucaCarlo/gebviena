@@ -47,7 +47,7 @@ export default async function UfficioStampaPage() {
             </div>
           </div>
           {/* Right: image */}
-          <div className="relative bg-warm-200 min-h-[400px]">
+          <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
             <Image
               src={imgs.main}
               alt="Ufficio Stampa"

@@ -10,7 +10,7 @@ export default function SiteLayout({
 }) {
   return (
     <RecaptchaProvider>
-      <div className="bg-white min-h-screen relative">
+      <div className="bg-white min-h-screen relative overflow-hidden" style={{ marginLeft: 'var(--site-margin)', marginRight: 'var(--site-margin)' }}>
         <Header />
         <ClientMain>{children}</ClientMain>
         <Footer />

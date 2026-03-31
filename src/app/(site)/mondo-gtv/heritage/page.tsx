@@ -268,7 +268,7 @@ export default async function HeritagePage() {
       <section className="w-full bg-warm-50" style={{ minHeight: "110vh" }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "110vh" }}>
           {/* Left: image — full height */}
-          <div className="relative bg-warm-200 min-h-[500px]">
+          <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
             <Image
               src={imgs["coin-authenticity"]}
               alt="La Moneta GTV — simbolo di autenticità"

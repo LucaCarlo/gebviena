@@ -37,7 +37,7 @@ export default async function MondoGTVPage() {
       </section>
 
       {/* Heritage Section */}
-      <section className="relative h-[60vh] overflow-hidden">
+      <section className="relative overflow-hidden" style={{ aspectRatio: "16/7" }}>
         <Image
           src={imgs["heritage-section"]}
           alt="Heritage"

@@ -68,7 +68,7 @@ export default async function BrandManifestoPage() {
       <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "100vh" }}>
           {/* Left: historical image — 50% width, full height */}
-          <div className="relative bg-warm-200 min-h-[400px]">
+          <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
             <Image
               src={imgs["born-in-vienna"]}
               alt="Michael Thonet 1853 — Gebrüder Thonet"

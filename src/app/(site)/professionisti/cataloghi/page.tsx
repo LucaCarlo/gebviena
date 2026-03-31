@@ -93,7 +93,7 @@ export default function CataloghiPage() {
 
 function CatalogSection({ item, imageRight }: { item: Catalog; imageRight: boolean }) {
   const imageEl = (
-    <div className="relative bg-warm-200 min-h-[400px]">
+    <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
       {item.imageUrl && (
         <Image
           src={item.imageUrl}

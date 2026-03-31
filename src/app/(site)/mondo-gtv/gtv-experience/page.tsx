@@ -139,7 +139,7 @@ export default async function GtvExperiencePage() {
           </div>
 
           {/* Right: image */}
-          <div className="relative bg-warm-200 min-h-[400px]">
+          <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
             <Image
               src={imgs.stories}
               alt="Storie, visioni, ispirazioni — Interno Marche"
@@ -323,7 +323,7 @@ export default async function GtvExperiencePage() {
       <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "100vh" }}>
           {/* Left: image */}
-          <div className="relative bg-warm-200 min-h-[400px]">
+          <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
             <Image
               src={imgs.gamfratesi}
               alt="Vivi la GTV Experience"

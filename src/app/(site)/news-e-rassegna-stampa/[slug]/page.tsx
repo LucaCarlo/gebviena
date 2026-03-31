@@ -119,7 +119,7 @@ function ImageTextSection({ section, imageRight }: { section: StoriaSection; ima
   if (!hasContent) return null;
 
   const imageEl = (
-    <div className="relative bg-warm-200 min-h-[400px]">
+    <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
       {section.imageUrl && (
         <Image src={section.imageUrl} alt={section.title || ""} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
       )}
@@ -252,7 +252,7 @@ export default function NewsDetailPage() {
         <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "100vh" }}>
             {/* Left: image */}
-            <div className="relative bg-warm-200 min-h-[400px]">
+            <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
               {article.imageUrl && (
                 <Image src={article.imageUrl} alt={article.title} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
               )}
