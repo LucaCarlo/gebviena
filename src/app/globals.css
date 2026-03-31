@@ -5,9 +5,9 @@
 :root {
   --site-margin: 0px;
 }
-@media (min-width: 1700px) {
+@media (min-width: 1670px) {
   :root {
-    --site-margin: clamp(0px, calc((100vw - 1700px) * 0.568), 125px);
+    --site-margin: calc((100vw - 1670px) / 2);
   }
 }
 
@@ -41,7 +41,7 @@
   /* GTV container — matches original max-widths */
   .gtv-container {
     @apply mx-auto w-full px-4 md:px-8 lg:px-12;
-    max-width: 1660px;
+    max-width: 1670px;
   }
   .gtv-container-narrow {
     @apply mx-auto w-full px-4 md:px-8;

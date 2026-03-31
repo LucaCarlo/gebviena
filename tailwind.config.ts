@@ -63,7 +63,7 @@ const config: Config = {
         "8xl": "88rem",
         "content": "58.25rem",
         "wide": "73.125rem",
-        "site": "1660px",
+        "site": "1670px",
       },
       spacing: {
         "18": "4.5rem",
