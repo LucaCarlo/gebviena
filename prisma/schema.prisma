@@ -331,13 +331,22 @@ model PointOfSale {
 model NewsletterSubscriber {
   id             String   @id @default(cuid())
   email          String   @unique
-  firstName      String? @db.Text
-  lastName       String? @db.Text
-  company        String? @db.Text
-  phone          String? @db.Text
+  firstName      String?  @db.Text
+  lastName       String?  @db.Text
+  company        String?  @db.Text
+  phone          String?  @db.Text
+  profile        String?  @db.Text
+  address        String?  @db.Text
+  city           String?  @db.Text
+  zip            String?  @db.VarChar(20)
+  province       String?  @db.VarChar(10)
+  country        String?  @db.Text
+  website        String?  @db.Text
+  notes          String?  @db.Text
   acceptsPrivacy Boolean  @default(false)
   acceptsUpdates Boolean  @default(false)
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt @default(now())
 }
 
 model ContactSubmission {

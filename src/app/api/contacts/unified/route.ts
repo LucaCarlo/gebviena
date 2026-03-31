@@ -9,9 +9,18 @@ interface UnifiedContact {
   lastName: string | null;
   company: string | null;
   phone: string | null;
+  profile: string | null;
+  address: string | null;
+  city: string | null;
+  zip: string | null;
+  province: string | null;
+  country: string | null;
+  website: string | null;
+  notes: string | null;
   source: string; // "newsletter" | "evento" | "entrambi"
   subscriberId: string | null;
   createdAt: string;
+  updatedAt: string | null;
   tags: { id: string; name: string; slug: string; color: string }[];
 }
 
@@ -39,9 +48,18 @@ export async function GET() {
       lastName: s.lastName,
       company: s.company,
       phone: s.phone,
+      profile: s.profile,
+      address: s.address,
+      city: s.city,
+      zip: s.zip,
+      province: s.province,
+      country: s.country,
+      website: s.website,
+      notes: s.notes,
       source: "newsletter",
       subscriberId: s.id,
       createdAt: s.createdAt.toISOString(),
+      updatedAt: s.updatedAt?.toISOString() || null,
       tags: [],
     });
   }
@@ -61,9 +79,18 @@ export async function GET() {
         lastName: e.lastName,
         company: null,
         phone: null,
+        profile: null,
+        address: null,
+        city: null,
+        zip: null,
+        province: null,
+        country: null,
+        website: null,
+        notes: null,
         source: "evento",
         subscriberId: null,
         createdAt: e.createdAt.toISOString(),
+        updatedAt: null,
         tags: [],
       });
     }

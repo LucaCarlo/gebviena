@@ -21,6 +21,7 @@ export async function POST(req: Request) {
       const email = (row.email || "").trim().toLowerCase();
       if (!email || !email.includes("@")) { skipped++; continue; }
 
+      const trimOrNull = (v: string | undefined | null) => v?.trim() || null;
       await prisma.newsletterSubscriber.upsert({
         where: { email },
         update: {
@@ -28,13 +29,29 @@ export async function POST(req: Request) {
           ...(row.lastName && { lastName: row.lastName.trim() }),
           ...(row.company && { company: row.company.trim() }),
           ...(row.phone && { phone: row.phone.trim() }),
+          ...(row.profile && { profile: row.profile.trim() }),
+          ...(row.address && { address: row.address.trim() }),
+          ...(row.city && { city: row.city.trim() }),
+          ...(row.zip && { zip: row.zip.trim() }),
+          ...(row.province && { province: row.province.trim() }),
+          ...(row.country && { country: row.country.trim() }),
+          ...(row.website && { website: row.website.trim() }),
+          ...(row.notes && { notes: row.notes.trim() }),
         },
         create: {
           email,
-          firstName: (row.firstName || "").trim() || null,
-          lastName: (row.lastName || "").trim() || null,
-          company: (row.company || "").trim() || null,
-          phone: (row.phone || "").trim() || null,
+          firstName: trimOrNull(row.firstName),
+          lastName: trimOrNull(row.lastName),
+          company: trimOrNull(row.company),
+          phone: trimOrNull(row.phone),
+          profile: trimOrNull(row.profile),
+          address: trimOrNull(row.address),
+          city: trimOrNull(row.city),
+          zip: trimOrNull(row.zip),
+          province: trimOrNull(row.province),
+          country: trimOrNull(row.country),
+          website: trimOrNull(row.website),
+          notes: trimOrNull(row.notes),
           acceptsPrivacy: true,
           acceptsUpdates: true,
         },
