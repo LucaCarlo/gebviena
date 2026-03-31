@@ -245,39 +245,44 @@ export default function AdminSubscribersPage() {
 
   /* ───── Invite to event ───── */
 
+  const [inviteTemplates, setInviteTemplates] = useState<EmailTemplate[]>([]);
+  const [inviteTemplateId, setInviteTemplateId] = useState("");
+
   const openInviteModal = async () => {
     setShowInviteModal(true); setInviteResult(null);
-    setInviteSubject(""); setInviteMessage(""); setInviteCampaign(""); setInviteLpId("");
+    setInviteCampaign(""); setInviteLpId(""); setInviteTemplateId("");
     try {
-      // Try admin endpoint first, fallback to public list
+      // Fetch landing pages and templates in parallel
+      const [lpRes, tplRes] = await Promise.all([
+        fetch("/api/landing-page-config?admin=true").then(r => r.json()).catch(() => ({ success: false })),
+        fetch("/api/email-templates").then(r => r.json()).catch(() => ({ success: false })),
+      ]);
       let lps: { id: string; name: string }[] = [];
-      const r1 = await fetch("/api/landing-page-config?admin=true");
-      const d1 = await r1.json();
-      if (d1.success && d1.data) {
-        lps = d1.data.map((lp: { id: string; name: string }) => ({ id: lp.id, name: lp.name }));
+      if (lpRes.success && lpRes.data) {
+        lps = (Array.isArray(lpRes.data) ? lpRes.data : [lpRes.data]).map((lp: { id: string; name: string }) => ({ id: lp.id, name: lp.name }));
       }
       if (!lps.length) {
-        // Fallback: get all active landing pages via public endpoint
-        const r2 = await fetch("/api/landing-page-config");
-        const d2 = await r2.json();
-        if (d2.success && d2.data) {
-          const data = Array.isArray(d2.data) ? d2.data : [d2.data];
+        const r2 = await fetch("/api/landing-page-config").then(r => r.json()).catch(() => ({ success: false }));
+        if (r2.success && r2.data) {
+          const data = Array.isArray(r2.data) ? r2.data : [r2.data];
           lps = data.map((lp: { id: string; name: string }) => ({ id: lp.id, name: lp.name }));
         }
       }
       setLandingPages(lps);
+      if (tplRes.success) setInviteTemplates(tplRes.data || []);
     } catch {}
   };
 
   const sendInvites = async () => {
     if (!selected.size) return;
     if (!inviteLpId) { alert("Seleziona un evento/landing page"); return; }
+    if (!inviteTemplateId) { alert("Seleziona un template email"); return; }
     setInviteSending(true); setInviteResult(null);
     const emails = Array.from(selected);
     try {
       const r = await fetch("/api/newsletter/send-invite", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emails, subject: inviteSubject || undefined, message: inviteMessage || undefined, landingPageId: inviteLpId, campaign: inviteCampaign || undefined }),
+        body: JSON.stringify({ emails, templateId: inviteTemplateId, landingPageId: inviteLpId, campaign: inviteCampaign || undefined }),
       });
       const d = await r.json();
       if (d.success) setInviteResult({ sent: d.sent, failed: d.failed }); else alert(d.error);
@@ -842,28 +847,35 @@ export default function AdminSubscribersPage() {
             </select>
           </div>
           <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Template Email <span className="text-red-400">*</span></label>
+            {inviteTemplates.length === 0 ? (
+              <p className="text-sm text-warm-400">Nessun template disponibile. <a href="/admin/email-templates/new" className="underline">Creane uno</a></p>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {inviteTemplates.map((t) => (
+                  <button key={t.id} onClick={() => setInviteTemplateId(t.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors ${inviteTemplateId === t.id ? "border-purple-400 bg-purple-50" : "border-warm-200 hover:border-warm-400 hover:bg-warm-50"}`}>
+                    <div className="w-8 h-8 rounded bg-warm-100 flex items-center justify-center shrink-0"><FileText size={14} className="text-warm-600" /></div>
+                    <div className="flex-1 min-w-0"><div className="font-medium text-warm-800 text-sm">{t.name}</div><div className="text-xs text-warm-500 truncate">{t.subject || "Nessun oggetto"}</div></div>
+                    {inviteTemplateId === t.id && <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M5 13l4 4L19 7" /></svg></div>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Campagna (opzionale)</label>
             <input type="text" value={inviteCampaign} onChange={(e) => setInviteCampaign(e.target.value)} placeholder="Es. MDW 2026 - Batch 1"
               className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Oggetto email</label>
-            <input type="text" value={inviteSubject} onChange={(e) => setInviteSubject(e.target.value)} placeholder="Sei invitato al nostro evento"
-              className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Messaggio (opzionale)</label>
-            <textarea value={inviteMessage} onChange={(e) => setInviteMessage(e.target.value)} rows={4} placeholder="Siamo lieti di invitarti..."
-              className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
-          </div>
           <div className="bg-purple-50 rounded-lg p-3 text-xs text-purple-700">
-            <b>Tracking attivo:</b> ogni destinatario riceverà un link personalizzato. Potrai tracciare apertura email, click sul link e registrazione nelle Analitiche Evento.
+            <b>Tracking attivo:</b> il link nel template verrà personalizzato per ogni destinatario con un token unico. Potrai tracciare apertura, click e registrazione nelle Analitiche Evento.
           </div>
         </div>
         {inviteResult && <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">Inviate: {inviteResult.sent} &middot; Fallite: {inviteResult.failed}</div>}
         <div className="mt-6 flex justify-end gap-3">
           <button onClick={() => setShowInviteModal(false)} className="px-4 py-2 text-sm text-warm-600">Annulla</button>
-          <button onClick={sendInvites} disabled={inviteSending || !inviteLpId}
+          <button onClick={sendInvites} disabled={inviteSending || !inviteLpId || !inviteTemplateId}
             className="flex items-center gap-2 bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors">
             {inviteSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} {inviteSending ? "Invio..." : "Invia inviti"}
           </button>
