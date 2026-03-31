@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Search, Download, Trash2, CheckCircle2, XCircle, Users, Send, X, Mail,
-  Tag, Plus, Loader2, Upload, FileText, Pencil, Eye, Building2, Phone,
-  MapPin, Globe, StickyNote, User, ChevronLeft,
+  Tag, Plus, Loader2, Upload, FileText, Pencil, Eye, Building2,
+  MapPin, StickyNote, User, ChevronLeft,
 } from "lucide-react";
 
 /* ───── Types ───── */
@@ -322,10 +322,6 @@ export default function AdminSubscribersPage() {
   /* ───── Contact detail helpers ───── */
 
   const contactName = (c: UnifiedContact) => [c.firstName, c.lastName].filter(Boolean).join(" ") || "—";
-  const contactLocation = (c: UnifiedContact) => {
-    const parts = [c.address, [c.zip, c.city].filter(Boolean).join(" "), c.province, c.country].filter(Boolean);
-    return parts.join(", ");
-  };
 
   /* ───── Render ───── */
 
