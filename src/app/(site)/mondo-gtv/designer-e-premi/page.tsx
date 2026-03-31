@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getRelatedCardImages } from "@/lib/page-images";
 import PageHero from "@/components/PageHero";
 import type { Metadata } from "next";
 import DesignerGrid from "./DesignerGrid";
@@ -64,19 +65,7 @@ export default async function DesignerPremiPage() {
   const productBySlug = new Map(awardProducts.map((p) => [p.slug, p]));
 
   // Related page covers
-  const relatedSlides = await prisma.heroSlide.findMany({
-    where: {
-      page: { in: RELATED_PAGES.map((p) => p.page) },
-      isActive: true,
-    },
-    orderBy: { sortOrder: "asc" },
-  });
-  const slidesByPage = new Map<string, (typeof relatedSlides)[0]>();
-  for (const slide of relatedSlides) {
-    if (!slidesByPage.has(slide.page)) {
-      slidesByPage.set(slide.page, slide);
-    }
-  }
+  const cardImages = await getRelatedCardImages(RELATED_PAGES.map((p) => p.page));
 
   return (
     <>
@@ -229,9 +218,7 @@ export default async function DesignerPremiPage() {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {RELATED_PAGES.map((rp) => {
-              const slide = slidesByPage.get(rp.page);
-              const coverSrc =
-                slide?.coverImage || slide?.imageUrl || null;
+              const coverSrc = cardImages[rp.page] || null;
               return (
                 <Link key={rp.page} href={rp.href} className="group block">
                   <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">

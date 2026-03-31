@@ -196,6 +196,7 @@ export const PAGE_IMAGES_CONFIG: {
     page: "heritage",
     label: "Heritage",
     images: [
+      { section: "card", label: "Card — Potrebbe interessarti", defaultUrl: "", aspectRatio: 3/4 },
       { section: "thonet-family", label: "Michael Thonet e figli", defaultUrl: "/images/Michael-Thonet-centre-with-his-five-sons.jpg" },
       { section: "sedia-n1", label: "Sedia N.1", defaultUrl: "/images/heritage-sedia-n1.webp" },
       { section: "sedia-n4", label: "Sedia N.4", defaultUrl: "/images/heritage-sedia-n4.webp" },
@@ -210,6 +211,7 @@ export const PAGE_IMAGES_CONFIG: {
     page: "brand-manifesto",
     label: "Brand Manifesto",
     images: [
+      { section: "card", label: "Card — Potrebbe interessarti", defaultUrl: "", aspectRatio: 3/4 },
       { section: "born-in-vienna", label: "Born in Vienna — Michael Thonet 1853", defaultUrl: "/images/michael-thonet-1853.jpg" },
     ],
   },
@@ -217,6 +219,7 @@ export const PAGE_IMAGES_CONFIG: {
     page: "curvatura-legno",
     label: "La Curvatura del Legno",
     images: [
+      { section: "card", label: "Card — Potrebbe interessarti", defaultUrl: "", aspectRatio: 3/4 },
       { section: "tecnica-legname", label: "La Tecnica", defaultUrl: "/images/tecnica-legname.webp" },
       { section: "curvatura-detail", label: "Curvatura — dettaglio", defaultUrl: "/images/curvatura-img-1536x865.webp" },
       { section: "brevetto", label: "Il Brevetto", defaultUrl: "/images/curvatura-brevetto.webp" },
@@ -226,13 +229,22 @@ export const PAGE_IMAGES_CONFIG: {
     page: "sostenibilita",
     label: "Sostenibilità",
     images: [
+      { section: "card", label: "Card — Potrebbe interessarti", defaultUrl: "", aspectRatio: 3/4 },
       { section: "legno-fsc", label: "Legno Certificato FSC", defaultUrl: "/images/sostenibilita-legno.jpg" },
+    ],
+  },
+  {
+    page: "designer-e-premi",
+    label: "Designer e Premi",
+    images: [
+      { section: "card", label: "Card — Potrebbe interessarti", defaultUrl: "", aspectRatio: 3/4 },
     ],
   },
   {
     page: "gtv-experience",
     label: "GTV Experience",
     images: [
+      { section: "card", label: "Card — Potrebbe interessarti", defaultUrl: "", aspectRatio: 3/4 },
       { section: "stories", label: "Storie, visioni, ispirazioni", defaultUrl: "/images/experience-stories.webp" },
       { section: "lobby", label: "Lobby", defaultUrl: "/images/experience-lobby.webp" },
       { section: "landscape-1", label: "Veduta 1", defaultUrl: "/images/foto-landscape-double-1.webp" },

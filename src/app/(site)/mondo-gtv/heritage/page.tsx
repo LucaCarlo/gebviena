@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
-import { getPageImages } from "@/lib/page-images";
+import { getPageImages, getRelatedCardImages } from "@/lib/page-images";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -40,23 +39,10 @@ const DEFAULTS: Record<string, string> = {
 };
 
 export default async function HeritagePage() {
-  const [imgs, relatedSlides] = await Promise.all([
+  const [imgs, cardImages] = await Promise.all([
     getPageImages("heritage", DEFAULTS),
-    prisma.heroSlide.findMany({
-      where: {
-        page: { in: RELATED_PAGES.map((p) => p.page) },
-        isActive: true,
-      },
-      orderBy: { sortOrder: "asc" },
-    }),
+    getRelatedCardImages(RELATED_PAGES.map((p) => p.page)),
   ]);
-
-  const slidesByPage = new Map<string, (typeof relatedSlides)[0]>();
-  for (const slide of relatedSlides) {
-    if (!slidesByPage.has(slide.page)) {
-      slidesByPage.set(slide.page, slide);
-    }
-  }
 
   return (
     <>
@@ -319,9 +305,7 @@ export default async function HeritagePage() {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {RELATED_PAGES.map((rp) => {
-              const slide = slidesByPage.get(rp.page);
-              const coverSrc =
-                slide?.coverImage || slide?.imageUrl || null;
+              const coverSrc = cardImages[rp.page] || null;
               return (
                 <Link key={rp.page} href={rp.href} className="group block">
                   <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">

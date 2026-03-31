@@ -18,3 +18,39 @@ export async function getPageImages(
   }
   return result;
 }
+
+/**
+ * Fetch card images for related pages.
+ * Priority: PageImage "card" section > HeroSlide coverImage > HeroSlide imageUrl
+ */
+export async function getRelatedCardImages(
+  pages: string[]
+): Promise<Record<string, string>> {
+  const [cardImages, heroSlides] = await Promise.all([
+    prisma.pageImage.findMany({
+      where: { page: { in: pages }, section: "card" },
+    }),
+    prisma.heroSlide.findMany({
+      where: { page: { in: pages }, isActive: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
+
+  const result: Record<string, string> = {};
+
+  // First, set from hero slides (fallback)
+  for (const slide of heroSlides) {
+    if (!result[slide.page]) {
+      result[slide.page] = slide.coverImage || slide.imageUrl;
+    }
+  }
+
+  // Override with dedicated card images from PageImage
+  for (const img of cardImages) {
+    if (img.imageUrl) {
+      result[img.page] = img.imageUrl;
+    }
+  }
+
+  return result;
+}
