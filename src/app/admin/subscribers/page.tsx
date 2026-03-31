@@ -78,8 +78,6 @@ export default function AdminSubscribersPage() {
   const [landingPages, setLandingPages] = useState<{ id: string; name: string }[]>([]);
   const [inviteLpId, setInviteLpId] = useState("");
   const [inviteCampaign, setInviteCampaign] = useState("");
-  const [inviteSubject, setInviteSubject] = useState("");
-  const [inviteMessage, setInviteMessage] = useState("");
   const [inviteSending, setInviteSending] = useState(false);
   const [inviteResult, setInviteResult] = useState<{ sent: number; failed: number } | null>(null);
   const [sending, setSending] = useState(false);
