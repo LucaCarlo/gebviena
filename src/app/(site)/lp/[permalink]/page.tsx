@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
 interface LandingConfig {
-  id?: string;
+  id: string;
   heroTitle: string;
   heroSubtitle: string | null;
   heroLocation: string | null;
@@ -30,6 +31,7 @@ const PROFILE_OPTIONS = [
 ];
 
 const DEFAULT_CONFIG: LandingConfig = {
+  id: "",
   heroTitle: "Milan Design Week 2026",
   heroSubtitle: "Come and experience the True Over Time Collection with us.",
   heroLocation:
@@ -49,6 +51,8 @@ const DEFAULT_CONFIG: LandingConfig = {
 };
 
 export default function LandingPage() {
+  const params = useParams();
+  const permalink = params.permalink as string;
   const [config, setConfig] = useState<LandingConfig>(DEFAULT_CONFIG);
   const [form, setForm] = useState({
     firstName: "",
@@ -70,7 +74,7 @@ export default function LandingPage() {
   const [serverError, setServerError] = useState("");
 
   useEffect(() => {
-    fetch("/api/landing-page-config")
+    fetch(`/api/landing-page-config?permalink=${permalink}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.data) {
@@ -151,7 +155,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="font-sans">
+    <div className="font-serif">
       {/* Banner — not full width, centered with max-width */}
       {config.bannerImage && (
         <section className="pt-6 md:pt-10">
@@ -225,7 +229,7 @@ export default function LandingPage() {
                   />
                 </svg>
               </div>
-              <h2 className="font-sans text-[28px] md:text-[36px] text-dark tracking-tight font-light mb-4">
+              <h2 className="font-serif text-[28px] md:text-[36px] text-dark tracking-tight font-light mb-4">
                 {config.successTitle}
               </h2>
               {config.successMessage && (

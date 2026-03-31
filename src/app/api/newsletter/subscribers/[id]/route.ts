@@ -10,12 +10,19 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   try {
     const body = await req.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: any = {};
+    if (body.acceptsPrivacy !== undefined) updateData.acceptsPrivacy = body.acceptsPrivacy;
+    if (body.acceptsUpdates !== undefined) updateData.acceptsUpdates = body.acceptsUpdates;
+    if (body.firstName !== undefined) updateData.firstName = body.firstName || null;
+    if (body.lastName !== undefined) updateData.lastName = body.lastName || null;
+    if (body.company !== undefined) updateData.company = body.company || null;
+    if (body.phone !== undefined) updateData.phone = body.phone || null;
+    if (body.email !== undefined) updateData.email = body.email;
+
     const data = await prisma.newsletterSubscriber.update({
       where: { id: params.id },
-      data: {
-        acceptsPrivacy: body.acceptsPrivacy,
-        acceptsUpdates: body.acceptsUpdates,
-      },
+      data: updateData,
     });
 
     return NextResponse.json({ success: true, data });

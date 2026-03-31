@@ -7,7 +7,7 @@ export async function PUT(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const result = await requirePermission("newsletter", "edit");
+  const result = await requirePermission("landing_page", "edit");
   if (isErrorResponse(result)) return result;
 
   try {
@@ -36,7 +36,7 @@ export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
-  const result = await requirePermission("newsletter", "delete");
+  const result = await requirePermission("landing_page", "delete");
   if (isErrorResponse(result)) return result;
 
   try {

@@ -95,6 +95,7 @@ export const USER_ROLES = [
 // ─── Permission System ────────────────────────────────────────────────────────
 
 export const PERMISSION_RESOURCES = [
+  { key: "dashboard", label: "Dashboard" },
   { key: "users", label: "Utenti" },
   { key: "roles", label: "Ruoli" },
   { key: "products", label: "Prodotti" },
@@ -106,7 +107,7 @@ export const PERMISSION_RESOURCES = [
   { key: "news", label: "News" },
   { key: "stores", label: "Negozi" },
   { key: "agents", label: "Agenti" },
-  { key: "newsletter", label: "Newsletter" },
+  { key: "newsletter", label: "Utenti" },
   { key: "contacts", label: "Messaggi" },
   { key: "forms", label: "Forms" },
   { key: "media", label: "Media" },
@@ -116,6 +117,9 @@ export const PERMISSION_RESOURCES = [
   { key: "analytics", label: "Analisi Traffico" },
   { key: "firma", label: "Firma Email" },
   { key: "import_export", label: "Import/Export" },
+  { key: "landing_page", label: "Landing Page" },
+  { key: "email_templates", label: "Template Email" },
+  { key: "email_analytics", label: "Analitiche Email" },
 ] as const;
 
 export const PERMISSION_ACTIONS = [

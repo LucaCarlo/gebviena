@@ -489,6 +489,9 @@ model FormConfig {
 model LandingPageConfig {
   id              String   @id @default(cuid())
   slug            String   @unique @default("default")
+  name            String   @default("Landing Page") @db.Text
+  permalink       String   @unique @default("evento")
+  type            String   @default("evento") // evento, promo, custom
   bannerImage     String?  @db.Text
   logoImage       String?  @db.Text
   heroTitle       String   @db.Text @default("Milan Design Week 2026")
@@ -507,11 +510,14 @@ model LandingPageConfig {
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  registrations   EventRegistration[]
 }
 
 model EventRegistration {
   id               String    @id @default(cuid())
   uuid             String    @unique @default(cuid())
+  landingPageId    String?
+  landingPage      LandingPageConfig? @relation(fields: [landingPageId], references: [id])
   firstName        String
   lastName         String
   email            String
@@ -530,4 +536,42 @@ model EventRegistration {
   @@index([email])
   @@index([qrCode])
   @@index([createdAt])
+  @@index([landingPageId])
+}
+
+// ─── Tag System ─────────────────────────────────────────────────────────
+
+model Tag {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  slug      String       @unique
+  color     String       @default("#6b7280")
+  createdAt DateTime     @default(now())
+  contacts  ContactTag[]
+}
+
+model ContactTag {
+  id        String   @id @default(cuid())
+  email     String
+  tagId     String
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([email, tagId])
+  @@index([email])
+  @@index([tagId])
+}
+
+// ─── Email Templates ────────────────────────────────────────────────────
+
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  subject     String   @db.Text
+  blocks      String   @db.MediumText
+  previewHtml String?  @db.MediumText
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

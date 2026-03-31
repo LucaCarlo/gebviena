@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
-import { sendMail } from "@/lib/mail";
 import {
   generateQRCodeDataUrl,
   sendRegistrationEmailWithConfig,
   getEmailConfig,
 } from "@/lib/event-registration";
+import { assignTagBySlug } from "@/lib/tags";
 
 function generateUUID(): string {
   return crypto.randomUUID();
@@ -27,6 +27,7 @@ export async function POST(req: Request) {
       zipCode,
       privacyAccepted,
       marketingConsent,
+      landingPageId,
     } = body;
 
     if (!firstName || !lastName || !email || !country || !city || !zipCode) {
@@ -68,18 +69,19 @@ export async function POST(req: Request) {
         privacyAccepted: true,
         marketingConsent: !!marketingConsent,
         qrCode,
+        landingPageId: landingPageId || null,
       },
     });
 
     const qrDataUrl = await generateQRCodeDataUrl(qrCode);
 
+    // Auto-assign "evento" tag
+    assignTagBySlug(email, "evento", "Evento").catch(() => {});
+
     // Send emails in background
     const emailConfig = await getEmailConfig();
     sendRegistrationEmailWithConfig(email, firstName, lastName, qrCode, qrDataUrl, emailConfig).catch(
       (err) => console.error("Registration email failed:", err)
-    );
-    sendAdminNotification(firstName, lastName, email, profile, country, city).catch(
-      (err) => console.error("Admin notification failed:", err)
     );
 
     return NextResponse.json(
@@ -105,51 +107,28 @@ export async function POST(req: Request) {
   }
 }
 
-async function sendAdminNotification(
-  firstName: string,
-  lastName: string,
-  email: string,
-  profile: string | null,
-  country: string,
-  city: string
-) {
-  const adminSetting = await prisma.setting.findUnique({ where: { key: "admin_email" } });
-  const adminEmail = adminSetting?.value || process.env.ADMIN_EMAIL;
-  if (!adminEmail) return;
-
-  const html = `
-    <h2>Nuova registrazione evento</h2>
-    <p><strong>Nome:</strong> ${firstName} ${lastName}</p>
-    <p><strong>Email:</strong> ${email}</p>
-    ${profile ? `<p><strong>Profilo:</strong> ${profile}</p>` : ""}
-    <p><strong>Luogo:</strong> ${city}, ${country}</p>
-    <p style="font-size: 12px; color: #999; margin-top: 20px;">
-      Visualizza tutte le registrazioni nel pannello admin → Registrazioni
-    </p>
-  `;
-
-  await sendMail(adminEmail, `[GTV] Nuova registrazione: ${firstName} ${lastName}`, html);
-}
-
 // Admin GET - list all registrations
 export async function GET(req: Request) {
-  const result = await requirePermission("newsletter", "view");
+  const result = await requirePermission("landing_page", "view");
   if (isErrorResponse(result)) return result;
 
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
   const format = searchParams.get("format");
+  const lpId = searchParams.get("landingPageId");
 
-  const where = search
-    ? {
-        OR: [
-          { firstName: { contains: search } },
-          { lastName: { contains: search } },
-          { email: { contains: search } },
-          { qrCode: { contains: search } },
-        ],
-      }
-    : {};
+  const where: Record<string, unknown> = {};
+  if (search) {
+    where.OR = [
+      { firstName: { contains: search } },
+      { lastName: { contains: search } },
+      { email: { contains: search } },
+      { qrCode: { contains: search } },
+    ];
+  }
+  if (lpId) {
+    where.landingPageId = lpId;
+  }
 
   const data = await prisma.eventRegistration.findMany({
     where,

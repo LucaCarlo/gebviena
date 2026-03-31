@@ -37,11 +37,11 @@ export function buildRegistrationEmailHtml(opts: {
   qrCode: string;
   emailTitle: string;
   emailBody: string;
-  emailFooter: string;
+  signatureHtml?: string;
   qrImageUrl?: string;
   bannerImageUrl?: string;
 }): string {
-  const { firstName, lastName, qrCode, emailTitle, emailBody, emailFooter, qrImageUrl, bannerImageUrl } = opts;
+  const { firstName, lastName, qrCode, emailTitle, emailBody, signatureHtml, qrImageUrl, bannerImageUrl } = opts;
 
   const bodyLines = emailBody
     .replace(/\{\{firstName\}\}/g, firstName)
@@ -50,12 +50,14 @@ export function buildRegistrationEmailHtml(opts: {
     .map((line) => `<p style="font-size: 15px; color: #ffffff; margin: 0 0 10px 0; font-style: italic;">${line}</p>`)
     .join("");
 
-  const footerLines = emailFooter.split("\n").join("<br/>");
-
   const qrSrc = qrImageUrl || "cid:qrcode";
 
   const bannerSection = bannerImageUrl
     ? `<img src="${bannerImageUrl}" alt="Event Banner" width="600" style="display: block; width: 100%; max-width: 600px; height: auto;" />`
+    : "";
+
+  const signatureSection = signatureHtml
+    ? `<div style="padding: 20px 40px;">${signatureHtml}</div>`
     : "";
 
   return `
@@ -86,12 +88,8 @@ export function buildRegistrationEmailHtml(opts: {
         </p>
       </div>
 
-      <!-- Footer -->
-      <div style="background-color: #f5f4f2; padding: 20px 40px; text-align: center;">
-        <p style="font-size: 11px; color: #999; margin: 0;">
-          ${footerLines}
-        </p>
-      </div>
+      <!-- Firma Email -->
+      ${signatureSection}
     </div>
   `;
 }
@@ -135,13 +133,36 @@ async function sendViaBrevoApi(
   return res.json();
 }
 
+async function getDefaultSignatureHtml(): Promise<string> {
+  // Fetch the signatureHtml from the smtp_from_email user, or fallback to first user with a signature
+  const cfg = await getMailConfig();
+  const fromEmail = cfg.smtp_from_email;
+
+  if (fromEmail) {
+    const user = await prisma.adminUser.findFirst({
+      where: { email: fromEmail },
+      select: { signatureHtml: true },
+    });
+    if (user?.signatureHtml) return user.signatureHtml;
+  }
+
+  // Fallback: first admin user that has a signatureHtml
+  const fallback = await prisma.adminUser.findFirst({
+    where: { signatureHtml: { not: null } },
+    select: { signatureHtml: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return fallback?.signatureHtml || "";
+}
+
 export async function sendRegistrationEmailWithConfig(
   toEmail: string,
   firstName: string,
   lastName: string,
   qrCode: string,
   qrDataUrl: string,
-  emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; emailFooter: string; bannerImage?: string }
+  emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; bannerImage?: string }
 ) {
   const base64Data = qrDataUrl.replace(/^data:image\/png;base64,/, "");
   const cfg = await getMailConfig();
@@ -161,13 +182,16 @@ export async function sendRegistrationEmailWithConfig(
     bannerUrl = `${siteUrl}${bannerUrl}`;
   }
 
+  // Get the standard email signature
+  const signatureHtml = await getDefaultSignatureHtml();
+
   // Prefer Brevo HTTP API
   if (cfg.brevo_api_key) {
     const html = buildRegistrationEmailHtml({
       firstName, lastName, qrCode,
       emailTitle: emailConfig.emailTitle,
       emailBody: emailConfig.emailBody,
-      emailFooter: emailConfig.emailFooter,
+      signatureHtml,
       qrImageUrl: qrFullUrl,
       bannerImageUrl: bannerUrl || undefined,
     });
@@ -186,7 +210,7 @@ export async function sendRegistrationEmailWithConfig(
     firstName, lastName, qrCode,
     emailTitle: emailConfig.emailTitle,
     emailBody: emailConfig.emailBody,
-    emailFooter: emailConfig.emailFooter,
+    signatureHtml,
     bannerImageUrl: bannerUrl || undefined,
   });
 
@@ -221,7 +245,6 @@ export async function getEmailConfig() {
     emailSubject: config?.emailSubject || "Your Event Registration - QR Code",
     emailTitle: config?.emailTitle || "Registration Confirmed",
     emailBody: config?.emailBody || "Thank you for registering. Please find below your personal QR code to show at the entrance.\nThe QR code is personal and can't be shared.",
-    emailFooter: config?.emailFooter || "Gebrüder Thonet Vienna GmbH\nVia Foggia 23/H – 10152 Torino (Italy)",
     bannerImage: config?.bannerImage || "",
   };
 }

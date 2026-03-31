@@ -2,99 +2,126 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
-// Public GET - get active landing page config
+// GET - list all landing pages (admin) or get by permalink (public)
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const isAdmin = searchParams.get("admin") === "true";
+  const permalink = searchParams.get("permalink");
+  const id = searchParams.get("id");
 
-  if (isAdmin) {
-    const result = await requirePermission("forms", "view");
+  // Admin list
+  if (isAdmin && !id && !permalink) {
+    const result = await requirePermission("landing_page", "view");
     if (isErrorResponse(result)) return result;
-  }
 
-  const config = await prisma.landingPageConfig.findFirst({
-    where: { slug: "default" },
-  });
-
-  if (!config) {
-    return NextResponse.json({
-      success: true,
-      data: null,
+    const data = await prisma.landingPageConfig.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { _count: { select: { registrations: true } } },
     });
+    return NextResponse.json({ success: true, data });
   }
 
+  // Admin single by id
+  if (isAdmin && id) {
+    const result = await requirePermission("landing_page", "view");
+    if (isErrorResponse(result)) return result;
+
+    const config = await prisma.landingPageConfig.findUnique({ where: { id } });
+    return NextResponse.json({ success: true, data: config });
+  }
+
+  // Public by permalink
+  if (permalink) {
+    const config = await prisma.landingPageConfig.findUnique({
+      where: { permalink },
+    });
+    if (!config || !config.isActive) {
+      return NextResponse.json({ success: false, error: "Landing page non trovata" }, { status: 404 });
+    }
+    return NextResponse.json({ success: true, data: config });
+  }
+
+  // Legacy: get default (backwards compat for /contatti/landing-page)
+  const config = await prisma.landingPageConfig.findFirst({
+    where: { isActive: true },
+    orderBy: { createdAt: "asc" },
+  });
   return NextResponse.json({ success: true, data: config });
 }
 
-// Admin PUT - update landing page config
-export async function PUT(req: Request) {
-  const result = await requirePermission("forms", "edit");
+// POST - create new landing page
+export async function POST(req: Request) {
+  const result = await requirePermission("landing_page", "create");
   if (isErrorResponse(result)) return result;
 
   try {
     const body = await req.json();
-    const {
-      heroTitle,
-      heroSubtitle,
-      heroLocation,
-      heroDescription,
-      successTitle,
-      successMessage,
-      privacyLabel,
-      marketingLabel,
-      buttonLabel,
-      bannerImage,
-      logoImage,
-      isActive,
-      emailSubject,
-      emailTitle,
-      emailBody,
-      emailFooter,
-    } = body;
+    const { name, permalink, type } = body;
 
-    const config = await prisma.landingPageConfig.upsert({
-      where: { slug: "default" },
-      update: {
-        heroTitle: heroTitle ?? undefined,
-        heroSubtitle: heroSubtitle ?? undefined,
-        heroLocation: heroLocation ?? undefined,
-        heroDescription: heroDescription ?? undefined,
-        successTitle: successTitle ?? undefined,
-        successMessage: successMessage ?? undefined,
-        privacyLabel: privacyLabel ?? undefined,
-        marketingLabel: marketingLabel ?? undefined,
-        buttonLabel: buttonLabel ?? undefined,
-        bannerImage: bannerImage ?? undefined,
-        logoImage: logoImage ?? undefined,
-        isActive: isActive ?? undefined,
-        emailSubject: emailSubject ?? undefined,
-        emailTitle: emailTitle ?? undefined,
-        emailBody: emailBody ?? undefined,
-        emailFooter: emailFooter ?? undefined,
-      },
-      create: {
-        slug: "default",
-        heroTitle: heroTitle || "Milan Design Week 2026",
-        heroSubtitle,
-        heroLocation,
-        heroDescription,
-        successTitle: successTitle || "Thank you. Your QR code has been generated.",
-        successMessage,
-        privacyLabel: privacyLabel || "I have read and understood the Privacy Policy.",
-        marketingLabel,
-        buttonLabel: buttonLabel || "Register",
-        bannerImage,
-        logoImage,
-        isActive: isActive ?? true,
+    if (!name || !permalink) {
+      return NextResponse.json({ success: false, error: "Nome e permalink obbligatori" }, { status: 400 });
+    }
+
+    const slug = permalink.toLowerCase().replace(/[^\w-]/g, "").replace(/\s+/g, "-");
+
+    const config = await prisma.landingPageConfig.create({
+      data: {
+        name,
+        slug,
+        permalink: slug,
+        type: type || "evento",
+        heroTitle: name,
+        buttonLabel: "Register",
       },
     });
 
-    return NextResponse.json({ success: true, data: config });
-  } catch (error) {
-    console.error("Landing page config error:", error);
-    return NextResponse.json(
-      { success: false, error: "Server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: true, data: config }, { status: 201 });
+  } catch (e) {
+    const msg = String(e).includes("Unique") ? "Permalink già in uso" : "Errore server";
+    return NextResponse.json({ success: false, error: msg }, { status: 400 });
   }
+}
+
+// PUT - update landing page
+export async function PUT(req: Request) {
+  const result = await requirePermission("landing_page", "edit");
+  if (isErrorResponse(result)) return result;
+
+  try {
+    const body = await req.json();
+    const { id, ...fields } = body;
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: "ID obbligatorio" }, { status: 400 });
+    }
+
+    // If permalink changed, update slug too
+    if (fields.permalink) {
+      fields.slug = fields.permalink.toLowerCase().replace(/[^\w-]/g, "").replace(/\s+/g, "-");
+      fields.permalink = fields.slug;
+    }
+
+    const config = await prisma.landingPageConfig.update({
+      where: { id },
+      data: fields,
+    });
+
+    return NextResponse.json({ success: true, data: config });
+  } catch (e) {
+    const msg = String(e).includes("Unique") ? "Permalink già in uso" : "Errore server";
+    return NextResponse.json({ success: false, error: msg }, { status: 400 });
+  }
+}
+
+// DELETE - delete landing page
+export async function DELETE(req: Request) {
+  const result = await requirePermission("landing_page", "delete");
+  if (isErrorResponse(result)) return result;
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ success: false, error: "ID obbligatorio" }, { status: 400 });
+
+  await prisma.landingPageConfig.delete({ where: { id } });
+  return NextResponse.json({ success: true });
 }

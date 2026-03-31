@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
 interface LandingConfig {
-  id?: string;
+  id: string;
   heroTitle: string;
   heroSubtitle: string | null;
   heroLocation: string | null;
@@ -30,6 +31,7 @@ const PROFILE_OPTIONS = [
 ];
 
 const DEFAULT_CONFIG: LandingConfig = {
+  id: "",
   heroTitle: "Milan Design Week 2026",
   heroSubtitle: "Come and experience the True Over Time Collection with us.",
   heroLocation:
@@ -49,6 +51,8 @@ const DEFAULT_CONFIG: LandingConfig = {
 };
 
 export default function LandingPage() {
+  const params = useParams();
+  const permalink = params.permalink as string;
   const [config, setConfig] = useState<LandingConfig>(DEFAULT_CONFIG);
   const [form, setForm] = useState({
     firstName: "",
@@ -68,17 +72,22 @@ export default function LandingPage() {
   const [qrCode, setQrCode] = useState("");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [serverError, setServerError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    fetch("/api/landing-page-config")
+    fetch(`/api/landing-page-config?permalink=${permalink}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.data) {
           setConfig(data.data);
+        } else {
+          setNotFound(true);
         }
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false));
+  }, [permalink]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -139,6 +148,25 @@ export default function LandingPage() {
       });
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-warm-300 border-t-warm-800 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-light text-warm-300 mb-4">404</h1>
+          <p className="text-warm-500">Pagina non trovata</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!config.isActive) {
     return (

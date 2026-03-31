@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyRecaptcha } from "@/lib/recaptcha";
+import { assignTagBySlug } from "@/lib/tags";
 
 export async function POST(req: Request) {
   try {
@@ -37,6 +38,9 @@ export async function POST(req: Request) {
         acceptsUpdates: acceptsUpdates ?? false,
       },
     });
+
+    // Auto-assign "newsletter" tag
+    assignTagBySlug(email, "newsletter", "Newsletter").catch(() => {});
 
     return NextResponse.json({ success: true });
   } catch {

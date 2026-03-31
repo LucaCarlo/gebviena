@@ -6,12 +6,12 @@ import {
 } from "@/lib/event-registration";
 
 export async function POST(req: Request) {
-  const result = await requirePermission("forms", "edit");
+  const result = await requirePermission("landing_page", "edit");
   if (isErrorResponse(result)) return result;
 
   try {
     const body = await req.json();
-    const { testEmail, emailSubject, emailTitle, emailBody, emailFooter, bannerImage } = body;
+    const { testEmail, emailSubject, emailTitle, emailBody, bannerImage } = body;
 
     if (!testEmail) {
       return NextResponse.json(
@@ -33,7 +33,6 @@ export async function POST(req: Request) {
         emailSubject: emailSubject || "Your Event Registration - QR Code",
         emailTitle: emailTitle || "Registration Confirmed",
         emailBody: emailBody || "Thank you for registering.",
-        emailFooter: emailFooter || "Gebrüder Thonet Vienna GmbH",
         bannerImage: bannerImage || "",
       }
     );
