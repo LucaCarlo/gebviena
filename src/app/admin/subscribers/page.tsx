@@ -308,7 +308,7 @@ export default function AdminSubscribersPage() {
   const downloadTemplate = () => {
     const csv = "Nome,Cognome,Email,Azienda,Telefono,Profilo,Indirizzo,Città,CAP,Provincia,Paese,Website,Note,Tag\nMario,Rossi,mario@esempio.com,Azienda Srl,+39123456789,Architetto,Via Roma 1,Milano,20121,MI,Italia,www.esempio.com,Cliente top,\"Newsletter,Evento\"\n";
     const blob = new Blob([csv], { type: "text/csv" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "template-import-subscribers.csv"; a.click();
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "template-import-utenti.csv"; a.click();
   };
 
   /* ───── Computed ───── */
@@ -425,7 +425,7 @@ export default function AdminSubscribersPage() {
       {/* Header */}
       <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-warm-900">Subscribers</h1>
+          <h1 className="text-2xl font-bold text-warm-900">Utenti</h1>
           <p className="text-sm text-warm-500 mt-1">
             {contacts.length} contatti totali &middot; {eventRegs.length} registrazioni evento ({checkedInCount} check-in)
           </p>
@@ -597,7 +597,7 @@ export default function AdminSubscribersPage() {
 
       {/* ═══ Import ═══ */}
       {showImport && (
-        <Modal onClose={() => setShowImport(false)} title="Importa Subscribers" subtitle="Carica un file CSV">
+        <Modal onClose={() => setShowImport(false)} title="Importa Utenti" subtitle="Carica un file CSV">
           <div className="space-y-4">
             <div className="bg-warm-50 rounded-lg p-4">
               <p className="text-xs text-warm-600 font-semibold mb-2">Colonne supportate:</p>
@@ -716,7 +716,7 @@ export default function AdminSubscribersPage() {
   function renderEditModal() {
     if (!showEditContact) return null;
     return (
-      <Modal onClose={() => setShowEditContact(false)} title="Modifica Subscriber" wide>
+      <Modal onClose={() => setShowEditContact(false)} title="Modifica Utente" wide>
         <div className="space-y-5">
           {/* Personal */}
           <fieldset>
