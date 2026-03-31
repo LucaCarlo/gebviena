@@ -15,12 +15,12 @@ export async function GET(req: Request) {
         where: {
           isActive: true,
           OR: [
-            { name: { contains: q, mode: "insensitive" } },
-            { designerName: { contains: q, mode: "insensitive" } },
-            { category: { contains: q, mode: "insensitive" } },
-            { subcategory: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
-            { materials: { contains: q, mode: "insensitive" } },
+            { name: { contains: q } },
+            { designerName: { contains: q } },
+            { category: { contains: q } },
+            { subcategory: { contains: q } },
+            { description: { contains: q } },
+            { materials: { contains: q } },
           ],
         },
         select: { name: true, slug: true, category: true, coverImage: true, imageUrl: true, designerName: true },
@@ -31,12 +31,12 @@ export async function GET(req: Request) {
         where: {
           isActive: true,
           OR: [
-            { name: { contains: q, mode: "insensitive" } },
-            { type: { contains: q, mode: "insensitive" } },
-            { country: { contains: q, mode: "insensitive" } },
-            { city: { contains: q, mode: "insensitive" } },
-            { architect: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
+            { name: { contains: q } },
+            { type: { contains: q } },
+            { country: { contains: q } },
+            { city: { contains: q } },
+            { architect: { contains: q } },
+            { description: { contains: q } },
           ],
         },
         select: { name: true, slug: true, type: true, imageUrl: true, country: true },
@@ -47,9 +47,9 @@ export async function GET(req: Request) {
         where: {
           isActive: true,
           OR: [
-            { name: { contains: q, mode: "insensitive" } },
-            { country: { contains: q, mode: "insensitive" } },
-            { bio: { contains: q, mode: "insensitive" } },
+            { name: { contains: q } },
+            { country: { contains: q } },
+            { bio: { contains: q } },
           ],
         },
         select: { name: true, slug: true, imageUrl: true, country: true },
@@ -60,8 +60,8 @@ export async function GET(req: Request) {
         where: {
           isActive: true,
           OR: [
-            { name: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
+            { name: { contains: q } },
+            { description: { contains: q } },
           ],
         },
         select: { name: true, slug: true, type: true, imageUrl: true },
@@ -72,9 +72,9 @@ export async function GET(req: Request) {
         where: {
           isActive: true,
           OR: [
-            { name: { contains: q, mode: "insensitive" } },
-            { productName: { contains: q, mode: "insensitive" } },
-            { organization: { contains: q, mode: "insensitive" } },
+            { name: { contains: q } },
+            { productName: { contains: q } },
+            { organization: { contains: q } },
           ],
         },
         select: { id: true, name: true, year: true, organization: true, imageUrl: true, productName: true },
