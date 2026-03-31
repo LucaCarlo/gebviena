@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import {
-  BarChart3, Mail, MousePointer, UserCheck, QrCode, Eye, Download,
-  Search, Loader2, Send, Users, ChevronDown,
+  BarChart3, MousePointer, UserCheck, QrCode, Eye, Download,
+  Search, Loader2, Send, ChevronDown,
 } from "lucide-react";
 
 /* ───── Types ───── */
