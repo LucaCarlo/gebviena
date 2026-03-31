@@ -520,6 +520,7 @@ model LandingPageConfig {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   registrations   EventRegistration[]
+  invitations     EventInvitation[]
 }
 
 model EventRegistration {
@@ -540,12 +541,35 @@ model EventRegistration {
   qrCode           String    @unique
   checkedIn        Boolean   @default(false)
   checkedInAt      DateTime?
+  source           String?   @db.VarChar(20) // "invite" | "direct"
   createdAt        DateTime  @default(now())
+  invitation       EventInvitation?
 
   @@index([email])
   @@index([qrCode])
   @@index([createdAt])
   @@index([landingPageId])
+}
+
+model EventInvitation {
+  id              String             @id @default(cuid())
+  email           String
+  landingPageId   String?
+  landingPage     LandingPageConfig? @relation(fields: [landingPageId], references: [id])
+  token           String             @unique
+  campaign        String?            @db.Text
+  sentAt          DateTime           @default(now())
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  registeredAt    DateTime?
+  registrationId  String?            @unique
+  registration    EventRegistration? @relation(fields: [registrationId], references: [id])
+  createdAt       DateTime           @default(now())
+
+  @@index([email])
+  @@index([landingPageId])
+  @@index([token])
+  @@index([sentAt])
 }
 
 // ─── Tag System ─────────────────────────────────────────────────────────

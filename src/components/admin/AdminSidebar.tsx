@@ -120,7 +120,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/subscribers", label: "Utenti", icon: Users, permission: "newsletter.view" },
       { href: "/admin/email-templates", label: "Template Email", icon: FileText, permission: "email_templates.view" },
-      // { href: "/admin/email-analytics", label: "Analitiche Email", icon: BarChart3, permission: "email_analytics.view" },
+      { href: "/admin/email-analytics", label: "Analitiche Evento", icon: BarChart3, permission: "newsletter.view" },
       { href: "/admin/landing-page", label: "Landing Page", icon: QrCode, permission: "landing_page.view" },
       { href: "/admin/forms", label: "Forms", icon: Settings, permission: "forms.view" },
       { href: "/admin/contacts", label: "Messaggi", icon: Mail, permission: "contacts.view" },

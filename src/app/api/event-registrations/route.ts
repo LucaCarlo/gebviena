@@ -28,6 +28,7 @@ export async function POST(req: Request) {
       privacyAccepted,
       marketingConsent,
       landingPageId,
+      inviteToken,
     } = body;
 
     if (!firstName || !lastName || !email || !country || !city || !zipCode) {
@@ -55,6 +56,17 @@ export async function POST(req: Request) {
     const qrCode = generateUUID();
     const uuid = generateUUID();
 
+    // Check if there's a valid invitation token
+    let invitation = null;
+    if (inviteToken) {
+      invitation = await prisma.eventInvitation.findUnique({
+        where: { token: inviteToken },
+        select: { id: true, registrationId: true },
+      });
+      // Only use if not already linked to another registration
+      if (invitation?.registrationId) invitation = null;
+    }
+
     const registration = await prisma.eventRegistration.create({
       data: {
         uuid,
@@ -70,8 +82,17 @@ export async function POST(req: Request) {
         marketingConsent: !!marketingConsent,
         qrCode,
         landingPageId: landingPageId || null,
+        source: invitation ? "invite" : "direct",
       },
     });
+
+    // Link invitation to registration if valid
+    if (invitation) {
+      await prisma.eventInvitation.update({
+        where: { id: invitation.id },
+        data: { registrationId: registration.id, registeredAt: new Date() },
+      }).catch(() => {});
+    }
 
     const qrDataUrl = await generateQRCodeDataUrl(qrCode);
 

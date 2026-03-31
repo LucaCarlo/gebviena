@@ -64,6 +64,7 @@ export default function AdminSubscribersPage() {
   const [showImport, setShowImport] = useState(false);
   const [showEmailChoice, setShowEmailChoice] = useState(false);
   const [showEditContact, setShowEditContact] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [viewContact, setViewContact] = useState<UnifiedContact | null>(null);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [editSaving, setEditSaving] = useState(false);
@@ -72,6 +73,15 @@ export default function AdminSubscribersPage() {
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
+
+  // Invite to event
+  const [landingPages, setLandingPages] = useState<{ id: string; name: string }[]>([]);
+  const [inviteLpId, setInviteLpId] = useState("");
+  const [inviteCampaign, setInviteCampaign] = useState("");
+  const [inviteSubject, setInviteSubject] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteResult, setInviteResult] = useState<{ sent: number; failed: number } | null>(null);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ sent: number; failed: number } | null>(null);
   const [importResult, setImportResult] = useState<{ imported: number; skipped: number; tagged: number } | null>(null);
@@ -231,6 +241,30 @@ export default function AdminSubscribersPage() {
       if (d.success) setSendResult(d.data); else alert(d.error);
     } catch { alert("Errore"); }
     setSending(false);
+  };
+
+  /* ───── Invite to event ───── */
+
+  const openInviteModal = async () => {
+    setShowInviteModal(true); setInviteResult(null);
+    setInviteSubject(""); setInviteMessage(""); setInviteCampaign(""); setInviteLpId("");
+    try { const r = await fetch("/api/landing-page-config?admin=true"); const d = await r.json(); if (d.success) setLandingPages(d.data || []); } catch {}
+  };
+
+  const sendInvites = async () => {
+    if (!selected.size) return;
+    if (!inviteLpId) { alert("Seleziona un evento/landing page"); return; }
+    setInviteSending(true); setInviteResult(null);
+    const emails = Array.from(selected);
+    try {
+      const r = await fetch("/api/newsletter/send-invite", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emails, subject: inviteSubject || undefined, message: inviteMessage || undefined, landingPageId: inviteLpId, campaign: inviteCampaign || undefined }),
+      });
+      const d = await r.json();
+      if (d.success) setInviteResult({ sent: d.sent, failed: d.failed }); else alert(d.error);
+    } catch { alert("Errore"); }
+    setInviteSending(false);
   };
 
   /* ───── Tags ───── */
@@ -412,6 +446,7 @@ export default function AdminSubscribersPage() {
 
         {/* Edit/email modals still accessible */}
         {renderEditModal()}
+        {renderInviteModal()}
         {renderEmailChoiceModal()}
         {renderTemplateModal()}
         {renderSimpleEmailModal()}
@@ -654,6 +689,11 @@ export default function AdminSubscribersPage() {
             <div className="w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center shrink-0"><Mail size={18} className="text-warm-600" /></div>
             <div className="flex-1"><div className="font-medium text-warm-800 text-sm">Email semplice</div><div className="text-xs text-warm-500">Scrivi oggetto e messaggio personalizzato</div></div>
           </button>
+          <button onClick={() => { setShowEmailChoice(false); openInviteModal(); }}
+            className="w-full flex items-center gap-4 p-4 rounded-lg border border-purple-200 hover:border-purple-400 hover:bg-purple-50 transition-colors text-left">
+            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center shrink-0"><Send size={18} className="text-purple-600" /></div>
+            <div className="flex-1"><div className="font-medium text-warm-800 text-sm">Invita a evento</div><div className="text-xs text-warm-500">Invia invito con link di registrazione tracciato</div></div>
+          </button>
         </div>
       </Modal>
     );
@@ -764,6 +804,50 @@ export default function AdminSubscribersPage() {
           <button onClick={() => setShowEditContact(false)} className="px-4 py-2 text-sm text-warm-600">Annulla</button>
           <button onClick={saveEditContact} disabled={editSaving} className="flex items-center gap-2 bg-warm-800 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50 transition-colors">
             {editSaving ? <Loader2 size={14} className="animate-spin" /> : <Pencil size={14} />} {editSaving ? "Salvataggio..." : "Salva modifiche"}
+          </button>
+        </div>
+      </Modal>
+    );
+  }
+
+  function renderInviteModal() {
+    if (!showInviteModal) return null;
+    return (
+      <Modal onClose={() => setShowInviteModal(false)} title="Invita a Evento" subtitle={`${selected.size} destinatari`}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Evento / Landing Page <span className="text-red-400">*</span></label>
+            <select value={inviteLpId} onChange={(e) => setInviteLpId(e.target.value)}
+              className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white">
+              <option value="">Seleziona evento...</option>
+              {landingPages.map((lp) => <option key={lp.id} value={lp.id}>{lp.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Campagna (opzionale)</label>
+            <input type="text" value={inviteCampaign} onChange={(e) => setInviteCampaign(e.target.value)} placeholder="Es. MDW 2026 - Batch 1"
+              className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Oggetto email</label>
+            <input type="text" value={inviteSubject} onChange={(e) => setInviteSubject(e.target.value)} placeholder="Sei invitato al nostro evento"
+              className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Messaggio (opzionale)</label>
+            <textarea value={inviteMessage} onChange={(e) => setInviteMessage(e.target.value)} rows={4} placeholder="Siamo lieti di invitarti..."
+              className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" />
+          </div>
+          <div className="bg-purple-50 rounded-lg p-3 text-xs text-purple-700">
+            <b>Tracking attivo:</b> ogni destinatario riceverà un link personalizzato. Potrai tracciare apertura email, click sul link e registrazione nelle Analitiche Evento.
+          </div>
+        </div>
+        {inviteResult && <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">Inviate: {inviteResult.sent} &middot; Fallite: {inviteResult.failed}</div>}
+        <div className="mt-6 flex justify-end gap-3">
+          <button onClick={() => setShowInviteModal(false)} className="px-4 py-2 text-sm text-warm-600">Annulla</button>
+          <button onClick={sendInvites} disabled={inviteSending || !inviteLpId}
+            className="flex items-center gap-2 bg-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors">
+            {inviteSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} {inviteSending ? "Invio..." : "Invia inviti"}
           </button>
         </div>
       </Modal>
