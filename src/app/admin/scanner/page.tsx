@@ -97,14 +97,7 @@ export default function ScannerPage() {
       scannerRef.current = scanner;
       await scanner.start(
         { facingMode: "environment" },
-        {
-          fps: 15,
-          qrbox: (w: number, h: number) => {
-            const size = Math.min(w, h) * 0.75;
-            return { width: Math.min(size, 300), height: Math.min(size, 300) };
-          },
-          aspectRatio: 1,
-        },
+        { fps: 15, disableFlip: false },
         (decodedText: string) => {
           doCheckin(decodedText);
         },
@@ -200,7 +193,7 @@ export default function ScannerPage() {
       <div className="flex-1 relative overflow-hidden">
         {!manualMode ? (
           <>
-            <div id="scanner-video" ref={videoRef} className="absolute inset-0 [&_video]:!w-full [&_video]:!h-full [&_video]:!object-cover" />
+            <div id="scanner-video" ref={videoRef} className="absolute inset-0 [&_video]:!w-full [&_video]:!h-full [&_video]:!object-cover [&_#qr-shaded-region]:!hidden [&_img]:!hidden" style={{ border: "none" }} />
             {/* Scan overlay */}
             {scanning && (
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
