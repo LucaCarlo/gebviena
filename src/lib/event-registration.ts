@@ -148,11 +148,19 @@ async function sendViaBrevoApi(
   return res.json();
 }
 
-async function getDefaultSignatureHtml(): Promise<string> {
-  // Fetch the signatureHtml from the smtp_from_email user, or fallback to first user with a signature
+async function getSignatureHtml(signatureTemplateId?: string): Promise<string> {
+  // If a specific signature template is requested, find first user assigned to it
+  if (signatureTemplateId) {
+    const user = await prisma.adminUser.findFirst({
+      where: { signatureTemplateId },
+      select: { signatureHtml: true },
+    });
+    if (user?.signatureHtml) return user.signatureHtml;
+  }
+
+  // Default: fetch from smtp_from_email user
   const cfg = await getMailConfig();
   const fromEmail = cfg.smtp_from_email;
-
   if (fromEmail) {
     const user = await prisma.adminUser.findFirst({
       where: { email: fromEmail },
@@ -171,13 +179,20 @@ async function getDefaultSignatureHtml(): Promise<string> {
   return fallback?.signatureHtml || "";
 }
 
+async function getEmailTemplateHtml(emailTemplateId: string, variables: Record<string, string>): Promise<string | null> {
+  const { renderEmailTemplate, parseBlocks } = await import("@/lib/email-template-renderer");
+  const template = await prisma.emailTemplate.findUnique({ where: { id: emailTemplateId } });
+  if (!template) return null;
+  return renderEmailTemplate(parseBlocks(template.blocks), variables);
+}
+
 export async function sendRegistrationEmailWithConfig(
   toEmail: string,
   firstName: string,
   lastName: string,
   qrCode: string,
   qrDataUrl: string,
-  emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; bannerImage?: string }
+  emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; bannerImage?: string; emailTemplateId?: string; signatureTemplateId?: string }
 ) {
   const base64Data = qrDataUrl.replace(/^data:image\/png;base64,/, "");
   const cfg = await getMailConfig();
@@ -197,37 +212,63 @@ export async function sendRegistrationEmailWithConfig(
     bannerUrl = `${siteUrl}${bannerUrl}`;
   }
 
-  // Get the standard email signature
-  const signatureHtml = await getDefaultSignatureHtml();
+  // Get the signature HTML
+  const signatureHtml = await getSignatureHtml(emailConfig.signatureTemplateId);
 
-  // Prefer Brevo HTTP API
-  if (cfg.brevo_api_key) {
-    const html = buildRegistrationEmailHtml({
-      firstName, lastName, qrCode,
-      emailTitle: emailConfig.emailTitle,
-      emailBody: emailConfig.emailBody,
-      signatureHtml,
-      qrImageUrl: qrFullUrl,
-      bannerImageUrl: bannerUrl || undefined,
+  // Build email HTML
+  let html: string;
+
+  if (emailConfig.emailTemplateId) {
+    // Use block-based email template + append QR code section + signature
+    const templateHtml = await getEmailTemplateHtml(emailConfig.emailTemplateId, {
+      firstName, lastName, email: toEmail, eventLink: siteUrl,
     });
 
-    await sendViaBrevoApi(
-      cfg.brevo_api_key, fromName, fromEmail, toEmail,
-      emailConfig.emailSubject, html
-    );
+    if (templateHtml) {
+      // Extract body content from template and append QR code
+      const qrSection = `
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px;width:100%;background-color:#ffffff;">
+        <tr><td style="padding:30px 32px 8px;text-align:center;font-size:16px;color:#333;font-family:Georgia,serif;">Your Personal QR Code</td></tr>
+        <tr><td style="padding:4px 32px 24px;text-align:center;font-size:13px;color:#888;font-family:Arial,sans-serif;">Show this code at the entrance for check-in</td></tr>
+        <tr><td style="text-align:center;padding:0 32px 8px;">
+          <div style="display:inline-block;border:1px solid #e5e5e5;border-radius:8px;padding:16px;background:#fafafa;">
+            <img src="${qrFullUrl}" alt="QR Code" width="260" height="260" style="display:block;" />
+          </div>
+        </td></tr>
+        <tr><td style="padding:12px 32px 8px;text-align:center;font-size:11px;color:#999;font-family:'Courier New',monospace;">ID: ${qrCode}</td></tr>
+        <tr><td style="padding:8px 32px;text-align:center;"><hr style="border:none;border-top:1px solid #e5e5e5;margin:0;" /></td></tr>
+        <tr><td style="padding:8px 32px 24px;text-align:center;font-size:13px;color:#666;font-family:Arial,sans-serif;line-height:1.6;">
+          This QR code is personal and non-transferable.<br/>Please save this email for easy access at the event.
+        </td></tr>
+        ${signatureHtml ? `<tr><td style="padding:0 32px 20px;">${signatureHtml}</td></tr>` : ""}
+        </table>`;
+
+      // Insert QR section before closing </body>
+      html = templateHtml.replace("</body>", `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f5f4f2;"><tr><td align="center" style="padding:0 0 20px;">${qrSection}</td></tr></table></body>`);
+    } else {
+      // Template not found, fall back to custom
+      html = buildRegistrationEmailHtml({
+        firstName, lastName, qrCode,
+        emailTitle: emailConfig.emailTitle, emailBody: emailConfig.emailBody,
+        signatureHtml, qrImageUrl: qrFullUrl, bannerImageUrl: bannerUrl || undefined,
+      });
+    }
+  } else {
+    // Custom title/body mode
+    html = buildRegistrationEmailHtml({
+      firstName, lastName, qrCode,
+      emailTitle: emailConfig.emailTitle, emailBody: emailConfig.emailBody,
+      signatureHtml, qrImageUrl: qrFullUrl, bannerImageUrl: bannerUrl || undefined,
+    });
+  }
+
+  // Send via Brevo or SMTP
+  if (cfg.brevo_api_key) {
+    await sendViaBrevoApi(cfg.brevo_api_key, fromName, fromEmail, toEmail, emailConfig.emailSubject, html);
     return;
   }
 
-  // Fallback: SMTP via nodemailer with CID
   if (!cfg.smtp_host) throw new Error("Email not configured (no Brevo API key or SMTP host)");
-
-  const html = buildRegistrationEmailHtml({
-    firstName, lastName, qrCode,
-    emailTitle: emailConfig.emailTitle,
-    emailBody: emailConfig.emailBody,
-    signatureHtml,
-    bannerImageUrl: bannerUrl || undefined,
-  });
 
   const nodemailer = (await import("nodemailer")).default;
   const transportConfig: Record<string, unknown> = {
@@ -242,7 +283,6 @@ export async function sendRegistrationEmailWithConfig(
   }
 
   const transporter = nodemailer.createTransport(transportConfig);
-
   await transporter.sendMail({
     from: `"${fromName}" <${fromEmail}>`,
     to: toEmail,

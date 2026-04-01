@@ -115,14 +115,27 @@ export async function POST(req: Request) {
     assignTagBySlug(email, "evento", "Evento").catch(() => {});
 
     // Get email config from the specific landing page, fallback to default
-    let emailConfig;
+    let emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; bannerImage: string; emailTemplateId?: string; signatureTemplateId?: string };
     if (landingPageId) {
-      const lp = await prisma.landingPageConfig.findUnique({ where: { id: landingPageId }, select: { emailSubject: true, emailTitle: true, emailBody: true, bannerImage: true } });
-      if (lp?.emailSubject && lp?.emailTitle && lp?.emailBody) {
-        emailConfig = { emailSubject: lp.emailSubject, emailTitle: lp.emailTitle, emailBody: lp.emailBody, bannerImage: lp.bannerImage || "" };
+      const lp = await prisma.landingPageConfig.findUnique({
+        where: { id: landingPageId },
+        select: { emailSubject: true, emailTitle: true, emailBody: true, bannerImage: true, emailTemplateId: true, signatureTemplateId: true },
+      });
+      if (lp) {
+        emailConfig = {
+          emailSubject: lp.emailSubject || "Your Event Registration",
+          emailTitle: lp.emailTitle || "Registration Confirmed",
+          emailBody: lp.emailBody || "",
+          bannerImage: lp.bannerImage || "",
+          emailTemplateId: lp.emailTemplateId || undefined,
+          signatureTemplateId: lp.signatureTemplateId || undefined,
+        };
+      } else {
+        emailConfig = await getEmailConfig();
       }
+    } else {
+      emailConfig = await getEmailConfig();
     }
-    if (!emailConfig) emailConfig = await getEmailConfig();
 
     // Send emails in background
     sendRegistrationEmailWithConfig(email, firstName, lastName, qrCode, qrDataUrl, emailConfig).catch(

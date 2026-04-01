@@ -38,8 +38,12 @@ interface FormState {
   successTitle: string; successMessage: string; privacyLabel: string; marketingLabel: string;
   buttonLabel: string; bannerImage: string; logoImage: string;
   emailSubject: string; emailTitle: string; emailBody: string; isActive: boolean;
+  emailTemplateId: string; signatureTemplateId: string;
   formFields: FieldConfig[];
 }
+
+interface EmailTpl { id: string; name: string; subject: string; previewHtml: string | null; }
+interface SigTpl { id: string; name: string; }
 
 interface ScanResult { success: boolean; alreadyCheckedIn?: boolean; error?: string; data?: { firstName: string; lastName: string; email: string; profile: string | null; checkedInAt: string | null; }; }
 
@@ -61,11 +65,17 @@ export default function LandingPageDetailPage() {
     successTitle: "", successMessage: "", privacyLabel: "", marketingLabel: "",
     buttonLabel: "Register", bannerImage: "", logoImage: "",
     emailSubject: "", emailTitle: "", emailBody: "", isActive: true,
+    emailTemplateId: "", signatureTemplateId: "",
     formFields: [...DEFAULT_FORM_FIELDS],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // Email & signature templates
+  const [emailTemplates, setEmailTemplates] = useState<EmailTpl[]>([]);
+  const [signatureTemplates, setSignatureTemplates] = useState<SigTpl[]>([]);
+  const [emailPreviewHtml, setEmailPreviewHtml] = useState("");
 
   // Registrations
   const [regs, setRegs] = useState<EventReg[]>([]);
@@ -85,38 +95,42 @@ export default function LandingPageDetailPage() {
   const [sendingTest, setSendingTest] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/landing-page-config?admin=true&id=${lpId}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success && d.data) {
-          const lp = d.data;
-          let parsedFields = [...DEFAULT_FORM_FIELDS];
-          if (lp.formFields) {
-            try {
-              const saved = JSON.parse(lp.formFields) as FieldConfig[];
-              // Merge saved with defaults (in case new fields were added)
-              const savedKeys = new Set(saved.map((f: FieldConfig) => f.key));
-              parsedFields = [
-                ...saved,
-                ...DEFAULT_FORM_FIELDS.filter(f => !savedKeys.has(f.key)),
-              ].sort((a, b) => a.order - b.order);
-            } catch { /* use defaults */ }
-          }
-          setForm({
-            name: lp.name || "", permalink: lp.permalink || "", type: lp.type || "evento",
-            heroTitle: lp.heroTitle || "", heroSubtitle: lp.heroSubtitle || "",
-            heroLocation: lp.heroLocation || "", heroDescription: lp.heroDescription || "",
-            successTitle: lp.successTitle || "", successMessage: lp.successMessage || "",
-            privacyLabel: lp.privacyLabel || "", marketingLabel: lp.marketingLabel || "",
-            buttonLabel: lp.buttonLabel || "Register", bannerImage: lp.bannerImage || "",
-            logoImage: lp.logoImage || "", emailSubject: lp.emailSubject || "",
-            emailTitle: lp.emailTitle || "", emailBody: lp.emailBody || "",
-            isActive: lp.isActive,
-            formFields: parsedFields,
-          });
+    Promise.all([
+      fetch(`/api/landing-page-config?admin=true&id=${lpId}`).then(r => r.json()),
+      fetch("/api/email-templates").then(r => r.json()),
+      fetch("/api/signature/templates").then(r => r.json()),
+    ]).then(([lpRes, etRes, stRes]) => {
+      if (lpRes.success && lpRes.data) {
+        const lp = lpRes.data;
+        let parsedFields = [...DEFAULT_FORM_FIELDS];
+        if (lp.formFields) {
+          try {
+            const saved = JSON.parse(lp.formFields) as FieldConfig[];
+            const savedKeys = new Set(saved.map((f: FieldConfig) => f.key));
+            parsedFields = [
+              ...saved,
+              ...DEFAULT_FORM_FIELDS.filter(f => !savedKeys.has(f.key)),
+            ].sort((a, b) => a.order - b.order);
+          } catch { /* use defaults */ }
         }
-      })
-      .finally(() => setLoading(false));
+        setForm({
+          name: lp.name || "", permalink: lp.permalink || "", type: lp.type || "evento",
+          heroTitle: lp.heroTitle || "", heroSubtitle: lp.heroSubtitle || "",
+          heroLocation: lp.heroLocation || "", heroDescription: lp.heroDescription || "",
+          successTitle: lp.successTitle || "", successMessage: lp.successMessage || "",
+          privacyLabel: lp.privacyLabel || "", marketingLabel: lp.marketingLabel || "",
+          buttonLabel: lp.buttonLabel || "Register", bannerImage: lp.bannerImage || "",
+          logoImage: lp.logoImage || "", emailSubject: lp.emailSubject || "",
+          emailTitle: lp.emailTitle || "", emailBody: lp.emailBody || "",
+          isActive: lp.isActive,
+          emailTemplateId: lp.emailTemplateId || "",
+          signatureTemplateId: lp.signatureTemplateId || "",
+          formFields: parsedFields,
+        });
+      }
+      if (etRes.success) setEmailTemplates(etRes.data || []);
+      if (stRes.success) setSignatureTemplates(stRes.data || []);
+    }).finally(() => setLoading(false));
   }, [lpId]);
 
   const fetchRegs = () => {
@@ -133,10 +147,15 @@ export default function LandingPageDetailPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { formFields, ...rest } = form;
+    const { formFields, emailTemplateId, signatureTemplateId, ...rest } = form;
     const res = await fetch("/api/landing-page-config", {
       method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: lpId, ...rest, formFields: JSON.stringify(formFields) }),
+      body: JSON.stringify({
+        id: lpId, ...rest,
+        formFields: JSON.stringify(formFields),
+        emailTemplateId: emailTemplateId || null,
+        signatureTemplateId: signatureTemplateId || null,
+      }),
     });
     const d = await res.json();
     if (d.success) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
@@ -262,6 +281,7 @@ export default function LandingPageDetailPage() {
       {/* ═══ Config Tab ═══ */}
       {activeTab === "config" && (
         <div className="space-y-6">
+          {/* 1. Impostazioni generali */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-warm-800">Impostazioni generali</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -284,38 +304,31 @@ export default function LandingPageDetailPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-warm-800">Contenuto Hero</h3>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo</label><input type="text" value={form.heroTitle} onChange={(e) => updateField("heroTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Sottotitolo</label><input type="text" value={form.heroSubtitle} onChange={(e) => updateField("heroSubtitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Location</label><textarea value={form.heroLocation} onChange={(e) => updateField("heroLocation", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Descrizione</label><textarea value={form.heroDescription} onChange={(e) => updateField("heroDescription", e.target.value)} rows={3} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-          </div>
-
+          {/* 2. Immagini */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-warm-800">Immagini</h3>
             <ImageUploadField label="Banner" value={form.bannerImage} onChange={(url) => updateField("bannerImage", url)} onRemove={() => updateField("bannerImage", "")} purpose="general" folder="landing-page" />
             <ImageUploadField label="Logo" value={form.logoImage} onChange={(url) => updateField("logoImage", url)} onRemove={() => updateField("logoImage", "")} purpose="general" folder="landing-page" />
           </div>
 
+          {/* 3. Contenuti Hero */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-warm-800">Form & Successo</h3>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo pulsante</label><input type="text" value={form.buttonLabel} onChange={(e) => updateField("buttonLabel", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo successo</label><input type="text" value={form.successTitle} onChange={(e) => updateField("successTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Privacy label</label><textarea value={form.privacyLabel} onChange={(e) => updateField("privacyLabel", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Marketing label</label><input type="text" value={form.marketingLabel} onChange={(e) => updateField("marketingLabel", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <h3 className="text-sm font-semibold text-warm-800">Contenuti Hero</h3>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo</label><input type="text" value={form.heroTitle} onChange={(e) => updateField("heroTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Sottotitolo</label><input type="text" value={form.heroSubtitle} onChange={(e) => updateField("heroSubtitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Location</label><textarea value={form.heroLocation} onChange={(e) => updateField("heroLocation", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Descrizione</label><textarea value={form.heroDescription} onChange={(e) => updateField("heroDescription", e.target.value)} rows={3} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
           </div>
 
-          {/* Field Layout Config */}
+          {/* 4. Campi del form */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-warm-800">Campi del form</h3>
-              <p className="text-[10px] text-warm-400">Trascina per riordinare, scegli la larghezza</p>
+              <p className="text-[10px] text-warm-400">Riordina, scegli la larghezza</p>
             </div>
             <div className="space-y-2">
               {form.formFields.sort((a, b) => a.order - b.order).map((field, idx) => (
                 <div key={field.key} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${field.enabled ? "border-warm-200 bg-white" : "border-warm-100 bg-warm-50 opacity-60"}`}>
-                  {/* Reorder buttons */}
                   <div className="flex flex-col gap-0.5">
                     <button type="button" disabled={idx === 0} onClick={() => {
                       const fields = [...form.formFields].sort((a, b) => a.order - b.order);
@@ -328,23 +341,15 @@ export default function LandingPageDetailPage() {
                       setForm(p => ({ ...p, formFields: fields })); setSaved(false);
                     }} className="text-warm-400 hover:text-warm-600 disabled:opacity-30 text-xs leading-none">&darr;</button>
                   </div>
-
-                  {/* Enable toggle */}
                   <input type="checkbox" checked={field.enabled} onChange={(e) => {
                     const fields = form.formFields.map(f => f.key === field.key ? { ...f, enabled: e.target.checked } : f);
                     setForm(p => ({ ...p, formFields: fields })); setSaved(false);
                   }} className="accent-warm-800 w-4 h-4" />
-
-                  {/* Label */}
                   <input type="text" value={field.label} onChange={(e) => {
                     const fields = form.formFields.map(f => f.key === field.key ? { ...f, label: e.target.value } : f);
                     setForm(p => ({ ...p, formFields: fields })); setSaved(false);
                   }} className="flex-1 border border-warm-200 rounded px-3 py-1.5 text-sm focus:outline-none min-w-0" />
-
-                  {/* Key (read-only) */}
                   <span className="text-[10px] text-warm-400 font-mono w-16 text-right shrink-0">{field.key}</span>
-
-                  {/* Width selector */}
                   <div className="flex gap-1 shrink-0">
                     {(["50", "70", "100"] as const).map(w => (
                       <button key={w} type="button" onClick={() => {
@@ -359,18 +364,86 @@ export default function LandingPageDetailPage() {
               ))}
             </div>
           </div>
+
+          {/* 5. Successo */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-warm-800">Pagina di successo</h3>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo pulsante form</label><input type="text" value={form.buttonLabel} onChange={(e) => updateField("buttonLabel", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo successo</label><input type="text" value={form.successTitle} onChange={(e) => updateField("successTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Messaggio successo</label><textarea value={form.successMessage} onChange={(e) => updateField("successMessage", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" placeholder="Testo opzionale sotto il titolo" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Privacy label</label><textarea value={form.privacyLabel} onChange={(e) => updateField("privacyLabel", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Marketing label</label><input type="text" value={form.marketingLabel} onChange={(e) => updateField("marketingLabel", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+          </div>
         </div>
       )}
 
       {/* ═══ Email Tab ═══ */}
       {activeTab === "email" && (
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
-          <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Oggetto email</label><input type="text" value={form.emailSubject} onChange={(e) => updateField("emailSubject", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-          <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo email</label><input type="text" value={form.emailTitle} onChange={(e) => updateField("emailTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-          <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Corpo email</label><textarea value={form.emailBody} onChange={(e) => updateField("emailBody", e.target.value)} rows={5} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-          <p className="text-xs text-warm-500 italic">La firma email viene inserita automaticamente.</p>
-          <div className="pt-3 border-t border-warm-100">
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Invia email di prova</label>
+        <div className="space-y-6">
+          {/* Template email */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-warm-800">Template Email</h3>
+            <p className="text-xs text-warm-500">Scegli il template che verr&agrave; inviato con il QR code dopo la registrazione.</p>
+            <div>
+              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Template</label>
+              <select value={form.emailTemplateId} onChange={(e) => {
+                updateField("emailTemplateId", e.target.value);
+                const tpl = emailTemplates.find(t => t.id === e.target.value);
+                setEmailPreviewHtml(tpl?.previewHtml || "");
+              }} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none">
+                <option value="">-- Nessun template (usa titolo/corpo personalizzato) --</option>
+                {emailTemplates.map(t => (
+                  <option key={t.id} value={t.id}>{t.name} {t.subject ? `— ${t.subject}` : ""}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Preview del template selezionato */}
+            {form.emailTemplateId && (() => {
+              const tpl = emailTemplates.find(t => t.id === form.emailTemplateId);
+              return tpl?.previewHtml ? (
+                <div className="border border-warm-200 rounded-lg overflow-hidden">
+                  <div className="px-4 py-2 bg-warm-50 text-xs text-warm-500 font-medium border-b border-warm-200">Anteprima template</div>
+                  <iframe srcDoc={tpl.previewHtml} className="w-full h-[300px] bg-white" title="Email preview" />
+                </div>
+              ) : null;
+            })()}
+          </div>
+
+          {/* Fallback: campi manuali (se nessun template scelto) */}
+          {!form.emailTemplateId && (
+            <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
+              <h3 className="text-sm font-semibold text-warm-800">Contenuto email personalizzato</h3>
+              <p className="text-xs text-warm-500">Questi campi vengono usati solo se non selezioni un template sopra.</p>
+              <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo email</label><input type="text" value={form.emailTitle} onChange={(e) => updateField("emailTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+              <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Corpo email</label><textarea value={form.emailBody} onChange={(e) => updateField("emailBody", e.target.value)} rows={5} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            </div>
+          )}
+
+          {/* Oggetto email (sempre visibile) */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-warm-800">Oggetto email</h3>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Oggetto</label><input type="text" value={form.emailSubject} onChange={(e) => updateField("emailSubject", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" placeholder="Es. Registrazione confermata — Milan Design Week 2026" /></div>
+          </div>
+
+          {/* Firma email */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-warm-800">Firma Email</h3>
+            <p className="text-xs text-warm-500">La firma verr&agrave; inserita in fondo all&apos;email, dopo il QR code.</p>
+            <div>
+              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Template firma</label>
+              <select value={form.signatureTemplateId} onChange={(e) => updateField("signatureTemplateId", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none">
+                <option value="">-- Firma di default (utente SMTP) --</option>
+                {signatureTemplates.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Test email */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
+            <h3 className="text-sm font-semibold text-warm-800">Invia email di prova</h3>
             <div className="flex gap-2">
               <input type="email" value={testEmail} onChange={(e) => setTestEmail(e.target.value)} placeholder="email@esempio.com" className="flex-1 border border-warm-300 rounded-lg px-4 py-2 text-sm focus:outline-none" />
               <button onClick={handleSendTest} disabled={sendingTest || !testEmail} className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 disabled:opacity-50">
