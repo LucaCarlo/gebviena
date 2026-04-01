@@ -111,11 +111,20 @@ export async function POST(req: Request) {
 
     const qrDataUrl = await generateQRCodeDataUrl(qrCode);
 
-    // Auto-assign "evento" tag
-    assignTagBySlug(email, "evento", "Evento").catch(() => {});
+    // Auto-assign event-specific tag (from LP tagSlug, fallback to "evento")
+    if (landingPageId) {
+      const lpTag = await prisma.landingPageConfig.findUnique({ where: { id: landingPageId }, select: { tagSlug: true, name: true } });
+      if (lpTag?.tagSlug) {
+        assignTagBySlug(email, lpTag.tagSlug, lpTag.name || "Evento").catch(() => {});
+      } else {
+        assignTagBySlug(email, "evento", "Evento").catch(() => {});
+      }
+    } else {
+      assignTagBySlug(email, "evento", "Evento").catch(() => {});
+    }
 
     // Get email config from the specific landing page, fallback to default
-    let emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; bannerImage: string; emailTemplateId?: string; signatureTemplateId?: string };
+    let emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; bannerImage: string; emailTemplateId?: string; signatureTemplateId?: string; signatureUserData?: string };
     if (landingPageId) {
       const lp = await prisma.landingPageConfig.findUnique({
         where: { id: landingPageId },
