@@ -616,7 +616,7 @@ export default function LandingPageDetailPage() {
               <div className="flex items-start gap-3">
                 {!scanResult.success ? <AlertCircle size={28} className="text-red-500 shrink-0" /> : scanResult.alreadyCheckedIn ? <AlertCircle size={28} className="text-yellow-600 shrink-0" /> : <CheckCircle2 size={28} className="text-green-500 shrink-0" />}
                 <div>
-                  <p className="font-semibold text-base">{!scanResult.success ? "Non valido" : scanResult.alreadyCheckedIn ? "Già registrato" : "Check-in OK!"}</p>
+                  <p className="font-semibold text-base">{!scanResult.success ? "Non valido" : scanResult.alreadyCheckedIn ? "Già fatto check-in" : "Check-in OK!"}</p>
                   <p className="text-sm mt-1 opacity-80">{!scanResult.success ? scanResult.error : `${scanResult.data?.firstName} ${scanResult.data?.lastName}`}</p>
                 </div>
               </div>
