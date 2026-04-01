@@ -521,6 +521,7 @@ model LandingPageConfig {
   emailFooter     String?  @db.Text
   emailTemplateId String?  // FK to EmailTemplate
   signatureTemplateId String? // FK to SignatureTemplate
+  signatureUserData String? @db.Text // JSON: {fullName, department, infoLine1, infoLine2, address, phone, mobile}
   formFields      String?  @db.Text // JSON: field layout config [{key, label, width, enabled, order}]
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())

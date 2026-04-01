@@ -119,7 +119,7 @@ export async function POST(req: Request) {
     if (landingPageId) {
       const lp = await prisma.landingPageConfig.findUnique({
         where: { id: landingPageId },
-        select: { emailSubject: true, emailTitle: true, emailBody: true, bannerImage: true, emailTemplateId: true, signatureTemplateId: true },
+        select: { emailSubject: true, emailTitle: true, emailBody: true, bannerImage: true, emailTemplateId: true, signatureTemplateId: true, signatureUserData: true },
       });
       if (lp) {
         emailConfig = {
@@ -129,6 +129,7 @@ export async function POST(req: Request) {
           bannerImage: lp.bannerImage || "",
           emailTemplateId: lp.emailTemplateId || undefined,
           signatureTemplateId: lp.signatureTemplateId || undefined,
+          signatureUserData: lp.signatureUserData || undefined,
         };
       } else {
         emailConfig = await getEmailConfig();

@@ -148,17 +148,44 @@ async function sendViaBrevoApi(
   return res.json();
 }
 
-async function getSignatureHtml(signatureTemplateId?: string): Promise<string> {
-  // If a specific signature template is requested, find first user assigned to it
+async function getSignatureHtml(signatureTemplateId?: string, signatureUserDataJson?: string): Promise<string> {
+  // If a specific signature template + user data is provided, render it directly
   if (signatureTemplateId) {
-    const user = await prisma.adminUser.findFirst({
-      where: { signatureTemplateId },
-      select: { signatureHtml: true },
-    });
-    if (user?.signatureHtml) return user.signatureHtml;
+    const { renderSignature, DEFAULT_USER_DATA, EMPTY_TEMPLATE } = await import("@/app/admin/firma/_components/signatureRenderer");
+    const tpl = await prisma.signatureTemplate.findUnique({ where: { id: signatureTemplateId } });
+    if (tpl) {
+      let userData = { ...DEFAULT_USER_DATA };
+      if (signatureUserDataJson) {
+        try {
+          const parsed = JSON.parse(signatureUserDataJson);
+          userData = {
+            fullName: parsed.fullName || DEFAULT_USER_DATA.fullName,
+            department: parsed.department || DEFAULT_USER_DATA.department,
+            infoLine1: parsed.infoLine1 || DEFAULT_USER_DATA.infoLine1,
+            infoLine2: parsed.infoLine2 || DEFAULT_USER_DATA.infoLine2,
+            address: parsed.address || DEFAULT_USER_DATA.address,
+            phone: parsed.phone || DEFAULT_USER_DATA.phone,
+            mobile: parsed.mobile || DEFAULT_USER_DATA.mobile,
+          };
+        } catch { /* use defaults */ }
+      }
+      const tplData = {
+        ...EMPTY_TEMPLATE,
+        logoUrl: tpl.logoUrl, bannerUrl: tpl.bannerUrl,
+        showInstagram: tpl.showInstagram, showFacebook: tpl.showFacebook,
+        showWeb: tpl.showWeb, showLinkedin: tpl.showLinkedin, showPinterest: tpl.showPinterest,
+        instagramUrl: tpl.instagramUrl, facebookUrl: tpl.facebookUrl,
+        webLinkUrl: tpl.webLinkUrl, linkedinUrl: tpl.linkedinUrl, pinterestUrl: tpl.pinterestUrl,
+        websiteUrl: tpl.websiteUrl, website: tpl.website,
+        disclaimerLang: (tpl.disclaimerLang as "it" | "en" | "both") || "it",
+        footerIt: tpl.footerIt, footerEn: tpl.footerEn, ecoText: tpl.ecoText,
+        style: (tpl.style as "classic" | "geb" | "geb-gradient") || "geb",
+      };
+      return renderSignature(userData, tplData);
+    }
   }
 
-  // Default: fetch from smtp_from_email user
+  // Fallback: fetch from smtp_from_email user or first user with a signature
   const cfg = await getMailConfig();
   const fromEmail = cfg.smtp_from_email;
   if (fromEmail) {
@@ -169,7 +196,6 @@ async function getSignatureHtml(signatureTemplateId?: string): Promise<string> {
     if (user?.signatureHtml) return user.signatureHtml;
   }
 
-  // Fallback: first admin user that has a signatureHtml
   const fallback = await prisma.adminUser.findFirst({
     where: { signatureHtml: { not: null } },
     select: { signatureHtml: true },
@@ -192,7 +218,7 @@ export async function sendRegistrationEmailWithConfig(
   lastName: string,
   qrCode: string,
   qrDataUrl: string,
-  emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; bannerImage?: string; emailTemplateId?: string; signatureTemplateId?: string }
+  emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; bannerImage?: string; emailTemplateId?: string; signatureTemplateId?: string; signatureUserData?: string }
 ) {
   const base64Data = qrDataUrl.replace(/^data:image\/png;base64,/, "");
   const cfg = await getMailConfig();
@@ -213,7 +239,7 @@ export async function sendRegistrationEmailWithConfig(
   }
 
   // Get the signature HTML
-  const signatureHtml = await getSignatureHtml(emailConfig.signatureTemplateId);
+  const signatureHtml = await getSignatureHtml(emailConfig.signatureTemplateId, emailConfig.signatureUserData);
 
   // Build email HTML
   let html: string;

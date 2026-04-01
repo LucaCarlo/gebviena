@@ -8,6 +8,7 @@ import {
   XCircle, ExternalLink,
 } from "lucide-react";
 import ImageUploadField from "@/components/admin/ImageUploadField";
+import { renderSignature, DEFAULT_USER_DATA, EMPTY_TEMPLATE, type SignatureUserData, type SignatureTemplateData } from "@/app/admin/firma/_components/signatureRenderer";
 
 /* ───── Types ───── */
 
@@ -32,6 +33,14 @@ const DEFAULT_FORM_FIELDS: FieldConfig[] = [
   { key: "zipCode", label: "ZIP", width: "50", enabled: true, order: 9 },
 ];
 
+interface SigUserData {
+  fullName: string; department: string; infoLine1: string; infoLine2: string; address: string; phone: string; mobile: string;
+}
+
+const EMPTY_SIG_DATA: SigUserData = {
+  fullName: "", department: "", infoLine1: "", infoLine2: "", address: "", phone: "", mobile: "",
+};
+
 interface FormState {
   name: string; permalink: string; type: string;
   heroTitle: string; heroSubtitle: string; heroLocation: string; heroDescription: string;
@@ -39,11 +48,12 @@ interface FormState {
   buttonLabel: string; bannerImage: string; logoImage: string;
   emailSubject: string; emailTitle: string; emailBody: string; isActive: boolean;
   emailTemplateId: string; signatureTemplateId: string;
+  signatureUserData: SigUserData;
   formFields: FieldConfig[];
 }
 
 interface EmailTpl { id: string; name: string; subject: string; previewHtml: string | null; }
-interface SigTpl { id: string; name: string; }
+interface SigTpl extends SignatureTemplateData { id: string; name: string; }
 
 interface ScanResult { success: boolean; alreadyCheckedIn?: boolean; error?: string; data?: { firstName: string; lastName: string; email: string; profile: string | null; checkedInAt: string | null; }; }
 
@@ -66,6 +76,7 @@ export default function LandingPageDetailPage() {
     buttonLabel: "Register", bannerImage: "", logoImage: "",
     emailSubject: "", emailTitle: "", emailBody: "", isActive: true,
     emailTemplateId: "", signatureTemplateId: "",
+    signatureUserData: { ...EMPTY_SIG_DATA },
     formFields: [...DEFAULT_FORM_FIELDS],
   });
   const [loading, setLoading] = useState(true);
@@ -124,6 +135,7 @@ export default function LandingPageDetailPage() {
           isActive: lp.isActive,
           emailTemplateId: lp.emailTemplateId || "",
           signatureTemplateId: lp.signatureTemplateId || "",
+          signatureUserData: lp.signatureUserData ? (() => { try { return JSON.parse(lp.signatureUserData); } catch { return { ...EMPTY_SIG_DATA }; } })() : { ...EMPTY_SIG_DATA },
           formFields: parsedFields,
         });
       }
@@ -146,7 +158,7 @@ export default function LandingPageDetailPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { formFields, emailTemplateId, signatureTemplateId, ...rest } = form;
+    const { formFields, emailTemplateId, signatureTemplateId, signatureUserData, ...rest } = form;
     const res = await fetch("/api/landing-page-config", {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -154,6 +166,7 @@ export default function LandingPageDetailPage() {
         formFields: JSON.stringify(formFields),
         emailTemplateId: emailTemplateId || null,
         signatureTemplateId: signatureTemplateId || null,
+        signatureUserData: signatureTemplateId ? JSON.stringify(signatureUserData) : null,
       }),
     });
     const d = await res.json();
@@ -424,16 +437,76 @@ export default function LandingPageDetailPage() {
           {/* Firma email */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-warm-800">Firma Email</h3>
-            <p className="text-xs text-warm-500">La firma verr&agrave; inserita in fondo all&apos;email, dopo il QR code.</p>
+            <p className="text-xs text-warm-500">Scegli un template firma e compila i dati. La firma apparir&agrave; in fondo all&apos;email.</p>
             <div>
               <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Template firma</label>
-              <select value={form.signatureTemplateId} onChange={(e) => updateField("signatureTemplateId", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none">
-                <option value="">-- Firma di default (utente SMTP) --</option>
+              <select value={form.signatureTemplateId} onChange={(e) => { updateField("signatureTemplateId", e.target.value); }} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none">
+                <option value="">-- Nessuna firma --</option>
                 {signatureTemplates.map(t => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
             </div>
+
+            {form.signatureTemplateId && (
+              <>
+                <div className="border-t border-warm-100 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">Nome completo</label>
+                    <input type="text" value={form.signatureUserData.fullName} onChange={(e) => { setForm(p => ({ ...p, signatureUserData: { ...p.signatureUserData, fullName: e.target.value } })); setSaved(false); }} placeholder={DEFAULT_USER_DATA.fullName} className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">Reparto</label>
+                    <input type="text" value={form.signatureUserData.department} onChange={(e) => { setForm(p => ({ ...p, signatureUserData: { ...p.signatureUserData, department: e.target.value } })); setSaved(false); }} placeholder={DEFAULT_USER_DATA.department} className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">Info riga 1</label>
+                    <input type="text" value={form.signatureUserData.infoLine1} onChange={(e) => { setForm(p => ({ ...p, signatureUserData: { ...p.signatureUserData, infoLine1: e.target.value } })); setSaved(false); }} placeholder={DEFAULT_USER_DATA.infoLine1} className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">Info riga 2</label>
+                    <input type="text" value={form.signatureUserData.infoLine2} onChange={(e) => { setForm(p => ({ ...p, signatureUserData: { ...p.signatureUserData, infoLine2: e.target.value } })); setSaved(false); }} placeholder={DEFAULT_USER_DATA.infoLine2} className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">Indirizzo</label>
+                    <input type="text" value={form.signatureUserData.address} onChange={(e) => { setForm(p => ({ ...p, signatureUserData: { ...p.signatureUserData, address: e.target.value } })); setSaved(false); }} placeholder={DEFAULT_USER_DATA.address} className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">Telefono</label>
+                    <input type="text" value={form.signatureUserData.phone} onChange={(e) => { setForm(p => ({ ...p, signatureUserData: { ...p.signatureUserData, phone: e.target.value } })); setSaved(false); }} placeholder={DEFAULT_USER_DATA.phone} className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">Cellulare</label>
+                    <input type="text" value={form.signatureUserData.mobile} onChange={(e) => { setForm(p => ({ ...p, signatureUserData: { ...p.signatureUserData, mobile: e.target.value } })); setSaved(false); }} placeholder={DEFAULT_USER_DATA.mobile} className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none" />
+                  </div>
+                </div>
+
+                {/* Anteprima firma live */}
+                {(() => {
+                  const tpl = signatureTemplates.find(t => t.id === form.signatureTemplateId);
+                  if (!tpl) return null;
+                  const userData: SignatureUserData = {
+                    fullName: form.signatureUserData.fullName || DEFAULT_USER_DATA.fullName,
+                    department: form.signatureUserData.department || DEFAULT_USER_DATA.department,
+                    infoLine1: form.signatureUserData.infoLine1 || DEFAULT_USER_DATA.infoLine1,
+                    infoLine2: form.signatureUserData.infoLine2 || DEFAULT_USER_DATA.infoLine2,
+                    address: form.signatureUserData.address || DEFAULT_USER_DATA.address,
+                    phone: form.signatureUserData.phone || DEFAULT_USER_DATA.phone,
+                    mobile: form.signatureUserData.mobile || DEFAULT_USER_DATA.mobile,
+                  };
+                  const tplData: SignatureTemplateData = { ...EMPTY_TEMPLATE, ...tpl };
+                  const html = renderSignature(userData, tplData);
+                  return (
+                    <div className="border-t border-warm-100 pt-4">
+                      <p className="text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-2">Anteprima firma</p>
+                      <div className="border border-warm-200 rounded-lg overflow-hidden bg-white p-4">
+                        <div dangerouslySetInnerHTML={{ __html: html }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
+            )}
           </div>
 
           {/* Test email */}
