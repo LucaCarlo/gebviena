@@ -197,28 +197,48 @@ export default function LandingPageDetailPage() {
   };
 
   // Scanner
+  const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
+  const [scanPaused, setScanPaused] = useState(false);
+  const lastScannedRef = useRef<string>("");
+
   const processQrCode = async (code: string) => {
-    if (processing) return;
+    const trimmed = code.trim();
+    if (processing || scanPaused) return;
+    // Ignore same QR scanned again within pause window
+    if (trimmed === lastScannedRef.current) return;
+    lastScannedRef.current = trimmed;
     setProcessing(true); setScanResult(null);
     try {
-      const r = await fetch("/api/event-registrations/checkin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ qrCode: code.trim() }) });
+      const r = await fetch("/api/event-registrations/checkin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ qrCode: trimmed }) });
       const data: ScanResult = await r.json();
       setScanResult(data);
       if (navigator.vibrate) { if (data.success && !data.alreadyCheckedIn) navigator.vibrate([100, 50, 100]); else navigator.vibrate([200]); }
       if (data.success && data.data) {
         setScanHistory((p) => [{ name: `${data.data!.firstName} ${data.data!.lastName}`, time: new Date().toLocaleTimeString("it-IT"), isNew: !data.alreadyCheckedIn }, ...p.slice(0, 29)]);
       }
-      setTimeout(() => setScanResult(null), 4000);
+
+      // Pause scanner for 3 seconds after any result, then auto-resume
+      setScanPaused(true);
+      if (scannerRef.current) { try { await scannerRef.current.stop(); } catch {} }
+      setTimeout(() => {
+        setScanResult(null);
+        setScanPaused(false);
+        lastScannedRef.current = "";
+        // Re-trigger scanning
+        setScanning(false);
+        setTimeout(() => setScanning(true), 100);
+      }, 3000);
     } catch { setScanResult({ success: false, error: "Errore di connessione" }); }
     setProcessing(false);
   };
 
   useEffect(() => {
-    if (!scanning) return;
+    if (!scanning || scanPaused) return;
     let scanner: { stop: () => Promise<void>; clear: () => void } | null = null;
     import("html5-qrcode").then(({ Html5Qrcode }) => {
       const qr = new Html5Qrcode("qr-reader");
       scanner = qr as unknown as typeof scanner;
+      scannerRef.current = scanner;
       const container = document.getElementById("qr-reader");
       const w = container?.clientWidth || 300;
       const boxSize = Math.min(Math.floor(w * 0.65), 280);
@@ -231,9 +251,9 @@ export default function LandingPageDetailPage() {
         } catch {}
       }).catch(() => setScanning(false));
     });
-    return () => { if (scanner) { scanner.stop().catch(() => {}); scanner.clear(); } };
+    return () => { if (scanner) { scanner.stop().catch(() => {}); scanner.clear(); scannerRef.current = null; } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scanning]);
+  }, [scanning, scanPaused]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -578,18 +598,45 @@ export default function LandingPageDetailPage() {
             <p className="text-xs text-warm-500 mb-4">Scansiona il QR code degli invitati per il check-in.</p>
 
             <div className="mb-4">
-              {scanning ? (
+              {scanning || scanPaused ? (
                 <div>
-                  <div id="qr-reader" className="rounded-lg overflow-hidden mb-3 w-full max-w-[400px] mx-auto" />
-                  <div className="text-center">
-                    <button onClick={() => setScanning(false)} className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200 active:bg-warm-300">
-                      <X size={16} /> Chiudi fotocamera
-                    </button>
+                  <div className="relative w-full max-w-[400px] mx-auto mb-3">
+                    <div id="qr-reader" className={`rounded-lg overflow-hidden w-full ${scanPaused ? "opacity-20" : ""}`} />
+                    {/* Overlay risultato check-in */}
+                    {scanPaused && scanResult && (
+                      <div className="absolute inset-0 flex items-center justify-center rounded-lg" style={{ backgroundColor: !scanResult.success ? "rgba(220,38,38,0.95)" : scanResult.alreadyCheckedIn ? "rgba(202,138,4,0.95)" : "rgba(22,163,74,0.95)" }}>
+                        <div className="text-center text-white px-6">
+                          {!scanResult.success ? (
+                            <AlertCircle size={56} className="mx-auto mb-3" />
+                          ) : scanResult.alreadyCheckedIn ? (
+                            <AlertCircle size={56} className="mx-auto mb-3" />
+                          ) : (
+                            <CheckCircle2 size={56} className="mx-auto mb-3" />
+                          )}
+                          <p className="text-xl font-bold mb-1">
+                            {!scanResult.success ? "Non valido" : scanResult.alreadyCheckedIn ? "Già fatto check-in" : "Check-in OK!"}
+                          </p>
+                          {scanResult.data && (
+                            <p className="text-lg opacity-90">{scanResult.data.firstName} {scanResult.data.lastName}</p>
+                          )}
+                          {!scanResult.success && scanResult.error && (
+                            <p className="text-sm opacity-80 mt-1">{scanResult.error}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                  {!scanPaused && (
+                    <div className="text-center">
+                      <button onClick={() => { setScanning(false); setScanPaused(false); }} className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200 active:bg-warm-300">
+                        <X size={16} /> Chiudi fotocamera
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button onClick={() => { setScanResult(null); setScanning(true); }} className="flex items-center justify-center gap-3 bg-warm-800 text-white py-5 sm:py-4 rounded-lg text-base sm:text-sm font-medium hover:bg-warm-900 active:bg-warm-950">
+                  <button onClick={() => { setScanResult(null); lastScannedRef.current = ""; setScanning(true); }} className="flex items-center justify-center gap-3 bg-warm-800 text-white py-5 sm:py-4 rounded-lg text-base sm:text-sm font-medium hover:bg-warm-900 active:bg-warm-950">
                     <Camera size={22} /> Scansiona con fotocamera
                   </button>
                   <button onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center gap-3 bg-warm-100 text-warm-700 py-5 sm:py-4 rounded-lg text-base sm:text-sm font-medium hover:bg-warm-200 active:bg-warm-300">
@@ -611,7 +658,8 @@ export default function LandingPageDetailPage() {
             </div>
           </div>
 
-          {scanResult && (
+          {/* Risultato per input manuale (non camera) */}
+          {scanResult && !scanning && !scanPaused && (
             <div className={`rounded-xl shadow-sm border p-4 mb-4 ${!scanResult.success ? "bg-red-50 border-red-200" : scanResult.alreadyCheckedIn ? "bg-yellow-50 border-yellow-200" : "bg-green-50 border-green-200"}`}>
               <div className="flex items-start gap-3">
                 {!scanResult.success ? <AlertCircle size={28} className="text-red-500 shrink-0" /> : scanResult.alreadyCheckedIn ? <AlertCircle size={28} className="text-yellow-600 shrink-0" /> : <CheckCircle2 size={28} className="text-green-500 shrink-0" />}
