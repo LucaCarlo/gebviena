@@ -268,24 +268,27 @@ export function renderSignatureHtmlGeb(
   const fontStack = "'Work Sans', Aptos, Calibri, Arial, Helvetica, sans-serif";
 
   // Build social icons (22px round B&W)
+  // Each icon is wrapped in its own <td> to survive copy-paste across email clients
   const iconSize = "22";
   const socialIcons: string[] = [];
   if (t.showWeb && t.webLinkUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.webLinkUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_WEB_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Web"></a>`);
+    socialIcons.push(`<td style="padding:0 2px;"><a href="${escapeHtml(t.webLinkUrl)}" target="_blank" style="text-decoration:none;"><img src="${ICON_WEB_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Web"></a></td>`);
   }
   if (t.showInstagram && t.instagramUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.instagramUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_INSTAGRAM_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Instagram"></a>`);
+    socialIcons.push(`<td style="padding:0 2px;"><a href="${escapeHtml(t.instagramUrl)}" target="_blank" style="text-decoration:none;"><img src="${ICON_INSTAGRAM_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Instagram"></a></td>`);
   }
   if (t.showLinkedin && t.linkedinUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.linkedinUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_LINKEDIN_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="LinkedIn"></a>`);
+    socialIcons.push(`<td style="padding:0 2px;"><a href="${escapeHtml(t.linkedinUrl)}" target="_blank" style="text-decoration:none;"><img src="${ICON_LINKEDIN_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="LinkedIn"></a></td>`);
   }
   if (t.showFacebook && t.facebookUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.facebookUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_FACEBOOK_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Facebook"></a>`);
+    socialIcons.push(`<td style="padding:0 2px;"><a href="${escapeHtml(t.facebookUrl)}" target="_blank" style="text-decoration:none;"><img src="${ICON_FACEBOOK_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Facebook"></a></td>`);
   }
   if (t.showPinterest && t.pinterestUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.pinterestUrl)}" target="_blank" style="display:inline-block;text-decoration:none;"><img src="${ICON_PINTEREST_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Pinterest"></a>`);
+    socialIcons.push(`<td style="padding:0 2px;"><a href="${escapeHtml(t.pinterestUrl)}" target="_blank" style="text-decoration:none;"><img src="${ICON_PINTEREST_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Pinterest"></a></td>`);
   }
-  const socialHtml = socialIcons.join("");
+  const socialTableHtml = socialIcons.length > 0
+    ? `<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.join("")}</tr></table>`
+    : "";
 
   const logoHtml = t.logoUrl
     ? `<img alt="Logo" src="${t.logoUrl}" width="130" style="display:block;border:0;outline:none;height:auto;margin:0 auto;" />`
@@ -379,7 +382,7 @@ export function renderSignatureHtmlGeb(
 <tr><td style="text-align:center;">${logoHtml}</td></tr>
 <tr><td height="${msoSpacer}" style="font-size:1px;line-height:1px;">&nbsp;</td></tr>
 <tr><td style="text-align:center;font-size:0;">
-<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table>
+${socialTableHtml}
 </td></tr>
 </table>
 </td>
@@ -405,7 +408,7 @@ ${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
 </tr>
 <tr>
 <td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:bottom;text-align:center;font-size:0;line-height:0;">
-<div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div>
+${socialTableHtml}
 </td>
 </tr>
 </table>
@@ -437,21 +440,23 @@ export function renderSignatureHtmlGebGradient(
   const iconSize = "22";
   const socialIcons: string[] = [];
   if (t.showWeb && t.webLinkUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.webLinkUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_WEB_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Web"></a>`);
+    socialIcons.push(`<td style="padding:0 2px;"><a href="${escapeHtml(t.webLinkUrl)}" target="_blank" style="text-decoration:none;"><img src="${ICON_WEB_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Web"></a></td>`);
   }
   if (t.showInstagram && t.instagramUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.instagramUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_INSTAGRAM_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Instagram"></a>`);
+    socialIcons.push(`<td style="padding:0 2px;"><a href="${escapeHtml(t.instagramUrl)}" target="_blank" style="text-decoration:none;"><img src="${ICON_INSTAGRAM_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Instagram"></a></td>`);
   }
   if (t.showLinkedin && t.linkedinUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.linkedinUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_LINKEDIN_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="LinkedIn"></a>`);
+    socialIcons.push(`<td style="padding:0 2px;"><a href="${escapeHtml(t.linkedinUrl)}" target="_blank" style="text-decoration:none;"><img src="${ICON_LINKEDIN_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="LinkedIn"></a></td>`);
   }
   if (t.showFacebook && t.facebookUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.facebookUrl)}" target="_blank" style="display:inline-block;text-decoration:none;margin-right:3px;"><img src="${ICON_FACEBOOK_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Facebook"></a>`);
+    socialIcons.push(`<td style="padding:0 2px;"><a href="${escapeHtml(t.facebookUrl)}" target="_blank" style="text-decoration:none;"><img src="${ICON_FACEBOOK_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Facebook"></a></td>`);
   }
   if (t.showPinterest && t.pinterestUrl) {
-    socialIcons.push(`<a href="${escapeHtml(t.pinterestUrl)}" target="_blank" style="display:inline-block;text-decoration:none;"><img src="${ICON_PINTEREST_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Pinterest"></a>`);
+    socialIcons.push(`<td style="padding:0 2px;"><a href="${escapeHtml(t.pinterestUrl)}" target="_blank" style="text-decoration:none;"><img src="${ICON_PINTEREST_BW}" width="${iconSize}" height="${iconSize}" style="display:block;border:0;outline:none;" alt="Pinterest"></a></td>`);
   }
-  const socialHtml = socialIcons.join("");
+  const socialTableHtml = socialIcons.length > 0
+    ? `<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.join("")}</tr></table>`
+    : "";
 
   // Logo: use pre-rendered PNG with baked-in white glow (works on all email clients)
   const glowSrc = t.logoGlowUrl || t.logoUrl;
@@ -543,7 +548,7 @@ export function renderSignatureHtmlGebGradient(
 <tr><td style="text-align:center;">${logoHtml}</td></tr>
 <tr><td height="${msoSpacer}" style="font-size:1px;line-height:1px;">&nbsp;</td></tr>
 <tr><td style="text-align:center;font-size:0;">
-<table border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-collapse:collapse;margin:0 auto;"><tr>${socialIcons.map(icon => `<td style="padding:0 2px;">${icon}</td>`).join("")}</tr></table>
+${socialTableHtml}
 </td></tr>
 </table>
 </td>
@@ -569,7 +574,7 @@ ${websiteHtml ? `<div style="margin-top:2px;">${websiteHtml}</div>` : ""}
 </tr>
 <tr>
 <td style="width:140px;padding:0 12px 0 0;border-right:1px solid #000000;vertical-align:bottom;text-align:center;font-size:0;line-height:0;">
-<div style="white-space:nowrap;text-align:center;font-size:0;line-height:0;">${socialHtml}</div>
+${socialTableHtml}
 </td>
 </tr>
 </table>
