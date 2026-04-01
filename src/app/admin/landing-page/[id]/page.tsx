@@ -75,7 +75,6 @@ export default function LandingPageDetailPage() {
   // Email & signature templates
   const [emailTemplates, setEmailTemplates] = useState<EmailTpl[]>([]);
   const [signatureTemplates, setSignatureTemplates] = useState<SigTpl[]>([]);
-  const [emailPreviewHtml, setEmailPreviewHtml] = useState("");
 
   // Registrations
   const [regs, setRegs] = useState<EventReg[]>([]);
@@ -386,11 +385,7 @@ export default function LandingPageDetailPage() {
             <p className="text-xs text-warm-500">Scegli il template che verr&agrave; inviato con il QR code dopo la registrazione.</p>
             <div>
               <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Template</label>
-              <select value={form.emailTemplateId} onChange={(e) => {
-                updateField("emailTemplateId", e.target.value);
-                const tpl = emailTemplates.find(t => t.id === e.target.value);
-                setEmailPreviewHtml(tpl?.previewHtml || "");
-              }} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none">
+              <select value={form.emailTemplateId} onChange={(e) => updateField("emailTemplateId", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none">
                 <option value="">-- Nessun template (usa titolo/corpo personalizzato) --</option>
                 {emailTemplates.map(t => (
                   <option key={t.id} value={t.id}>{t.name} {t.subject ? `— ${t.subject}` : ""}</option>
