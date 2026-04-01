@@ -519,6 +519,7 @@ model LandingPageConfig {
   emailTitle      String?  @db.Text
   emailBody       String?  @db.Text
   emailFooter     String?  @db.Text
+  formFields      String?  @db.Text // JSON: field layout config [{key, label, width, enabled, order}]
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -536,6 +537,8 @@ model EventRegistration {
   lastName         String
   email            String
   profile          String?
+  company          String?
+  phone            String?
   country          String
   state            String?
   city             String

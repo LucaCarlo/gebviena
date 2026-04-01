@@ -5,6 +5,14 @@ import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
+interface FieldConfig {
+  key: string;
+  label: string;
+  width: "50" | "70" | "100";
+  enabled: boolean;
+  order: number;
+}
+
 interface LandingConfig {
   id: string;
   heroTitle: string;
@@ -18,6 +26,7 @@ interface LandingConfig {
   buttonLabel: string;
   bannerImage: string | null;
   logoImage: string | null;
+  formFields: FieldConfig[] | null;
   isActive: boolean;
 }
 
@@ -29,6 +38,21 @@ const PROFILE_OPTIONS = [
   "Student",
   "Other",
 ];
+
+const DEFAULT_FIELDS: FieldConfig[] = [
+  { key: "firstName", label: "First Name", width: "50", enabled: true, order: 0 },
+  { key: "lastName", label: "Last Name", width: "50", enabled: true, order: 1 },
+  { key: "email", label: "Email", width: "100", enabled: true, order: 2 },
+  { key: "profile", label: "Profile", width: "100", enabled: true, order: 3 },
+  { key: "company", label: "Company", width: "100", enabled: false, order: 4 },
+  { key: "phone", label: "Phone", width: "50", enabled: false, order: 5 },
+  { key: "country", label: "Country or Region", width: "50", enabled: true, order: 6 },
+  { key: "state", label: "State or Province", width: "50", enabled: true, order: 7 },
+  { key: "city", label: "City", width: "50", enabled: true, order: 8 },
+  { key: "zipCode", label: "ZIP", width: "50", enabled: true, order: 9 },
+];
+
+const REQUIRED_FIELDS = new Set(["firstName", "lastName", "email", "country", "city", "zipCode"]);
 
 const DEFAULT_CONFIG: LandingConfig = {
   id: "",
@@ -47,6 +71,7 @@ const DEFAULT_CONFIG: LandingConfig = {
   buttonLabel: "Register",
   bannerImage: null,
   logoImage: null,
+  formFields: null,
   isActive: true,
 };
 
@@ -57,11 +82,13 @@ export default function LandingPage() {
   const inviteToken = searchParams.get("inv") || "";
   const trackedRef = useRef(false);
   const [config, setConfig] = useState<LandingConfig>(DEFAULT_CONFIG);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<Record<string, string | boolean>>({
     firstName: "",
     lastName: "",
     email: "",
     profile: "",
+    company: "",
+    phone: "",
     country: "",
     state: "",
     city: "",
@@ -83,7 +110,11 @@ export default function LandingPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.data) {
-          setConfig(data.data);
+          let parsedFields: FieldConfig[] | null = null;
+          if (data.data.formFields) {
+            try { parsedFields = JSON.parse(data.data.formFields); } catch { /* ignore */ }
+          }
+          setConfig({ ...data.data, formFields: parsedFields });
         } else {
           setNotFound(true);
         }
@@ -106,21 +137,22 @@ export default function LandingPage() {
       .catch(() => {});
   }, [inviteToken]);
 
+  const fields = (config.formFields || DEFAULT_FIELDS).filter(f => f.enabled).sort((a, b) => a.order - b.order);
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!form.firstName.trim()) newErrors.firstName = "Required";
-    if (!form.lastName.trim()) newErrors.lastName = "Required";
-    if (!form.email.trim()) {
-      newErrors.email = "Required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    for (const f of fields) {
+      if (REQUIRED_FIELDS.has(f.key)) {
+        const val = form[f.key];
+        if (!val || (typeof val === "string" && !val.trim())) {
+          newErrors[f.key] = "Required";
+        }
+      }
+    }
+    if (form.email && typeof form.email === "string" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = "Invalid email";
     }
-    if (!form.country.trim()) newErrors.country = "Required";
-    if (!form.city.trim()) newErrors.city = "Required";
-    if (!form.zipCode.trim()) newErrors.zipCode = "Required";
     if (!form.privacyAccepted) newErrors.privacyAccepted = "Required";
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -237,7 +269,7 @@ export default function LandingPage() {
           </div>
         )}
         {config.heroLocation && config.heroDescription && (
-          <div className="text-dark mb-4 text-[15px]">———</div>
+          <div className="mx-auto mb-6" style={{ maxWidth: "80px", height: "1px", backgroundColor: "#333" }} />
         )}
         {config.heroDescription && (
           <div>
@@ -296,177 +328,68 @@ export default function LandingPage() {
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-10" noValidate>
+            <form onSubmit={handleSubmit} noValidate>
               {serverError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-4 py-3 font-light">
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-4 py-3 font-light mb-8">
                   {serverError}
                 </div>
               )}
 
-              {/* First Name */}
-              <div>
-                <label className="block text-[16px] font-semibold text-dark mb-2">
-                  First Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.firstName}
-                  onChange={(e) => updateField("firstName", e.target.value)}
-                  className={`w-full border ${
-                    errors.firstName
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.firstName && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.firstName}</p>
-                )}
-              </div>
+              {/* Dynamic fields */}
+              <div className="flex flex-wrap gap-y-8 -mx-2">
+                {fields.map((field) => {
+                  const isRequired = REQUIRED_FIELDS.has(field.key);
+                  const widthClass = field.width === "50" ? "w-full sm:w-1/2" : field.width === "70" ? "w-full sm:w-[70%]" : "w-full";
+                  const val = form[field.key] ?? "";
+                  const inputType = field.key === "email" ? "email" : field.key === "phone" ? "tel" : "text";
 
-              {/* Last Name */}
-              <div>
-                <label className="block text-[16px] font-semibold text-dark mb-2">
-                  Last Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.lastName}
-                  onChange={(e) => updateField("lastName", e.target.value)}
-                  className={`w-full border ${
-                    errors.lastName
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.lastName && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.lastName}</p>
-                )}
-              </div>
+                  if (field.key === "profile") {
+                    return (
+                      <div key={field.key} className={`${widthClass} px-2`}>
+                        <label className="block text-[16px] font-semibold text-dark mb-2">
+                          {field.label} {isRequired && <span className="text-red-500">*</span>}
+                        </label>
+                        <select
+                          value={val as string}
+                          onChange={(e) => updateField("profile", e.target.value)}
+                          className={`w-full border ${errors.profile ? "border-red-400" : "border-warm-200 focus:border-warm-400"} rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors cursor-pointer`}
+                        >
+                          <option value="">Select...</option>
+                          {PROFILE_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                    );
+                  }
 
-              {/* Email */}
-              <div>
-                <label className="block text-[16px] font-semibold text-dark mb-2">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => updateField("email", e.target.value)}
-                  className={`w-full border ${
-                    errors.email
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.email}</p>
-                )}
-              </div>
-
-              {/* Profile */}
-              <div>
-                <label className="block text-[16px] font-semibold text-dark mb-2">
-                  Profile <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={form.profile}
-                  onChange={(e) => updateField("profile", e.target.value)}
-                  className={`w-full border ${
-                    errors.profile
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors cursor-pointer`}
-                >
-                  <option value="">Select...</option>
-                  {PROFILE_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Country */}
-              <div>
-                <label className="block text-[16px] font-semibold text-dark mb-2">
-                  Country or Region <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.country}
-                  onChange={(e) => updateField("country", e.target.value)}
-                  className={`w-full border ${
-                    errors.country
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.country && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.country}</p>
-                )}
-              </div>
-
-              {/* State */}
-              <div>
-                <label className="block text-[16px] font-semibold text-dark mb-2">
-                  State or Province
-                </label>
-                <input
-                  type="text"
-                  value={form.state}
-                  onChange={(e) => updateField("state", e.target.value)}
-                  className="w-full border border-warm-200 focus:border-warm-400 rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors"
-                />
-              </div>
-
-              {/* City */}
-              <div>
-                <label className="block text-[16px] font-semibold text-dark mb-2">
-                  City <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.city}
-                  onChange={(e) => updateField("city", e.target.value)}
-                  className={`w-full border ${
-                    errors.city
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.city && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.city}</p>
-                )}
-              </div>
-
-              {/* ZIP */}
-              <div>
-                <label className="block text-[16px] font-semibold text-dark mb-2">
-                  ZIP <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.zipCode}
-                  onChange={(e) => updateField("zipCode", e.target.value)}
-                  className={`w-full border ${
-                    errors.zipCode
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.zipCode && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.zipCode}</p>
-                )}
+                  return (
+                    <div key={field.key} className={`${widthClass} px-2`}>
+                      <label className="block text-[16px] font-semibold text-dark mb-2">
+                        {field.label} {isRequired && <span className="text-red-500">*</span>}
+                      </label>
+                      <input
+                        type={inputType}
+                        value={val as string}
+                        onChange={(e) => updateField(field.key, e.target.value)}
+                        className={`w-full border ${errors[field.key] ? "border-red-400" : "border-warm-200 focus:border-warm-400"} rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
+                      />
+                      {errors[field.key] && (
+                        <p className="text-red-500 text-xs mt-1 font-light">{errors[field.key]}</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Divider */}
-              <div className="border-t border-warm-200" />
+              <div className="border-t border-warm-200 mt-10 mb-8" />
 
               {/* Privacy checkbox */}
-              <label className="flex items-start gap-3 cursor-pointer">
+              <label className="flex items-start gap-3 cursor-pointer mb-6">
                 <input
                   type="checkbox"
-                  checked={form.privacyAccepted}
+                  checked={form.privacyAccepted as boolean}
                   onChange={(e) =>
                     updateField("privacyAccepted", e.target.checked)
                   }
@@ -491,10 +414,10 @@ export default function LandingPage() {
 
               {/* Marketing checkbox */}
               {config.marketingLabel && (
-                <label className="flex items-start gap-3 cursor-pointer">
+                <label className="flex items-start gap-3 cursor-pointer mb-6">
                   <input
                     type="checkbox"
-                    checked={form.marketingConsent}
+                    checked={form.marketingConsent as boolean}
                     onChange={(e) =>
                       updateField("marketingConsent", e.target.checked)
                     }

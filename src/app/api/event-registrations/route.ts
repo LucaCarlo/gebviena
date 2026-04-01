@@ -21,6 +21,8 @@ export async function POST(req: Request) {
       lastName,
       email,
       profile,
+      company,
+      phone,
       country,
       state,
       city,
@@ -85,6 +87,8 @@ export async function POST(req: Request) {
         lastName,
         email,
         profile: profile || null,
+        company: company || null,
+        phone: phone || null,
         country,
         state: state || null,
         city,
@@ -110,8 +114,17 @@ export async function POST(req: Request) {
     // Auto-assign "evento" tag
     assignTagBySlug(email, "evento", "Evento").catch(() => {});
 
+    // Get email config from the specific landing page, fallback to default
+    let emailConfig;
+    if (landingPageId) {
+      const lp = await prisma.landingPageConfig.findUnique({ where: { id: landingPageId }, select: { emailSubject: true, emailTitle: true, emailBody: true, bannerImage: true } });
+      if (lp?.emailSubject && lp?.emailTitle && lp?.emailBody) {
+        emailConfig = { emailSubject: lp.emailSubject, emailTitle: lp.emailTitle, emailBody: lp.emailBody, bannerImage: lp.bannerImage || "" };
+      }
+    }
+    if (!emailConfig) emailConfig = await getEmailConfig();
+
     // Send emails in background
-    const emailConfig = await getEmailConfig();
     sendRegistrationEmailWithConfig(email, firstName, lastName, qrCode, qrDataUrl, emailConfig).catch(
       (err) => console.error("Registration email failed:", err)
     );

@@ -11,12 +11,34 @@ import ImageUploadField from "@/components/admin/ImageUploadField";
 
 /* ───── Types ───── */
 
+interface FieldConfig {
+  key: string;
+  label: string;
+  width: "50" | "70" | "100";
+  enabled: boolean;
+  order: number;
+}
+
+const DEFAULT_FORM_FIELDS: FieldConfig[] = [
+  { key: "firstName", label: "First Name", width: "50", enabled: true, order: 0 },
+  { key: "lastName", label: "Last Name", width: "50", enabled: true, order: 1 },
+  { key: "email", label: "Email", width: "100", enabled: true, order: 2 },
+  { key: "profile", label: "Profile", width: "100", enabled: true, order: 3 },
+  { key: "company", label: "Company", width: "100", enabled: false, order: 4 },
+  { key: "phone", label: "Phone", width: "50", enabled: false, order: 5 },
+  { key: "country", label: "Country or Region", width: "50", enabled: true, order: 6 },
+  { key: "state", label: "State or Province", width: "50", enabled: true, order: 7 },
+  { key: "city", label: "City", width: "50", enabled: true, order: 8 },
+  { key: "zipCode", label: "ZIP", width: "50", enabled: true, order: 9 },
+];
+
 interface FormState {
   name: string; permalink: string; type: string;
   heroTitle: string; heroSubtitle: string; heroLocation: string; heroDescription: string;
   successTitle: string; successMessage: string; privacyLabel: string; marketingLabel: string;
   buttonLabel: string; bannerImage: string; logoImage: string;
   emailSubject: string; emailTitle: string; emailBody: string; isActive: boolean;
+  formFields: FieldConfig[];
 }
 
 interface ScanResult { success: boolean; alreadyCheckedIn?: boolean; error?: string; data?: { firstName: string; lastName: string; email: string; profile: string | null; checkedInAt: string | null; }; }
@@ -39,6 +61,7 @@ export default function LandingPageDetailPage() {
     successTitle: "", successMessage: "", privacyLabel: "", marketingLabel: "",
     buttonLabel: "Register", bannerImage: "", logoImage: "",
     emailSubject: "", emailTitle: "", emailBody: "", isActive: true,
+    formFields: [...DEFAULT_FORM_FIELDS],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,6 +90,18 @@ export default function LandingPageDetailPage() {
       .then((d) => {
         if (d.success && d.data) {
           const lp = d.data;
+          let parsedFields = [...DEFAULT_FORM_FIELDS];
+          if (lp.formFields) {
+            try {
+              const saved = JSON.parse(lp.formFields) as FieldConfig[];
+              // Merge saved with defaults (in case new fields were added)
+              const savedKeys = new Set(saved.map((f: FieldConfig) => f.key));
+              parsedFields = [
+                ...saved,
+                ...DEFAULT_FORM_FIELDS.filter(f => !savedKeys.has(f.key)),
+              ].sort((a, b) => a.order - b.order);
+            } catch { /* use defaults */ }
+          }
           setForm({
             name: lp.name || "", permalink: lp.permalink || "", type: lp.type || "evento",
             heroTitle: lp.heroTitle || "", heroSubtitle: lp.heroSubtitle || "",
@@ -77,6 +112,7 @@ export default function LandingPageDetailPage() {
             logoImage: lp.logoImage || "", emailSubject: lp.emailSubject || "",
             emailTitle: lp.emailTitle || "", emailBody: lp.emailBody || "",
             isActive: lp.isActive,
+            formFields: parsedFields,
           });
         }
       })
@@ -97,9 +133,10 @@ export default function LandingPageDetailPage() {
 
   const handleSave = async () => {
     setSaving(true);
+    const { formFields, ...rest } = form;
     const res = await fetch("/api/landing-page-config", {
       method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: lpId, ...form }),
+      body: JSON.stringify({ id: lpId, ...rest, formFields: JSON.stringify(formFields) }),
     });
     const d = await res.json();
     if (d.success) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
@@ -267,6 +304,60 @@ export default function LandingPageDetailPage() {
             <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo successo</label><input type="text" value={form.successTitle} onChange={(e) => updateField("successTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
             <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Privacy label</label><textarea value={form.privacyLabel} onChange={(e) => updateField("privacyLabel", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
             <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Marketing label</label><input type="text" value={form.marketingLabel} onChange={(e) => updateField("marketingLabel", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+          </div>
+
+          {/* Field Layout Config */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-warm-800">Campi del form</h3>
+              <p className="text-[10px] text-warm-400">Trascina per riordinare, scegli la larghezza</p>
+            </div>
+            <div className="space-y-2">
+              {form.formFields.sort((a, b) => a.order - b.order).map((field, idx) => (
+                <div key={field.key} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${field.enabled ? "border-warm-200 bg-white" : "border-warm-100 bg-warm-50 opacity-60"}`}>
+                  {/* Reorder buttons */}
+                  <div className="flex flex-col gap-0.5">
+                    <button type="button" disabled={idx === 0} onClick={() => {
+                      const fields = [...form.formFields].sort((a, b) => a.order - b.order);
+                      if (idx > 0) { const t = fields[idx].order; fields[idx].order = fields[idx - 1].order; fields[idx - 1].order = t; }
+                      setForm(p => ({ ...p, formFields: fields })); setSaved(false);
+                    }} className="text-warm-400 hover:text-warm-600 disabled:opacity-30 text-xs leading-none">&uarr;</button>
+                    <button type="button" disabled={idx === form.formFields.length - 1} onClick={() => {
+                      const fields = [...form.formFields].sort((a, b) => a.order - b.order);
+                      if (idx < fields.length - 1) { const t = fields[idx].order; fields[idx].order = fields[idx + 1].order; fields[idx + 1].order = t; }
+                      setForm(p => ({ ...p, formFields: fields })); setSaved(false);
+                    }} className="text-warm-400 hover:text-warm-600 disabled:opacity-30 text-xs leading-none">&darr;</button>
+                  </div>
+
+                  {/* Enable toggle */}
+                  <input type="checkbox" checked={field.enabled} onChange={(e) => {
+                    const fields = form.formFields.map(f => f.key === field.key ? { ...f, enabled: e.target.checked } : f);
+                    setForm(p => ({ ...p, formFields: fields })); setSaved(false);
+                  }} className="accent-warm-800 w-4 h-4" />
+
+                  {/* Label */}
+                  <input type="text" value={field.label} onChange={(e) => {
+                    const fields = form.formFields.map(f => f.key === field.key ? { ...f, label: e.target.value } : f);
+                    setForm(p => ({ ...p, formFields: fields })); setSaved(false);
+                  }} className="flex-1 border border-warm-200 rounded px-3 py-1.5 text-sm focus:outline-none min-w-0" />
+
+                  {/* Key (read-only) */}
+                  <span className="text-[10px] text-warm-400 font-mono w-16 text-right shrink-0">{field.key}</span>
+
+                  {/* Width selector */}
+                  <div className="flex gap-1 shrink-0">
+                    {(["50", "70", "100"] as const).map(w => (
+                      <button key={w} type="button" onClick={() => {
+                        const fields = form.formFields.map(f => f.key === field.key ? { ...f, width: w } : f);
+                        setForm(p => ({ ...p, formFields: fields })); setSaved(false);
+                      }} className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${field.width === w ? "bg-warm-800 text-white" : "bg-warm-100 text-warm-500 hover:bg-warm-200"}`}>
+                        {w}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
