@@ -11,6 +11,7 @@ interface FieldConfig {
   width: "50" | "70" | "100";
   enabled: boolean;
   order: number;
+  options?: string[];
 }
 
 interface LandingConfig {
@@ -246,8 +247,8 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* Hero text */}
-      <section className="text-center px-6 py-10 md:py-14 mx-auto" style={{ maxWidth: "600px" }}>
+      {/* Hero text — hidden after registration */}
+      {!success && <section className="text-center px-6 py-10 md:py-14 mx-auto" style={{ maxWidth: "600px" }}>
         <h1 className="text-[19px] text-dark font-bold mb-1">
           {config.heroTitle}
         </h1>
@@ -280,7 +281,7 @@ export default function LandingPage() {
             ))}
           </div>
         )}
-      </section>
+      </section>}
 
       {/* Form or Success */}
       <section className="px-6 pb-20 md:pb-32">
@@ -311,20 +312,24 @@ export default function LandingPage() {
                 </p>
               )}
               {qrDataUrl && (
-                <div className="inline-block border border-warm-200 rounded-lg p-4 mb-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={qrDataUrl}
-                    alt="Your QR Code"
-                    width={250}
-                    height={250}
-                    className="block"
-                  />
-                </div>
+                <>
+                  <p className="text-[13px] text-dark/60 font-light mb-4">
+                    Show this code at the entrance for check-in
+                  </p>
+                  <div className="inline-block border border-warm-200 rounded-lg p-4 mb-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={qrDataUrl}
+                      alt="Your QR Code"
+                      width={250}
+                      height={250}
+                      className="block"
+                    />
+                  </div>
+                </>
               )}
-              <p className="text-xs text-warm-400 mt-4 font-light">
-                Your personal QR code ID:{" "}
-                <span className="font-mono">{qrCode}</span>
+              <p className="text-[11px] text-dark/40 mt-4 font-light font-mono">
+                {qrCode}
               </p>
             </div>
           ) : (
@@ -355,7 +360,7 @@ export default function LandingPage() {
                           className={`w-full border ${errors.profile ? "border-red-400" : "border-warm-200 focus:border-warm-400"} rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors cursor-pointer`}
                         >
                           <option value="">Select...</option>
-                          {PROFILE_OPTIONS.map((opt) => (
+                          {(field.options?.length ? field.options : PROFILE_OPTIONS).map((opt) => (
                             <option key={opt} value={opt}>{opt}</option>
                           ))}
                         </select>
