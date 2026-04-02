@@ -418,41 +418,41 @@ export default function LandingPageDetailPage() {
           </div>
 
           {/* 4b. Opzioni profilo */}
-          {form.formFields.find(f => f.key === "profile" && f.enabled) && (
+          {form.formFields.find(f => f.key === "profile" && f.enabled) && (() => {
+            const DEFAULT_OPTS = ["Architect / Interior Designer", "Press", "Trade / Retailer", "Client / Collector", "Student", "Other"];
+            const profileField = form.formFields.find(f => f.key === "profile");
+            const currentOptions = profileField?.options?.length ? profileField.options : DEFAULT_OPTS;
+            const updateProfileOptions = (newOptions: string[]) => {
+              const fields = form.formFields.map(f => f.key === "profile" ? { ...f, options: newOptions } : f);
+              setForm(p => ({ ...p, formFields: fields })); setSaved(false);
+            };
+            return (
             <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-warm-800">Opzioni profilo</h3>
                 <button type="button" onClick={() => {
-                  const fields = form.formFields.map(f => f.key === "profile" ? { ...f, options: [...(f.options || []), ""] } : f);
-                  setForm(p => ({ ...p, formFields: fields })); setSaved(false);
+                  updateProfileOptions([...currentOptions, ""]);
                 }} className="text-xs text-warm-600 hover:text-warm-800 flex items-center gap-1">+ Aggiungi</button>
               </div>
               <div className="space-y-2">
-                {(form.formFields.find(f => f.key === "profile")?.options || ["Architect / Interior Designer", "Press", "Trade / Retailer", "Client / Collector", "Student", "Other"]).map((opt, i) => (
+                {currentOptions.map((opt, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <input type="text" value={opt} onChange={(e) => {
-                      const fields = form.formFields.map(f => {
-                        if (f.key !== "profile") return f;
-                        const options = [...(f.options || [])];
-                        options[i] = e.target.value;
-                        return { ...f, options };
-                      });
-                      setForm(p => ({ ...p, formFields: fields })); setSaved(false);
+                      const opts = [...currentOptions];
+                      opts[i] = e.target.value;
+                      updateProfileOptions(opts);
                     }} className="flex-1 border border-warm-200 rounded px-3 py-1.5 text-sm focus:outline-none" placeholder="Nome opzione..." />
                     <button type="button" onClick={() => {
-                      const fields = form.formFields.map(f => {
-                        if (f.key !== "profile") return f;
-                        const options = [...(f.options || [])];
-                        options.splice(i, 1);
-                        return { ...f, options };
-                      });
-                      setForm(p => ({ ...p, formFields: fields })); setSaved(false);
+                      const opts = [...currentOptions];
+                      opts.splice(i, 1);
+                      updateProfileOptions(opts);
                     }} className="text-warm-400 hover:text-red-500 shrink-0"><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* 5. Successo */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
