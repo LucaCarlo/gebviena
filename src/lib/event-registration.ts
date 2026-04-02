@@ -1,6 +1,7 @@
 import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
-import { mkdir } from "fs/promises";
+import { mkdir, writeFile } from "fs/promises";
+import crypto from "crypto";
 import path from "path";
 
 export async function generateQRCodeDataUrl(text: string): Promise<string> {
@@ -29,6 +30,29 @@ export async function generateQRCodeFile(text: string, filename: string): Promis
 
 function getSiteUrl() {
   return process.env.SITE_URL || process.env.NEXTAUTH_URL || "https://dev.gebruederthonetvienna.com";
+}
+
+/**
+ * Convert data URI (base64) images to files on disk, return absolute URL.
+ * Email clients block base64 images, so we need hosted URLs.
+ */
+async function ensureAbsoluteImageUrl(dataOrUrl: string | null, prefix: string): Promise<string | null> {
+  if (!dataOrUrl) return null;
+  if (dataOrUrl.startsWith("http")) return dataOrUrl;
+  if (!dataOrUrl.startsWith("data:")) {
+    return `${getSiteUrl()}${dataOrUrl.startsWith("/") ? "" : "/"}${dataOrUrl}`;
+  }
+  const match = dataOrUrl.match(/^data:image\/(\w+);base64,([\s\S]+)$/);
+  if (!match) return null;
+  const ext = match[1] === "jpeg" ? "jpg" : match[1];
+  const base64 = match[2];
+  const hash = crypto.createHash("md5").update(base64.slice(0, 200)).digest("hex").slice(0, 12);
+  const filename = `${prefix}-${hash}.${ext}`;
+  const dir = path.join(process.cwd(), "public", "uploads", "signatures");
+  await mkdir(dir, { recursive: true });
+  const filePath = path.join(dir, filename);
+  await writeFile(filePath, Buffer.from(base64, "base64"));
+  return `${getSiteUrl()}/uploads/signatures/${filename}`;
 }
 
 export function buildRegistrationEmailHtml(opts: {
@@ -169,9 +193,13 @@ async function getSignatureHtml(signatureTemplateId?: string, signatureUserDataJ
           };
         } catch { /* use defaults */ }
       }
+      // Convert base64 images to hosted files for email compatibility
+      const hostedLogoUrl = await ensureAbsoluteImageUrl(tpl.logoUrl, "sig-logo");
+      const hostedBannerUrl = await ensureAbsoluteImageUrl(tpl.bannerUrl, "sig-banner");
+
       const tplData = {
         ...EMPTY_TEMPLATE,
-        logoUrl: tpl.logoUrl, bannerUrl: tpl.bannerUrl,
+        logoUrl: hostedLogoUrl, bannerUrl: hostedBannerUrl,
         showInstagram: tpl.showInstagram, showFacebook: tpl.showFacebook,
         showWeb: tpl.showWeb, showLinkedin: tpl.showLinkedin, showPinterest: tpl.showPinterest,
         instagramUrl: tpl.instagramUrl, facebookUrl: tpl.facebookUrl,

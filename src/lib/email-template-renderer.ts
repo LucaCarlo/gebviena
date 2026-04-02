@@ -8,6 +8,15 @@ export interface EmailBlock {
   [key: string]: unknown;
 }
 
+function getSiteUrl(): string {
+  return process.env.SITE_URL || process.env.NEXTAUTH_URL || "https://dev.gebruederthonetvienna.com";
+}
+
+function makeAbsoluteUrl(url: string): string {
+  if (!url || url.startsWith("http") || url.startsWith("data:")) return url;
+  return `${getSiteUrl()}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
 function escapeHtml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -29,8 +38,9 @@ function fontStack(font: string): string {
 function renderBlock(block: EmailBlock): string {
   switch (block.type) {
     case "banner": {
-      const url = (block.imageUrl as string) || "";
-      if (!url) return "";
+      const rawUrl = (block.imageUrl as string) || "";
+      if (!rawUrl) return "";
+      const url = makeAbsoluteUrl(rawUrl);
       const img = `<img src="${url}" alt="${escapeHtml((block.alt as string) || "")}" width="600" style="display:block;width:100%;max-width:600px;height:auto;" />`;
       return (block.linkUrl as string)
         ? `<tr><td><a href="${escapeHtml(block.linkUrl as string)}" target="_blank">${img}</a></td></tr>`

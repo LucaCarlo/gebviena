@@ -10,6 +10,8 @@ interface ScanResult {
   time?: string;
 }
 
+const COOLDOWN_MS = 3000; // ignore same QR for 3 seconds
+
 export default function ScannerPage() {
   const [scanning, setScanning] = useState(false);
   const [manualMode, setManualMode] = useState(false);
@@ -19,10 +21,15 @@ export default function ScannerPage() {
   const [history, setHistory] = useState<ScanResult[]>([]);
   const [eventName, setEventName] = useState("");
   const [stats, setStats] = useState({ total: 0, checkedIn: 0 });
+  const [showOverlay, setShowOverlay] = useState(false);
   const videoRef = useRef<HTMLDivElement>(null);
   const scannerRef = useRef<unknown>(null);
   const resultTimeoutRef = useRef<NodeJS.Timeout>();
+  const overlayTimeoutRef = useRef<NodeJS.Timeout>();
   const manualInputRef = useRef<HTMLInputElement>(null);
+  // Synchronous lock to prevent duplicate scans (React state is async)
+  const isProcessingRef = useRef(false);
+  const lastScannedRef = useRef<{ code: string; time: number }>({ code: "", time: 0 });
 
   // Fetch event info
   useEffect(() => {
@@ -36,7 +43,6 @@ export default function ScannerPage() {
               if (d.success && d.data) setEventName(d.data.name || "Evento");
             })
             .catch(() => {});
-          // Fetch stats
           fetch(`/api/event-registrations?landingPageId=${data.scanLandingPageId}`)
             .then((r) => r.json())
             .then((d) => {
@@ -51,13 +57,26 @@ export default function ScannerPage() {
   }, []);
 
   const doCheckin = useCallback(async (qrCode: string) => {
-    if (processing || !qrCode.trim()) return;
+    const trimmed = qrCode.trim();
+    if (!trimmed) return;
+
+    // Synchronous lock check (ref, not state)
+    if (isProcessingRef.current) return;
+
+    // Cooldown: ignore same QR code within COOLDOWN_MS
+    const now = Date.now();
+    if (lastScannedRef.current.code === trimmed && now - lastScannedRef.current.time < COOLDOWN_MS) return;
+
+    // Lock immediately (synchronous)
+    isProcessingRef.current = true;
+    lastScannedRef.current = { code: trimmed, time: now };
     setProcessing(true);
+
     try {
       const r = await fetch("/api/event-registrations/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qrCode: qrCode.trim() }),
+        body: JSON.stringify({ qrCode: trimmed }),
       });
       const d = await r.json();
 
@@ -76,14 +95,26 @@ export default function ScannerPage() {
 
       setLastResult(result);
       setHistory((prev) => [result, ...prev].slice(0, 50));
+
+      // Show fullscreen overlay
+      setShowOverlay(true);
+      if (overlayTimeoutRef.current) clearTimeout(overlayTimeoutRef.current);
+      overlayTimeoutRef.current = setTimeout(() => setShowOverlay(false), 2500);
+
       if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current);
-      resultTimeoutRef.current = setTimeout(() => setLastResult(null), 4000);
+      resultTimeoutRef.current = setTimeout(() => setLastResult(null), 5000);
     } catch {
-      setLastResult({ type: "error", message: "Errore di connessione" });
+      const errResult: ScanResult = { type: "error", message: "Errore di connessione" };
+      setLastResult(errResult);
+      setShowOverlay(true);
+      if (overlayTimeoutRef.current) clearTimeout(overlayTimeoutRef.current);
+      overlayTimeoutRef.current = setTimeout(() => setShowOverlay(false), 2500);
     }
+
     setProcessing(false);
+    isProcessingRef.current = false;
     setManualCode("");
-  }, [processing]);
+  }, []);
 
   // Start camera
   const startCamera = useCallback(async () => {
@@ -91,13 +122,12 @@ export default function ScannerPage() {
     setScanning(true);
     setManualMode(false);
     try {
-      // Dynamic import to avoid SSR issues
       const { Html5Qrcode } = await import("html5-qrcode");
       const scanner = new Html5Qrcode("scanner-video");
       scannerRef.current = scanner;
       await scanner.start(
         { facingMode: "environment" },
-        { fps: 15, disableFlip: false },
+        { fps: 5, disableFlip: false },
         (decodedText: string) => {
           doCheckin(decodedText);
         },
@@ -155,8 +185,38 @@ export default function ScannerPage() {
     error: "bg-red-500",
   };
 
+  const overlayConfig = {
+    success: { bg: "bg-green-500", icon: <CheckCircle2 size={80} className="text-white" />, label: "CHECK-IN RIUSCITO" },
+    already: { bg: "bg-amber-500", icon: <AlertCircle size={80} className="text-white" />, label: "GIÀ REGISTRATO" },
+    error: { bg: "bg-red-500", icon: <X size={80} className="text-white" />, label: "NON VALIDO" },
+  };
+
   return (
     <div className="fixed inset-0 bg-black flex flex-col" style={{ touchAction: "manipulation" }}>
+      {/* Fullscreen result overlay */}
+      {showOverlay && lastResult && (
+        <div
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center ${overlayConfig[lastResult.type].bg} transition-opacity duration-300`}
+          onClick={() => setShowOverlay(false)}
+          style={{ animation: "fadeIn 0.15s ease-out" }}
+        >
+          <div style={{ animation: "scaleIn 0.25s ease-out" }}>
+            {overlayConfig[lastResult.type].icon}
+          </div>
+          <p className="text-white text-2xl font-bold mt-6 tracking-wider">
+            {overlayConfig[lastResult.type].label}
+          </p>
+          {lastResult.name && (
+            <p className="text-white/90 text-xl mt-3">{lastResult.name}</p>
+          )}
+          <p className="text-white/50 text-sm mt-8">Tocca per chiudere</p>
+          <style>{`
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes scaleIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+          `}</style>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-black/80 backdrop-blur px-4 py-3 flex items-center justify-between shrink-0 z-10">
         <div>
@@ -177,7 +237,7 @@ export default function ScannerPage() {
       </div>
 
       {/* Result banner */}
-      {lastResult && (
+      {lastResult && !showOverlay && (
         <div className={`${resultColors[lastResult.type]} px-4 py-3 flex items-center gap-3 shrink-0 z-10`}>
           {lastResult.type === "success" ? <CheckCircle2 size={24} className="text-white shrink-0" /> :
            lastResult.type === "already" ? <AlertCircle size={24} className="text-white shrink-0" /> :
