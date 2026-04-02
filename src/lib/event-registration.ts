@@ -46,22 +46,25 @@ interface EmailFooterConfig {
 }
 
 function buildEmailFooterHtml(footer: EmailFooterConfig): string {
+  const siteUrl = getSiteUrl();
+  const iconBase = `${siteUrl}/images/email-icons`;
+  const iconSize = 22;
   const icons: string[] = [];
 
   if (footer.showInstagram && footer.instagramUrl) {
-    icons.push(`<a href="${footer.instagramUrl}" target="_blank" style="display:inline-block;margin:0 6px;text-decoration:none;color:#333333;font-size:13px;">Instagram</a>`);
+    icons.push(`<a href="${footer.instagramUrl}" target="_blank" style="display:inline-block;margin:0 8px;text-decoration:none;"><img src="${iconBase}/icon-instagram-bw.png" width="${iconSize}" height="${iconSize}" alt="Instagram" style="display:block;border:0;" /></a>`);
   }
   if (footer.showFacebook && footer.facebookUrl) {
-    icons.push(`<a href="${footer.facebookUrl}" target="_blank" style="display:inline-block;margin:0 6px;text-decoration:none;color:#333333;font-size:13px;">Facebook</a>`);
+    icons.push(`<a href="${footer.facebookUrl}" target="_blank" style="display:inline-block;margin:0 8px;text-decoration:none;"><img src="${iconBase}/icon-facebook-bw.png" width="${iconSize}" height="${iconSize}" alt="Facebook" style="display:block;border:0;" /></a>`);
   }
   if (footer.showLinkedin && footer.linkedinUrl) {
-    icons.push(`<a href="${footer.linkedinUrl}" target="_blank" style="display:inline-block;margin:0 6px;text-decoration:none;color:#333333;font-size:13px;">LinkedIn</a>`);
+    icons.push(`<a href="${footer.linkedinUrl}" target="_blank" style="display:inline-block;margin:0 8px;text-decoration:none;"><img src="${iconBase}/icon-linkedin-bw.png" width="${iconSize}" height="${iconSize}" alt="LinkedIn" style="display:block;border:0;" /></a>`);
   }
   if (footer.showPinterest && footer.pinterestUrl) {
-    icons.push(`<a href="${footer.pinterestUrl}" target="_blank" style="display:inline-block;margin:0 6px;text-decoration:none;color:#333333;font-size:13px;">Pinterest</a>`);
+    icons.push(`<a href="${footer.pinterestUrl}" target="_blank" style="display:inline-block;margin:0 8px;text-decoration:none;"><img src="${iconBase}/icon-pinterest-bw.png" width="${iconSize}" height="${iconSize}" alt="Pinterest" style="display:block;border:0;" /></a>`);
   }
   if (footer.showWeb && footer.webUrl) {
-    icons.push(`<a href="${footer.webUrl}" target="_blank" style="display:inline-block;margin:0 6px;text-decoration:none;color:#333333;font-size:13px;">Web</a>`);
+    icons.push(`<a href="${footer.webUrl}" target="_blank" style="display:inline-block;margin:0 8px;text-decoration:none;"><img src="${iconBase}/icon-web-bw.png" width="${iconSize}" height="${iconSize}" alt="Web" style="display:block;border:0;" /></a>`);
   }
 
   const lines: string[] = [];
@@ -76,7 +79,7 @@ function buildEmailFooterHtml(footer: EmailFooterConfig): string {
       <tr><td style="padding:0 40px;">
         <hr style="border:none;border-top:1px solid #1a1a1a;margin:0;" />
       </td></tr>
-      ${icons.length > 0 ? `<tr><td style="padding:20px 40px 12px;text-align:center;">${icons.join('<span style="color:#cccccc;margin:0 2px;">|</span>')}</td></tr>` : ""}
+      ${icons.length > 0 ? `<tr><td style="padding:20px 40px 12px;text-align:center;">${icons.join("")}</td></tr>` : ""}
       ${lines.length > 0 ? `<tr><td style="padding:${icons.length > 0 ? "0" : "20px"} 40px 24px;text-align:center;">${lines.join("")}</td></tr>` : ""}
     </table>`;
 }

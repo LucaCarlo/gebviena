@@ -303,7 +303,7 @@ export default function LandingPage() {
                   />
                 </svg>
               </div>
-              <h2 className="font-sans text-[28px] md:text-[36px] text-dark tracking-tight font-light mb-4">
+              <h2 className="font-sans text-[19px] text-dark font-bold mb-4">
                 {config.successTitle}
               </h2>
               {config.successMessage && (
