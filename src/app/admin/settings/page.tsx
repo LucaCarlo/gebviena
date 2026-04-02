@@ -145,6 +145,7 @@ function SmtpTab({ showToast }: { showToast: (m: string, t: "success" | "error")
     smtp_from_name: "",
     smtp_from_email: "",
     admin_email: "",
+    brevo_api_key: "",
   });
   const [testEmail, setTestEmail] = useState("");
   const [saving, setSaving] = useState(false);
@@ -260,6 +261,12 @@ function SmtpTab({ showToast }: { showToast: (m: string, t: "success" | "error")
           <label className={labelClass}>Email amministratore (per notifiche)</label>
           <input type="email" value={form.admin_email} onChange={(e) => update("admin_email", e.target.value)} className={inputClass} placeholder="admin@gebvienna.com" />
           <p className="text-xs text-warm-400 mt-1">Riceverà le notifiche di contatto e messaggi dal sito.</p>
+        </div>
+
+        <div className="border-t border-warm-200 pt-5 mt-5">
+          <label className={labelClass}>Brevo API Key (opzionale)</label>
+          <input type="password" value={form.brevo_api_key} onChange={(e) => update("brevo_api_key", e.target.value)} className={inputClass} placeholder="xkeysib-..." />
+          <p className="text-xs text-warm-400 mt-1">Se configurata, le email verranno inviate tramite API Brevo invece che via SMTP.</p>
         </div>
       </div>
 

@@ -124,11 +124,11 @@ export async function POST(req: Request) {
     }
 
     // Get email config from the specific landing page, fallback to default
-    let emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; bannerImage: string; emailTemplateId?: string; signatureTemplateId?: string; signatureUserData?: string };
+    let emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; bannerImage: string; emailTemplateId?: string; emailFooter?: string; signatureTemplateId?: string; signatureUserData?: string };
     if (landingPageId) {
       const lp = await prisma.landingPageConfig.findUnique({
         where: { id: landingPageId },
-        select: { emailSubject: true, emailTitle: true, emailBody: true, bannerImage: true, emailTemplateId: true, signatureTemplateId: true, signatureUserData: true },
+        select: { emailSubject: true, emailTitle: true, emailBody: true, bannerImage: true, emailTemplateId: true, emailFooter: true, signatureTemplateId: true, signatureUserData: true },
       });
       if (lp) {
         emailConfig = {
@@ -137,6 +137,7 @@ export async function POST(req: Request) {
           emailBody: lp.emailBody || "",
           bannerImage: lp.bannerImage || "",
           emailTemplateId: lp.emailTemplateId || undefined,
+          emailFooter: lp.emailFooter || undefined,
           signatureTemplateId: lp.signatureTemplateId || undefined,
           signatureUserData: lp.signatureUserData || undefined,
         };

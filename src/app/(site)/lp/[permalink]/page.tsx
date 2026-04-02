@@ -19,9 +19,10 @@ interface LandingConfig {
   bannerImage: string | null;
   logoImage: string | null;
   isActive: boolean;
+  formFields: string | null;
 }
 
-const PROFILE_OPTIONS = [
+const DEFAULT_PROFILES = [
   "Architect / Interior Designer",
   "Press",
   "Trade / Retailer",
@@ -34,21 +35,28 @@ const DEFAULT_CONFIG: LandingConfig = {
   id: "",
   heroTitle: "Milan Design Week 2026",
   heroSubtitle: "Come and experience the True Over Time Collection with us.",
-  heroLocation:
-    "Milan Flagship Store\nPalazzo Gallarati Scotti\nVia Manzoni 30",
-  heroDescription:
-    "Register to receive your QR code to show at entrance.\nThe QR code is personal and can't be shared.",
+  heroLocation: "Milan Flagship Store\nPalazzo Gallarati Scotti\nVia Manzoni 30",
+  heroDescription: "Register to receive your QR code to show at entrance.\nThe QR code is personal and can't be shared.",
   successTitle: "Thank you. Your QR code has been generated.",
   successMessage: null,
-  privacyLabel:
-    "I have read and understood the Privacy Policy on processing of my personal data and I confirm that I am over 18.",
-  marketingLabel:
-    "I agree to receive communications and updates about GTV products and events.",
+  privacyLabel: "I have read and understood the Privacy Policy on processing of my personal data and I confirm that I am over 18.",
+  marketingLabel: "I agree to receive communications and updates about GTV products and events.",
   buttonLabel: "Register",
   bannerImage: null,
   logoImage: null,
   isActive: true,
+  formFields: null,
 };
+
+function getProfileOptions(config: LandingConfig): string[] {
+  if (!config.formFields) return DEFAULT_PROFILES;
+  try {
+    const fields = JSON.parse(config.formFields);
+    const profileField = fields.find((f: { key: string; options?: string[] }) => f.key === "profile");
+    if (profileField?.options?.length) return profileField.options;
+  } catch {}
+  return DEFAULT_PROFILES;
+}
 
 export default function LandingPage() {
   const params = useParams();
@@ -87,7 +95,6 @@ export default function LandingPage() {
       .catch(() => {});
   }, [permalink]);
 
-  // Track invitation click and pre-fill email
   useEffect(() => {
     if (!inviteToken || trackedRef.current) return;
     trackedRef.current = true;
@@ -103,7 +110,6 @@ export default function LandingPage() {
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-
     if (!form.firstName.trim()) newErrors.firstName = "Required";
     if (!form.lastName.trim()) newErrors.lastName = "Required";
     if (!form.email.trim()) {
@@ -115,7 +121,6 @@ export default function LandingPage() {
     if (!form.city.trim()) newErrors.city = "Required";
     if (!form.zipCode.trim()) newErrors.zipCode = "Required";
     if (!form.privacyAccepted) newErrors.privacyAccepted = "Required";
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -123,9 +128,7 @@ export default function LandingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setServerError("");
-
     if (!validate()) return;
-
     setSubmitting(true);
     try {
       const res = await fetch("/api/event-registrations", {
@@ -134,7 +137,6 @@ export default function LandingPage() {
         body: JSON.stringify({ ...form, landingPageId: config.id, inviteToken: inviteToken || undefined }),
       });
       const data = await res.json();
-
       if (data.success) {
         setQrCode(data.data.qrCode);
         setQrDataUrl(data.data.qrDataUrl || "");
@@ -161,6 +163,8 @@ export default function LandingPage() {
     }
   };
 
+  const profileOptions = getProfileOptions(config);
+
   if (!config.isActive) {
     return (
       <div className="section-padding flex items-center justify-center">
@@ -173,7 +177,7 @@ export default function LandingPage() {
 
   return (
     <div className="font-serif">
-      {/* Banner — not full width, centered with max-width */}
+      {/* Banner */}
       {config.bannerImage && (
         <section className="pt-6 md:pt-10">
           <div className="mx-auto" style={{ maxWidth: "900px" }}>
@@ -190,41 +194,32 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* Hero text */}
-      <section className="text-center px-6 py-10 md:py-14 mx-auto" style={{ maxWidth: "600px" }}>
-        <h1 className="text-[19px] text-dark font-bold mb-1">
-          {config.heroTitle}
-        </h1>
-        {config.heroSubtitle && (
-          <p className="text-[16px] text-dark font-semibold mb-6">
-            {config.heroSubtitle}
-          </p>
-        )}
-        {config.heroLocation && (
-          <div className="mb-4">
-            {config.heroLocation.split("\n").map((line, i) => (
-              <p
-                key={i}
-                className="text-[15px] text-dark leading-[1.6]"
-              >
-                {line}
-              </p>
-            ))}
-          </div>
-        )}
-        {config.heroLocation && config.heroDescription && (
-          <div className="text-dark mb-4 text-[15px]">———</div>
-        )}
-        {config.heroDescription && (
-          <div>
-            {config.heroDescription.split("\n").map((line, i) => (
-              <p key={i} className="text-[15px] text-dark leading-[1.8]">
-                {line}
-              </p>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Hero text — hidden after registration */}
+      {!success && (
+        <section className="text-center px-6 py-10 md:py-14 mx-auto" style={{ maxWidth: "600px" }}>
+          <h1 className="text-[19px] text-dark font-bold mb-1">{config.heroTitle}</h1>
+          {config.heroSubtitle && (
+            <p className="text-[16px] text-dark font-semibold mb-6">{config.heroSubtitle}</p>
+          )}
+          {config.heroLocation && (
+            <div className="mb-4">
+              {config.heroLocation.split("\n").map((line, i) => (
+                <p key={i} className="text-[15px] text-dark leading-[1.6]">{line}</p>
+              ))}
+            </div>
+          )}
+          {config.heroLocation && config.heroDescription && (
+            <div className="text-dark mb-4 text-[15px]">———</div>
+          )}
+          {config.heroDescription && (
+            <div>
+              {config.heroDescription.split("\n").map((line, i) => (
+                <p key={i} className="text-[15px] text-dark leading-[1.8]">{line}</p>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Form or Success */}
       <section className="px-6 pb-20 md:pb-32">
@@ -232,43 +227,29 @@ export default function LandingPage() {
           {success ? (
             <div className="text-center py-16">
               <div className="w-20 h-20 mx-auto mb-8 rounded-full bg-green-50 flex items-center justify-center">
-                <svg
-                  className="w-10 h-10 text-green-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
+                <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <h2 className="font-serif text-[28px] md:text-[36px] text-dark tracking-tight font-light mb-4">
                 {config.successTitle}
               </h2>
               {config.successMessage && (
-                <p className="text-base text-dark font-light leading-[1.8] mb-8">
-                  {config.successMessage}
-                </p>
+                <p className="text-base text-dark font-light leading-[1.8] mb-8">{config.successMessage}</p>
               )}
               {qrDataUrl && (
-                <div className="inline-block border border-warm-200 rounded-lg p-4 mb-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={qrDataUrl}
-                    alt="Your QR Code"
-                    width={250}
-                    height={250}
-                    className="block"
-                  />
-                </div>
+                <>
+                  <p className="text-[13px] text-dark/60 font-light mb-4">
+                    Show this code at the entrance for check-in
+                  </p>
+                  <div className="inline-block border border-warm-200 rounded-lg p-4 mb-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={qrDataUrl} alt="Your QR Code" width={250} height={250} className="block" />
+                  </div>
+                </>
               )}
-              <p className="text-xs text-warm-400 mt-4 font-light">
-                Your personal QR code ID:{" "}
-                <span className="font-mono">{qrCode}</span>
+              <p className="text-[11px] text-dark/40 mt-4 font-light font-mono">
+                {qrCode}
               </p>
             </div>
           ) : (
@@ -284,19 +265,9 @@ export default function LandingPage() {
                 <label className="block text-[16px] font-semibold text-dark mb-2">
                   First Name <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={form.firstName}
-                  onChange={(e) => updateField("firstName", e.target.value)}
-                  className={`w-full border ${
-                    errors.firstName
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.firstName && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.firstName}</p>
-                )}
+                <input type="text" value={form.firstName} onChange={(e) => updateField("firstName", e.target.value)}
+                  className={`w-full border ${errors.firstName ? "border-red-400" : "border-warm-200 focus:border-warm-400"} rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`} />
+                {errors.firstName && <p className="text-red-500 text-xs mt-1 font-light">{errors.firstName}</p>}
               </div>
 
               {/* Last Name */}
@@ -304,19 +275,9 @@ export default function LandingPage() {
                 <label className="block text-[16px] font-semibold text-dark mb-2">
                   Last Name <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={form.lastName}
-                  onChange={(e) => updateField("lastName", e.target.value)}
-                  className={`w-full border ${
-                    errors.lastName
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.lastName && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.lastName}</p>
-                )}
+                <input type="text" value={form.lastName} onChange={(e) => updateField("lastName", e.target.value)}
+                  className={`w-full border ${errors.lastName ? "border-red-400" : "border-warm-200 focus:border-warm-400"} rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`} />
+                {errors.lastName && <p className="text-red-500 text-xs mt-1 font-light">{errors.lastName}</p>}
               </div>
 
               {/* Email */}
@@ -324,19 +285,9 @@ export default function LandingPage() {
                 <label className="block text-[16px] font-semibold text-dark mb-2">
                   Email <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => updateField("email", e.target.value)}
-                  className={`w-full border ${
-                    errors.email
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.email}</p>
-                )}
+                <input type="email" value={form.email} onChange={(e) => updateField("email", e.target.value)}
+                  className={`w-full border ${errors.email ? "border-red-400" : "border-warm-200 focus:border-warm-400"} rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`} />
+                {errors.email && <p className="text-red-500 text-xs mt-1 font-light">{errors.email}</p>}
               </div>
 
               {/* Profile */}
@@ -344,20 +295,11 @@ export default function LandingPage() {
                 <label className="block text-[16px] font-semibold text-dark mb-2">
                   Profile <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={form.profile}
-                  onChange={(e) => updateField("profile", e.target.value)}
-                  className={`w-full border ${
-                    errors.profile
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors cursor-pointer`}
-                >
+                <select value={form.profile} onChange={(e) => updateField("profile", e.target.value)}
+                  className={`w-full border ${errors.profile ? "border-red-400" : "border-warm-200 focus:border-warm-400"} rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors cursor-pointer`}>
                   <option value="">Select...</option>
-                  {PROFILE_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
+                  {profileOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
               </div>
@@ -367,32 +309,16 @@ export default function LandingPage() {
                 <label className="block text-[16px] font-semibold text-dark mb-2">
                   Country or Region <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={form.country}
-                  onChange={(e) => updateField("country", e.target.value)}
-                  className={`w-full border ${
-                    errors.country
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.country && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.country}</p>
-                )}
+                <input type="text" value={form.country} onChange={(e) => updateField("country", e.target.value)}
+                  className={`w-full border ${errors.country ? "border-red-400" : "border-warm-200 focus:border-warm-400"} rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`} />
+                {errors.country && <p className="text-red-500 text-xs mt-1 font-light">{errors.country}</p>}
               </div>
 
               {/* State */}
               <div>
-                <label className="block text-[16px] font-semibold text-dark mb-2">
-                  State or Province
-                </label>
-                <input
-                  type="text"
-                  value={form.state}
-                  onChange={(e) => updateField("state", e.target.value)}
-                  className="w-full border border-warm-200 focus:border-warm-400 rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors"
-                />
+                <label className="block text-[16px] font-semibold text-dark mb-2">State or Province</label>
+                <input type="text" value={form.state} onChange={(e) => updateField("state", e.target.value)}
+                  className="w-full border border-warm-200 focus:border-warm-400 rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors" />
               </div>
 
               {/* City */}
@@ -400,19 +326,9 @@ export default function LandingPage() {
                 <label className="block text-[16px] font-semibold text-dark mb-2">
                   City <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={form.city}
-                  onChange={(e) => updateField("city", e.target.value)}
-                  className={`w-full border ${
-                    errors.city
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.city && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.city}</p>
-                )}
+                <input type="text" value={form.city} onChange={(e) => updateField("city", e.target.value)}
+                  className={`w-full border ${errors.city ? "border-red-400" : "border-warm-200 focus:border-warm-400"} rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`} />
+                {errors.city && <p className="text-red-500 text-xs mt-1 font-light">{errors.city}</p>}
               </div>
 
               {/* ZIP */}
@@ -420,75 +336,38 @@ export default function LandingPage() {
                 <label className="block text-[16px] font-semibold text-dark mb-2">
                   ZIP <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={form.zipCode}
-                  onChange={(e) => updateField("zipCode", e.target.value)}
-                  className={`w-full border ${
-                    errors.zipCode
-                      ? "border-red-400"
-                      : "border-warm-200 focus:border-warm-400"
-                  } rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
-                />
-                {errors.zipCode && (
-                  <p className="text-red-500 text-xs mt-1 font-light">{errors.zipCode}</p>
-                )}
+                <input type="text" value={form.zipCode} onChange={(e) => updateField("zipCode", e.target.value)}
+                  className={`w-full border ${errors.zipCode ? "border-red-400" : "border-warm-200 focus:border-warm-400"} rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`} />
+                {errors.zipCode && <p className="text-red-500 text-xs mt-1 font-light">{errors.zipCode}</p>}
               </div>
 
               {/* Divider */}
               <div className="border-t border-warm-200" />
 
-              {/* Privacy checkbox */}
+              {/* Privacy */}
               <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.privacyAccepted}
-                  onChange={(e) =>
-                    updateField("privacyAccepted", e.target.checked)
-                  }
-                  className="mt-1 w-4 h-4 accent-dark shrink-0"
-                />
-                <span
-                  className={`text-xs leading-relaxed font-light ${
-                    errors.privacyAccepted ? "text-red-600" : "text-dark"
-                  }`}
-                >
+                <input type="checkbox" checked={form.privacyAccepted} onChange={(e) => updateField("privacyAccepted", e.target.checked)}
+                  className="mt-1 w-4 h-4 accent-dark shrink-0" />
+                <span className={`text-xs leading-relaxed font-light ${errors.privacyAccepted ? "text-red-600" : "text-dark"}`}>
                   {config.privacyLabel}{" "}
-                  <Link
-                    href="/privacy-policy"
-                    className="underline hover:opacity-60 transition-opacity"
-                    target="_blank"
-                  >
-                    Privacy Policy
-                  </Link>{" "}
+                  <Link href="/privacy-policy" className="underline hover:opacity-60 transition-opacity" target="_blank">Privacy Policy</Link>{" "}
                   <span className="text-red-500">*</span>
                 </span>
               </label>
 
-              {/* Marketing checkbox */}
+              {/* Marketing */}
               {config.marketingLabel && (
                 <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.marketingConsent}
-                    onChange={(e) =>
-                      updateField("marketingConsent", e.target.checked)
-                    }
-                    className="mt-1 w-4 h-4 accent-dark shrink-0"
-                  />
-                  <span className="text-xs leading-relaxed font-light text-dark">
-                    {config.marketingLabel}
-                  </span>
+                  <input type="checkbox" checked={form.marketingConsent} onChange={(e) => updateField("marketingConsent", e.target.checked)}
+                    className="mt-1 w-4 h-4 accent-dark shrink-0" />
+                  <span className="text-xs leading-relaxed font-light text-dark">{config.marketingLabel}</span>
                 </label>
               )}
 
               {/* Submit */}
               <div className="pt-2 text-center">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-dark text-white px-14 py-3.5 text-sm font-medium uppercase tracking-[0.15em] hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                >
+                <button type="submit" disabled={submitting}
+                  className="bg-dark text-white px-14 py-3.5 text-sm font-medium uppercase tracking-[0.15em] hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
                   {submitting ? "Submitting..." : config.buttonLabel}
                 </button>
               </div>
