@@ -81,7 +81,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
             >
               <div
                 className="relative img-hover"
-                style={{ width: "calc(33vw - 16px)", minWidth: "280px", aspectRatio: "3 / 4" }}
+                style={{ width: "calc(33% - 16px)", minWidth: "280px", aspectRatio: "3 / 4" }}
               >
                 <Image
                   src={url}
@@ -199,7 +199,7 @@ export default function ProductDetailPage() {
           <h1 className="font-serif text-[58px] text-white tracking-wide">
             {product.name}
           </h1>
-          <p className="uppercase text-sm md:text-base tracking-[0.08em] text-white mt-4 font-light">
+          <p className="uppercase text-[20px] tracking-[0.08em] text-white mt-2 font-light">
             by {product.designerName}{product.year ? ` | ${product.year}` : ""}
           </p>
         </motion.div>
@@ -236,7 +236,7 @@ export default function ProductDetailPage() {
             >
               {product.description && (
                 <div
-                  className="text-[20px] text-black leading-snug font-light tracking-normal prose prose-warm max-w-none overflow-hidden"
+                  className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none overflow-hidden [&_p]:m-0"
                   style={{ textAlign: "justify", ...(!descExpanded ? { maxHeight: "5.6em" } : {}) }}
                   dangerouslySetInnerHTML={{ __html: product.description.includes("<") ? product.description : `<p>${product.description}</p>` }}
                 />
@@ -279,18 +279,16 @@ export default function ProductDetailPage() {
               <div className="mt-12 space-y-6">
                 <Link
                   href="/contatti/rete-vendita"
-                  className="flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 hover:underline group"
-                  style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
+                  className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 group"
                 >
-                  Cerca un punto vendita
+                  <span className="group-hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>Cerca un punto vendita</span>
                   <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
                 </Link>
                 <Link
                   href="/contatti/richiesta-info"
-                  className="flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 hover:underline group"
-                  style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
+                  className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 group"
                 >
-                  Richiedi informazioni
+                  <span className="group-hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>Richiedi informazioni</span>
                   <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
                 </Link>
               </div>
