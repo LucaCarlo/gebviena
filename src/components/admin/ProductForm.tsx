@@ -486,17 +486,21 @@ export default function ProductForm({ productId }: ProductFormProps) {
           onChange={(url) => updateField("techSheetUrl", url)}
           folder="tech-sheets"
         />
-        <PdfUploadField
+        <FileUploadField
           label="Modello 2D"
           value={form.model2dUrl}
           onChange={(url) => updateField("model2dUrl", url)}
           folder="tech-sheets"
+          accept=".zip,application/zip,application/x-zip-compressed"
+          fileLabel="ZIP"
         />
-        <PdfUploadField
+        <FileUploadField
           label="Modello 3D"
           value={form.model3dUrl}
           onChange={(url) => updateField("model3dUrl", url)}
           folder="tech-sheets"
+          accept=".zip,application/zip,application/x-zip-compressed"
+          fileLabel="ZIP"
         />
       </div>
 
@@ -607,6 +611,86 @@ function PdfUploadField({
           <input
             type="file"
             accept=".pdf,application/pdf"
+            onChange={handleUpload}
+            className="hidden"
+            disabled={uploading}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
+/* ---- Generic File Upload Sub-component ---- */
+function FileUploadField({
+  label,
+  value,
+  onChange,
+  folder = "tech-sheets",
+  accept,
+  fileLabel = "file",
+}: {
+  label: string;
+  value: string;
+  onChange: (url: string) => void;
+  folder?: string;
+  accept: string;
+  fileLabel?: string;
+}) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("skipCompression", "true");
+    formData.append("folder", folder);
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.success) onChange(data.data.url);
+    } catch {
+      // silent
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">{label}</label>
+      {value ? (
+        <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-lg border border-warm-200">
+          <FileText size={20} className="text-warm-500 flex-shrink-0" />
+          <span className="text-sm text-warm-700 truncate flex-1">{value.split("/").pop()}</span>
+          <a
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-warm-500 hover:text-warm-800 underline"
+          >
+            Scarica
+          </a>
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="p-1 text-warm-400 hover:text-red-500 transition-colors"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ) : (
+        <label className="flex items-center gap-2 px-4 py-3 border border-dashed border-warm-300 rounded-lg cursor-pointer hover:border-warm-500 transition-colors">
+          <Upload size={16} className="text-warm-400" />
+          <span className="text-sm text-warm-500">
+            {uploading ? "Caricamento..." : `Carica ${fileLabel} ${label.toLowerCase()}`}
+          </span>
+          <input
+            type="file"
+            accept={accept}
             onChange={handleUpload}
             className="hidden"
             disabled={uploading}

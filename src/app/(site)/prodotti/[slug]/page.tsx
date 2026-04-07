@@ -534,13 +534,13 @@ export default function ProductDetailPage() {
                               </a>
                             )}
                             {product.model2dUrl && (
-                              <a href={product.model2dUrl} target="_blank" rel="noopener noreferrer"
+                              <a href={product.model2dUrl} download
                                 className="inline-flex items-center gap-2 px-4 py-2.5 border border-warm-300 text-sm text-warm-800 hover:bg-warm-100 transition-colors">
                                 <ChevronRight size={14} /> Modello 2D
                               </a>
                             )}
                             {product.model3dUrl && (
-                              <a href={product.model3dUrl} target="_blank" rel="noopener noreferrer"
+                              <a href={product.model3dUrl} download
                                 className="inline-flex items-center gap-2 px-4 py-2.5 border border-warm-300 text-sm text-warm-800 hover:bg-warm-100 transition-colors">
                                 <ChevronRight size={14} /> Modello 3D
                               </a>
