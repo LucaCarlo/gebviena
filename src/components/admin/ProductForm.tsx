@@ -135,21 +135,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
     );
   }, [allCategories, form.category]);
 
-  // Get selected dimension block labels
-  const selectedBlock = useMemo(() => {
-    if (!form.dimensionBlockId) return null;
-    return dimensionBlocks.find((b) => b.id === form.dimensionBlockId) || null;
-  }, [dimensionBlocks, form.dimensionBlockId]);
-
-  const blockLabels: string[] = useMemo(() => {
-    if (!selectedBlock) return [];
-    try { return JSON.parse(selectedBlock.labels); } catch { return []; }
-  }, [selectedBlock]);
-
-  const dimValues: Record<string, string> = useMemo(() => {
-    try { return JSON.parse(form.dimensionValues); } catch { return {}; }
-  }, [form.dimensionValues]);
-
   const handleNameChange = (name: string) => {
     setForm((prev) => ({
       ...prev,
@@ -165,19 +150,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
       designerId,
       designerName: designer?.name || prev.designerName,
     }));
-  };
-
-  const handleDimensionBlockChange = (blockId: string) => {
-    setForm((prev) => ({
-      ...prev,
-      dimensionBlockId: blockId,
-      dimensionValues: "{}",
-    }));
-  };
-
-  const updateDimValue = (label: string, value: string) => {
-    const next = { ...dimValues, [label]: value };
-    setForm((prev) => ({ ...prev, dimensionValues: JSON.stringify(next) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
