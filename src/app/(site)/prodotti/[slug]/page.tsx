@@ -168,7 +168,6 @@ export default function ProductDetailPage() {
   })();
   const heroImg = product.heroImage || product.coverImage || product.imageUrl;
   const sideImg = product.sideImage || product.coverImage || product.imageUrl;
-  const coverImg = product.coverImage || product.imageUrl;
 
   const sectionNav = [
     { label: "Ispirazione", id: "ispirazione" },

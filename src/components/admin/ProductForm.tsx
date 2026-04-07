@@ -31,12 +31,6 @@ interface CategoryOption {
   typologies: { typology: { id: string; value: string } }[];
 }
 
-interface DimensionBlockOption {
-  id: string;
-  name: string;
-  labels: string;
-}
-
 export default function ProductForm({ productId }: ProductFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -44,7 +38,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [designers, setDesigners] = useState<DesignerOption[]>([]);
   const [typologies, setTypologies] = useState<TypologyOption[]>([]);
   const [allCategories, setAllCategories] = useState<CategoryOption[]>([]);
-  const [dimensionBlocks, setDimensionBlocks] = useState<DimensionBlockOption[]>([]);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -79,12 +72,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
       fetch("/api/designers").then((r) => r.json()),
       fetch("/api/typologies?contentType=products").then((r) => r.json()),
       fetch("/api/categories?contentType=products").then((r) => r.json()),
-      fetch("/api/dimension-blocks").then((r) => r.json()),
-    ]).then(([dData, tData, cData, dbData]) => {
+    ]).then(([dData, tData, cData]) => {
       if (dData.success) setDesigners(dData.data || []);
       setTypologies(tData.data || []);
       setAllCategories(cData.data || []);
-      if (dbData.success) setDimensionBlocks(dbData.data || []);
     });
   }, []);
 
