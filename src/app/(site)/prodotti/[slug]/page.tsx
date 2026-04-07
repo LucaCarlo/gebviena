@@ -196,10 +196,10 @@ export default function ProductDetailPage() {
           transition={{ duration: 1, delay: 0.5 }}
           className="absolute inset-0 flex flex-col items-center justify-center text-center"
         >
-          <h1 className="font-serif text-[58px] text-white tracking-[0.12em]">
+          <h1 className="font-serif text-[58px] text-white tracking-wide">
             {product.name}
           </h1>
-          <p className="uppercase text-sm md:text-base tracking-[0.12em] text-white mt-4 font-light">
+          <p className="uppercase text-sm md:text-base tracking-[0.08em] text-white mt-4 font-light">
             by {product.designerName}{product.year ? ` | ${product.year}` : ""}
           </p>
         </motion.div>
@@ -236,42 +236,35 @@ export default function ProductDetailPage() {
             >
               {product.description && (
                 <div
-                  className={`text-warm-600 leading-relaxed text-base lg:text-body font-light prose prose-warm max-w-none ${!descExpanded ? "line-clamp-4" : ""}`}
+                  className={`text-[20px] text-black leading-snug font-light tracking-normal prose prose-warm max-w-none ${!descExpanded ? "line-clamp-4" : ""}`}
                   style={{ textAlign: "justify" }}
                   dangerouslySetInnerHTML={{ __html: product.description.includes("<") ? product.description : `<p>${product.description}</p>` }}
                 />
               )}
 
               <button
-                className="gtv-link mt-6 text-xs"
+                className="inline-block mt-[20px] uppercase text-[16px] tracking-[0.03em] text-black font-normal transition-colors hover:text-accent hover:underline"
+                style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
                 onClick={() => setDescExpanded(!descExpanded)}
               >
-                {descExpanded ? "Chiudi" : "Continua a leggere"}
+                {descExpanded ? "Mostra meno" : "Continua a leggere"}
               </button>
 
               {/* Dimensioni / Varianti buttons */}
               <div className="flex items-center gap-8 mt-10">
                 <button
                   onClick={() => document.getElementById("specifiche")?.scrollIntoView({ behavior: "smooth" })}
-                  className="flex items-center gap-3 text-sm uppercase tracking-[0.1em] text-warm-700 hover:text-warm-900 transition-colors"
+                  className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-normal transition-colors hover:text-accent hover:underline"
+                  style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
                 >
-                  {/* Dimensioni icon — ruler/measurement */}
-                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
-                    <path d="M3 7l4-4 14 14-4 4L3 7z" />
-                    <path d="M7 3l2 2M10 6l1.5 1.5M13 9l2 2M16 12l1.5 1.5" />
-                  </svg>
-                  Dimensioni
+                  Dimensioni →
                 </button>
                 <button
                   onClick={() => document.getElementById("ispirazione")?.scrollIntoView({ behavior: "smooth" })}
-                  className="flex items-center gap-3 text-sm uppercase tracking-[0.1em] text-warm-700 hover:text-warm-900 transition-colors"
+                  className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-normal transition-colors hover:text-accent hover:underline"
+                  style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
                 >
-                  {/* Varianti icon — two overlapping frames */}
-                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
-                    <rect x="2" y="4" width="13" height="16" rx="0.5" />
-                    <rect x="9" y="4" width="13" height="16" rx="0.5" />
-                  </svg>
-                  Varianti
+                  Varianti →
                 </button>
               </div>
 
@@ -279,17 +272,17 @@ export default function ProductDetailPage() {
               <div className="mt-12 space-y-6">
                 <Link
                   href="/contatti/rete-vendita"
-                  className="flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-800 hover:text-accent transition-colors group"
+                  className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-normal transition-colors hover:text-accent hover:underline"
+                  style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
                 >
-                  Cerca un punto vendita
-                  <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                  Cerca un punto vendita →
                 </Link>
                 <Link
                   href="/contatti/richiesta-info"
-                  className="flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-800 hover:text-accent transition-colors group"
+                  className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-normal transition-colors hover:text-accent hover:underline"
+                  style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
                 >
-                  Richiedi informazioni
-                  <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                  Richiedi informazioni →
                 </Link>
               </div>
             </motion.div>
