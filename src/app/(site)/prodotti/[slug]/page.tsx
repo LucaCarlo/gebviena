@@ -20,6 +20,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
+  const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
 
   const updateProgress = useCallback(() => {
     const el = scrollRef.current;
@@ -81,7 +82,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
             >
               <div
                 className="relative img-hover"
-                style={{ width: "calc(33% - 16px)", minWidth: "280px", aspectRatio: "3 / 4" }}
+                style={{ width: "calc(45vw - 16px)", minWidth: "320px", aspectRatio: "3 / 4" }}
               >
                 <Image
                   src={url}
@@ -89,9 +90,19 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
                   fill
                   className="object-cover"
                   draggable={false}
-                  sizes="33vw"
+                  sizes="45vw"
                 />
-                <button className="absolute bottom-4 left-4 w-7 h-7 rounded-full border border-white/60 text-white/80 text-xs italic flex items-center justify-center hover:bg-white/20 transition-colors">
+                {/* Tooltip bubble */}
+                {activeTooltip === i && (
+                  <div className="absolute bottom-14 left-4 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug">
+                    {`${productName} ispirazione ${i + 1}`}
+                    <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
+                  </div>
+                )}
+                <button
+                  className="absolute bottom-4 left-4 w-7 h-7 rounded-full bg-white text-warm-900 text-xs italic flex items-center justify-center hover:bg-warm-100 transition-colors shadow-sm"
+                  onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === i ? null : i); }}
+                >
                   i
                 </button>
               </div>
@@ -304,7 +315,8 @@ export default function ProductDetailPage() {
             <button
               key={item.id}
               onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" })}
-              className="uppercase text-xs md:text-sm tracking-[0.15em] text-warm-900 hover:underline underline-offset-4 transition-all font-light"
+              className="uppercase text-[16px] tracking-[0.03em] text-black font-light hover:underline"
+              style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
             >
               {item.label}
             </button>
@@ -336,7 +348,7 @@ export default function ProductDetailPage() {
                   src={product.designer.imageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1000&fit=crop&crop=face"}
                   alt={product.designer.name}
                   fill
-                  className="object-cover grayscale"
+                  className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
               </motion.div>
@@ -349,31 +361,25 @@ export default function ProductDetailPage() {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="flex flex-col justify-center px-10 md:px-16 lg:px-20 py-16 lg:py-24"
               >
-                <p className="uppercase text-[11px] tracking-[0.25em] text-warm-500 mb-3">Designer</p>
-                <h2 className="font-sans text-2xl md:text-3xl text-warm-900 font-light uppercase tracking-wide">
+                <p className="uppercase text-[16px] tracking-[0.03em] text-black mb-[8px] mt-[6px] font-light">Designer</p>
+                <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                   {product.designer.name}
                 </h2>
                 {product.designer.country && (
                   <p className="text-sm text-warm-600 mt-2">{product.designer.country}</p>
                 )}
                 {product.designer.bio && (
-                  product.designer.bio.includes("<") ? (
-                    <div
-                      className="leading-relaxed mt-6 font-light text-sm lg:text-base prose prose-warm max-w-none"
-                      style={{ textAlign: "justify", color: "#000000" }}
-                      dangerouslySetInnerHTML={{ __html: product.designer.bio }}
-                    />
-                  ) : (
-                    <p className="leading-relaxed mt-6 font-light text-sm lg:text-base" style={{ textAlign: "justify", color: "#000000" }}>
-                      {product.designer.bio}
-                    </p>
-                  )
+                  <div
+                    className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none mt-6 [&_p]:m-0"
+                    style={{ textAlign: "justify" }}
+                    dangerouslySetInnerHTML={{ __html: product.designer.bio.includes("<") ? product.designer.bio : `<p>${product.designer.bio}</p>` }}
+                  />
                 )}
                 <Link
                   href={`/designer/${product.designer.slug || product.designer.id}`}
-                  className="inline-flex items-center gap-2 uppercase text-xs tracking-[0.15em] text-warm-900 hover:text-accent transition-colors group mt-8"
+                  className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 group mt-8"
                 >
-                  Vai alla scheda
+                  <span className="group-hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>Vai alla scheda</span>
                   <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
                 </Link>
               </motion.div>
