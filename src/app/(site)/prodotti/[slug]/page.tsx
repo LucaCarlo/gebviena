@@ -123,6 +123,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -178,8 +179,8 @@ export default function ProductDetailPage() {
 
   return (
     <>
-      {/* ===== 1. HERO — full-screen image, title CENTERED ===== */}
-      <section className="relative w-full" style={{ height: "115vh" }}>
+      {/* ===== 1. HERO — same height/style as homepage ===== */}
+      <section className="relative w-full" style={{ height: "calc(100vh - 7.5rem)" }}>
         <Image
           src={heroImg}
           alt={product.name}
@@ -187,7 +188,7 @@ export default function ProductDetailPage() {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-black" style={{ opacity: 0.45 }} />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -195,10 +196,10 @@ export default function ProductDetailPage() {
           transition={{ duration: 1, delay: 0.5 }}
           className="absolute inset-0 flex flex-col items-center justify-center text-center"
         >
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white tracking-wide">
+          <h1 className="font-serif text-[58px] text-white tracking-wide">
             {product.name}
           </h1>
-          <p className="uppercase text-xs md:text-sm tracking-[0.25em] text-white/70 mt-4 font-light">
+          <p className="uppercase text-sm md:text-base tracking-[0.25em] text-white mt-4 font-light">
             by {product.designerName}{product.year ? ` | ${product.year}` : ""}
           </p>
         </motion.div>
@@ -207,13 +208,13 @@ export default function ProductDetailPage() {
       {/* ===== 2. DESCRIPTION — split layout like homepage FeaturedProduct ===== */}
       <section className="w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
-          {/* Left — tall contextual image */}
+          {/* Left — tall contextual image (no hover zoom) */}
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 1 }}
-            className="relative img-hover"
+            className="relative overflow-hidden"
             style={{ aspectRatio: "3 / 4.2" }}
           >
             <Image
@@ -234,21 +235,18 @@ export default function ProductDetailPage() {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               {product.description && (
-                product.description.includes("<") ? (
-                  <div
-                    className="text-warm-600 leading-relaxed text-base lg:text-body font-light prose prose-warm max-w-none"
-                    style={{ textAlign: "justify" }}
-                    dangerouslySetInnerHTML={{ __html: product.description }}
-                  />
-                ) : (
-                  <p className="text-warm-600 leading-relaxed text-base lg:text-body font-light" style={{ textAlign: "justify" }}>
-                    {product.description}
-                  </p>
-                )
+                <div
+                  className={`text-warm-600 leading-relaxed text-base lg:text-body font-light prose prose-warm max-w-none ${!descExpanded ? "line-clamp-4" : ""}`}
+                  style={{ textAlign: "justify" }}
+                  dangerouslySetInnerHTML={{ __html: product.description.includes("<") ? product.description : `<p>${product.description}</p>` }}
+                />
               )}
 
-              <button className="gtv-link mt-6 text-xs">
-                Continua a leggere
+              <button
+                className="gtv-link mt-6 text-xs"
+                onClick={() => setDescExpanded(!descExpanded)}
+              >
+                {descExpanded ? "Chiudi" : "Continua a leggere"}
               </button>
 
               {/* Dimensioni / Varianti buttons */}
