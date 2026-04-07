@@ -82,7 +82,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
             >
               <div
                 className="relative img-hover"
-                style={{ width: "calc(45vw - 16px)", minWidth: "320px", aspectRatio: "3 / 4" }}
+                style={{ width: "calc(33vw - 16px)", minWidth: "280px", aspectRatio: "3 / 4" }}
               >
                 <Image
                   src={url}
@@ -287,20 +287,20 @@ export default function ProductDetailPage() {
               </div>
 
               {/* CTA links */}
-              <div className="mt-12 space-y-6">
+              <div className="mt-12 flex flex-col gap-6">
                 <Link
                   href="/contatti/rete-vendita"
-                  className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 group"
+                  className="uppercase text-sm tracking-[0.1em] text-warm-900 hover:underline"
+                  style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
-                  <span className="group-hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>Cerca un punto vendita</span>
-                  <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                  Cerca un punto vendita →
                 </Link>
                 <Link
                   href="/contatti/richiesta-info"
-                  className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 group"
+                  className="uppercase text-sm tracking-[0.1em] text-warm-900 hover:underline"
+                  style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
-                  <span className="group-hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>Richiedi informazioni</span>
-                  <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                  Richiedi informazioni →
                 </Link>
               </div>
             </motion.div>
@@ -377,10 +377,10 @@ export default function ProductDetailPage() {
                 )}
                 <Link
                   href={`/designer/${product.designer.slug || product.designer.id}`}
-                  className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 group mt-8"
+                  className="uppercase text-sm tracking-[0.1em] text-warm-900 hover:underline mt-8 inline-block"
+                  style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
-                  <span className="group-hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>Vai alla scheda</span>
-                  <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                  Vai alla scheda →
                 </Link>
               </motion.div>
             </div>
@@ -401,13 +401,13 @@ export default function ProductDetailPage() {
             transition={{ duration: 0.6 }}
           >
             <div className="text-center mb-12">
-              <h2 className="font-sans text-2xl md:text-3xl text-warm-900 font-light uppercase tracking-[0.15em]">
+              <h2 className="font-sans text-[38px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 Specifiche Tecniche
               </h2>
             </div>
 
             {/* Accordion rows */}
-            <div className="divide-y divide-warm-900 border-t border-b border-warm-900">
+            <div className="divide-y divide-warm-300 border-t border-b border-warm-300">
 
               {/* --- VARIANTI PRODOTTO --- */}
               <div>
@@ -415,10 +415,10 @@ export default function ProductDetailPage() {
                   onClick={() => setOpenAccordion(openAccordion === "varianti" ? null : "varianti")}
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
-                  <span className="uppercase text-xs tracking-[0.15em] text-warm-900 transition-colors">
+                  <span className="uppercase text-[16px] tracking-[0.03em] text-black font-light">
                     Varianti prodotto
                   </span>
-                  <span className="w-8 h-8 border border-warm-900 flex items-center justify-center text-warm-900 flex-shrink-0">
+                  <span className="w-8 h-8 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
                     {openAccordion === "varianti" ? <Minus size={14} /> : <Plus size={14} />}
                   </span>
                 </button>
@@ -462,10 +462,10 @@ export default function ProductDetailPage() {
                   onClick={() => setOpenAccordion(openAccordion === "dimensioni" ? null : "dimensioni")}
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
-                  <span className="uppercase text-xs tracking-[0.15em] text-warm-900 transition-colors">
+                  <span className="uppercase text-[16px] tracking-[0.03em] text-black font-light">
                     Dimensioni
                   </span>
-                  <span className="w-8 h-8 border border-warm-900 flex items-center justify-center text-warm-900 flex-shrink-0">
+                  <span className="w-8 h-8 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
                     {openAccordion === "dimensioni" ? <Minus size={14} /> : <Plus size={14} />}
                   </span>
                 </button>
@@ -512,10 +512,10 @@ export default function ProductDetailPage() {
                   onClick={() => setOpenAccordion(openAccordion === "scheda" ? null : "scheda")}
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
-                  <span className="uppercase text-xs tracking-[0.15em] text-warm-900 transition-colors">
+                  <span className="uppercase text-[16px] tracking-[0.03em] text-black font-light">
                     Documentazione
                   </span>
-                  <span className="w-8 h-8 border border-warm-900 flex items-center justify-center text-warm-900 flex-shrink-0">
+                  <span className="w-8 h-8 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
                     {openAccordion === "scheda" ? <Minus size={14} /> : <Plus size={14} />}
                   </span>
                 </button>
