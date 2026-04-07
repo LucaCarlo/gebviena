@@ -5,6 +5,29 @@ import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
+const COUNTRIES = [
+  "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria",
+  "Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan",
+  "Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia",
+  "Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo","Costa Rica",
+  "Croatia","Cuba","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt",
+  "El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon",
+  "Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana",
+  "Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel",
+  "Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos",
+  "Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi",
+  "Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova",
+  "Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands",
+  "New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau",
+  "Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania",
+  "Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino",
+  "Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia",
+  "Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden",
+  "Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago",
+  "Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay",
+  "Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe",
+];
+
 interface FieldConfig {
   key: string;
   label: string;
@@ -347,6 +370,29 @@ export default function LandingPage() {
                   const widthClass = field.width === "50" ? "w-full sm:w-1/2" : field.width === "70" ? "w-full sm:w-[70%]" : "w-full";
                   const val = form[field.key] ?? "";
                   const inputType = field.key === "email" ? "email" : field.key === "phone" ? "tel" : "text";
+
+                  if (field.key === "country") {
+                    return (
+                      <div key={field.key} className={`${widthClass} px-2`}>
+                        <label className="block text-[16px] font-semibold text-dark mb-2">
+                          {field.label} {isRequired && <span className="text-red-500">*</span>}
+                        </label>
+                        <select
+                          value={val as string}
+                          onChange={(e) => updateField(field.key, e.target.value)}
+                          className={`w-full border ${errors[field.key] ? "border-red-400" : "border-warm-200 focus:border-warm-400"} rounded-md bg-warm-50/50 px-4 py-3 text-[15px] text-dark outline-none transition-colors`}
+                        >
+                          <option value="">Select...</option>
+                          <option value="Italy">Italy</option>
+                          <option disabled>──────────</option>
+                          {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        {errors[field.key] && (
+                          <p className="text-red-500 text-xs mt-1 font-light">{errors[field.key]}</p>
+                        )}
+                      </div>
+                    );
+                  }
 
                   if (field.key === "profile") {
                     return (
