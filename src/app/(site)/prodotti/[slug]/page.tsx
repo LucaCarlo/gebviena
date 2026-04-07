@@ -179,8 +179,8 @@ export default function ProductDetailPage() {
 
   return (
     <>
-      {/* ===== 1. HERO — same height/style as homepage (115vh) ===== */}
-      <section className="relative w-full overflow-hidden" style={{ height: "115vh" }}>
+      {/* ===== 1. HERO — responsive height, scales with page width ===== */}
+      <section className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 9" }}>
         <Image
           src={heroImg}
           alt={product.name}
@@ -236,14 +236,14 @@ export default function ProductDetailPage() {
             >
               {product.description && (
                 <div
-                  className={`text-[20px] text-black leading-snug font-light tracking-normal prose prose-warm max-w-none ${!descExpanded ? "line-clamp-4" : ""}`}
-                  style={{ textAlign: "justify" }}
+                  className="text-[20px] text-black leading-snug font-light tracking-normal prose prose-warm max-w-none overflow-hidden"
+                  style={{ textAlign: "justify", ...(!descExpanded ? { maxHeight: "5.6em" } : {}) }}
                   dangerouslySetInnerHTML={{ __html: product.description.includes("<") ? product.description : `<p>${product.description}</p>` }}
                 />
               )}
 
               <button
-                className="inline-block mt-[20px] uppercase text-xs tracking-[0.08em] text-warm-900 font-light border-b border-warm-900 pb-1 transition-colors hover:text-warm-600"
+                className="inline-block mt-[20px] uppercase text-xs tracking-[0.08em] text-warm-900 font-light border-b border-warm-900 pb-1"
                 onClick={() => setDescExpanded(!descExpanded)}
               >
                 {descExpanded ? "Mostra meno" : "Continua a leggere"}
@@ -253,7 +253,8 @@ export default function ProductDetailPage() {
               <div className="flex items-center gap-8 mt-10">
                 <button
                   onClick={() => document.getElementById("specifiche")?.scrollIntoView({ behavior: "smooth" })}
-                  className="flex items-center gap-3 text-sm uppercase tracking-[0.1em] text-warm-900 hover:text-warm-600 transition-colors"
+                  className="flex items-center gap-3 text-sm uppercase tracking-[0.1em] text-warm-900 hover:underline"
+                  style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
                   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
                     <path d="M3 7l4-4 14 14-4 4L3 7z" />
@@ -263,7 +264,8 @@ export default function ProductDetailPage() {
                 </button>
                 <button
                   onClick={() => document.getElementById("ispirazione")?.scrollIntoView({ behavior: "smooth" })}
-                  className="flex items-center gap-3 text-sm uppercase tracking-[0.1em] text-warm-900 hover:text-warm-600 transition-colors"
+                  className="flex items-center gap-3 text-sm uppercase tracking-[0.1em] text-warm-900 hover:underline"
+                  style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
                   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
                     <rect x="2" y="4" width="13" height="16" rx="0.5" />
@@ -277,14 +279,16 @@ export default function ProductDetailPage() {
               <div className="mt-12 space-y-6">
                 <Link
                   href="/contatti/rete-vendita"
-                  className="flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 hover:text-warm-600 transition-colors group"
+                  className="flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 hover:underline group"
+                  style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
                   Cerca un punto vendita
                   <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
                 </Link>
                 <Link
                   href="/contatti/richiesta-info"
-                  className="flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 hover:text-warm-600 transition-colors group"
+                  className="flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 hover:underline group"
+                  style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
                   Richiedi informazioni
                   <span className="inline-block transition-transform group-hover:translate-x-1">→</span>

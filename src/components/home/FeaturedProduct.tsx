@@ -69,7 +69,7 @@ export default function FeaturedProduct({ ambianceImage, productImage }: Feature
             </h2>
             <Link
               href="/prodotti"
-              className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] !text-black font-normal transition-colors hover:text-accent hover:underline"
+              className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] !text-black font-normal hover:underline"
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
               Scopri il prodotto &rarr;
