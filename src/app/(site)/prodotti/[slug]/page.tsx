@@ -243,8 +243,7 @@ export default function ProductDetailPage() {
               )}
 
               <button
-                className="inline-block mt-[20px] uppercase text-[16px] tracking-[0.03em] text-black font-normal transition-colors hover:text-accent hover:underline"
-                style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+                className="inline-block mt-[20px] uppercase text-xs tracking-[0.08em] text-warm-900 font-light border-b border-warm-900 pb-1 transition-colors hover:text-warm-600"
                 onClick={() => setDescExpanded(!descExpanded)}
               >
                 {descExpanded ? "Mostra meno" : "Continua a leggere"}
@@ -254,17 +253,23 @@ export default function ProductDetailPage() {
               <div className="flex items-center gap-8 mt-10">
                 <button
                   onClick={() => document.getElementById("specifiche")?.scrollIntoView({ behavior: "smooth" })}
-                  className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-normal transition-colors hover:text-accent hover:underline"
-                  style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+                  className="flex items-center gap-3 text-sm uppercase tracking-[0.1em] text-warm-900 hover:text-warm-600 transition-colors"
                 >
-                  Dimensioni →
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
+                    <path d="M3 7l4-4 14 14-4 4L3 7z" />
+                    <path d="M7 3l2 2M10 6l1.5 1.5M13 9l2 2M16 12l1.5 1.5" />
+                  </svg>
+                  Dimensioni
                 </button>
                 <button
                   onClick={() => document.getElementById("ispirazione")?.scrollIntoView({ behavior: "smooth" })}
-                  className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-normal transition-colors hover:text-accent hover:underline"
-                  style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+                  className="flex items-center gap-3 text-sm uppercase tracking-[0.1em] text-warm-900 hover:text-warm-600 transition-colors"
                 >
-                  Varianti →
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
+                    <rect x="2" y="4" width="13" height="16" rx="0.5" />
+                    <rect x="9" y="4" width="13" height="16" rx="0.5" />
+                  </svg>
+                  Varianti
                 </button>
               </div>
 
@@ -272,17 +277,17 @@ export default function ProductDetailPage() {
               <div className="mt-12 space-y-6">
                 <Link
                   href="/contatti/rete-vendita"
-                  className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-normal transition-colors hover:text-accent hover:underline"
-                  style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+                  className="flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 hover:text-warm-600 transition-colors group"
                 >
-                  Cerca un punto vendita →
+                  Cerca un punto vendita
+                  <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
                 </Link>
                 <Link
                   href="/contatti/richiesta-info"
-                  className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-normal transition-colors hover:text-accent hover:underline"
-                  style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+                  className="flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 hover:text-warm-600 transition-colors group"
                 >
-                  Richiedi informazioni →
+                  Richiedi informazioni
+                  <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
                 </Link>
               </div>
             </motion.div>
