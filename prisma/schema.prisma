@@ -112,6 +112,9 @@ model Product {
   variants         String? @db.Text
   dimensionImage   String? @db.Text
   techSheetUrl     String? @db.Text
+  model2dUrl       String? @db.Text
+  model3dUrl       String? @db.Text
+  year             Int?
   imageUrl         String @db.Text           @default("")
   isFeatured       Boolean          @default(false)
   isNew            Boolean          @default(false)

@@ -48,6 +48,9 @@ export interface Product {
   variants: string | null;
   dimensionImage: string | null;
   techSheetUrl: string | null;
+  model2dUrl: string | null;
+  model3dUrl: string | null;
+  year: number | null;
   imageUrl: string;
   isNew: boolean;
   isFeatured: boolean;

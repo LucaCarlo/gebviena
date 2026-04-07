@@ -201,7 +201,7 @@ export default function ProductDetailPage() {
             {product.name}
           </h1>
           <p className="uppercase text-xs md:text-sm tracking-[0.25em] text-white/70 mt-4 font-light">
-            by {product.designerName}
+            by {product.designerName}{product.year ? ` | ${product.year}` : ""}
           </p>
         </motion.div>
       </section>
@@ -477,47 +477,26 @@ export default function ProductDetailPage() {
                       className="overflow-hidden"
                     >
                       <div className="px-2 pb-8">
-                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-8 items-start">
-                          {/* Left — technical drawing (horizontal) */}
-                          <div className="relative bg-white p-6" style={{ aspectRatio: "2 / 1" }}>
-                            <Image src={dimImg} alt={`${product.name} dimensioni`} fill className="object-contain" sizes="(max-width: 768px) 100vw, 60vw" />
-                          </div>
+                        <div className="flex flex-col items-center gap-8">
+                          {/* Immagine dimensioni */}
+                          {product.dimensionImage && (
+                            <div className="relative bg-white p-6 w-full max-w-3xl" style={{ aspectRatio: "2 / 1" }}>
+                              <Image src={product.dimensionImage} alt={`${product.name} dimensioni`} fill className="object-contain" sizes="(max-width: 768px) 100vw, 60vw" />
+                            </div>
+                          )}
 
-                          {/* Right — dimension values */}
-                          <div className="space-y-5 pt-2">
-                            {(() => {
-                              // Try dynamic dimensionValues JSON first
-                              if (product.dimensionValues) {
-                                try {
-                                  const vals: Record<string, string> = JSON.parse(product.dimensionValues);
-                                  const entries = Object.entries(vals).filter(([, v]) => v);
-                                  if (entries.length > 0) {
-                                    return entries.map(([label, value], i) => (
-                                      <div key={i}>
-                                        <p className="text-sm font-bold text-warm-900 uppercase">{label}</p>
-                                        <p className="text-sm text-warm-600 mt-0.5">{value}</p>
-                                      </div>
-                                    ));
-                                  }
-                                } catch { /* fallthrough to legacy */ }
-                              }
-                              // Fallback to legacy string parsing
-                              if (product.dimensions) {
-                                return product.dimensions.split(/[,;/]/).map((dim, i) => {
-                                  const parts = dim.trim().split(/:\s*|–\s*|-\s*/);
-                                  const label = parts[0]?.trim();
-                                  const value = parts[1]?.trim() || "";
-                                  return (
-                                    <div key={i}>
-                                      <p className="text-sm font-bold text-warm-900 uppercase">{label}</p>
-                                      {value && <p className="text-sm text-warm-600 mt-0.5">{value}</p>}
-                                    </div>
-                                  );
-                                });
-                              }
-                              return <p className="text-sm text-warm-400 font-light">Dimensioni non disponibili.</p>;
-                            })()}
-                          </div>
+                          {/* Misure testo */}
+                          {product.dimensions ? (
+                            <div className="text-center">
+                              {product.dimensions.split("\n").map((line, i) => (
+                                <p key={i} className="text-sm text-warm-700 font-light leading-relaxed">
+                                  {line || "\u00A0"}
+                                </p>
+                              ))}
+                            </div>
+                          ) : !product.dimensionImage && (
+                            <p className="text-sm text-warm-400 font-light">Dimensioni non disponibili.</p>
+                          )}
                         </div>
                       </div>
                     </motion.div>
@@ -525,14 +504,14 @@ export default function ProductDetailPage() {
                 </AnimatePresence>
               </div>
 
-              {/* --- SCHEDA TECNICA, 2D, 3D, ISTRUZIONI D'USO, MANUTENZIONE --- */}
+              {/* --- DOCUMENTAZIONE --- */}
               <div>
                 <button
                   onClick={() => setOpenAccordion(openAccordion === "scheda" ? null : "scheda")}
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
                   <span className="uppercase text-xs tracking-[0.15em] text-warm-900 transition-colors">
-                    {"Scheda tecnica, 2D, 3D, istruzioni d'uso, manutenzione"}
+                    Documentazione
                   </span>
                   <span className="w-8 h-8 border border-warm-900 flex items-center justify-center text-warm-900 flex-shrink-0">
                     {openAccordion === "scheda" ? <Minus size={14} /> : <Plus size={14} />}
@@ -547,17 +526,42 @@ export default function ProductDetailPage() {
                       transition={{ duration: 0.3 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-2 pb-8">
-                        <p className="text-sm text-warm-500 font-light">
-                          Per scaricare la scheda tecnica, i file 2D/3D e le istruzioni d&apos;uso, contattaci o visita l&apos;area professionisti.
-                        </p>
-                        <Link
-                          href="/contatti/richiesta-info"
-                          className="inline-flex items-center gap-2 uppercase text-xs tracking-[0.15em] text-warm-800 hover:text-accent transition-colors group mt-4"
-                        >
-                          Richiedi documentazione
-                          <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
-                        </Link>
+                      <div className="px-2 pb-8 space-y-3">
+                        {(product.techSheetUrl || product.model2dUrl || product.model3dUrl) ? (
+                          <div className="flex flex-wrap gap-4">
+                            {product.techSheetUrl && (
+                              <a href={product.techSheetUrl} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 border border-warm-300 text-sm text-warm-800 hover:bg-warm-100 transition-colors">
+                                <ChevronRight size={14} /> Scheda Tecnica
+                              </a>
+                            )}
+                            {product.model2dUrl && (
+                              <a href={product.model2dUrl} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 border border-warm-300 text-sm text-warm-800 hover:bg-warm-100 transition-colors">
+                                <ChevronRight size={14} /> Modello 2D
+                              </a>
+                            )}
+                            {product.model3dUrl && (
+                              <a href={product.model3dUrl} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 border border-warm-300 text-sm text-warm-800 hover:bg-warm-100 transition-colors">
+                                <ChevronRight size={14} /> Modello 3D
+                              </a>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-sm text-warm-500 font-light">
+                              Per scaricare la documentazione tecnica, contattaci o visita l&apos;area professionisti.
+                            </p>
+                            <Link
+                              href="/contatti/richiesta-info"
+                              className="inline-flex items-center gap-2 uppercase text-xs tracking-[0.15em] text-warm-800 hover:text-accent transition-colors group mt-2"
+                            >
+                              Richiedi documentazione
+                              <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                            </Link>
+                          </>
+                        )}
                       </div>
                     </motion.div>
                   )}

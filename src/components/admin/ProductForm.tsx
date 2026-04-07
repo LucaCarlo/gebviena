@@ -64,6 +64,9 @@ export default function ProductForm({ productId }: ProductFormProps) {
     variants: "[]",
     dimensionImage: "",
     techSheetUrl: "",
+    model2dUrl: "",
+    model3dUrl: "",
+    year: "",
     isFeatured: false,
     isNew: false,
     seoTitle: "",
@@ -110,6 +113,9 @@ export default function ProductForm({ productId }: ProductFormProps) {
         variants: p.variants || "[]",
         dimensionImage: p.dimensionImage || "",
         techSheetUrl: p.techSheetUrl || "",
+        model2dUrl: p.model2dUrl || "",
+        model3dUrl: p.model3dUrl || "",
+        year: p.year != null ? String(p.year) : "",
         isFeatured: p.isFeatured,
         isNew: p.isNew || false,
         seoTitle: p.seoTitle || "",
@@ -184,6 +190,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
       const payload = {
         ...form,
         imageUrl: form.coverImage || "",
+        year: form.year ? parseInt(form.year, 10) : null,
+        model2dUrl: form.model2dUrl || null,
+        model3dUrl: form.model3dUrl || null,
+        techSheetUrl: form.techSheetUrl || null,
       };
       const res = await fetch(url, {
         method,
@@ -314,15 +324,27 @@ export default function ProductForm({ productId }: ProductFormProps) {
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Materiali</label>
-          <input
-            type="text"
-            value={form.materials}
-            onChange={(e) => updateField("materials", e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder="es. Legno massello di faggio curvato"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Materiali</label>
+            <input
+              type="text"
+              value={form.materials}
+              onChange={(e) => updateField("materials", e.target.value)}
+              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+              placeholder="es. Legno massello di faggio curvato"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Annata</label>
+            <input
+              type="number"
+              value={form.year}
+              onChange={(e) => updateField("year", e.target.value)}
+              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+              placeholder="es. 1859"
+            />
+          </div>
         </div>
 
         <RichTextEditor
@@ -355,51 +377,32 @@ export default function ProductForm({ productId }: ProductFormProps) {
         </div>
       </div>
 
-      {/* DIMENSIONI DINAMICHE */}
+      {/* DIMENSIONI */}
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
         <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Dimensioni</h3>
 
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Blocco dimensioni</label>
-          <select
-            value={form.dimensionBlockId}
-            onChange={(e) => handleDimensionBlockChange(e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-          >
-            <option value="">— Nessun blocco (testo libero) —</option>
-            {dimensionBlocks.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        </div>
+        <ImageUploadField
+          label="Immagine dimensioni"
+          value={form.dimensionImage}
+          onChange={(url) => updateField("dimensionImage", url)}
+          onRemove={() => updateField("dimensionImage", "")}
+          purpose="dimensions"
+          folder="products"
+          helpText="Disegno con le misure del prodotto"
+          recommendedSize="1200 x 600 px (orizzontale 2:1)"
+          aspectRatio={2 / 1}
+        />
 
-        {form.dimensionBlockId && blockLabels.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {blockLabels.map((label) => (
-              <div key={label}>
-                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">{label}</label>
-                <input
-                  type="text"
-                  value={dimValues[label] || ""}
-                  onChange={(e) => updateDimValue(label, e.target.value)}
-                  className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-                  placeholder="es. 60 cm"
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Dimensioni (testo libero)</label>
-            <input
-              type="text"
-              value={form.dimensions}
-              onChange={(e) => updateField("dimensions", e.target.value)}
-              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-              placeholder="es. L 60 x P 55 x H 80 cm"
-            />
-          </div>
-        )}
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Misure</label>
+          <textarea
+            value={form.dimensions}
+            onChange={(e) => updateField("dimensions", e.target.value)}
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+            placeholder={"es.\nL 60 cm\nP 55 cm\nH 80 cm"}
+            rows={4}
+          />
+        </div>
       </div>
 
       {/* IMMAGINI */}
@@ -513,27 +516,28 @@ export default function ProductForm({ productId }: ProductFormProps) {
         )}
       </div>
 
-      {/* IMMAGINE DIMENSIONI (disegno tecnico) */}
-      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
-        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Immagine dimensioni</h3>
-        <ImageUploadField
-          label="Disegno tecnico"
-          value={form.dimensionImage}
-          onChange={(url) => updateField("dimensionImage", url)}
-          onRemove={() => updateField("dimensionImage", "")}
-          purpose="dimensions"
-          folder="products"
-          helpText="Immagine orizzontale del disegno tecnico con misure"
-          recommendedSize="1200 x 600 px (orizzontale 2:1)"
-          aspectRatio={2 / 1}
+      {/* DOCUMENTAZIONE PDF */}
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Documentazione PDF</h3>
+        <PdfUploadField
+          label="Scheda Tecnica"
+          value={form.techSheetUrl}
+          onChange={(url) => updateField("techSheetUrl", url)}
+          folder="tech-sheets"
+        />
+        <PdfUploadField
+          label="Modello 2D"
+          value={form.model2dUrl}
+          onChange={(url) => updateField("model2dUrl", url)}
+          folder="tech-sheets"
+        />
+        <PdfUploadField
+          label="Modello 3D"
+          value={form.model3dUrl}
+          onChange={(url) => updateField("model3dUrl", url)}
+          folder="tech-sheets"
         />
       </div>
-
-      {/* SCHEDA TECNICA PDF */}
-      <TechSheetUpload
-        value={form.techSheetUrl}
-        onChange={(url) => updateField("techSheetUrl", url)}
-      />
 
       <div className="flex gap-3">
         <button
@@ -576,13 +580,17 @@ export default function ProductForm({ productId }: ProductFormProps) {
   );
 }
 
-/* ---- Tech Sheet Upload Sub-component ---- */
-function TechSheetUpload({
+/* ---- PDF Upload Sub-component ---- */
+function PdfUploadField({
+  label,
   value,
   onChange,
+  folder = "tech-sheets",
 }: {
+  label: string;
   value: string;
   onChange: (url: string) => void;
+  folder?: string;
 }) {
   const [uploading, setUploading] = useState(false);
 
@@ -593,7 +601,7 @@ function TechSheetUpload({
     const formData = new FormData();
     formData.append("file", file);
     formData.append("skipCompression", "true");
-    formData.append("folder", "tech-sheets");
+    formData.append("folder", folder);
     try {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
@@ -607,10 +615,8 @@ function TechSheetUpload({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
-      <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">
-        Scheda Tecnica PDF
-      </h3>
+    <div>
+      <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">{label}</label>
       {value ? (
         <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-lg border border-warm-200">
           <FileText size={20} className="text-warm-500 flex-shrink-0" />
@@ -635,7 +641,7 @@ function TechSheetUpload({
         <label className="flex items-center gap-2 px-4 py-3 border border-dashed border-warm-300 rounded-lg cursor-pointer hover:border-warm-500 transition-colors">
           <Upload size={16} className="text-warm-400" />
           <span className="text-sm text-warm-500">
-            {uploading ? "Caricamento..." : "Carica PDF scheda tecnica"}
+            {uploading ? "Caricamento..." : `Carica PDF ${label.toLowerCase()}`}
           </span>
           <input
             type="file"
