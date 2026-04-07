@@ -28,7 +28,7 @@ export default function Header() {
     }
 
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > heroEndRef.current - 100);
+      setIsScrolled(window.scrollY > heroEndRef.current * 0.7);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -45,24 +45,25 @@ export default function Header() {
         style={{
           left: 'var(--site-margin)',
           right: 'var(--site-margin)',
-          ...(!isScrolled ? { textShadow: "0 1px 8px rgba(0,0,0,0.3)", background: "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.25) 60%, transparent 100%)" } : {}),
+          transition: "background 0.6s ease",
+          ...(!isScrolled ? {} : {}),
         }}
       >
-        <div className="px-2 md:px-4 lg:px-5">
+        <div className="px-4 md:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20 md:h-24">
             {/* Hamburger left */}
             <button
               onClick={() => setIsMenuOpen(true)}
-              className={`p-1 transition-colors ${
-                isScrolled ? "text-black" : "text-white drop-shadow-md"
-              } hover:opacity-70`}
+              className={`-ml-0.5 p-1 transition-colors ${
+                isScrolled ? "text-neutral-700" : "text-white"
+              }`}
               aria-label="Apri menu"
             >
-              <svg width="33" height="26" viewBox="0 0 33 26" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="3" y1="5" x2="30" y2="5" />
-                <line x1="3" y1="13" x2="30" y2="13" />
-                <line x1="3" y1="21" x2="30" y2="21" />
-              </svg>
+              <div className="flex flex-col justify-between" style={{ width: "27px", height: "19px" }}>
+                <span className="block w-full bg-current" style={{ height: "3px" }} />
+                <span className="block w-full bg-current" style={{ height: "3px" }} />
+                <span className="block w-full bg-current" style={{ height: "3px" }} />
+              </div>
             </button>
 
             {/* Logo centered — switches between white and dark */}
@@ -71,11 +72,11 @@ export default function Header() {
                 <Image
                   src={isScrolled ? "/logo.webp" : "/logo-white.svg"}
                   alt="Wiener GTV Design"
-                  width={100}
-                  height={82}
+                  width={97}
+                  height={79}
                   style={{ marginTop: "-2px" }}
                   priority
-                  className="transition-opacity duration-300"
+                  className=""
                 />
               </Link>
             </div>
@@ -84,11 +85,11 @@ export default function Header() {
             <button
               onClick={() => setIsSearchOpen(true)}
               className={`p-1 transition-colors ${
-                isScrolled ? "text-black" : "text-white drop-shadow-md"
-              } hover:opacity-70`}
+                isScrolled ? "text-neutral-700" : "text-white"
+              }`}
               aria-label="Cerca"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "scaleX(-1)" }}>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "scaleX(-1) rotate(8deg)" }}>
                 <circle cx="11" cy="11" r="6.5" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>

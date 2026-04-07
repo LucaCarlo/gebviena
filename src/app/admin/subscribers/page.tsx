@@ -343,7 +343,7 @@ export default function AdminSubscribersPage() {
   const checkedInCount = eventRegs.filter((r) => r.checkedIn).length;
   const tabItems = [
     { key: "all", label: "Tutti", count: contacts.length, color: "#374151" },
-    ...tags.map((t) => ({ key: `tag:${t.slug}`, label: t.name, count: t.count, color: t.color })),
+    ...tags.filter((t) => t.count > 0).map((t) => ({ key: `tag:${t.slug}`, label: t.name, count: t.count, color: t.color })),
   ];
 
   /* ───── Contact detail helpers ───── */

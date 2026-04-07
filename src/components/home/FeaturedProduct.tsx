@@ -19,8 +19,8 @@ export default function FeaturedProduct({ ambianceImage, productImage }: Feature
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 1 }}
-          className="relative img-hover"
-          style={{ aspectRatio: "3 / 4.2" }}
+          className="relative"
+          style={{ aspectRatio: "3 / 4.45" }}
         >
           <Image
             src={ambianceImage}
@@ -28,6 +28,7 @@ export default function FeaturedProduct({ ambianceImage, productImage }: Feature
             fill
             className="object-cover"
           />
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(135deg, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.25) 25%, rgba(0,0,0,0.08) 45%, transparent 65%)" }} />
         </motion.div>
 
         {/* Right — product image centered with white space + text below centered */}
@@ -37,8 +38,8 @@ export default function FeaturedProduct({ ambianceImage, productImage }: Feature
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="relative w-full max-w-[82%] img-hover"
-            style={{ aspectRatio: "3 / 4" }}
+            className="relative w-full max-w-[80%]"
+            style={{ aspectRatio: "3 / 4.35" }}
           >
             <Image
               src={productImage}
@@ -68,7 +69,7 @@ export default function FeaturedProduct({ ambianceImage, productImage }: Feature
             </h2>
             <Link
               href="/prodotti"
-              className="inline-block mt-[20px] uppercase text-[16px] tracking-[0.03em] !text-black font-normal transition-colors hover:text-accent hover:underline"
+              className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] !text-black font-normal transition-colors hover:text-accent hover:underline"
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
               Scopri il prodotto &rarr;

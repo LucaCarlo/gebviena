@@ -103,13 +103,13 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — transparent, just for click-to-close */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[60] bg-black/25"
+            className="fixed inset-0 z-[60]"
             onClick={onClose}
           />
 
@@ -120,7 +120,7 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
             exit={{ x: "100%" }}
             transition={{ type: "tween", duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
             className="fixed top-0 right-0 bottom-0 z-[70] bg-white flex flex-col"
-            style={{ width: "32vw", minWidth: "360px", maxWidth: "520px" }}
+            style={{ width: "34vw", minWidth: "340px", maxWidth: "520px" }}
           >
             {/* Close button */}
             <div className="flex justify-end px-8 pt-6 pb-2 flex-shrink-0">
@@ -129,7 +129,7 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
                 className="p-1 text-black hover:opacity-60 transition-opacity"
                 aria-label="Chiudi ricerca"
               >
-                <X size={22} strokeWidth={1.5} />
+                <X size={22} strokeWidth={2} />
               </button>
             </div>
 
@@ -147,7 +147,7 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Scrivi qui la tua chiave di ricerca"
-                    className="w-full border border-neutral-300 bg-transparent px-4 py-3 pr-10 text-sm placeholder:text-neutral-400 focus:border-black focus:outline-none transition-colors"
+                    className="w-full border border-neutral-300 bg-transparent px-4 py-4 pr-10 text-sm placeholder:text-neutral-400 focus:border-black focus:outline-none transition-colors"
                     style={{ color: "#000" }}
                     autoFocus
                   />

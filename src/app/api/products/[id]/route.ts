@@ -20,6 +20,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   try {
     const body = await req.json();
     delete body.designer;
+    if (body.designerId === "") body.designerId = null;
 
     const data = await prisma.product.update({ where: { id: params.id }, data: body });
 

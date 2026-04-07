@@ -71,7 +71,7 @@ export default function HeroSection() {
 
   if (loading) {
     return (
-      <section className="relative w-full bg-warm-100" style={{ height: "115vh" }}>
+      <section className="relative w-full bg-warm-100" style={{ height: "min(118vh, 1107px)" }}>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
         </div>
@@ -86,10 +86,10 @@ export default function HeroSection() {
     slide.position === "right" ? "items-end text-right pr-8 md:pr-20" :
     "items-center text-center";
 
-  const textAlignV = "bottom-[15vh]";
+  const textAlignV = "bottom-[12.5vh]";
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "115vh" }}>
+    <section className="relative w-full overflow-hidden" style={{ height: "min(118vh, 1107px)" }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
@@ -110,10 +110,10 @@ export default function HeroSection() {
         </motion.div>
       </AnimatePresence>
 
-      {slide.darkOverlay ? (
+
+
+      {slide.darkOverlay && (
         <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       )}
 
       {/* Text content */}
@@ -126,7 +126,7 @@ export default function HeroSection() {
           transition={{ duration: 1, delay: 0.3 }}
           className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 leading-snug font-light uppercase tracking-[inherit] whitespace-nowrap" style={{ marginTop: "-5px" }}>
+          <h1 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white leading-snug font-light uppercase tracking-[inherit] whitespace-nowrap" style={{ marginTop: "-5px" }}>
             {slide.title}
           </h1>
           {slide.subtitle && (
@@ -137,7 +137,7 @@ export default function HeroSection() {
           {slide.ctaText && slide.ctaLink && (
             <Link
               href={slide.ctaLink}
-              className="inline mt-4 uppercase text-sm md:text-base tracking-[0.03em] text-white font-normal hover:text-white/80 transition-colors hover:underline"
+              className="inline mt-4 uppercase text-sm md:text-base tracking-[0.03em] text-white font-normal hover:text-white/60 transition-colors duration-300 hover:underline"
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
               {slide.ctaText} &rarr;

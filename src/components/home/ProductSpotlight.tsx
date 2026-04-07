@@ -19,7 +19,7 @@ export default function ProductSpotlight({ ambianceImage, productImage }: Produc
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 1 }}
-          className="relative img-hover"
+          className="relative "
           style={{ aspectRatio: "3 / 4.2" }}
         >
           <Image
@@ -37,7 +37,7 @@ export default function ProductSpotlight({ ambianceImage, productImage }: Produc
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="relative w-full max-w-[82%] img-hover"
+            className="relative w-full max-w-[82%] "
             style={{ aspectRatio: "3 / 4" }}
           >
             <Image

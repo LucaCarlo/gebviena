@@ -38,12 +38,13 @@ function ProductsHero() {
   // Fallback: static hero if no slides configured
   if (loaded && slides.length === 0) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 7.5rem)" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 7.5rem + 2px)" }}>
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.3 }}
-          className="font-serif text-[58px] text-white tracking-wide"
+          className="font-serif text-[58px] text-white tracking-normal"
+          style={{ marginTop: "-12px" }}
         >
           Prodotti
         </motion.h1>
@@ -53,7 +54,7 @@ function ProductsHero() {
 
   if (!loaded) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-100" style={{ height: "calc(100vh - 7.5rem)" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-100" style={{ height: "calc(100vh - 7.5rem + 2px)" }}>
         <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
       </section>
     );
@@ -72,7 +73,7 @@ function ProductsHero() {
     "top-[46%] -translate-y-1/2";
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 7.5rem)" }}>
+    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 7.5rem + 2px)" }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
@@ -86,7 +87,7 @@ function ProductsHero() {
             src={slide.imageUrl}
             alt={slide.title}
             fill
-            className="object-cover"
+            className="object-cover mix-blend-multiply"
             priority
             sizes="100vw"
           />
@@ -104,7 +105,7 @@ function ProductsHero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className="font-serif text-[58px] text-white tracking-wide">
+          <h1 className="font-serif text-[58px] text-white tracking-normal" style={{ marginTop: "-12px" }}>
             {slide.title}
           </h1>
           {slide.subtitle && (
@@ -248,6 +249,7 @@ function ProductsContent() {
     const params = new URLSearchParams();
     if (cat !== "TUTTI") params.set("category", cat);
     router.push(`/prodotti?${params}`, { scroll: false });
+    setTimeout(() => document.querySelector("section.py-8")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   const setSubcategory = (sub: string | null) => {
@@ -255,6 +257,7 @@ function ProductsContent() {
     if (currentCategory !== "TUTTI") params.set("category", currentCategory);
     if (sub) params.set("subcategory", sub);
     router.push(`/prodotti?${params}`, { scroll: false });
+    setTimeout(() => document.querySelector("section.py-8")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   const setPage = (page: number) => {
@@ -263,6 +266,7 @@ function ProductsContent() {
     if (currentSubcategory) params.set("subcategory", currentSubcategory);
     params.set("page", page.toString());
     router.push(`/prodotti?${params}`, { scroll: false });
+    setTimeout(() => document.querySelector("section.py-8")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   /* Get categories for current typology */
@@ -299,8 +303,8 @@ function ProductsContent() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-[20px] text-black leading-snug max-w-4xl mx-auto text-center font-light tracking-normal"
-          style={{ textAlign: "justify" }}
+          className="text-[20px] text-black leading-snug max-w-[940px] font-light tracking-normal"
+          style={{ marginLeft: "auto", marginRight: "auto" }}
         >
           I prodotti Gebrüder Thonet Vienna uniscono tradizione e innovazione in forme iconiche e senza
           tempo. Leggerezza visiva, solidità e dettagli artigianali rendono ogni pezzo unico, ideale per spazi
@@ -316,9 +320,9 @@ function ProductsContent() {
           <button
             ref={(el) => { typoButtonRefs.current["TUTTI"] = el; }}
             onClick={() => setCategory("TUTTI")}
-            className={`text-[16px] font-light tracking-[0.03em] text-dark pb-1 transition-all border-b ${
+            className={`text-[16px] font-light tracking-[0.01em] text-dark pb-1 transition-all border-b ${
               currentCategory === "TUTTI"
-                ? "border-dark"
+                ? "border-transparent"
                 : "border-transparent hover:border-dark"
             }`}
           >
@@ -329,9 +333,9 @@ function ProductsContent() {
               key={t.value}
               ref={(el) => { typoButtonRefs.current[t.value] = el; }}
               onClick={() => setCategory(t.value)}
-              className={`text-[16px] font-light tracking-[0.03em] text-dark pb-1 transition-all border-b ${
+              className={`text-[16px] font-light tracking-[0.01em] text-dark pb-1 transition-all border-b ${
                 currentCategory === t.value
-                  ? "border-dark"
+                  ? "border-transparent"
                   : "border-transparent hover:border-dark"
               }`}
             >
@@ -341,7 +345,7 @@ function ProductsContent() {
         </div>
 
         {/* Separator — single continuous line with ^ notch */}
-        <div className="relative h-[14px]" ref={separatorRef}>
+        <div className="relative h-[14px] -mx-4 md:-mx-8 lg:-mx-12" ref={separatorRef}>
           {containerWidth > 0 && (
             <svg
               className="absolute bottom-0 left-0 w-full"
@@ -367,13 +371,13 @@ function ProductsContent() {
 
         {/* Categorie — pill con sfondo arrotondato */}
         {filteredCategories.length > 0 && (
-          <div className="pt-5 pb-2">
-            <div className="flex flex-wrap gap-3 justify-center">
+          <div className="pt-10 pb-2">
+            <div className="flex flex-wrap gap-x-5 gap-y-5 justify-center">
               {filteredCategories.map((cat) => (
                 <button
                   key={cat.value}
                   onClick={() => setSubcategory(currentSubcategory === cat.value ? null : cat.value)}
-                  className={`px-4 py-1.5 rounded-full text-[16px] font-light uppercase tracking-[0.03em] transition-all ${
+                  className={`px-2.5 py-1 rounded-full text-[16px] font-light uppercase tracking-[0.01em] transition-all ${
                     currentSubcategory === cat.value
                       ? "bg-dark text-white"
                       : "bg-warm-100 text-dark hover:bg-warm-200"
@@ -388,9 +392,9 @@ function ProductsContent() {
       </div>
 
       {/* ===== PRODUCT GRID ===== */}
-      <section className="gtv-container py-12 md:py-16">
+      <section className="py-8 md:py-10">
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12 px-2 md:px-3 lg:px-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="bg-warm-100" style={{ aspectRatio: "4/5" }} />
@@ -400,7 +404,7 @@ function ProductsContent() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12 px-2 md:px-3 lg:px-4">
             {products.map((product, i) => (
               <motion.div
                 key={product.id}
@@ -410,17 +414,17 @@ function ProductsContent() {
                 transition={{ duration: 0.4, delay: (i % 4) * 0.05 }}
               >
                 <Link href={`/prodotti/${product.slug}`} className="group block">
-                  <div className="relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "4/5" }}>
+                  <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "4/5" }}>
                     <Image
                       src={product.coverImage || product.imageUrl}
                       alt={product.name}
                       fill
-                      className="object-cover"
+                      className="object-cover mix-blend-multiply"
                       sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                     />
                   </div>
                   <div className="mt-4">
-                    <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">
+                    <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
                       {product.subcategory || (product.category === "CLASSICI" ? "Classici" : product.category?.charAt(0) + product.category?.slice(1).toLowerCase())}
                     </p>
                     <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -450,10 +454,10 @@ function ProductsContent() {
                 <button
                   key={item}
                   onClick={() => setPage(item as number)}
-                  className={`w-9 h-9 rounded-full text-base transition-colors border ${
+                  className={`w-8 h-8 rounded-full text-sm transition-colors ${
                     currentPage === item
-                      ? "border-warm-800 text-warm-800"
-                      : "border-transparent text-warm-400 hover:text-warm-700"
+                      ? "bg-warm-100 text-dark border border-dark"
+                      : "bg-warm-100 text-warm-500 hover:bg-warm-200 hover:text-warm-700"
                   }`}
                 >
                   {item}

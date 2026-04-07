@@ -43,7 +43,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[60] bg-black/25"
+            className="fixed inset-0 z-[60]"
             onClick={onClose}
           />
 
@@ -67,7 +67,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   className="p-1 text-dark hover:opacity-60 transition-opacity"
                   aria-label="Chiudi menu"
                 >
-                  <X size={22} strokeWidth={1.5} />
+                  <X size={22} strokeWidth={2} />
                 </button>
               </div>
 

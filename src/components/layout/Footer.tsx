@@ -92,7 +92,7 @@ export default function Footer() {
     <footer className="bg-white">
       {/* Newsletter section — horizontal layout */}
       <div className="mt-4" style={{ borderTop: "0.5px solid black" }}>
-        <div className="mx-auto w-full max-w-[1350px] px-4 md:px-8 py-14 md:py-18">
+        <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 py-14 md:py-18">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
             <div>
               <h3 className="font-sans text-[28px] font-light uppercase tracking-[inherit] leading-[1.15] text-black">
@@ -195,7 +195,7 @@ export default function Footer() {
                   )}
                   <button
                     type="submit"
-                    className="w-full border border-black py-2.5 text-sm uppercase tracking-wider"
+                    className="w-full border border-black py-2.5 text-sm uppercase tracking-[0.03em]"
                     style={{ color: "#000" }}
                   >
                     Iscriviti
@@ -211,18 +211,18 @@ export default function Footer() {
       <div className="w-full" style={{ borderTop: "0.5px solid black" }} />
 
       {/* Logo */}
-      <div className="mx-auto w-full max-w-[1350px] px-4 md:px-8 pt-14 md:pt-18">
-        <Logo width={85} height={70} />
+      <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pt-14 md:pt-18">
+        <Logo width={80} height={66} />
       </div>
 
       {/* Main footer content */}
-      <div className="mx-auto w-full max-w-[1350px] px-4 md:px-8 pt-14 pb-14 md:pb-18">
+      <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pt-18 pb-14 md:pb-18">
         <div className="flex flex-col lg:flex-row gap-10">
           {/* Company info */}
           <div className="lg:w-[40%] space-y-6">
-            <div className="space-y-5 text-[16px] font-normal leading-snug" style={{ color: "#555" }}>
+            <div className="space-y-5 text-[14px] font-normal leading-snug" style={{ color: "#000" }}>
               <div>
-                <p className="font-bold" style={{ color: "#000" }}>
+                <p className="font-bold text-[16px]" style={{ color: "#000" }}>
                   Headquarters Gebrüder Thonet Vienna GmbH
                 </p>
                 <p>Via Foggia 23H – 10125 Torino (Italy)</p>
@@ -233,14 +233,14 @@ export default function Footer() {
               </div>
 
               <div>
-                <p className="font-bold" style={{ color: "#000" }}>
+                <p className="font-bold text-[16px]" style={{ color: "#000" }}>
                   Registered Office Gebrüder Thonet Vienna GmbH
                 </p>
                 <p>Prinz Eugen Strasse 42 1040 Wien Österreich</p>
               </div>
 
               <div>
-                <p className="font-bold" style={{ color: "#000" }}>
+                <p className="font-bold text-[16px]" style={{ color: "#000" }}>
                   Offices of the trademarks licencee
                 </p>
                 <p>Production Furniture International S.p.A</p>
@@ -251,9 +251,9 @@ export default function Footer() {
 
             {/* Language selector */}
             <div className="pt-4">
-              <div className="inline-flex items-center border border-neutral-300 px-6 py-3 text-[16px] cursor-pointer hover:underline" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
+              <div className="inline-flex items-center border border-black px-5 py-3 text-[16px] cursor-pointer hover:underline" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                 <span>Italiano</span>
-                <svg className="ml-10 w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <svg className="ml-24 w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </div>
@@ -261,35 +261,35 @@ export default function Footer() {
           </div>
 
           {/* Link columns — pushed to right */}
-          <div className="lg:flex-1 flex flex-col md:flex-row gap-18 lg:justify-end">
+          <div className="lg:flex-1 flex flex-col md:flex-row gap-[6.5rem] lg:justify-end">
           {/* Esplora */}
           <div>
-            <h4 className="text-[16px] font-bold uppercase tracking-[0.12em] mb-8" style={{ color: "#000" }}>
+            <h4 className="text-[16px] font-bold uppercase tracking-[0.05em] mb-8" style={{ color: "#000" }}>
               Esplora
             </h4>
-            <ul className="space-y-5">
+            <ul className="space-y-6">
               <li>
-                <Link href="/prodotti" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="/prodotti" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   Prodotti
                 </Link>
               </li>
               <li>
-                <Link href="/progetti" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="/progetti" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   Progetti
                 </Link>
               </li>
               <li>
-                <Link href="/mondo-gtv" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="/mondo-gtv" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   Mondo GTV
                 </Link>
               </li>
               <li>
-                <Link href="/professionisti" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="/professionisti" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   Professionisti
                 </Link>
               </li>
               <li>
-                <Link href="/contatti" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="/contatti" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   Contatti
                 </Link>
               </li>
@@ -298,22 +298,22 @@ export default function Footer() {
 
           {/* Informati */}
           <div>
-            <h4 className="text-[16px] font-bold uppercase tracking-[0.12em] mb-8" style={{ color: "#000" }}>
+            <h4 className="text-[16px] font-bold uppercase tracking-[0.05em] mb-8" style={{ color: "#000" }}>
               Informati
             </h4>
-            <ul className="space-y-5">
+            <ul className="space-y-6">
               <li>
-                <Link href="/privacy-policy" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="/privacy-policy" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/cookie-policy" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="/cookie-policy" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   Cookie Policy
                 </Link>
               </li>
               <li>
-                <Link href="/condizioni-vendita" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity leading-snug" style={{ color: "#000" }}>
+                <Link href="/condizioni-vendita" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all leading-snug" style={{ color: "#000" }}>
                   Condizioni Generali<br />di Vendita
                 </Link>
               </li>
@@ -322,32 +322,32 @@ export default function Footer() {
 
           {/* Seguici */}
           <div>
-            <h4 className="text-[16px] font-bold uppercase tracking-[0.12em] mb-8" style={{ color: "#000" }}>
+            <h4 className="text-[16px] font-bold uppercase tracking-[0.05em] mb-8" style={{ color: "#000" }}>
               Seguici
             </h4>
-            <ul className="space-y-5">
+            <ul className="space-y-6">
               <li>
-                <Link href="https://facebook.com" target="_blank" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="https://www.facebook.com/GebruderThonetVienna" target="_blank" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   Facebook
                 </Link>
               </li>
               <li>
-                <Link href="https://instagram.com" target="_blank" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="https://www.instagram.com/gebruder_thonet_vienna/" target="_blank" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   Instagram
                 </Link>
               </li>
               <li>
-                <Link href="https://pinterest.com" target="_blank" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="https://it.pinterest.com/gebruder_thonet_vienna/_created/" target="_blank" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   Pinterest
                 </Link>
               </li>
               <li>
-                <Link href="https://linkedin.com" target="_blank" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="https://www.linkedin.com/company/gebruder-thonet-vienna/" target="_blank" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   LinkedIn
                 </Link>
               </li>
               <li>
-                <Link href="https://youtube.com" target="_blank" className="text-[16px] uppercase tracking-[0.08em] font-normal hover:opacity-60 transition-opacity" style={{ color: "#000" }}>
+                <Link href="https://www.youtube.com/@Gebr%C3%BCderThonetVienna" target="_blank" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
                   YouTube
                 </Link>
               </li>
@@ -358,11 +358,11 @@ export default function Footer() {
       </div>
 
       {/* Copyright */}
-      <div className="mx-auto w-full max-w-[1350px] px-4 md:px-8 pb-20 pt-16 md:pt-24">
-        <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#555" }}>
+      <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-[9.9rem] pt-16 md:pt-24">
+        <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
           Copyright 2025 © GEBRUDER THONET VIENNA GMBH
         </p>
-        <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#555" }}>
+        <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#000" }}>
           Si prega di osservare che l&apos;utilizzo del marchio e il nome della società &ldquo;Gebrüder Thonet Vienna&rdquo; negli
           Stati Uniti e l&apos;uso del marchio di fabbrica &ldquo;Gebrüder Thonet Vienna&rdquo; in Germania comporta restrizioni,
           a causa di accordi stipulati con altre imprese. Per ulteriori informazioni si prega di contattare info@gebruederthonetvienna.it.

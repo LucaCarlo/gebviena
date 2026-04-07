@@ -36,12 +36,13 @@ function ProjectsHero() {
 
   if (loaded && slides.length === 0) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 7.5rem)" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 7.5rem + 2px)" }}>
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.3 }}
-          className="font-serif text-[58px] text-white tracking-wide"
+          className="font-serif text-[58px] text-white tracking-normal"
+          style={{ marginTop: "-12px" }}
         >
           Progetti
         </motion.h1>
@@ -51,7 +52,7 @@ function ProjectsHero() {
 
   if (!loaded) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 7.5rem)" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 7.5rem + 2px)" }}>
         <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
       </section>
     );
@@ -70,7 +71,7 @@ function ProjectsHero() {
     "top-[46%] -translate-y-1/2";
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 7.5rem)" }}>
+    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 7.5rem + 2px)" }}>
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
@@ -102,7 +103,7 @@ function ProjectsHero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className="font-serif text-[58px] text-white tracking-wide">
+          <h1 className="font-serif text-[58px] text-white tracking-normal" style={{ marginTop: "-12px" }}>
             {slide.title}
           </h1>
           {slide.subtitle && (
@@ -333,6 +334,7 @@ function ProjectsContent() {
     const params = new URLSearchParams();
     if (type !== "TUTTI") params.set("type", type);
     router.push(`/progetti?${params}`, { scroll: false });
+    setTimeout(() => document.querySelector("section.pt-2")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   const setPage = (page: number) => {
@@ -341,6 +343,7 @@ function ProjectsContent() {
     if (selectedCountry) params.set("country", selectedCountry);
     params.set("page", page.toString());
     router.push(`/progetti?${params}`, { scroll: false });
+    setTimeout(() => document.querySelector("section.pt-2")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   const typeLabels: Record<string, string> = {};
@@ -374,8 +377,7 @@ function ProjectsContent() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-[20px] text-black leading-snug max-w-4xl mx-auto text-center font-light tracking-normal"
-          style={{ textAlign: "justify" }}
+          className="text-[20px] text-black leading-snug max-w-[940px] mx-auto font-light tracking-normal"
         >
           Uno sguardo sulle nostre realizzazioni nel mondo.<br />
           Dai bistrot più ricercati agli hotel d&apos;avanguardia, dagli spazi culturali ai contesti residenziali, i nostri arredi contribuiscono a definire atmosfere inconfondibili.<br />
@@ -389,9 +391,9 @@ function ProjectsContent() {
           <button
             ref={(el) => { typeButtonRefs.current["TUTTI"] = el; }}
             onClick={() => setType("TUTTI")}
-            className={`text-[16px] font-light tracking-[0.03em] text-dark pb-1 transition-all border-b ${
+            className={`text-[16px] font-light tracking-[0.01em] text-dark pb-1 transition-all border-b ${
               currentType === "TUTTI"
-                ? "border-dark"
+                ? "border-transparent"
                 : "border-transparent hover:border-dark"
             }`}
           >
@@ -402,9 +404,9 @@ function ProjectsContent() {
               key={cat.value}
               ref={(el) => { typeButtonRefs.current[cat.value] = el; }}
               onClick={() => setType(cat.value)}
-              className={`text-[16px] font-light tracking-[0.03em] text-dark pb-1 transition-all border-b ${
+              className={`text-[16px] font-light tracking-[0.01em] text-dark pb-1 transition-all border-b ${
                 currentType === cat.value
-                  ? "border-dark"
+                  ? "border-transparent"
                   : "border-transparent hover:border-dark"
               }`}
             >
@@ -414,7 +416,7 @@ function ProjectsContent() {
         </div>
 
         {/* Separator with notch */}
-        <div className="relative h-[14px]" ref={separatorRef}>
+        <div className="relative h-[14px] -mx-4 md:-mx-8 lg:-mx-12" ref={separatorRef}>
           {containerWidth > 0 && (
             <svg
               className="absolute bottom-0 left-0 w-full"
@@ -456,7 +458,7 @@ function ProjectsContent() {
       </div>
 
       {/* ===== PROJECT GRID ===== */}
-      <section className="gtv-container pt-2 pb-8 md:pt-3 md:pb-10">
+      <section className="pt-2 pb-8 md:pt-3 md:pb-10 px-2 md:px-3 lg:px-4">
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -488,7 +490,7 @@ function ProjectsContent() {
                     />
                   </div>
                   <div className="mt-4">
-                    <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">
+                    <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
                       {typeLabels[project.type] || project.type}
                     </p>
                     <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -517,10 +519,10 @@ function ProjectsContent() {
                 <button
                   key={item}
                   onClick={() => setPage(item as number)}
-                  className={`w-9 h-9 rounded-full text-base transition-colors border ${
+                  className={`w-8 h-8 rounded-full text-sm transition-colors ${
                     currentPage === item
-                      ? "border-warm-800 text-warm-800"
-                      : "border-transparent text-warm-400 hover:text-warm-700"
+                      ? "bg-warm-100 text-dark border border-dark"
+                      : "bg-warm-100 text-warm-500 hover:bg-warm-200 hover:text-warm-700"
                   }`}
                 >
                   {item}
