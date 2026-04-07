@@ -351,9 +351,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
           onRemove={() => updateField("dimensionImage", "")}
           purpose="dimensions"
           folder="products"
-          helpText="Disegno con le misure del prodotto"
-          recommendedSize="1200 x 600 px (orizzontale 2:1)"
-          aspectRatio={2 / 1}
+          helpText="Disegno con le misure del prodotto (proporzioni libere)"
         />
 
         <div>
