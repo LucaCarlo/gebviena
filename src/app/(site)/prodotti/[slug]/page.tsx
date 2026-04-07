@@ -179,8 +179,8 @@ export default function ProductDetailPage() {
 
   return (
     <>
-      {/* ===== 1. HERO — same height/style as homepage ===== */}
-      <section className="relative w-full" style={{ height: "calc(100vh - 7.5rem)" }}>
+      {/* ===== 1. HERO — same height/style as homepage (115vh) ===== */}
+      <section className="relative w-full overflow-hidden" style={{ height: "115vh" }}>
         <Image
           src={heroImg}
           alt={product.name}
@@ -188,7 +188,7 @@ export default function ProductDetailPage() {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-black" style={{ opacity: 0.45 }} />
+        <div className="absolute inset-0 bg-black" style={{ opacity: 0.6 }} />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -196,10 +196,10 @@ export default function ProductDetailPage() {
           transition={{ duration: 1, delay: 0.5 }}
           className="absolute inset-0 flex flex-col items-center justify-center text-center"
         >
-          <h1 className="font-serif text-[58px] text-white tracking-wide">
+          <h1 className="font-serif text-[58px] text-white tracking-[0.12em]">
             {product.name}
           </h1>
-          <p className="uppercase text-sm md:text-base tracking-[0.25em] text-white mt-4 font-light">
+          <p className="uppercase text-sm md:text-base tracking-[0.12em] text-white mt-4 font-light">
             by {product.designerName}{product.year ? ` | ${product.year}` : ""}
           </p>
         </motion.div>
