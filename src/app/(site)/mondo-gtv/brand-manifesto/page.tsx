@@ -51,7 +51,7 @@ export default async function BrandManifestoPage() {
       {/* ── Intro paragraph ───────────────────────────────────────── */}
       <section className="pb-20 md:pb-28">
         <div className="gtv-container-narrow">
-          <p className="text-lg text-dark leading-[1.8] font-light">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
             Ogni parola riflette una parte fondamentale della nostra essenza: la
             nostra origine storica, l&apos;eccellenza artigianale e la nostra
             visione globale. Non &egrave; semplicemente un claim, ma un viaggio
@@ -80,11 +80,11 @@ export default async function BrandManifestoPage() {
 
           {/* Right: text — 50% width, vertically centered, generous padding */}
           <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
-            <p className="label-text mb-1.5">Our Heritage</p>
-            <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark leading-[1.15] uppercase tracking-wide font-light">
+            <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">Our Heritage</p>
+            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Born in Vienna
             </h2>
-            <p className="text-lg text-dark leading-[1.8] font-light mt-5">
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-5">
               La tradizione viennese, intrisa di arte e ingegno, &egrave; il
               nostro fondamento, un&apos;eredit&agrave; che ci accompagna in ogni
               creazione. Ma non ci fermiamo qui: il nostro sapere artigianale non
@@ -105,11 +105,11 @@ export default async function BrandManifestoPage() {
       {/* ── La Produzione – Made in Italy ──────────────────────────── */}
       <section className="section-padding">
         <div className="gtv-container-narrow">
-          <p className="label-text mb-1.5">La Produzione</p>
-          <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark mb-8 uppercase tracking-wide font-light">
+          <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">La Produzione</p>
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
             Made in Italy
           </h2>
-          <p className="text-lg text-dark leading-[1.8] font-light">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
             L&apos;incontro perfetto tra la nostra eredit&agrave; e la maestria
             artigianale italiana. In Italia, dove il design &egrave;
             un&apos;arte quotidiana, ogni prodotto nasce dall&apos;incontro di
@@ -151,13 +151,13 @@ export default async function BrandManifestoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0" style={{ minHeight: "100vh" }}>
           {/* Left: text — 50%, vertically centered, same style as Heritage */}
           <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
-            <p className="label-text mb-1.5">I Nostri Designer</p>
-            <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark leading-[1.15] mb-6 uppercase tracking-wide font-light">
+            <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">I Nostri Designer</p>
+            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Designed around
               <br />
               the world
             </h2>
-            <p className="text-lg text-dark leading-[1.8] font-light">
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal">
               Collaboriamo con alcuni dei pi&ugrave; grandi maestri del design
               contemporaneo, provenienti da culture e background diversi, per
               reinterpretare la nostra eredit&agrave; con uno sguardo sempre
@@ -202,7 +202,7 @@ export default async function BrandManifestoPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="text-center font-sans text-base md:text-lg uppercase tracking-[0.15em] text-dark mb-12">
+          <h3 className="text-center uppercase text-[16px] tracking-[0.03em] text-black font-light mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

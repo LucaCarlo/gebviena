@@ -24,10 +24,10 @@ export default async function MondoGTVPage() {
       {/* Intro */}
       <section className="section-padding">
         <div className="luxury-container max-w-4xl text-center">
-          <h2 className="font-serif text-3xl md:text-4xl text-warm-800 mb-8">
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-8">
             La tradizione che <em>ispira</em> il futuro
           </h2>
-          <p className="text-sm text-warm-600 leading-relaxed">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
             Gebrüder Thonet Vienna GmbH è un&apos;azienda che nasce dalla tradizione del legno curvato,
             un&apos;arte che affonda le radici nella Vienna del XIX secolo. Oggi, con sede a Torino, GTV
             reinterpreta questo patrimonio con uno sguardo rivolto al design contemporaneo,
@@ -59,16 +59,16 @@ export default async function MondoGTVPage() {
         <div className="luxury-container">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <p className="label-text mb-4">La lavorazione</p>
-              <h2 className="font-serif text-3xl md:text-4xl text-warm-800 mb-6">
+              <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-4">La lavorazione</p>
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-6">
                 L&apos;arte del legno curvato
               </h2>
-              <p className="text-sm text-warm-600 leading-relaxed mb-4">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-4">
                 La curvatura del legno massello è una tecnica unica che permette di modellare il faggio
                 attraverso il vapore, creando forme eleganti e resistenti senza l&apos;uso di giunture.
                 Questo processo, perfezionato nel corso di oltre 150 anni, è il cuore della produzione GTV.
               </p>
-              <p className="text-sm text-warm-600 leading-relaxed">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Ogni pezzo viene realizzato da artigiani esperti che combinano la sapienza manuale
                 con tecnologie all&apos;avanguardia, garantendo qualità e durabilità in ogni dettaglio.
               </p>
@@ -88,10 +88,10 @@ export default async function MondoGTVPage() {
       {/* Designers */}
       <section className="section-padding bg-brand-50">
         <div className="luxury-container text-center">
-          <h2 className="font-serif text-3xl md:text-4xl text-warm-800 mb-6">
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-6">
             I nostri <em>designer</em>
           </h2>
-          <p className="text-sm text-warm-600 leading-relaxed max-w-2xl mx-auto mb-12">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-2xl mx-auto mb-12">
             Collaboriamo con i più rinomati designer e studi di architettura del mondo
             per creare pezzi che combinano innovazione e tradizione.
           </p>
@@ -109,7 +109,7 @@ export default async function MondoGTVPage() {
       {/* CTA */}
       <section className="section-padding text-center">
         <div className="luxury-container">
-          <h2 className="font-serif text-3xl md:text-4xl text-warm-800 mb-6">
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-6">
             Scopri la collezione
           </h2>
           <Link

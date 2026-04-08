@@ -85,12 +85,12 @@ export default async function GtvExperiencePage() {
       {/* ── Intro — titolo + testo ───────────────────────────────── */}
       <section className="pt-20 md:pt-28 pb-20 md:pb-28">
         <div className="gtv-container-narrow">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-dark leading-[1.15] mb-8 text-center">
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-8">
             GTV arreda gli spazi
             <br />
             prestigiosi di Interno Marche
           </h2>
-          <p className="text-lg text-dark leading-[1.8] font-light mb-6 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left">
             Gebrüder Thonet Vienna GmbH (GTV) arreda gli spazi prestigiosi di
             Interno Marche, il primo Design Experience Hotel che racconta la
             storia di 100 anni di storia del design. Nel centro delle Marche, in
@@ -102,7 +102,7 @@ export default async function GtvExperiencePage() {
             cui si ispirano alcune delle stanze del design hotel, arricchite
             dalle loro opere più iconiche.
           </p>
-          <p className="text-lg text-dark leading-[1.8] font-light mb-6 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left">
             Protagonisti degli spazi raffinati come la lobby, il lounge bar e il
             patio, alcune delle creazioni più famose e contemporanee del brand,
             come la lounge Loie di Chiara Andreatti e il divano Targa di
@@ -126,10 +126,10 @@ export default async function GtvExperiencePage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "100vh" }}>
           {/* Left: text */}
           <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
-            <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark leading-[1.15] uppercase tracking-wide font-light">
+            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Storie, visioni, ispirazioni.
             </h2>
-            <p className="text-lg text-dark leading-[1.8] font-light mt-5">
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-5">
               Interno Marche &egrave; il frutto di una visione che intreccia
               storia, arte e design. Un viaggio alla scoperta di Villa
               Gabrielli, una dimora storica nel cuore delle colline marchigiane,
@@ -154,10 +154,10 @@ export default async function GtvExperiencePage() {
       {/* ── La rinascita di Villa Gabrielli — titolo + testo ──────── */}
       <section className="pt-20 md:pt-28 pb-16 md:pb-20">
         <div className="gtv-container-narrow">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-dark leading-[1.15] mb-8 text-center">
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-8">
             La rinascita di Villa Gabrielli
           </h2>
-          <p className="text-lg text-dark leading-[1.8] font-light text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left">
             Villa Gabrielli, un gioiello tardo Liberty, simbolo dello sviluppo
             della citt&agrave; di Tolentino nel secolo scorso. Nel 1922,
             l&apos;edificio era inizialmente una fabbrica e la residenza
@@ -178,10 +178,10 @@ export default async function GtvExperiencePage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-28 items-start">
             {/* Left: text — 60% */}
             <div className="lg:col-span-7">
-              <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark mb-8 uppercase tracking-wide font-light">
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-8">
                 Lobby
               </h2>
-              <p className="text-lg text-dark leading-[1.8] font-light">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Il Foyer &egrave; il punto di arrivo e partenza, un ambiente
                 espressivo e di grande impatto, dove le sedute iconiche di GTV
                 accolgono gli ospiti in un&apos;atmosfera sospesa tra classico e
@@ -250,10 +250,10 @@ export default async function GtvExperiencePage() {
 
             {/* Right: text — 60% */}
             <div className="lg:col-span-7 lg:pr-12 xl:pr-20">
-              <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark mb-8 uppercase tracking-wide font-light">
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-8">
                 I corridoi
               </h2>
-              <p className="text-lg text-dark leading-[1.8] font-light">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 I corridoi diventano spazi espositivi, gallerie intime dove le
                 creazioni GTV punteggiano il percorso, trasformando il semplice
                 passaggio in un&apos;esperienza estetica. Pezzi di design che
@@ -302,7 +302,7 @@ export default async function GtvExperiencePage() {
       {/* ── 30 camere iconiche — titolo grande ───────────────────── */}
       <section className="pb-16 md:pb-20">
         <div className="gtv-container-narrow">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-dark leading-[1.15] text-center">
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center">
             30 camere iconiche.
           </h2>
         </div>
@@ -335,10 +335,10 @@ export default async function GtvExperiencePage() {
 
           {/* Right: text */}
           <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
-            <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark leading-[1.15] uppercase tracking-wide font-light">
+            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Vivi la GTV Experience
             </h2>
-            <p className="text-lg text-dark leading-[1.8] font-light mt-5">
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-5">
               Interno Marche &egrave; un invito a vivere il design nella sua
               dimensione più autentica. Scopri il fascino delle collezioni GTV
               immerse in un contesto unico, dove ogni stanza racconta una storia
@@ -351,7 +351,7 @@ export default async function GtvExperiencePage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="text-center font-sans text-base md:text-lg uppercase tracking-[0.15em] text-dark mb-12">
+          <h3 className="text-center uppercase text-[16px] tracking-[0.03em] text-black font-light mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

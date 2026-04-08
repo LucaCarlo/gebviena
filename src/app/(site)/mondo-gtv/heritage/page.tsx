@@ -71,7 +71,7 @@ export default async function HeritagePage() {
             </div>
             {/* Right: text ~50% */}
             <div className="lg:col-span-6 flex flex-col justify-center lg:px-12 xl:px-16">
-              <p className="text-lg text-dark leading-[1.8] font-light">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Michael Thonet (1796-1871) e i suoi cinque figli furono i
                 produttori di mobili di maggior successo dell&apos;era
                 industriale. Invitato dal cancelliere austriaco Metternich, che
@@ -90,10 +90,10 @@ export default async function HeritagePage() {
       {/* ── L'innovazione e il successo industriale ───────────────── */}
       <section className="pb-20 md:pb-28">
         <div className="gtv-container">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-dark leading-[1.15] mb-8 text-center">
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-8">
             L&apos;innovazione e il successo industriale
           </h2>
-          <p className="text-lg text-dark leading-[1.8] font-light max-w-4xl mx-auto mb-16 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-4xl mx-auto mb-16 text-left">
             Nella capitale dell&apos;Impero asburgico, Michael Thonet
             pass&ograve; dalla tecnica del legno laminato incurvato a quella del
             legno massello esposto a vapore, cio&egrave; a un processo chimico e
@@ -144,10 +144,10 @@ export default async function HeritagePage() {
       {/* ── L'espansione e la trasformazione ──────────────────────── */}
       <section className="pb-10 md:pb-16">
         <div className="gtv-container">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-dark leading-[1.15] mb-8 text-center">
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-8">
             L&apos;espansione e la trasformazione
           </h2>
-          <p className="text-lg text-dark leading-[1.8] font-light max-w-4xl mx-auto mb-16 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-4xl mx-auto mb-16 text-left">
             Consapevolezza tecnologiche e di alto livello, diffusione dei
             prodotti e notoriet&agrave; dell&apos;azienda spinsero i
             pi&ugrave; importanti architetti viennesi a progettare nuovi
@@ -199,7 +199,7 @@ export default async function HeritagePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
             {/* Left: text */}
             <div className="lg:px-6 xl:px-10">
-              <p className="text-lg text-dark leading-[1.8] font-light mb-8">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-8">
                 Nel 1911 il catalogo Gebrüder Thonet contava 860 modelli distinti.
                 Al termine della seconda guerra mondiale rimasero unit&agrave; di
                 produzione indipendenti in varie nazioni che acquistarono il nome
@@ -209,13 +209,13 @@ export default async function HeritagePage() {
                 ricominciare da capo, con pochi pezzi che una passione e conoscenza
                 per i mobili.
               </p>
-              <p className="text-lg text-dark leading-[1.8] font-light mb-8">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-8">
                 Gebrüder Thonet Vienna nasce proprio dai vecchi magazzini di
                 Gebrüder Thonet, a partire dal 1948. Ricostruita, Richard e
                 Gebrüder Thonet edificarono un stabilimento a Rethway, Steiermark,
                 prima di realizzare il loro sito produttivo a Friedberg in 1952.
               </p>
-              <p className="text-lg text-dark leading-[1.8] font-light">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Nel 1976 la societ&agrave; cambi&ograve; nome in Gebrüder Thonet
                 Vienna.
               </p>
@@ -239,12 +239,12 @@ export default async function HeritagePage() {
       {/* ── GTV Oggi: tradizione e innovazione ───────────────────── */}
       <section className="pb-20 md:pb-28">
         <div className="gtv-container-narrow">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-dark leading-[1.15] mb-8 text-center">
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-8">
             Gebrüder Thonet Vienna oggi:
             <br />
             tradizione e innovazione
           </h2>
-          <p className="text-lg text-dark leading-[1.8] font-light mb-6 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left">
             Recentemente Gebrüder Thonet Vienna GmbH (GTV) ha sviluppato la
             propria attivit&agrave; fra tradizione e innovazione,
             continuit&agrave; e rinnovamento, dando vita a un programma di
@@ -252,7 +252,7 @@ export default async function HeritagePage() {
             forma di riedizione una serie di oggetti storici creati dalla
             Gebrüder Thonet.
           </p>
-          <p className="text-lg text-dark leading-[1.8] font-light text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left">
             GTV incarna l&apos;arredamento contemporaneo, unendo tradizione e
             innovazione. Tecniche avanzate, materiali innovativi e design
             contemporaneo caratterizzano i suoi progetti, trasformando
@@ -280,10 +280,10 @@ export default async function HeritagePage() {
 
           {/* Right: text — same style as Born in Vienna */}
           <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
-            <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark leading-[1.15] uppercase tracking-wide font-light">
+            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               La &ldquo;Moneta&rdquo; GTV
             </h2>
-            <p className="text-lg text-dark leading-[1.8] font-light mt-5">
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-5">
               L&apos;inimitabile valore, materiale e immateriale nella struttura
               di ogni singolo pezzo: un particolare emblema che ne attesta
               autenticit&agrave;, originalit&agrave; e qualit&agrave; e acquisito
@@ -300,7 +300,7 @@ export default async function HeritagePage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="text-center font-sans text-base md:text-lg uppercase tracking-[0.15em] text-dark mb-12">
+          <h3 className="text-center uppercase text-[16px] tracking-[0.03em] text-black font-light mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

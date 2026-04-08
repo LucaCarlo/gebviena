@@ -72,7 +72,7 @@ export default async function CurvaturaLegnoPage() {
       {/* ── Descrizione sotto la hero ────────────────────────────── */}
       <section className="py-16 md:py-24">
         <div className="gtv-container-narrow">
-          <p className="text-lg text-dark leading-[1.8] font-light">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
             La tecnica della curvatura del legno &egrave; un metodo antico,
             presente nell&apos;artigianato di diverse civilt&agrave;, ma rimasto
             a lungo in secondo piano a causa del suo limitato vantaggio in
@@ -99,10 +99,10 @@ export default async function CurvaturaLegnoPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-28 items-start">
             {/* Left: text — 60% */}
             <div className="lg:col-span-7">
-              <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark mb-8 uppercase tracking-wide font-light">
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-8">
                 La Tecnica
               </h2>
-              <p className="text-lg text-dark leading-[1.8] font-light mb-6">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6">
                 L&apos;intuizione di Michael Thonet nacque dall&apos;osservazione
                 che il legno fresco &egrave; più flessibile di quello secco.
                 Partendo da questa considerazione, Thonet e alcuni suoi
@@ -110,7 +110,7 @@ export default async function CurvaturaLegnoPage() {
                 fogli di legno, immersi in colla bollente e poi asciugati in forme
                 rigide.
               </p>
-              <p className="text-lg text-dark leading-[1.8] font-light">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Tuttavia, questa soluzione non garantiva la resistenza del
                 prodotto a causa della fragilità dell&apos;adesivo. Per superare
                 questo problema, Thonet decise di lavorare esclusivamente sulle
@@ -172,10 +172,10 @@ export default async function CurvaturaLegnoPage() {
 
             {/* Right: text — 60% */}
             <div className="lg:col-span-7 lg:pr-12 xl:pr-20">
-              <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark mb-8 uppercase tracking-wide font-light">
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-8">
                 Il Brevetto
               </h2>
-              <p className="text-lg text-dark leading-[1.8] font-light mb-6">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6">
                 Nel 1842, Michael Thonet brevettò il processo che lo rese famoso
                 in tutto il mondo: le strisce di legno (preferibilmente faggio,
                 grazie alla sua fibra lunga, regolare e senza nodi) venivano
@@ -184,7 +184,7 @@ export default async function CurvaturaLegnoPage() {
                 Dopo la finitura dei pezzi, veniva assemblata la &ldquo;sedia di
                 Vienna&rdquo;, un elemento distintivo dell&apos;azienda.
               </p>
-              <p className="text-lg text-dark leading-[1.8] font-light">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Un vero e proprio processo industriale, accompagnato dalla
                 progressiva eliminazione di ornamenti e giunzioni, a favore di
                 linee rigorose e di una maggiore semplificazione degli elementi di
@@ -198,7 +198,7 @@ export default async function CurvaturaLegnoPage() {
       {/* ── Paragrafo chiusura ────────────────────────────────────── */}
       <section className="pt-2 md:pt-4 pb-20 md:pb-28">
         <div className="gtv-container-narrow">
-          <p className="text-lg text-dark leading-[1.8] font-light">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
             Eleganza formale, solidità e leggerezza hanno decretato il
             successo dell&apos;azienda, che in pochi anni ha aperto
             stabilimenti produttivi in tutto il mondo. Un metodo di produzione
@@ -214,7 +214,7 @@ export default async function CurvaturaLegnoPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="text-center font-sans text-base md:text-lg uppercase tracking-[0.15em] text-dark mb-12">
+          <h3 className="text-center uppercase text-[16px] tracking-[0.03em] text-black font-light mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

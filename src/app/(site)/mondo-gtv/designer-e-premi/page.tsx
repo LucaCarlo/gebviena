@@ -79,7 +79,7 @@ export default async function DesignerPremiPage() {
       {/* ── Intro — text left-aligned ────────────────────────────── */}
       <section className="pb-16 md:pb-20">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <p className="text-lg text-dark leading-[1.8] font-light max-w-3xl mx-auto">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-3xl mx-auto">
             GTV collabora con designer di talento per reinterpretare la
             tradizione attraverso un linguaggio contemporaneo. Questo impegno
             nella ricerca e nell&apos;innovazione &egrave; riconosciuto a
@@ -91,7 +91,7 @@ export default async function DesignerPremiPage() {
 
       {/* ── DESIGNER grid ────────────────────────────────────────── */}
       <section className="w-full py-20 md:py-28">
-        <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark mb-10 uppercase tracking-wide font-light text-center">
+        <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-10">
           Designer
         </h2>
         <DesignerGrid designers={designers} />
@@ -105,7 +105,7 @@ export default async function DesignerPremiPage() {
       {/* ── PREMI ────────────────────────────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[95%] max-w-[90%]">
-          <h2 className="font-sans text-2xl md:text-3xl lg:text-4xl text-dark mb-12 uppercase tracking-wide font-light text-center">
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             Premi
           </h2>
 
@@ -213,7 +213,7 @@ export default async function DesignerPremiPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="text-center font-sans text-base md:text-lg uppercase tracking-[0.15em] text-dark mb-12">
+          <h3 className="text-center uppercase text-[16px] tracking-[0.03em] text-black font-light mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
