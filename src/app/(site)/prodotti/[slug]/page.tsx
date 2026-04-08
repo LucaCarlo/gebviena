@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Minus, ChevronRight } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
 import type { Product, Designer, Project } from "@/types";
 
 interface ProductDetail extends Omit<Product, "projects"> {
@@ -82,7 +82,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
             >
               <div
                 className="relative overflow-hidden"
-                style={{ width: "calc(33vw - 16px)", minWidth: "280px", aspectRatio: "3 / 4" }}
+                style={{ width: "calc(31vw - 16px)", minWidth: "260px", aspectRatio: "3 / 4" }}
               >
                 <Image
                   src={url}
