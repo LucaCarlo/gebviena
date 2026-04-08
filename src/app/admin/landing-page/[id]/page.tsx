@@ -295,7 +295,7 @@ export default function LandingPageDetailPage() {
   const TABS: { key: Tab; label: string; icon: typeof Settings2; badge?: number }[] = [
     { key: "config", label: "Configurazione", icon: Settings2 },
     { key: "email", label: "Email", icon: Mail },
-    { key: "registrations", label: "Registrazioni", icon: Users, badge: regs.length },
+    { key: "registrations", label: "Registrazioni", icon: Users },
     { key: "scanner", label: "Scanner", icon: ScanLine },
   ];
 
