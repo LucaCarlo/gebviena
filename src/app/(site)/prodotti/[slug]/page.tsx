@@ -82,7 +82,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
             >
               <div
                 className="relative overflow-hidden"
-                style={{ width: "calc(28vw - 16px)", minWidth: "240px", aspectRatio: "2.5 / 4" }}
+                style={{ width: "calc(28vw - 14px)", minWidth: "242px", aspectRatio: "2.5 / 4" }}
               >
                 <Image
                   src={url}
