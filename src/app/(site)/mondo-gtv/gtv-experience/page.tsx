@@ -85,7 +85,7 @@ export default async function GtvExperiencePage() {
       {/* ── Intro — titolo + testo ───────────────────────────────── */}
       <section className="pt-20 md:pt-28 pb-20 md:pb-28">
         <div className="gtv-container-narrow">
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-8">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-8 text-center">
             GTV arreda gli spazi
             <br />
             prestigiosi di Interno Marche
@@ -154,7 +154,7 @@ export default async function GtvExperiencePage() {
       {/* ── La rinascita di Villa Gabrielli — titolo + testo ──────── */}
       <section className="pt-20 md:pt-28 pb-16 md:pb-20">
         <div className="gtv-container-narrow">
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-8">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-8 text-center">
             La rinascita di Villa Gabrielli
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left">
@@ -302,7 +302,7 @@ export default async function GtvExperiencePage() {
       {/* ── 30 camere iconiche — titolo grande ───────────────────── */}
       <section className="pb-16 md:pb-20">
         <div className="gtv-container-narrow">
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] text-center">
             30 camere iconiche.
           </h2>
         </div>

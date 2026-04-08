@@ -69,7 +69,7 @@ export default async function SostenibilitaPage() {
       {/* ── Titolo + Introduzione — stile GTV Oggi ────────────── */}
       <section className="pt-20 md:pt-28 pb-20 md:pb-28">
         <div className="gtv-container-narrow">
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-8">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-8 text-center">
             La tutela ambientale: una sfida per
             <br />
             il futuro, un&apos;opportunit&agrave; per GTV.

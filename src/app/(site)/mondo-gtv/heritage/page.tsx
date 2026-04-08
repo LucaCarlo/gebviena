@@ -90,7 +90,7 @@ export default async function HeritagePage() {
       {/* ── L'innovazione e il successo industriale ───────────────── */}
       <section className="pb-20 md:pb-28">
         <div className="gtv-container">
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-8">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-8 text-center">
             L&apos;innovazione e il successo industriale
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-4xl mx-auto mb-16 text-left">
@@ -144,7 +144,7 @@ export default async function HeritagePage() {
       {/* ── L'espansione e la trasformazione ──────────────────────── */}
       <section className="pb-10 md:pb-16">
         <div className="gtv-container">
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-8">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-8 text-center">
             L&apos;espansione e la trasformazione
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-4xl mx-auto mb-16 text-left">
@@ -239,7 +239,7 @@ export default async function HeritagePage() {
       {/* ── GTV Oggi: tradizione e innovazione ───────────────────── */}
       <section className="pb-20 md:pb-28">
         <div className="gtv-container-narrow">
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-8">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-8 text-center">
             Gebrüder Thonet Vienna oggi:
             <br />
             tradizione e innovazione

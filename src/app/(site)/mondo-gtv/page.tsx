@@ -24,7 +24,7 @@ export default async function MondoGTVPage() {
       {/* Intro */}
       <section className="section-padding">
         <div className="luxury-container max-w-4xl text-center">
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-8">
+          <h2 className="font-serif text-3xl md:text-4xl text-black mb-8">
             La tradizione che <em>ispira</em> il futuro
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal">
@@ -60,7 +60,7 @@ export default async function MondoGTVPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-4">La lavorazione</p>
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-6">
+              <h2 className="font-serif text-3xl md:text-4xl text-black mb-6">
                 L&apos;arte del legno curvato
               </h2>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-4">
@@ -88,7 +88,7 @@ export default async function MondoGTVPage() {
       {/* Designers */}
       <section className="section-padding bg-brand-50">
         <div className="luxury-container text-center">
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-6">
+          <h2 className="font-serif text-3xl md:text-4xl text-black mb-6">
             I nostri <em>designer</em>
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-2xl mx-auto mb-12">
@@ -109,7 +109,7 @@ export default async function MondoGTVPage() {
       {/* CTA */}
       <section className="section-padding text-center">
         <div className="luxury-container">
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-6">
+          <h2 className="font-serif text-3xl md:text-4xl text-black mb-6">
             Scopri la collezione
           </h2>
           <Link
