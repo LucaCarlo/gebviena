@@ -119,7 +119,7 @@ export default function ProjectDetailPage() {
               <div className="grid grid-cols-3 gap-10">
                 {/* Progetto */}
                 <div>
-                  <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-4">
+                  <p className="uppercase text-[16px] tracking-[0.03em] text-black font-bold mb-4">
                     Progetto
                   </p>
                   {project.description && (
@@ -138,7 +138,7 @@ export default function ProjectDetailPage() {
 
                 {/* Foto da (Architetto) */}
                 <div>
-                  <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-4">
+                  <p className="uppercase text-[16px] tracking-[0.03em] text-black font-bold mb-4">
                     Foto da
                   </p>
                   {project.architect ? (
@@ -150,7 +150,7 @@ export default function ProjectDetailPage() {
 
                 {/* Location */}
                 <div>
-                  <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-4">
+                  <p className="uppercase text-[16px] tracking-[0.03em] text-black font-bold mb-4">
                     Location
                   </p>
                   <p className="text-[20px] font-light text-black">
@@ -257,8 +257,8 @@ function GallerySlideshow({ images, projectName }: { images: string[]; projectNa
   };
 
   const cursorStyle = hoverSide === "left"
-    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5'%3E%3Cpath d='M15 18l-6-6 6-6'/%3E%3C/svg%3E\") 16 16, pointer"
-    : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5'%3E%3Cpath d='M9 18l6-6-6-6'/%3E%3C/svg%3E\") 16 16, pointer";
+    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M15 18l-6-6 6-6'/%3E%3C/svg%3E\") 20 20, pointer"
+    : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M9 18l6-6-6-6'/%3E%3C/svg%3E\") 20 20, pointer";
 
   return (
     <section className="pb-16 lg:pb-24">
@@ -267,7 +267,7 @@ function GallerySlideshow({ images, projectName }: { images: string[]; projectNa
         <div
           ref={containerRef}
           className="relative w-full overflow-hidden"
-          style={{ aspectRatio: "21 / 9", cursor: cursorStyle }}
+          style={{ height: "768px", cursor: cursorStyle }}
           onClick={handleClick}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoverSide(null)}
