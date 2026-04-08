@@ -262,12 +262,12 @@ function GallerySlideshow({ images, projectName }: { images: string[]; projectNa
 
   return (
     <section className="pb-16 lg:pb-24">
-      <div className="gtv-container">
+      <div className="w-full">
         {/* Main image */}
         <div
           ref={containerRef}
           className="relative w-full overflow-hidden"
-          style={{ aspectRatio: "16 / 9", cursor: cursorStyle }}
+          style={{ aspectRatio: "21 / 9", cursor: cursorStyle }}
           onClick={handleClick}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoverSide(null)}
@@ -296,11 +296,13 @@ function GallerySlideshow({ images, projectName }: { images: string[]; projectNa
         </div>
 
         {/* Progress bar */}
-        <div className="relative h-[1px] bg-warm-200 w-full max-w-3xl mx-auto mt-8">
-          <div
-            className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-500 ease-out"
-            style={{ width: `${100 / images.length}%`, transform: `translateX(${current * 100}%)` }}
-          />
+        <div className="gtv-container mt-8">
+          <div className="relative h-[1px] bg-warm-200 w-full max-w-3xl mx-auto">
+            <div
+              className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-500 ease-out"
+              style={{ width: `${100 / images.length}%`, transform: `translateX(${current * 100}%)` }}
+            />
+          </div>
         </div>
 
         {/* Counter */}
