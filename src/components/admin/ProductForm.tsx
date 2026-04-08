@@ -484,7 +484,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
         <div>
           <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Configuratore 3D</h3>
-          <p className="text-[10px] text-warm-400 mt-0.5">Se compilato, sostituisce varianti e dimensioni nella pagina prodotto</p>
+          <p className="text-[10px] text-warm-400 mt-0.5">Incolla l&apos;URL src dall&apos;iframe pCon Impress. Se compilato, sostituisce varianti e dimensioni.</p>
         </div>
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">URL pCon</label>
@@ -493,7 +493,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
             value={form.pconUrl}
             onChange={(e) => updateField("pconUrl", e.target.value)}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder="https://ui.pcon-solutions.com/#..."
+            placeholder="https://impress.pcon-solutions.com/?glb=..."
           />
         </div>
       </div>

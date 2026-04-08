@@ -406,15 +406,16 @@ export default function ProductDetailPage() {
               </h2>
             </div>
 
-            {/* Configuratore 3D pCon — se presente sostituisce varianti e dimensioni */}
+            {/* Viewer 3D pCon — se presente sostituisce varianti e dimensioni */}
             {product.pconUrl ? (
               <div className="mb-8">
                 <iframe
                   src={product.pconUrl}
                   className="w-full border-0 rounded"
-                  style={{ height: "600px" }}
-                  allow="fullscreen"
-                  title={`Configuratore 3D ${product.name}`}
+                  style={{ height: "560px" }}
+                  allowFullScreen
+                  allow="xr-spatial-tracking"
+                  title={`Visualizzatore 3D ${product.name}`}
                 />
               </div>
             ) : null}
