@@ -705,7 +705,7 @@ export default function ProductDetailPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col justify-center px-10 md:px-16 lg:px-20 py-16 lg:py-24 bg-white"
+            className="flex flex-col justify-center px-10 md:px-16 lg:pl-[120px] lg:pr-20 py-16 lg:py-24 bg-white"
           >
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">Supporto ai professionisti</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -774,12 +774,12 @@ export default function ProductDetailPage() {
 
       {/* ===== 9. BREADCRUMBS ===== */}
       <div className="gtv-container pt-8 pb-[27px]">
-        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-warm-400 font-light">
-          <Link href="/" className="hover:text-warm-700 transition-colors">Home</Link>
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
           <span>&gt;</span>
-          <Link href="/prodotti" className="hover:text-warm-700 transition-colors">Prodotti</Link>
+          <Link href="/prodotti">Prodotti</Link>
           <span>&gt;</span>
-          <span className="text-warm-500">{product.name}</span>
+          <span>{product.name}</span>
         </div>
       </div>
     </>
