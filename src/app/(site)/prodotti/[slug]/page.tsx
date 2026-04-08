@@ -81,7 +81,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
               className="flex-shrink-0"
             >
               <div
-                className="relative img-hover"
+                className="relative overflow-hidden"
                 style={{ width: "calc(33vw - 16px)", minWidth: "280px", aspectRatio: "3 / 4" }}
               >
                 <Image
@@ -290,14 +290,14 @@ export default function ProductDetailPage() {
               <div className="mt-12 flex flex-col gap-6">
                 <Link
                   href="/contatti/rete-vendita"
-                  className="uppercase text-sm tracking-[0.1em] text-warm-900 hover:underline"
+                  className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
                   style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
                   Cerca un punto vendita →
                 </Link>
                 <Link
                   href="/contatti/richiesta-info"
-                  className="uppercase text-sm tracking-[0.1em] text-warm-900 hover:underline"
+                  className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
                   style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
                   Richiedi informazioni →
@@ -310,7 +310,7 @@ export default function ProductDetailPage() {
 
       {/* ===== 3. SECTION NAV — 4 anchor links ===== */}
       <nav className="sticky top-0 z-30 bg-white">
-        <div className="gtv-container flex items-center justify-center gap-10 lg:gap-16 pt-[23px] pb-[8px]">
+        <div className="gtv-container flex items-center justify-center gap-10 lg:gap-16" style={{ paddingTop: "5rem", paddingBottom: "5rem" }}>
           {sectionNav.map((item) => (
             <button
               key={item.id}
@@ -341,8 +341,8 @@ export default function ProductDetailPage() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="relative img-hover"
-                style={{ aspectRatio: "3 / 4" }}
+                className="relative overflow-hidden"
+                style={{ aspectRatio: "4 / 5" }}
               >
                 <Image
                   src={product.designer.imageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1000&fit=crop&crop=face"}
@@ -359,7 +359,7 @@ export default function ProductDetailPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="flex flex-col justify-center px-10 md:px-16 lg:pl-[130px] lg:pr-20 py-16 lg:py-24"
+                className="flex flex-col justify-center px-10 md:px-16 lg:pl-[150px] lg:pr-20 py-16 lg:py-24"
               >
                 <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">Designer</p>
                 <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -368,7 +368,6 @@ export default function ProductDetailPage() {
                 {product.designer.bio && (
                   <div
                     className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none mt-6 [&_p]:m-0"
-                    style={{ textAlign: "justify" }}
                     dangerouslySetInnerHTML={{ __html: product.designer.bio.includes("<") ? product.designer.bio : `<p>${product.designer.bio}</p>` }}
                   />
                 )}
@@ -427,11 +426,11 @@ export default function ProductDetailPage() {
                   onClick={() => setOpenAccordion(openAccordion === "varianti" ? null : "varianti")}
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
-                  <span className="uppercase text-[16px] tracking-[0.03em] text-black font-light">
+                  <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
                     Varianti prodotto
                   </span>
-                  <span className="w-8 h-8 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
-                    {openAccordion === "varianti" ? <Minus size={14} /> : <Plus size={14} />}
+                  <span className="w-10 h-10 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
+                    {openAccordion === "varianti" ? <Minus size={18} /> : <Plus size={18} />}
                   </span>
                 </button>
                 <AnimatePresence>
@@ -476,11 +475,11 @@ export default function ProductDetailPage() {
                   onClick={() => setOpenAccordion(openAccordion === "dimensioni" ? null : "dimensioni")}
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
-                  <span className="uppercase text-[16px] tracking-[0.03em] text-black font-light">
+                  <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
                     Dimensioni
                   </span>
-                  <span className="w-8 h-8 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
-                    {openAccordion === "dimensioni" ? <Minus size={14} /> : <Plus size={14} />}
+                  <span className="w-10 h-10 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
+                    {openAccordion === "dimensioni" ? <Minus size={18} /> : <Plus size={18} />}
                   </span>
                 </button>
                 <AnimatePresence>
@@ -527,11 +526,11 @@ export default function ProductDetailPage() {
                   onClick={() => setOpenAccordion(openAccordion === "scheda" ? null : "scheda")}
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
-                  <span className="uppercase text-[16px] tracking-[0.03em] text-black font-light">
+                  <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
                     Scheda tecnica, 2D, 3D, istruzioni d&apos;uso, manutenzione
                   </span>
-                  <span className="w-8 h-8 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
-                    {openAccordion === "scheda" ? <Minus size={14} /> : <Plus size={14} />}
+                  <span className="w-10 h-10 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
+                    {openAccordion === "scheda" ? <Minus size={18} /> : <Plus size={18} />}
                   </span>
                 </button>
                 <AnimatePresence>
@@ -547,19 +546,22 @@ export default function ProductDetailPage() {
                         <div className="flex flex-wrap gap-12 pt-4">
                           {product.techSheetUrl && (
                             <a href={product.techSheetUrl} target="_blank" rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 uppercase text-[14px] tracking-[0.05em] text-black font-light underline underline-offset-4 decoration-[0.5px] hover:text-warm-600 transition-colors">
+                              className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
+                              style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
                               Scheda tecnica <span className="text-[16px]">↓</span>
                             </a>
                           )}
                           {product.model2dUrl && (
                             <a href={product.model2dUrl} download
-                              className="inline-flex items-center gap-2 uppercase text-[14px] tracking-[0.05em] text-black font-light hover:text-warm-600 transition-colors">
+                              className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
+                              style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
                               Modello 2D <span className="text-[16px]">↓</span>
                             </a>
                           )}
                           {product.model3dUrl && (
                             <a href={product.model3dUrl} download
-                              className="inline-flex items-center gap-2 uppercase text-[14px] tracking-[0.05em] text-black font-light hover:text-warm-600 transition-colors">
+                              className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
+                              style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
                               Modello 3D <span className="text-[16px]">↓</span>
                             </a>
                           )}
