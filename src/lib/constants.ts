@@ -186,6 +186,13 @@ export const PAGE_IMAGES_CONFIG: {
     ],
   },
   {
+    page: "prodotti-dettaglio",
+    label: "Pagina Prodotto",
+    images: [
+      { section: "supporto-professionisti", label: "Supporto ai professionisti", defaultUrl: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop&q=80", aspectRatio: 1 },
+    ],
+  },
+  {
     page: "contatti",
     label: "Contatti",
     images: [

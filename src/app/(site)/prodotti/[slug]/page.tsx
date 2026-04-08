@@ -135,6 +135,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [supportImg, setSupportImg] = useState("https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop&q=80");
 
   useEffect(() => {
     async function load() {
@@ -147,6 +148,10 @@ export default function ProductDetailPage() {
       setLoading(false);
     }
     load();
+    fetch("/api/page-images?page=prodotti-dettaglio").then(r => r.json()).then(d => {
+      const img = (d.data || []).find((i: { section: string }) => i.section === "supporto-professionisti");
+      if (img?.imageUrl) setSupportImg(img.imageUrl);
+    });
   }, [slug]);
 
   if (loading) {
@@ -754,10 +759,10 @@ export default function ProductDetailPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
             className="relative overflow-hidden"
-            style={{ aspectRatio: "4 / 3" }}
+            style={{ aspectRatio: "1 / 1" }}
           >
             <Image
-              src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop&q=80"
+              src={supportImg}
               alt="Supporto professionisti"
               fill
               className="object-cover"
@@ -769,12 +774,12 @@ export default function ProductDetailPage() {
 
       {/* ===== 9. BREADCRUMBS ===== */}
       <div className="gtv-container pt-8 pb-[27px]">
-        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light" style={{ fontFamily: "'Work Sans', sans-serif" }}>
-          <Link href="/" className="hover:underline transition-colors">Home</Link>
-          <ChevronRight size={12} />
-          <Link href="/prodotti" className="hover:underline transition-colors">Prodotti</Link>
-          <ChevronRight size={12} />
-          <span>{product.name}</span>
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-warm-400 font-light">
+          <Link href="/" className="hover:text-warm-700 transition-colors">Home</Link>
+          <span>&gt;</span>
+          <Link href="/prodotti" className="hover:text-warm-700 transition-colors">Prodotti</Link>
+          <span>&gt;</span>
+          <span className="text-warm-500">{product.name}</span>
         </div>
       </div>
     </>
