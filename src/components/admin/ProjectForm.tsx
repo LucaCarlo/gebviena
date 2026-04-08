@@ -319,7 +319,8 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
             purpose="cover"
             folder="projects"
             helpText="Mostrata nella griglia dei progetti"
-            recommendedSize="960 x 1200 px"
+            recommendedSize="960 x 960 px (quadrata 1:1)"
+            aspectRatio={1}
           />
           <ImageUploadField
             label="Immagine Hero"
@@ -329,7 +330,8 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
             purpose="hero"
             folder="projects"
             helpText="Banner a tutta larghezza in cima alla pagina"
-            recommendedSize="1920 x 1080 px"
+            recommendedSize="1600 x 1000 px (orizzontale 8:5)"
+            aspectRatio={1600 / 1000}
           />
           <ImageUploadField
             label="Immagine Laterale"
@@ -339,7 +341,8 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
             purpose="side"
             folder="projects"
             helpText="Sezione descrizione, affiancata ai dettagli"
-            recommendedSize="1440 x 1920 px"
+            recommendedSize="1440 x 1920 px (verticale 3:4)"
+            aspectRatio={1440 / 1920}
           />
         </div>
 

@@ -705,7 +705,7 @@ export default function ProductDetailPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col justify-center px-10 md:px-16 lg:pl-[120px] lg:pr-20 py-16 lg:py-24 bg-white"
+            className="flex flex-col justify-center px-10 md:px-16 lg:pl-[135px] lg:pr-20 py-16 lg:py-24 bg-white"
           >
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">Supporto ai professionisti</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -717,7 +717,7 @@ export default function ProductDetailPage() {
 
             {/* 3 feature icons */}
             <div className="flex items-start gap-8 mt-10">
-              <div className="flex flex-col items-center text-center max-w-[100px]">
+              <div className="flex flex-col items-start text-left max-w-[100px]">
                 <svg className="w-7 h-7 text-black mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
                   <rect x="3" y="3" width="18" height="18" rx="1" />
                   <path d="M3 9h18M9 3v18" />
@@ -725,7 +725,7 @@ export default function ProductDetailPage() {
                 </svg>
                 <p className="text-[14px] text-black font-light leading-tight">Dimensioni personalizzate dei prodotti</p>
               </div>
-              <div className="flex flex-col items-center text-center max-w-[100px]">
+              <div className="flex flex-col items-start text-left max-w-[100px]">
                 <svg className="w-7 h-7 text-black mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
                   <rect x="2" y="6" width="8" height="12" rx="1" />
                   <rect x="14" y="6" width="8" height="12" rx="1" />
@@ -733,7 +733,7 @@ export default function ProductDetailPage() {
                 </svg>
                 <p className="text-[14px] text-black font-light leading-tight">Finiture differenti dallo standard</p>
               </div>
-              <div className="flex flex-col items-center text-center max-w-[100px]">
+              <div className="flex flex-col items-start text-left max-w-[100px]">
                 <svg className="w-7 h-7 text-black mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
                   <path d="M12 2L2 7l10 5 10-5-10-5z" />
                   <path d="M2 17l10 5 10-5" />

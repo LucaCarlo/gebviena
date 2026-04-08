@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Project, Product, Designer } from "@/types";
 
 interface ProjectDetail extends Omit<Project, "products"> {
@@ -60,8 +59,8 @@ export default function ProjectDetailPage() {
 
   return (
     <>
-      {/* ===== 1. HERO — full-screen image, title centered ===== */}
-      <section className="relative w-full" style={{ height: "115vh" }}>
+      {/* ===== 1. HERO — same style as product page ===== */}
+      <section className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 9" }}>
         <Image
           src={heroImg}
           alt={project.name}
@@ -69,7 +68,7 @@ export default function ProjectDetailPage() {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-black" style={{ opacity: 0.6 }} />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -77,13 +76,18 @@ export default function ProjectDetailPage() {
           transition={{ duration: 1, delay: 0.5 }}
           className="absolute inset-0 flex flex-col items-center justify-center text-center"
         >
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white tracking-wide">
+          <h1 className="font-serif text-[58px] text-white tracking-wide">
             {project.name}
           </h1>
+          {project.type && (
+            <p className="uppercase text-[20px] tracking-[0.08em] text-white mt-2 font-light">
+              {project.type}
+            </p>
+          )}
         </motion.div>
       </section>
 
-      {/* ===== 2. DESCRIPTION — image left, info right ===== */}
+      {/* ===== 2. DESCRIPTION — same style as product page ===== */}
       <section className="w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
           {/* Left — project image */}
@@ -92,7 +96,7 @@ export default function ProjectDetailPage() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 1 }}
-            className="relative"
+            className="relative overflow-hidden"
             style={{ aspectRatio: "3 / 4.2" }}
           >
             <Image
@@ -104,66 +108,48 @@ export default function ProjectDetailPage() {
             />
           </motion.div>
 
-          {/* Right — 3 info columns, aligned to top */}
-          <div className="flex flex-col justify-start pt-12 lg:pt-20 px-10 md:px-16 lg:px-20">
+          {/* Right — description, vertically centered like product page */}
+          <div className="flex flex-col justify-center px-10 md:px-16 lg:px-20">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              <div className="grid grid-cols-3 gap-10">
-                {/* Progetto */}
-                <div>
-                  <p className="uppercase text-xs md:text-sm tracking-[0.2em] font-semibold mb-4" style={{ color: "#000000" }}>
-                    Progetto
-                  </p>
-                  {project.description && (
-                    project.description.includes("<") ? (
-                      <div
-                        className="leading-relaxed text-sm md:text-base font-light prose prose-warm max-w-none"
-                        style={{ color: "#000000" }}
-                        dangerouslySetInnerHTML={{ __html: project.description }}
-                      />
-                    ) : (
-                      <p className="leading-relaxed text-sm md:text-base font-light" style={{ color: "#000000" }}>
-                        {project.description}
-                      </p>
-                    )
-                  )}
-                </div>
+              {project.description && (
+                <div
+                  className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none overflow-hidden [&_p]:m-0"
+                  style={{ textAlign: "justify" }}
+                  dangerouslySetInnerHTML={{ __html: project.description.includes("<") ? project.description : `<p>${project.description}</p>` }}
+                />
+              )}
 
-                {/* Foto da (Architetto) */}
-                <div>
-                  <p className="uppercase text-xs md:text-sm tracking-[0.2em] font-semibold mb-4" style={{ color: "#000000" }}>
-                    Foto da
-                  </p>
-                  {project.architect ? (
-                    <p className="text-sm md:text-base font-light" style={{ color: "#000000" }}>{project.architect}</p>
-                  ) : (
-                    <p className="text-sm md:text-base font-light" style={{ color: "#999" }}>—</p>
-                  )}
-                </div>
-
-                {/* Location */}
-                <div>
-                  <p className="uppercase text-xs md:text-sm tracking-[0.2em] font-semibold mb-4" style={{ color: "#000000" }}>
-                    Location
-                  </p>
-                  <p className="text-sm md:text-base font-light" style={{ color: "#000000" }}>
-                    {[project.city, project.country].filter(Boolean).join(", ") || "—"}
-                  </p>
-                </div>
+              {/* Info details */}
+              <div className="flex items-center gap-8 mt-10">
+                {project.architect && (
+                  <div>
+                    <p className="uppercase text-xs tracking-[0.08em] text-warm-900 font-light border-b border-warm-900 pb-1 inline-block">Foto da</p>
+                    <p className="text-[20px] text-black font-light mt-2">{project.architect}</p>
+                  </div>
+                )}
+                {(project.city || project.country) && (
+                  <div>
+                    <p className="uppercase text-xs tracking-[0.08em] text-warm-900 font-light border-b border-warm-900 pb-1 inline-block">Location</p>
+                    <p className="text-[20px] text-black font-light mt-2">
+                      {[project.city, project.country].filter(Boolean).join(", ")}
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* ===== 3. GALLERY SLIDESHOW — click to advance ===== */}
-      {gallery.length > 0 && <GallerySlideshow images={gallery} projectName={project.name} />}
+      {/* ===== 3. GALLERY — horizontal scrollable carousel like product inspiration ===== */}
+      {gallery.length > 0 && <GalleryCarousel images={gallery} projectName={project.name} />}
 
-      {/* ===== 4. PRODUCTS USED IN THIS PROJECT ===== */}
+      {/* ===== 4. PRODUCTS USED — same card style as product listing page ===== */}
       {products.length > 0 && (
         <section className="py-16 lg:py-24">
           <div className="gtv-container">
@@ -174,36 +160,36 @@ export default function ProjectDetailPage() {
               transition={{ duration: 0.6 }}
               className="text-center mb-12"
             >
-              <h2 className="font-sans text-sm md:text-base text-warm-900 uppercase tracking-[0.2em]">
-                Prodotti utilizzati nel progetto
-              </h2>
+              <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">Prodotti utilizzati nel progetto</p>
             </motion.div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12 px-2 md:px-3 lg:px-4">
               {products.map((product, i) => (
                 <motion.div
                   key={product.id}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.08 }}
+                  transition={{ duration: 0.4, delay: (i % 4) * 0.05 }}
                 >
                   <Link href={`/prodotti/${product.slug}`} className="group block">
-                    <div className="relative bg-warm-50 mb-3" style={{ aspectRatio: "3 / 4" }}>
+                    <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "4/5" }}>
                       <Image
                         src={product.coverImage || product.imageUrl}
                         alt={product.name}
                         fill
-                        className="object-contain p-4"
+                        className="object-cover mix-blend-multiply"
                         sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                       />
                     </div>
-                    <p className="uppercase text-[10px] tracking-[0.15em] text-warm-400">
-                      {product.category}
-                    </p>
-                    <p className="text-sm text-warm-900 font-light uppercase tracking-wide mt-0.5">
-                      {product.name}
-                    </p>
+                    <div className="mt-4">
+                      <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
+                        {product.subcategory || (product.category === "CLASSICI" ? "Classici" : product.category?.charAt(0) + product.category?.slice(1).toLowerCase())}
+                      </p>
+                      <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                        {product.name}
+                      </h3>
+                    </div>
                   </Link>
                 </motion.div>
               ))}
@@ -212,90 +198,114 @@ export default function ProjectDetailPage() {
         </section>
       )}
 
-      {/* ===== 5. BREADCRUMBS ===== */}
-      <div className="gtv-container py-8">
-        <div className="flex items-center justify-start gap-2 text-[10px] uppercase tracking-[0.15em] text-warm-400">
-          <Link href="/" className="hover:text-warm-700 transition-colors">Home</Link>
-          <ChevronRight size={10} />
-          <Link href="/progetti" className="hover:text-warm-700 transition-colors">Progetti</Link>
-          <ChevronRight size={10} />
-          <span className="text-warm-600">{project.name}</span>
+      {/* ===== 5. BREADCRUMBS — same style as product page ===== */}
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
+          <span>&gt;</span>
+          <Link href="/progetti">Progetti</Link>
+          <span>&gt;</span>
+          <span>{project.name}</span>
         </div>
       </div>
     </>
   );
 }
 
-/* ─── Gallery Slideshow — click to advance ─── */
-function GallerySlideshow({ images, projectName }: { images: string[]; projectName: string }) {
-  const [current, setCurrent] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+/* ─── Gallery Carousel — horizontal scroll like product InspirationCarousel ─── */
+function GalleryCarousel({ images, projectName }: { images: string[]; projectName: string }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
-  const goNext = () => setCurrent((prev) => (prev + 1) % images.length);
-  const goPrev = () => setCurrent((prev) => (prev - 1 + images.length) % images.length);
+  const updateProgress = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    if (maxScroll <= 0) { setScrollProgress(0); return; }
+    setScrollProgress(el.scrollLeft / maxScroll);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+    return () => el.removeEventListener("scroll", updateProgress);
+  }, [updateProgress]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setIsDragging(true);
+    setStartX(e.pageX - el.offsetLeft);
+    setScrollLeft(el.scrollLeft);
+  };
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const el = scrollRef.current;
+    if (!el) return;
+    const x = e.pageX - el.offsetLeft;
+    el.scrollLeft = scrollLeft - (x - startX) * 1.5;
+  };
+  const handleMouseUp = () => setIsDragging(false);
+
+  if (images.length === 0) return null;
 
   return (
-    <section className="py-16 lg:py-24">
-      <div className="gtv-container">
-        {/* Main image */}
+    <section className="pb-16 lg:pb-24">
+      <div className="relative">
         <div
-          ref={containerRef}
-          className="relative w-full overflow-hidden cursor-pointer"
-          style={{ aspectRatio: "16 / 9" }}
-          onClick={goNext}
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          className={`flex gap-4 lg:gap-6 overflow-x-auto px-4 lg:px-6 pb-2 ${
+            isDragging ? "cursor-grabbing select-none" : "cursor-grab"
+          }`}
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {images.map((url, i) => (
             <motion.div
               key={i}
-              initial={false}
-              animate={{
-                opacity: i === current ? 1 : 0,
-                scale: i === current ? 1 : 1.02,
-              }}
-              transition={{ duration: 0.7, ease: "easeInOut" }}
-              className="absolute inset-0"
-              style={{ pointerEvents: i === current ? "auto" : "none" }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.08 }}
+              className="flex-shrink-0"
             >
-              <Image
-                src={url}
-                alt={`${projectName} ${i + 1}`}
-                fill
-                className="object-cover"
-                sizes="100vw"
-              />
+              <div
+                className="relative overflow-hidden"
+                style={{ width: "calc(45vw - 14px)", minWidth: "340px", aspectRatio: "16 / 10" }}
+              >
+                <Image
+                  src={url}
+                  alt={`${projectName} ${i + 1}`}
+                  fill
+                  className="object-cover"
+                  draggable={false}
+                  sizes="50vw"
+                />
+              </div>
             </motion.div>
           ))}
-
-          {/* Navigation arrows */}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); goPrev(); }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-colors z-10"
-          >
-            <ChevronLeft size={18} className="text-warm-800" />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); goNext(); }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-colors z-10"
-          >
-            <ChevronRight size={18} className="text-warm-800" />
-          </button>
         </div>
+      </div>
 
-        {/* Progress bar */}
-        <div className="relative h-[1px] bg-warm-200 w-full max-w-3xl mx-auto mt-8">
+      {/* Progress bar */}
+      <div className="gtv-container mt-8">
+        <div className="relative h-[1px] bg-warm-200 w-full max-w-3xl mx-auto">
           <div
-            className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-500 ease-out"
-            style={{ width: `${100 / images.length}%`, transform: `translateX(${current * 100}%)` }}
+            className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-150 ease-out"
+            style={{
+              width: "33%",
+              transform: `translateX(${scrollProgress * 200}%)`,
+            }}
           />
-        </div>
-
-        {/* Counter */}
-        <div className="text-center mt-4">
-          <span className="text-[11px] text-warm-400 tracking-wider">
-            {current + 1} / {images.length}
-          </span>
         </div>
       </div>
     </section>
