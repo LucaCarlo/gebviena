@@ -59,6 +59,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
     techSheetUrl: "",
     model2dUrl: "",
     model3dUrl: "",
+    pconUrl: "",
     year: "",
     isFeatured: false,
     isNew: false,
@@ -106,6 +107,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         techSheetUrl: p.techSheetUrl || "",
         model2dUrl: p.model2dUrl || "",
         model3dUrl: p.model3dUrl || "",
+        pconUrl: p.pconUrl || "",
         year: p.year != null ? String(p.year) : "",
         isFeatured: p.isFeatured,
         isNew: p.isNew || false,
@@ -156,6 +158,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         year: form.year ? parseInt(form.year, 10) : null,
         model2dUrl: form.model2dUrl || null,
         model3dUrl: form.model3dUrl || null,
+        pconUrl: form.pconUrl || null,
         techSheetUrl: form.techSheetUrl || null,
       };
       const res = await fetch(url, {
@@ -475,6 +478,24 @@ export default function ProductForm({ productId }: ProductFormProps) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* CONFIGURATORE 3D pCon */}
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Configuratore 3D</h3>
+          <p className="text-[10px] text-warm-400 mt-0.5">Se compilato, sostituisce varianti e dimensioni nella pagina prodotto</p>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">URL pCon</label>
+          <input
+            type="url"
+            value={form.pconUrl}
+            onChange={(e) => updateField("pconUrl", e.target.value)}
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+            placeholder="https://ui.pcon-solutions.com/#..."
+          />
+        </div>
       </div>
 
       {/* DOCUMENTAZIONE PDF */}

@@ -406,10 +406,24 @@ export default function ProductDetailPage() {
               </h2>
             </div>
 
+            {/* Configuratore 3D pCon — se presente sostituisce varianti e dimensioni */}
+            {product.pconUrl ? (
+              <div className="mb-8">
+                <iframe
+                  src={product.pconUrl}
+                  className="w-full border-0 rounded"
+                  style={{ height: "600px" }}
+                  allow="fullscreen"
+                  title={`Configuratore 3D ${product.name}`}
+                />
+              </div>
+            ) : null}
+
             {/* Accordion rows */}
             <div className="divide-y divide-warm-300 border-t border-b border-warm-300">
 
-              {/* --- VARIANTI PRODOTTO --- */}
+              {/* --- VARIANTI PRODOTTO (solo se NO pCon) --- */}
+              {!product.pconUrl && (
               <div>
                 <button
                   onClick={() => setOpenAccordion(openAccordion === "varianti" ? null : "varianti")}
@@ -455,8 +469,10 @@ export default function ProductDetailPage() {
                   )}
                 </AnimatePresence>
               </div>
+              )}
 
-              {/* --- DIMENSIONI --- */}
+              {/* --- DIMENSIONI (solo se NO pCon) --- */}
+              {!product.pconUrl && (
               <div>
                 <button
                   onClick={() => setOpenAccordion(openAccordion === "dimensioni" ? null : "dimensioni")}
@@ -505,6 +521,7 @@ export default function ProductDetailPage() {
                   )}
                 </AnimatePresence>
               </div>
+              )}
 
               {/* --- DOCUMENTAZIONE --- */}
               <div>

@@ -114,6 +114,7 @@ model Product {
   techSheetUrl     String? @db.Text
   model2dUrl       String? @db.Text
   model3dUrl       String? @db.Text
+  pconUrl          String? @db.Text
   year             Int?
   imageUrl         String @db.Text           @default("")
   isFeatured       Boolean          @default(false)
