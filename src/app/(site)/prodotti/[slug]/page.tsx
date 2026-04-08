@@ -359,7 +359,7 @@ export default function ProductDetailPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="flex flex-col justify-center px-10 md:px-16 lg:pl-[150px] lg:pr-20 py-16 lg:py-24"
+                className="flex flex-col justify-center px-10 md:px-16 lg:px-[150px] py-16 lg:py-24"
               >
                 <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">Designer</p>
                 <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -417,7 +417,7 @@ export default function ProductDetailPage() {
             ) : null}
 
             {/* Accordion rows */}
-            <div className="divide-y divide-warm-300 border-t border-b border-warm-300">
+            <div className="divide-y divide-black border-t border-b border-black">
 
               {/* --- VARIANTI PRODOTTO (solo se NO pCon) --- */}
               {!product.pconUrl && (
@@ -429,7 +429,7 @@ export default function ProductDetailPage() {
                   <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
                     Varianti prodotto
                   </span>
-                  <span className="w-10 h-10 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
+                  <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
                     {openAccordion === "varianti" ? <Minus size={18} /> : <Plus size={18} />}
                   </span>
                 </button>
@@ -478,7 +478,7 @@ export default function ProductDetailPage() {
                   <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
                     Dimensioni
                   </span>
-                  <span className="w-10 h-10 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
+                  <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
                     {openAccordion === "dimensioni" ? <Minus size={18} /> : <Plus size={18} />}
                   </span>
                 </button>
@@ -529,7 +529,7 @@ export default function ProductDetailPage() {
                   <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
                     Scheda tecnica, 2D, 3D, istruzioni d&apos;uso, manutenzione
                   </span>
-                  <span className="w-10 h-10 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
+                  <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
                     {openAccordion === "scheda" ? <Minus size={18} /> : <Plus size={18} />}
                   </span>
                 </button>
@@ -546,23 +546,23 @@ export default function ProductDetailPage() {
                         <div className="flex flex-wrap gap-12 pt-4">
                           {product.techSheetUrl && (
                             <a href={product.techSheetUrl} target="_blank" rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
+                              className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
                               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-                              Scheda tecnica <span className="text-[16px]">↓</span>
+                              Scheda tecnica ↓
                             </a>
                           )}
                           {product.model2dUrl && (
                             <a href={product.model2dUrl} download
-                              className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
+                              className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
                               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-                              Modello 2D <span className="text-[16px]">↓</span>
+                              Modello 2D ↓
                             </a>
                           )}
                           {product.model3dUrl && (
                             <a href={product.model3dUrl} download
-                              className="inline-flex items-center gap-2 uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
+                              className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
                               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-                              Modello 3D <span className="text-[16px]">↓</span>
+                              Modello 3D ↓
                             </a>
                           )}
                         </div>
@@ -700,50 +700,50 @@ export default function ProductDetailPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col justify-center p-10 lg:p-16 xl:p-20 bg-white"
+            className="flex flex-col justify-center px-10 md:px-16 lg:px-20 py-16 lg:py-24 bg-white"
           >
-            <p className="uppercase text-[11px] tracking-[0.25em] text-warm-400 mb-4">Supporto ai professionisti</p>
-            <h3 className="font-sans text-lg md:text-xl lg:text-2xl text-warm-800 font-light uppercase tracking-wide leading-snug">
+            <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">Supporto ai professionisti</p>
+            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Hai un progetto contract<br />da realizzare?
-            </h3>
-            <p className="text-warm-500 text-sm font-light leading-relaxed mt-4 max-w-md">
+            </h2>
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-6">
               Collabora con il nostro team per sviluppare progetti unici che soddisfino le esigenze del tuo cliente.
             </p>
 
             {/* 3 feature icons */}
             <div className="flex items-start gap-8 mt-10">
               <div className="flex flex-col items-center text-center max-w-[100px]">
-                <svg className="w-7 h-7 text-warm-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
+                <svg className="w-7 h-7 text-black mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
                   <rect x="3" y="3" width="18" height="18" rx="1" />
                   <path d="M3 9h18M9 3v18" />
                   <path d="M7 13l2 2 4-4" />
                 </svg>
-                <p className="text-[9px] text-warm-500 uppercase tracking-wider leading-tight">Dimensioni personalizzate dei prodotti</p>
+                <p className="text-[14px] text-black font-light leading-tight">Dimensioni personalizzate dei prodotti</p>
               </div>
               <div className="flex flex-col items-center text-center max-w-[100px]">
-                <svg className="w-7 h-7 text-warm-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
+                <svg className="w-7 h-7 text-black mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
                   <rect x="2" y="6" width="8" height="12" rx="1" />
                   <rect x="14" y="6" width="8" height="12" rx="1" />
                   <path d="M6 10h0M6 14h0M18 10h0M18 14h0" strokeWidth={2} strokeLinecap="round" />
                 </svg>
-                <p className="text-[9px] text-warm-500 uppercase tracking-wider leading-tight">Finiture differenti dallo standard</p>
+                <p className="text-[14px] text-black font-light leading-tight">Finiture differenti dallo standard</p>
               </div>
               <div className="flex flex-col items-center text-center max-w-[100px]">
-                <svg className="w-7 h-7 text-warm-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
+                <svg className="w-7 h-7 text-black mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
                   <path d="M12 2L2 7l10 5 10-5-10-5z" />
                   <path d="M2 17l10 5 10-5" />
                   <path d="M2 12l10 5 10-5" />
                 </svg>
-                <p className="text-[9px] text-warm-500 uppercase tracking-wider leading-tight">Realizzazione modelli non a catalogo</p>
+                <p className="text-[14px] text-black font-light leading-tight">Realizzazione modelli non a catalogo</p>
               </div>
             </div>
 
             <Link
               href="/contatti/richiesta-info"
-              className="inline-flex items-center gap-2 uppercase text-xs tracking-[0.15em] text-warm-800 hover:text-accent transition-colors group mt-10"
+              className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline mt-10 inline-block"
+              style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
             >
-              Contattaci per il tuo progetto
-              <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+              Contattaci per il tuo progetto →
             </Link>
           </motion.div>
 
@@ -753,7 +753,7 @@ export default function ProductDetailPage() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="relative img-hover"
+            className="relative overflow-hidden"
             style={{ aspectRatio: "4 / 3" }}
           >
             <Image
@@ -768,13 +768,13 @@ export default function ProductDetailPage() {
       </section>
 
       {/* ===== 9. BREADCRUMBS ===== */}
-      <div className="gtv-container py-8">
-        <div className="flex items-center justify-start gap-2 text-[10px] uppercase tracking-[0.15em] text-warm-400">
-          <Link href="/" className="hover:text-warm-700 transition-colors">Home</Link>
-          <ChevronRight size={10} />
-          <Link href="/prodotti" className="hover:text-warm-700 transition-colors">Prodotti</Link>
-          <ChevronRight size={10} />
-          <span className="text-warm-600">{product.name}</span>
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light" style={{ fontFamily: "'Work Sans', sans-serif" }}>
+          <Link href="/" className="hover:underline transition-colors">Home</Link>
+          <ChevronRight size={12} />
+          <Link href="/prodotti" className="hover:underline transition-colors">Prodotti</Link>
+          <ChevronRight size={12} />
+          <span>{product.name}</span>
         </div>
       </div>
     </>
