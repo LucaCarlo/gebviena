@@ -100,7 +100,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
                   </div>
                 )}
                 <button
-                  className="absolute bottom-4 left-4 w-7 h-7 rounded-full bg-white text-warm-900 text-xs italic flex items-center justify-center hover:bg-warm-100 transition-colors shadow-sm"
+                  className="absolute bottom-4 left-4 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center hover:bg-warm-100 transition-colors shadow-sm"
                   onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === i ? null : i); }}
                 >
                   i
@@ -310,7 +310,7 @@ export default function ProductDetailPage() {
 
       {/* ===== 3. SECTION NAV — 4 anchor links ===== */}
       <nav className="sticky top-0 z-30 bg-white">
-        <div className="gtv-container flex items-center justify-center gap-10 lg:gap-16 py-4 mt-6">
+        <div className="gtv-container flex items-center justify-center gap-10 lg:gap-16 pt-[23px] pb-[8px]">
           {sectionNav.map((item) => (
             <button
               key={item.id}
@@ -359,15 +359,12 @@ export default function ProductDetailPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="flex flex-col justify-center px-10 md:px-16 lg:px-20 py-16 lg:py-24"
+                className="flex flex-col justify-center px-10 md:px-16 lg:pl-[130px] lg:pr-20 py-16 lg:py-24"
               >
-                <p className="uppercase text-[16px] tracking-[0.03em] text-black mb-[8px] mt-[6px] font-light">Designer</p>
+                <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">Designer</p>
                 <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                   {product.designer.name}
                 </h2>
-                {product.designer.country && (
-                  <p className="text-sm text-warm-600 mt-2">{product.designer.country}</p>
-                )}
                 {product.designer.bio && (
                   <div
                     className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none mt-6 [&_p]:m-0"
@@ -377,7 +374,7 @@ export default function ProductDetailPage() {
                 )}
                 <Link
                   href={`/designer/${product.designer.slug || product.designer.id}`}
-                  className="uppercase text-sm tracking-[0.1em] text-warm-900 hover:underline mt-8 inline-block"
+                  className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline mt-8 inline-block"
                   style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
                   Vai alla scheda →
@@ -531,7 +528,7 @@ export default function ProductDetailPage() {
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
                   <span className="uppercase text-[16px] tracking-[0.03em] text-black font-light">
-                    Documentazione
+                    Scheda tecnica, 2D, 3D, istruzioni d&apos;uso, manutenzione
                   </span>
                   <span className="w-8 h-8 border border-warm-400 flex items-center justify-center text-warm-600 flex-shrink-0">
                     {openAccordion === "scheda" ? <Minus size={14} /> : <Plus size={14} />}
@@ -546,41 +543,33 @@ export default function ProductDetailPage() {
                       transition={{ duration: 0.3 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-2 pb-8 space-y-3">
-                        {(product.techSheetUrl || product.model2dUrl || product.model3dUrl) ? (
-                          <div className="flex flex-wrap gap-4">
-                            {product.techSheetUrl && (
-                              <a href={product.techSheetUrl} target="_blank" rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-4 py-2.5 border border-warm-300 text-sm text-warm-800 hover:bg-warm-100 transition-colors">
-                                <ChevronRight size={14} /> Scheda Tecnica
-                              </a>
-                            )}
-                            {product.model2dUrl && (
-                              <a href={product.model2dUrl} download
-                                className="inline-flex items-center gap-2 px-4 py-2.5 border border-warm-300 text-sm text-warm-800 hover:bg-warm-100 transition-colors">
-                                <ChevronRight size={14} /> Modello 2D
-                              </a>
-                            )}
-                            {product.model3dUrl && (
-                              <a href={product.model3dUrl} download
-                                className="inline-flex items-center gap-2 px-4 py-2.5 border border-warm-300 text-sm text-warm-800 hover:bg-warm-100 transition-colors">
-                                <ChevronRight size={14} /> Modello 3D
-                              </a>
-                            )}
-                          </div>
-                        ) : (
-                          <>
-                            <p className="text-sm text-warm-500 font-light">
-                              Per scaricare la documentazione tecnica, contattaci o visita l&apos;area professionisti.
+                      <div className="px-2 pb-8">
+                        <div className="flex flex-wrap gap-12 pt-4">
+                          {product.techSheetUrl && (
+                            <a href={product.techSheetUrl} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 uppercase text-[14px] tracking-[0.05em] text-black font-light underline underline-offset-4 decoration-[0.5px] hover:text-warm-600 transition-colors">
+                              Scheda tecnica <span className="text-[16px]">↓</span>
+                            </a>
+                          )}
+                          {product.model2dUrl && (
+                            <a href={product.model2dUrl} download
+                              className="inline-flex items-center gap-2 uppercase text-[14px] tracking-[0.05em] text-black font-light hover:text-warm-600 transition-colors">
+                              Modello 2D <span className="text-[16px]">↓</span>
+                            </a>
+                          )}
+                          {product.model3dUrl && (
+                            <a href={product.model3dUrl} download
+                              className="inline-flex items-center gap-2 uppercase text-[14px] tracking-[0.05em] text-black font-light hover:text-warm-600 transition-colors">
+                              Modello 3D <span className="text-[16px]">↓</span>
+                            </a>
+                          )}
+                        </div>
+                        {!product.techSheetUrl && !product.model2dUrl && !product.model3dUrl && (
+                          <div className="pt-4">
+                            <p className="text-sm text-warm-400 font-light">
+                              Documentazione non ancora disponibile.
                             </p>
-                            <Link
-                              href="/contatti/richiesta-info"
-                              className="inline-flex items-center gap-2 uppercase text-xs tracking-[0.15em] text-warm-800 hover:text-accent transition-colors group mt-2"
-                            >
-                              Richiedi documentazione
-                              <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
-                            </Link>
-                          </>
+                          </div>
                         )}
                       </div>
                     </motion.div>
@@ -782,10 +771,6 @@ export default function ProductDetailPage() {
           <Link href="/" className="hover:text-warm-700 transition-colors">Home</Link>
           <ChevronRight size={10} />
           <Link href="/prodotti" className="hover:text-warm-700 transition-colors">Prodotti</Link>
-          <ChevronRight size={10} />
-          <Link href={`/prodotti?category=${product.category}`} className="hover:text-warm-700 transition-colors">
-            {product.category}
-          </Link>
           <ChevronRight size={10} />
           <span className="text-warm-600">{product.name}</span>
         </div>
