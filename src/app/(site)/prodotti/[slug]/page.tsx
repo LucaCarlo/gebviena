@@ -58,7 +58,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
   if (images.length === 0) return null;
 
   return (
-    <section id="ispirazione" className="pt-8 pb-16 lg:pb-24">
+    <section id="ispirazione" className="pb-16 lg:pb-24">
       <div className="relative">
         <div
           ref={scrollRef}
@@ -82,7 +82,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
             >
               <div
                 className="relative overflow-hidden"
-                style={{ width: "calc(31vw - 16px)", minWidth: "260px", aspectRatio: "3 / 4" }}
+                style={{ width: "calc(28vw - 16px)", minWidth: "240px", aspectRatio: "2.5 / 4" }}
               >
                 <Image
                   src={url}
