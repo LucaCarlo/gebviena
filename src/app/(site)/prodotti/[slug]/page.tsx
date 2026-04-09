@@ -177,12 +177,6 @@ export default function ProductDetailPage() {
     } catch { /* ignore */ }
     return [];
   })();
-  const variants: { name: string; image: string }[] = (() => {
-    try {
-      if (product.variants) return JSON.parse(product.variants);
-    } catch { /* ignore */ }
-    return [];
-  })();
   const heroImg = product.heroImage || product.coverImage || product.imageUrl;
   const sideImg = product.sideImage || product.coverImage || product.imageUrl;
 
