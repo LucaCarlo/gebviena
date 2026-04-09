@@ -82,7 +82,7 @@ export default async function BrandManifestoPage() {
           </div>
 
           {/* Right: text — same style as product page description */}
-          <div className="flex flex-col justify-center pl-14 pr-12 md:pl-24 md:pr-20 lg:pl-[7.5rem] lg:pr-24 xl:pl-[9.5rem] xl:pr-32 py-16 lg:py-20">
+          <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">Our Heritage</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Born in Vienna
@@ -106,7 +106,7 @@ export default async function BrandManifestoPage() {
       </section>
 
       {/* ── La Produzione – Made in Italy ──────────────────────────── */}
-      <section className="gtv-container" style={{ paddingTop: "76px", paddingBottom: "85px" }}>
+      <section className="gtv-container" style={{ paddingTop: "96px", paddingBottom: "85px" }}>
         <div className="max-w-[940px] mx-auto">
           <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">La Produzione</p>
           <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -156,7 +156,7 @@ export default async function BrandManifestoPage() {
       <section className="w-full bg-warm-50 mt-20 md:mt-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
           {/* Left: text — same style/padding as Our Heritage */}
-          <div className="flex flex-col justify-center px-12 md:px-20 lg:px-24 xl:px-32 py-16 lg:py-20">
+          <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">I Nostri Designer</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Designed around
