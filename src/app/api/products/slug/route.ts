@@ -19,9 +19,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: false, error: "Prodotto non trovato" }, { status: 404 });
   }
 
-  // Fetch related products (same category, excluding current)
+  // Fetch related products (same primary typology, excluding current)
+  const primaryTypology = data.category?.split(",")[0] || data.category;
   const related = await prisma.product.findMany({
-    where: { category: data.category, id: { not: data.id }, isActive: true },
+    where: { category: { contains: primaryTypology }, id: { not: data.id }, isActive: true },
     take: 4,
     include: { designer: true },
   });

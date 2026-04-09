@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "12");
 
   const where: Record<string, unknown> = { isActive: true };
-  if (category && category !== "TUTTI") where.category = category;
+  if (category && category !== "TUTTI") where.category = { contains: category };
   if (subcategory) where.subcategory = subcategory;
   if (featured === "true") where.isFeatured = true;
 

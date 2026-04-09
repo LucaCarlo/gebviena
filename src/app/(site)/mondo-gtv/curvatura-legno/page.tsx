@@ -71,8 +71,8 @@ export default async function CurvaturaLegnoPage() {
 
       {/* ── Descrizione sotto la hero ────────────────────────────── */}
       <section className="py-16 md:py-24">
-        <div className="gtv-container-narrow">
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+        <div className="gtv-container">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[1100px]">
             La tecnica della curvatura del legno &egrave; un metodo antico,
             presente nell&apos;artigianato di diverse civilt&agrave;, ma rimasto
             a lungo in secondo piano a causa del suo limitato vantaggio in
@@ -99,7 +99,7 @@ export default async function CurvaturaLegnoPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-28 items-start">
             {/* Left: text — 60% */}
             <div className="lg:col-span-7">
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-8">
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-10">
                 La Tecnica
               </h2>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6">
@@ -172,7 +172,7 @@ export default async function CurvaturaLegnoPage() {
 
             {/* Right: text — 60% */}
             <div className="lg:col-span-7 lg:pr-12 xl:pr-20">
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-8">
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-10">
                 Il Brevetto
               </h2>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6">
@@ -197,8 +197,8 @@ export default async function CurvaturaLegnoPage() {
 
       {/* ── Paragrafo chiusura ────────────────────────────────────── */}
       <section className="pt-2 md:pt-4 pb-20 md:pb-28">
-        <div className="gtv-container-narrow">
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+        <div className="gtv-container">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[1100px]">
             Eleganza formale, solidità e leggerezza hanno decretato il
             successo dell&apos;azienda, che in pochi anni ha aperto
             stabilimenti produttivi in tutto il mondo. Un metodo di produzione
@@ -214,7 +214,7 @@ export default async function CurvaturaLegnoPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="text-center uppercase text-[16px] tracking-[0.03em] text-black font-light mb-12">
+          <h3 className="font-serif text-[28px] md:text-[38px] text-black tracking-tight font-light text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -249,21 +249,14 @@ export default async function CurvaturaLegnoPage() {
       </section>
 
       {/* ── Breadcrumbs ───────────────────────────────────────────── */}
-      <div className="gtv-container pb-12">
-        <nav className="flex items-center gap-2 text-xs text-warm-400">
-          <Link href="/" className="hover:text-warm-800 transition-colors">
-            Home
-          </Link>
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
           <span>&gt;</span>
-          <Link
-            href="/mondo-gtv"
-            className="hover:text-warm-800 transition-colors"
-          >
-            Mondo GTV
-          </Link>
+          <Link href="/mondo-gtv">Mondo GTV</Link>
           <span>&gt;</span>
-          <span className="text-warm-600">La Curvatura del Legno</span>
-        </nav>
+          <span>La Curvatura del Legno</span>
+        </div>
       </div>
     </>
   );

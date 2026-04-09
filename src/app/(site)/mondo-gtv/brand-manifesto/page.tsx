@@ -43,15 +43,20 @@ export default async function BrandManifestoPage() {
   return (
     <>
       <section className="gtv-container pt-16 pb-10">
-        <h1 className="font-serif text-[38px] md:text-[48px] text-black tracking-tight text-center font-light">
-          Born in Vienna. Made in Italy. Designed around the world.
+        <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-3 text-center">Brand manifesto</p>
+        <h1 className="font-serif text-[38px] md:text-[48px] text-black tracking-tight text-center font-light leading-[1.2]">
+          Born in Vienna.
+          <br />
+          Made in Italy.
+          <br />
+          Designed around the world.
         </h1>
       </section>
 
       {/* ── Intro paragraph ───────────────────────────────────────── */}
       <section className="pb-20 md:pb-28">
-        <div className="gtv-container-narrow">
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+        <div className="gtv-container">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[1100px]">
             Ogni parola riflette una parte fondamentale della nostra essenza: la
             nostra origine storica, l&apos;eccellenza artigianale e la nostra
             visione globale. Non &egrave; semplicemente un claim, ma un viaggio
@@ -84,7 +89,7 @@ export default async function BrandManifestoPage() {
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Born in Vienna
             </h2>
-            <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-5">
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
               La tradizione viennese, intrisa di arte e ingegno, &egrave; il
               nostro fondamento, un&apos;eredit&agrave; che ci accompagna in ogni
               creazione. Ma non ci fermiamo qui: il nostro sapere artigianale non
@@ -104,12 +109,12 @@ export default async function BrandManifestoPage() {
 
       {/* ── La Produzione – Made in Italy ──────────────────────────── */}
       <section className="section-padding">
-        <div className="gtv-container-narrow">
+        <div className="gtv-container">
           <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">La Produzione</p>
           <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
             Made in Italy
           </h2>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[1100px] mt-8">
             L&apos;incontro perfetto tra la nostra eredit&agrave; e la maestria
             artigianale italiana. In Italia, dove il design &egrave;
             un&apos;arte quotidiana, ogni prodotto nasce dall&apos;incontro di
@@ -157,7 +162,7 @@ export default async function BrandManifestoPage() {
               <br />
               the world
             </h2>
-            <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
               Collaboriamo con alcuni dei pi&ugrave; grandi maestri del design
               contemporaneo, provenienti da culture e background diversi, per
               reinterpretare la nostra eredit&agrave; con uno sguardo sempre
@@ -202,7 +207,7 @@ export default async function BrandManifestoPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="text-center uppercase text-[16px] tracking-[0.03em] text-black font-light mb-12">
+          <h3 className="font-serif text-[28px] md:text-[38px] text-black tracking-tight font-light text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -237,21 +242,14 @@ export default async function BrandManifestoPage() {
       </section>
 
       {/* ── Breadcrumbs ───────────────────────────────────────────── */}
-      <div className="gtv-container pb-12">
-        <nav className="flex items-center gap-2 text-xs text-warm-400">
-          <Link href="/" className="hover:text-warm-800 transition-colors">
-            Home
-          </Link>
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
           <span>&gt;</span>
-          <Link
-            href="/mondo-gtv"
-            className="hover:text-warm-800 transition-colors"
-          >
-            Mondo GTV
-          </Link>
+          <Link href="/mondo-gtv">Mondo GTV</Link>
           <span>&gt;</span>
-          <span className="text-warm-600">Brand Manifesto</span>
-        </nav>
+          <span>Brand Manifesto</span>
+        </div>
       </div>
     </>
   );

@@ -68,13 +68,13 @@ export default async function SostenibilitaPage() {
 
       {/* ── Titolo + Introduzione — stile GTV Oggi ────────────── */}
       <section className="pt-20 md:pt-28 pb-20 md:pb-28">
-        <div className="gtv-container-narrow">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-8 text-center">
+        <div className="gtv-container">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center">
             La tutela ambientale: una sfida per
             <br />
             il futuro, un&apos;opportunit&agrave; per GTV.
           </h2>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left max-w-[1100px]">
             Anno dopo anno, GTV ha sviluppato una crescente sensibilit&agrave;
             verso le tematiche ambientali e, nell&apos;ottica di un
             miglioramento continuo, aderisce alle normative che privilegiano
@@ -83,7 +83,7 @@ export default async function SostenibilitaPage() {
             continuit&agrave;, anche etica, tra il ciclo produttivo e il
             prodotto.
           </p>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left max-w-[1100px]">
             Un impegno concreto da parte dell&apos;azienda per offrire garanzie
             reali in termini di sostenibilit&agrave; ambientale e tutela della
             salute dei consumatori, con l&apos;obiettivo di costruire un
@@ -112,7 +112,7 @@ export default async function SostenibilitaPage() {
 
             {/* Right: text — 60% */}
             <div className="lg:col-span-7 lg:pr-12 xl:pr-20">
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-8">
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-10">
                 Legno Certificato FSC&reg; (C123220)
               </h2>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6">
@@ -146,7 +146,7 @@ export default async function SostenibilitaPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="text-center uppercase text-[16px] tracking-[0.03em] text-black font-light mb-12">
+          <h3 className="font-serif text-[28px] md:text-[38px] text-black tracking-tight font-light text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -181,21 +181,14 @@ export default async function SostenibilitaPage() {
       </section>
 
       {/* ── Breadcrumbs ───────────────────────────────────────────── */}
-      <div className="gtv-container pb-12">
-        <nav className="flex items-center gap-2 text-xs text-warm-400">
-          <Link href="/" className="hover:text-warm-800 transition-colors">
-            Home
-          </Link>
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
           <span>&gt;</span>
-          <Link
-            href="/mondo-gtv"
-            className="hover:text-warm-800 transition-colors"
-          >
-            Mondo GTV
-          </Link>
+          <Link href="/mondo-gtv">Mondo GTV</Link>
           <span>&gt;</span>
-          <span className="text-warm-600">Sostenibilit&agrave;</span>
-        </nav>
+          <span>Sostenibilit&agrave;</span>
+        </div>
       </div>
     </>
   );

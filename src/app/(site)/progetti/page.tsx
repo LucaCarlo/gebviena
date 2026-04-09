@@ -460,7 +460,7 @@ function ProjectsContent() {
       {/* ===== PROJECT GRID ===== */}
       <section className="pt-2 pb-8 md:pt-3 md:pb-10 px-2 md:px-3 lg:px-4">
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="bg-warm-100" style={{ aspectRatio: "4/5" }} />
@@ -470,7 +470,7 @@ function ProjectsContent() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
             {projects.map((project, i) => (
               <motion.div
                 key={project.id}

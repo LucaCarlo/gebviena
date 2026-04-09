@@ -206,7 +206,7 @@ export default function ProjectDetailPage() {
                     </div>
                     <div className="mt-4">
                       <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
-                        {product.subcategory || (product.category === "CLASSICI" ? "Classici" : product.category?.charAt(0) + product.category?.slice(1).toLowerCase())}
+                        {product.subcategory || (() => { const t = (product.category || "").split(",")[0]; return t === "CLASSICI" ? "Classici" : t?.charAt(0) + t?.slice(1).toLowerCase(); })()}
                       </p>
                       <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                         {product.name}

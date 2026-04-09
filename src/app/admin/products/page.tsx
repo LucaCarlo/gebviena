@@ -218,7 +218,7 @@ export default function AdminProductsPage() {
     const q = search.toLowerCase().trim();
     if (q) result = result.filter((p) => p.name.toLowerCase().includes(q) || p.designerName?.toLowerCase().includes(q));
     if (activeFilters.designer) result = result.filter((p) => p.designerName === activeFilters.designer);
-    if (activeFilters.category) result = result.filter((p) => p.category === activeFilters.category);
+    if (activeFilters.category) result = result.filter((p) => p.category?.includes(activeFilters.category));
     if (activeFilters.subcategory) result = result.filter((p) => p.subcategory === activeFilters.subcategory);
     return result;
   }, [products, search, activeFilters]);
@@ -309,7 +309,11 @@ export default function AdminProductsPage() {
                   <td className="px-6 py-4 font-medium text-warm-800">{p.name}</td>
                   <td className="px-6 py-4 text-warm-600">{p.designerName || p.designer?.name}</td>
                   <td className="px-6 py-4">
-                    <span className="px-2 py-1 bg-warm-100 text-warm-600 text-xs rounded">{p.category}</span>
+                    <div className="flex flex-wrap gap-1">
+                      {(p.category || "").split(",").filter(Boolean).map((t: string) => (
+                        <span key={t} className="px-2 py-0.5 bg-warm-100 text-warm-600 text-xs rounded">{t}</span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-warm-500 text-xs">{p.subcategory || "—"}</td>
                   <td className="px-6 py-4 text-right">

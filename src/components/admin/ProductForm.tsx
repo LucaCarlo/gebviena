@@ -120,13 +120,20 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
   useEffect(() => { loadProduct(); }, [loadProduct]);
 
-  // Filter categories based on selected typology
-  const filteredCategories = useMemo(() => {
-    if (!form.category) return allCategories;
-    return allCategories.filter((c) =>
-      c.typologies.some((t) => t.typology.value === form.category)
-    );
-  }, [allCategories, form.category]);
+  // Auto-assign typologies based on selected category
+  const autoTypologies = useMemo(() => {
+    if (!form.subcategory) return [];
+    const cat = allCategories.find((c) => c.value === form.subcategory);
+    if (!cat) return [];
+    return cat.typologies.map((t) => t.typology.value);
+  }, [allCategories, form.subcategory]);
+
+  // When category changes, auto-update the typologies in the category field
+  useEffect(() => {
+    if (autoTypologies.length > 0) {
+      setForm((prev) => ({ ...prev, category: autoTypologies.join(",") }));
+    }
+  }, [autoTypologies]);
 
   const handleNameChange = (name: string) => {
     setForm((prev) => ({
@@ -260,33 +267,37 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Tipologia *</label>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Categoria *</label>
             <select
-              value={form.category}
+              value={form.subcategory}
               onChange={(e) => {
-                const newCat = e.target.value;
-                setForm((prev) => ({ ...prev, category: newCat, subcategory: "" }));
+                const newSub = e.target.value;
+                setForm((prev) => ({ ...prev, subcategory: newSub }));
               }}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
             >
               <option value="">— Seleziona —</option>
-              {typologies.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
+              {allCategories.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Categoria</label>
-            <select
-              value={form.subcategory}
-              onChange={(e) => updateField("subcategory", e.target.value)}
-              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            >
-              <option value="">— Nessuna —</option>
-              {filteredCategories.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </select>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Tipologie (auto)</label>
+            <div className="min-h-[42px] border border-warm-200 rounded px-4 py-2 bg-warm-50 flex flex-wrap gap-1.5 items-center">
+              {autoTypologies.length > 0 ? (
+                autoTypologies.map((tv) => {
+                  const t = typologies.find((typ) => typ.value === tv);
+                  return (
+                    <span key={tv} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warm-200 text-warm-700">
+                      {t?.label || tv}
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="text-sm text-warm-400">Seleziona una categoria</span>
+              )}
+            </div>
           </div>
         </div>
 

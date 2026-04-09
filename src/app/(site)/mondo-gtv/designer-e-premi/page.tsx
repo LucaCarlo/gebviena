@@ -213,7 +213,7 @@ export default async function DesignerPremiPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="text-center uppercase text-[16px] tracking-[0.03em] text-black font-light mb-12">
+          <h3 className="font-serif text-[28px] md:text-[38px] text-black tracking-tight font-light text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -248,21 +248,14 @@ export default async function DesignerPremiPage() {
       </section>
 
       {/* ── Breadcrumbs ───────────────────────────────────────────── */}
-      <div className="gtv-container pb-12">
-        <nav className="flex items-center gap-2 text-xs text-warm-400">
-          <Link href="/" className="hover:text-warm-800 transition-colors">
-            Home
-          </Link>
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
           <span>&gt;</span>
-          <Link
-            href="/mondo-gtv"
-            className="hover:text-warm-800 transition-colors"
-          >
-            Mondo GTV
-          </Link>
+          <Link href="/mondo-gtv">Mondo GTV</Link>
           <span>&gt;</span>
-          <span className="text-warm-600">Designer e premi</span>
-        </nav>
+          <span>Designer e premi</span>
+        </div>
       </div>
     </>
   );

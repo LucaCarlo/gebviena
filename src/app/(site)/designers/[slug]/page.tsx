@@ -138,7 +138,7 @@ export default async function DesignerDetailPage({ params }: PageProps) {
                       )}
                     </div>
                     <p className="text-[10px] uppercase tracking-[0.15em] text-warm-500 mb-1">
-                      {product.category}
+                      {(product.category || "").split(",")[0]}
                     </p>
                     <p className="font-sans text-sm md:text-base uppercase tracking-[0.1em] text-dark font-medium">
                       {product.name}
