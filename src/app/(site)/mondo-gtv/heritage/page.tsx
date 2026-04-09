@@ -109,7 +109,7 @@ export default async function HeritagePage() {
           </p>
 
           {/* 2 vertical images — slightly wider than paragraph */}
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-2 gap-10 md:gap-16">
               <div>
                 <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
