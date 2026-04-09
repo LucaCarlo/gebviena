@@ -176,6 +176,20 @@ export default function AdminMediaPage() {
     fetchWasabiStatus();
   };
 
+  /* --- bulk delete --------------------------------------------------- */
+  const handleDeleteSelected = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Sei sicuro di voler eliminare ${selected.size} file?`)) return;
+    const ids = Array.from(selected);
+    for (const id of ids) {
+      await fetch(`/api/media/${id}`, { method: "DELETE" });
+    }
+    setSelected(new Set());
+    if (detailFile && ids.includes(detailFile.id)) setDetailFile(null);
+    fetchMedia(activeFolder);
+    fetchWasabiStatus();
+  };
+
   /* --- sync --------------------------------------------------------- */
   const syncItems = async (ids: string[]) => {
     if (ids.length === 0) return;
@@ -334,14 +348,24 @@ export default function AdminMediaPage() {
         </div>
         <div className="flex items-center gap-3">
           {selected.size > 0 && (
-            <button
-              onClick={handleSyncSelected}
-              disabled={syncing || unsyncedSelected.length === 0}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              <CloudUpload size={16} />
-              Sincronizza selezionati ({unsyncedSelected.length})
-            </button>
+            <>
+              <button
+                onClick={handleDeleteSelected}
+                disabled={syncing}
+                className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                <Trash2 size={16} />
+                Elimina selezionati ({selected.size})
+              </button>
+              <button
+                onClick={handleSyncSelected}
+                disabled={syncing || unsyncedSelected.length === 0}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                <CloudUpload size={16} />
+                Sincronizza selezionati ({unsyncedSelected.length})
+              </button>
+            </>
           )}
           <input
             ref={fileInputRef}
