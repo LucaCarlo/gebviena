@@ -42,21 +42,20 @@ export default async function BrandManifestoPage() {
 
   return (
     <>
-      <section className="gtv-container pt-16 pb-10">
-        <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-3 text-center">Brand manifesto</p>
-        <h1 className="font-serif text-[38px] md:text-[48px] text-black tracking-tight text-center font-light leading-[1.2]">
-          Born in Vienna.
+      <section className="gtv-container pt-16 pb-6">
+        <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light mb-4 text-center">Brand manifesto</p>
+        <h1 className="font-serif text-[42px] md:text-[58px] text-black tracking-tight text-center font-light leading-[1.2]">
+          <em>Born</em> in Vienna.
           <br />
-          Made in Italy.
+          Made in <em>Italy.</em>
           <br />
-          Designed around the world.
+          <em>Designed</em> around the world.
         </h1>
       </section>
 
       {/* ── Intro paragraph ───────────────────────────────────────── */}
-      <section className="pb-20 md:pb-28">
-        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+      <section className="gtv-container py-14 md:py-20">
+        <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px]" style={{ marginLeft: "auto", marginRight: "auto" }}>
             Ogni parola riflette una parte fondamentale della nostra essenza: la
             nostra origine storica, l&apos;eccellenza artigianale e la nostra
             visione globale. Non &egrave; semplicemente un claim, ma un viaggio
@@ -66,14 +65,13 @@ export default async function BrandManifestoPage() {
             &egrave; un simbolo di questa fusione: un&apos;unione tra passato e
             futuro, artigianato e design contemporaneo, locale e globale.
           </p>
-        </div>
       </section>
 
       {/* ── Our Heritage – Born in Vienna ──────────────────────────── */}
-      <section className="w-full bg-warm-50">
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
-          {/* Left: historical image — 50% width, full height */}
-          <div className="relative bg-warm-200" style={{ aspectRatio: "4/3" }}>
+      <section className="w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
+          {/* Left: historical image — same aspect as product page */}
+          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
             <Image
               src={imgs["born-in-vienna"]}
               alt="Michael Thonet 1853 — Gebrüder Thonet"
@@ -83,8 +81,8 @@ export default async function BrandManifestoPage() {
             />
           </div>
 
-          {/* Right: text — 50% width, vertically centered, generous padding */}
-          <div className="px-10 md:px-16 lg:px-20 py-16 lg:py-20 flex flex-col justify-center">
+          {/* Right: text — same style as product page description */}
+          <div className="flex flex-col justify-center px-10 md:px-16 lg:px-20">
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">Our Heritage</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Born in Vienna
@@ -108,8 +106,8 @@ export default async function BrandManifestoPage() {
       </section>
 
       {/* ── La Produzione – Made in Italy ──────────────────────────── */}
-      <section className="section-padding">
-        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
+      <section className="gtv-container py-14 md:py-20">
+        <div className="max-w-[940px] mx-auto">
           <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">La Produzione</p>
           <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
             Made in Italy
@@ -152,8 +150,8 @@ export default async function BrandManifestoPage() {
       </section>
 
       {/* ── I Nostri Designer – Designed Around the World ─────────── */}
-      <section className="w-full bg-warm-50 mt-20 md:mt-28">
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
+      <section className="w-full mt-20 md:mt-28">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
           {/* Left: text — 50%, vertically centered, same style as Heritage */}
           <div className="px-10 md:px-16 lg:px-20 py-16 lg:py-20 flex flex-col justify-center">
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">I Nostri Designer</p>

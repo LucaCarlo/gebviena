@@ -497,42 +497,44 @@ export default function ProductDetailPage() {
                       className="overflow-hidden"
                     >
                       <div className="px-2 pb-8">
-                        <div className="flex flex-col items-center gap-8">
-                          {/* Immagine dimensioni */}
+                        <div className="flex flex-col md:flex-row items-start gap-8">
+                          {/* Immagine dimensioni — sinistra */}
                           {product.dimensionImage && (
-                            <div className="relative bg-white p-6 w-full max-w-3xl" style={{ aspectRatio: "2 / 1" }}>
-                              <Image src={product.dimensionImage} alt={`${product.name} dimensioni`} fill className="object-contain" sizes="(max-width: 768px) 100vw, 60vw" />
+                            <div className="relative bg-white p-4 flex-1 min-w-0" style={{ aspectRatio: "3 / 2" }}>
+                              <Image src={product.dimensionImage} alt={`${product.name} dimensioni`} fill className="object-contain" sizes="(max-width: 768px) 100vw, 50vw" />
                             </div>
                           )}
 
-                          {/* Misure strutturate (da DimensionBlock) o testo libero */}
-                          {product.dimensionValues && product.dimensionValues !== "{}" ? (() => {
-                            try {
-                              const vals: Record<string, string> = JSON.parse(product.dimensionValues);
-                              const entries = Object.entries(vals).filter(([, v]) => v);
-                              if (entries.length === 0) return null;
-                              return (
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-10 gap-y-4">
-                                  {entries.map(([label, value]) => (
-                                    <div key={label} className="text-center">
-                                      <p className="text-xs text-warm-400 uppercase tracking-wider mb-1">{label}</p>
-                                      <p className="text-sm text-warm-700 font-light">{value}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              );
-                            } catch { return null; }
-                          })() : product.dimensions ? (
-                            <div className="text-center">
-                              {product.dimensions.split("\n").map((line, i) => (
-                                <p key={i} className="text-sm text-warm-700 font-light leading-relaxed">
-                                  {line || "\u00A0"}
-                                </p>
-                              ))}
-                            </div>
-                          ) : !product.dimensionImage && (
-                            <p className="text-sm text-warm-400 font-light">Dimensioni non disponibili.</p>
-                          )}
+                          {/* Misure — destra (o sotto su mobile) */}
+                          <div className={product.dimensionImage ? "flex-shrink-0 w-full md:w-auto md:min-w-[200px]" : "w-full"}>
+                            {product.dimensionValues && product.dimensionValues !== "{}" ? (() => {
+                              try {
+                                const vals: Record<string, string> = JSON.parse(product.dimensionValues);
+                                const entries = Object.entries(vals).filter(([, v]) => v);
+                                if (entries.length === 0) return null;
+                                return (
+                                  <div className="space-y-3">
+                                    {entries.map(([label, value]) => (
+                                      <div key={label}>
+                                        <p className="text-xs text-warm-400 uppercase tracking-wider mb-0.5">{label}</p>
+                                        <p className="text-sm text-warm-700 font-light">{value}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              } catch { return null; }
+                            })() : product.dimensions ? (
+                              <div>
+                                {product.dimensions.split("\n").map((line, i) => (
+                                  <p key={i} className="text-sm text-warm-700 font-light leading-relaxed">
+                                    {line || "\u00A0"}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : !product.dimensionImage && (
+                              <p className="text-sm text-warm-400 font-light">Dimensioni non disponibili.</p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </motion.div>
