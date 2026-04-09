@@ -46,7 +46,7 @@ export default async function HeritagePage() {
 
   return (
     <>
-      <section className="gtv-container pt-16 pb-10">
+      <section className="gtv-container pt-16 pb-16">
         <h1 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight text-center font-light">
           Le origini di &ldquo;Gebrüder Thonet&rdquo;
         </h1>
@@ -54,10 +54,10 @@ export default async function HeritagePage() {
 
       {/* ── Foto famiglia + testo ─────────────────────────────────── */}
       <section className="pb-20 md:pb-28">
-        <div className="mx-auto w-[95%] max-w-[90%]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-            {/* Left: family photo */}
-            <div className="lg:col-span-5">
+        <div className="mx-auto" style={{ width: "calc(90% - 60px)", maxWidth: "calc(90% - 60px)" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
+            {/* Left: family photo — 50% */}
+            <div>
               <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 11" }}>
                 <Image
                   src={imgs["thonet-family"]}
@@ -69,8 +69,8 @@ export default async function HeritagePage() {
                 />
               </div>
             </div>
-            {/* Right: text */}
-            <div className="lg:col-span-7 flex flex-col justify-start" style={{ paddingTop: "30px", paddingLeft: "90px", paddingRight: "50px" }}>
+            {/* Right: text — 50% with 40px padding */}
+            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "40px", paddingRight: "40px" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Michael Thonet (1796-1871) e i suoi cinque figli furono i
                 produttori di mobili di maggior successo dell&apos;era
@@ -112,7 +112,7 @@ export default async function HeritagePage() {
 
           {/* 2 vertical images — slightly wider than paragraph */}
           <div className="max-w-5xl mx-auto">
-            <div className="grid grid-cols-2 gap-6 md:gap-8">
+            <div className="grid grid-cols-2 gap-10 md:gap-16">
               <div>
                 <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
                   <Image
