@@ -407,25 +407,49 @@ export default function ProductDetailPage() {
               </h2>
             </div>
 
-            {/* Viewer 3D pCon — se presente sostituisce varianti e dimensioni */}
-            {product.pconUrl ? (
-              <div className="mb-8">
-                <iframe
-                  src={product.pconUrl}
-                  className="w-full border-0 rounded"
-                  style={{ height: "560px" }}
-                  allowFullScreen
-                  allow="xr-spatial-tracking"
-                  title={`Visualizzatore 3D ${product.name}`}
-                />
-              </div>
-            ) : null}
-
             {/* Accordion rows */}
             <div className="divide-y divide-black border-t border-b border-black">
 
-              {/* --- VARIANTI PRODOTTO (solo se NO pCon) --- */}
-              {!product.pconUrl && (
+              {/* --- PRODOTTO (pCon 3D viewer, solo se presente) --- */}
+              {product.pconUrl && (
+              <div>
+                <button
+                  onClick={() => setOpenAccordion(openAccordion === "prodotto" ? null : "prodotto")}
+                  className="w-full flex items-center justify-between py-5 px-2 group"
+                >
+                  <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
+                    Prodotto
+                  </span>
+                  <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
+                    {openAccordion === "prodotto" ? <Minus size={18} /> : <Plus size={18} />}
+                  </span>
+                </button>
+                <AnimatePresence>
+                  {openAccordion === "prodotto" && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-2 pb-8">
+                        <iframe
+                          src={product.pconUrl}
+                          className="w-full border-0 rounded"
+                          style={{ height: "560px" }}
+                          allowFullScreen
+                          allow="xr-spatial-tracking"
+                          title={`Visualizzatore 3D ${product.name}`}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              )}
+
+              {/* --- VARIANTI PRODOTTO --- */}
               <div>
                 <button
                   onClick={() => setOpenAccordion(openAccordion === "varianti" ? null : "varianti")}
@@ -473,8 +497,7 @@ export default function ProductDetailPage() {
               </div>
               )}
 
-              {/* --- DIMENSIONI (solo se NO pCon) --- */}
-              {!product.pconUrl && (
+              {/* --- DIMENSIONI --- */}
               <div>
                 <button
                   onClick={() => setOpenAccordion(openAccordion === "dimensioni" ? null : "dimensioni")}
@@ -541,7 +564,6 @@ export default function ProductDetailPage() {
                   )}
                 </AnimatePresence>
               </div>
-              )}
 
               {/* --- DOCUMENTAZIONE --- */}
               <div>
