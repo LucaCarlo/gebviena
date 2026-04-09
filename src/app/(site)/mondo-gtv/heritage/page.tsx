@@ -47,7 +47,7 @@ export default async function HeritagePage() {
   return (
     <>
       <section className="gtv-container pt-16 pb-10">
-        <h1 className="font-serif text-[38px] md:text-[48px] text-black tracking-tight text-center font-light">
+        <h1 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight text-center font-light">
           Le origini di &ldquo;Gebrüder Thonet&rdquo;
         </h1>
       </section>
@@ -56,8 +56,8 @@ export default async function HeritagePage() {
       <section className="pb-20 md:pb-28">
         <div className="mx-auto w-[95%] max-w-[90%]">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-            {/* Left: family photo — ~55% */}
-            <div className="lg:col-span-6">
+            {/* Left: family photo */}
+            <div className="lg:col-span-5">
               <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 11" }}>
                 <Image
                   src={imgs["thonet-family"]}
@@ -69,8 +69,8 @@ export default async function HeritagePage() {
                 />
               </div>
             </div>
-            {/* Right: text ~45% */}
-            <div className="lg:col-span-6 flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "60px", paddingRight: "20px" }}>
+            {/* Right: text */}
+            <div className="lg:col-span-7 flex flex-col justify-start" style={{ paddingTop: "30px", paddingLeft: "90px", paddingRight: "50px" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Michael Thonet (1796-1871) e i suoi cinque figli furono i
                 produttori di mobili di maggior successo dell&apos;era
@@ -90,7 +90,7 @@ export default async function HeritagePage() {
       {/* ── L'innovazione e il successo industriale ───────────────── */}
       <section className="pb-20 md:pb-28">
         <div className="gtv-container">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center">
+          <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-12 text-center">
             L&apos;innovazione e il successo industriale
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mb-6">
@@ -149,7 +149,7 @@ export default async function HeritagePage() {
       {/* ── L'espansione e la trasformazione ──────────────────────── */}
       <section className="pb-10 md:pb-16">
         <div className="gtv-container">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center">
+          <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-12 text-center">
             L&apos;espansione e la trasformazione
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-4xl mx-auto mb-16 text-left">
@@ -244,7 +244,7 @@ export default async function HeritagePage() {
       {/* ── GTV Oggi: tradizione e innovazione ───────────────────── */}
       <section className="pb-20 md:pb-28">
         <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center">
+          <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-12 text-center">
             Gebrüder Thonet Vienna oggi:
             <br />
             tradizione e innovazione
