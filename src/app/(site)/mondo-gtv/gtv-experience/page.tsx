@@ -372,7 +372,7 @@ export default async function GtvExperiencePage() {
                       <div className="absolute inset-0 bg-warm-200" />
                     )}
                   </div>
-                  <h4 className="font-sans text-sm md:text-base uppercase tracking-[0.15em] text-black font-light mt-4">
+                  <h4 className="font-sans text-lg md:text-[22px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
                     {rp.label}
                   </h4>
                 </Link>

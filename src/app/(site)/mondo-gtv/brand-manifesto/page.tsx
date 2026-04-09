@@ -42,7 +42,7 @@ export default async function BrandManifestoPage() {
 
   return (
     <>
-      <section className="gtv-container pt-28 md:pt-36 pb-4">
+      <section className="gtv-container pt-24 md:pt-32 pb-4">
         <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light mb-4 text-center">Brand manifesto</p>
         <h1 className="font-serif text-[42px] md:text-[58px] text-black tracking-tight text-center font-light leading-[1.2]">
           <em>Born</em> in Vienna.
@@ -96,10 +96,10 @@ export default async function BrandManifestoPage() {
             </p>
             <Link
               href="/mondo-gtv/heritage"
-              className="inline-flex items-center gap-2 mt-6 uppercase text-sm tracking-[0.15em] font-light text-dark hover:opacity-60 transition-opacity"
+              className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline mt-8"
+              style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
             >
-              Le nostre origini
-              <span className="text-lg">&rarr;</span>
+              Le nostre origini &rarr;
             </Link>
           </div>
         </div>
@@ -126,7 +126,7 @@ export default async function BrandManifestoPage() {
 
       {/* ── L'Armonia del Legno (VIDEO) — stesso stile homepage ───── */}
       <section className="w-full px-1 md:px-2 lg:px-3">
-        <div className="relative w-full" style={{ height: "90vh" }}>
+        <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
           <video
             autoPlay
             muted
@@ -176,9 +176,9 @@ export default async function BrandManifestoPage() {
             </p>
           </div>
 
-          {/* Right: 3x3 designer grid — same height as Our Heritage image */}
+          {/* Right: 3x3 designer grid — with gaps, top/bottom rows cropped */}
           <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
-            <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0">
+            <div className="absolute grid grid-cols-3 grid-rows-3 gap-3 md:gap-4" style={{ inset: "-8% 0", height: "116%" }}>
               {designers.map((designer) => (
                 <Link
                   key={designer.id}
@@ -231,7 +231,7 @@ export default async function BrandManifestoPage() {
                       <div className="absolute inset-0 bg-warm-200" />
                     )}
                   </div>
-                  <h4 className="font-sans text-sm md:text-base uppercase tracking-[0.15em] text-black font-light mt-4">
+                  <h4 className="font-sans text-lg md:text-[22px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
                     {rp.label}
                   </h4>
                 </Link>
