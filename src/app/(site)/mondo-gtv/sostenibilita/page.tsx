@@ -68,13 +68,13 @@ export default async function SostenibilitaPage() {
 
       {/* ── Titolo + Introduzione — stile GTV Oggi ────────────── */}
       <section className="pt-20 md:pt-28 pb-20 md:pb-28">
-        <div className="gtv-container">
+        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
           <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center">
             La tutela ambientale: una sfida per
             <br />
             il futuro, un&apos;opportunit&agrave; per GTV.
           </h2>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left max-w-[1100px]">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left">
             Anno dopo anno, GTV ha sviluppato una crescente sensibilit&agrave;
             verso le tematiche ambientali e, nell&apos;ottica di un
             miglioramento continuo, aderisce alle normative che privilegiano
@@ -83,7 +83,7 @@ export default async function SostenibilitaPage() {
             continuit&agrave;, anche etica, tra il ciclo produttivo e il
             prodotto.
           </p>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left max-w-[1100px]">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left">
             Un impegno concreto da parte dell&apos;azienda per offrire garanzie
             reali in termini di sostenibilit&agrave; ambientale e tutela della
             salute dei consumatori, con l&apos;obiettivo di costruire un
@@ -146,7 +146,7 @@ export default async function SostenibilitaPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="font-serif text-[28px] md:text-[38px] text-black tracking-tight font-light text-center mb-12">
+          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

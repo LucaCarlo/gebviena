@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { slugify } from "@/lib/utils";
 import { Plus, X, Upload, FileText, Trash2 } from "lucide-react";
@@ -120,20 +120,33 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
   useEffect(() => { loadProduct(); }, [loadProduct]);
 
-  // Auto-assign typologies based on selected category
-  const autoTypologies = useMemo(() => {
-    if (!form.subcategory) return [];
-    const cat = allCategories.find((c) => c.value === form.subcategory);
-    if (!cat) return [];
-    return cat.typologies.map((t) => t.typology.value);
-  }, [allCategories, form.subcategory]);
+  // Track previous subcategory to detect changes
+  const prevSubcategoryRef = useRef(form.subcategory);
 
-  // When category changes, auto-update the typologies in the category field
+  // Auto-assign typologies ONLY when category changes (not on load)
   useEffect(() => {
-    if (autoTypologies.length > 0) {
-      setForm((prev) => ({ ...prev, category: autoTypologies.join(",") }));
+    if (form.subcategory && form.subcategory !== prevSubcategoryRef.current) {
+      const cat = allCategories.find((c) => c.value === form.subcategory);
+      if (cat && cat.typologies.length > 0) {
+        const autoValues = cat.typologies.map((t) => t.typology.value).join(",");
+        setForm((prev) => ({ ...prev, category: autoValues }));
+      }
     }
-  }, [autoTypologies]);
+    prevSubcategoryRef.current = form.subcategory;
+  }, [form.subcategory, allCategories]);
+
+  // Parse current typologies from category field
+  const selectedTypologies = useMemo(() => {
+    return (form.category || "").split(",").filter(Boolean);
+  }, [form.category]);
+
+  const toggleTypology = (value: string) => {
+    const current = selectedTypologies;
+    const next = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
+    setForm((prev) => ({ ...prev, category: next.join(",") }));
+  };
 
   const handleNameChange = (name: string) => {
     setForm((prev) => ({
@@ -283,19 +296,21 @@ export default function ProductForm({ productId }: ProductFormProps) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Tipologie (auto)</label>
-            <div className="min-h-[42px] border border-warm-200 rounded px-4 py-2 bg-warm-50 flex flex-wrap gap-1.5 items-center">
-              {autoTypologies.length > 0 ? (
-                autoTypologies.map((tv) => {
-                  const t = typologies.find((typ) => typ.value === tv);
-                  return (
-                    <span key={tv} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warm-200 text-warm-700">
-                      {t?.label || tv}
-                    </span>
-                  );
-                })
-              ) : (
-                <span className="text-sm text-warm-400">Seleziona una categoria</span>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Tipologie</label>
+            <div className="min-h-[42px] border border-warm-200 rounded px-4 py-2.5 bg-white flex flex-wrap gap-2 items-center">
+              {typologies.map((t) => (
+                <label key={t.value} className="inline-flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedTypologies.includes(t.value)}
+                    onChange={() => toggleTypology(t.value)}
+                    className="rounded border-warm-300 text-warm-800 focus:ring-warm-800"
+                  />
+                  <span className="text-xs text-warm-700">{t.label}</span>
+                </label>
+              ))}
+              {typologies.length === 0 && (
+                <span className="text-sm text-warm-400">Caricamento...</span>
               )}
             </div>
           </div>

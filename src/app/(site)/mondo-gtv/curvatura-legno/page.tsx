@@ -71,8 +71,8 @@ export default async function CurvaturaLegnoPage() {
 
       {/* ── Descrizione sotto la hero ────────────────────────────── */}
       <section className="py-16 md:py-24">
-        <div className="gtv-container">
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[1100px]">
+        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
             La tecnica della curvatura del legno &egrave; un metodo antico,
             presente nell&apos;artigianato di diverse civilt&agrave;, ma rimasto
             a lungo in secondo piano a causa del suo limitato vantaggio in
@@ -197,8 +197,8 @@ export default async function CurvaturaLegnoPage() {
 
       {/* ── Paragrafo chiusura ────────────────────────────────────── */}
       <section className="pt-2 md:pt-4 pb-20 md:pb-28">
-        <div className="gtv-container">
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[1100px]">
+        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
             Eleganza formale, solidità e leggerezza hanno decretato il
             successo dell&apos;azienda, che in pochi anni ha aperto
             stabilimenti produttivi in tutto il mondo. Un metodo di produzione
@@ -214,7 +214,7 @@ export default async function CurvaturaLegnoPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="font-serif text-[28px] md:text-[38px] text-black tracking-tight font-light text-center mb-12">
+          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

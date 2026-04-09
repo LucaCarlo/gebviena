@@ -238,13 +238,13 @@ export default async function HeritagePage() {
 
       {/* ── GTV Oggi: tradizione e innovazione ───────────────────── */}
       <section className="pb-20 md:pb-28">
-        <div className="gtv-container">
+        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
           <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center">
             Gebrüder Thonet Vienna oggi:
             <br />
             tradizione e innovazione
           </h2>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left max-w-[1100px]">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left">
             Recentemente Gebrüder Thonet Vienna GmbH (GTV) ha sviluppato la
             propria attivit&agrave; fra tradizione e innovazione,
             continuit&agrave; e rinnovamento, dando vita a un programma di
@@ -252,7 +252,7 @@ export default async function HeritagePage() {
             forma di riedizione una serie di oggetti storici creati dalla
             Gebrüder Thonet.
           </p>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left max-w-[1100px]">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left">
             GTV incarna l&apos;arredamento contemporaneo, unendo tradizione e
             innovazione. Tecniche avanzate, materiali innovativi e design
             contemporaneo caratterizzano i suoi progetti, trasformando
@@ -279,7 +279,7 @@ export default async function HeritagePage() {
           </div>
 
           {/* Right: text — same style as Born in Vienna */}
-          <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
+          <div className="px-10 md:px-16 lg:px-20 py-16 lg:py-20 flex flex-col justify-center">
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               La &ldquo;Moneta&rdquo; GTV
             </h2>
@@ -300,7 +300,7 @@ export default async function HeritagePage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="font-serif text-[28px] md:text-[38px] text-black tracking-tight font-light text-center mb-12">
+          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
