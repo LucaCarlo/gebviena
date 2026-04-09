@@ -48,7 +48,7 @@ export default async function CurvaturaLegnoPage() {
   return (
     <>
       {/* ── Hero — solo titolo, più alta ─────────────────────────── */}
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ minHeight: "110vh" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "min(110vh, 900px)" }}>
         <Image
           src={heroImage}
           alt={heroTitle}
@@ -82,7 +82,7 @@ export default async function CurvaturaLegnoPage() {
       </section>
 
       {/* ── Video sezione — più largo, click-to-play ──────────── */}
-      <section className="mx-auto w-[95%] max-w-[90%] relative" style={{ height: "70vh" }}>
+      <section className="mx-auto w-[95%] max-w-[90%] relative" style={{ aspectRatio: "16/9" }}>
         <video
           controls
           muted
@@ -214,7 +214,7 @@ export default async function CurvaturaLegnoPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-normal uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

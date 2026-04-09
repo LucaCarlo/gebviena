@@ -265,10 +265,10 @@ export default async function HeritagePage() {
       </section>
 
       {/* ── La "Moneta" GTV — immagine sx, testo dx, più alta ──── */}
-      <section className="w-full bg-warm-50" style={{ minHeight: "110vh" }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "110vh" }}>
+      <section className="w-full bg-warm-50">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
           {/* Left: image — full height */}
-          <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
+          <div className="relative bg-warm-200" style={{ aspectRatio: "4/3" }}>
             <Image
               src={imgs["coin-authenticity"]}
               alt="La Moneta GTV — simbolo di autenticità"
@@ -300,7 +300,7 @@ export default async function HeritagePage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-normal uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

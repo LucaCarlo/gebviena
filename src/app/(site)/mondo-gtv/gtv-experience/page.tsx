@@ -63,7 +63,7 @@ export default async function GtvExperiencePage() {
       {/* ── Hero ─────────────────────────────────────────────────── */}
       <section
         className="relative w-full flex items-center justify-center bg-warm-900"
-        style={{ minHeight: "110vh" }}
+        style={{ height: "min(110vh, 900px)" }}
       >
         <Image
           src={heroImage}
@@ -122,8 +122,8 @@ export default async function GtvExperiencePage() {
       </section>
 
       {/* ── Storie, Visioni, Ispirazioni — stile Born in Vienna ───── */}
-      <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "100vh" }}>
+      <section className="w-full bg-warm-50">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
           {/* Left: text */}
           <div className="px-10 md:px-16 lg:px-20 py-16 lg:py-20 flex flex-col justify-center">
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -139,7 +139,7 @@ export default async function GtvExperiencePage() {
           </div>
 
           {/* Right: image */}
-          <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
+          <div className="relative bg-warm-200" style={{ aspectRatio: "4/3" }}>
             <Image
               src={imgs.stories}
               alt="Storie, visioni, ispirazioni — Interno Marche"
@@ -320,10 +320,10 @@ export default async function GtvExperiencePage() {
       />
 
       {/* ── Vivi la GTV Experience — stile Born in Vienna (img sx) ── */}
-      <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "100vh" }}>
+      <section className="w-full bg-warm-50">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
           {/* Left: image */}
-          <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
+          <div className="relative bg-warm-200" style={{ aspectRatio: "4/3" }}>
             <Image
               src={imgs.gamfratesi}
               alt="Vivi la GTV Experience"
@@ -351,7 +351,7 @@ export default async function GtvExperiencePage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-normal uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

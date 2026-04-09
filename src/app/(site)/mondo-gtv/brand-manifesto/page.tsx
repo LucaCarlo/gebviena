@@ -70,10 +70,10 @@ export default async function BrandManifestoPage() {
       </section>
 
       {/* ── Our Heritage – Born in Vienna ──────────────────────────── */}
-      <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "100vh" }}>
+      <section className="w-full bg-warm-50">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
           {/* Left: historical image — 50% width, full height */}
-          <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
+          <div className="relative bg-warm-200" style={{ aspectRatio: "4/3" }}>
             <Image
               src={imgs["born-in-vienna"]}
               alt="Michael Thonet 1853 — Gebrüder Thonet"
@@ -127,7 +127,7 @@ export default async function BrandManifestoPage() {
       </section>
 
       {/* ── L'Armonia del Legno (VIDEO) ────────────────────────────── */}
-      <section className="relative w-full" style={{ height: "90vh" }}>
+      <section className="relative w-full" style={{ aspectRatio: "16/9" }}>
         <video
           autoPlay
           muted
@@ -152,8 +152,8 @@ export default async function BrandManifestoPage() {
       </section>
 
       {/* ── I Nostri Designer – Designed Around the World ─────────── */}
-      <section className="w-full bg-warm-50 mt-20 md:mt-28" style={{ minHeight: "100vh" }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0" style={{ minHeight: "100vh" }}>
+      <section className="w-full bg-warm-50 mt-20 md:mt-28">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
           {/* Left: text — 50%, vertically centered, same style as Heritage */}
           <div className="px-10 md:px-16 lg:px-20 py-16 lg:py-20 flex flex-col justify-center">
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">I Nostri Designer</p>
@@ -207,7 +207,7 @@ export default async function BrandManifestoPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-normal uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

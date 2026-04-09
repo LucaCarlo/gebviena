@@ -505,8 +505,24 @@ export default function ProductDetailPage() {
                             </div>
                           )}
 
-                          {/* Misure testo */}
-                          {product.dimensions ? (
+                          {/* Misure strutturate (da DimensionBlock) o testo libero */}
+                          {product.dimensionValues && product.dimensionValues !== "{}" ? (() => {
+                            try {
+                              const vals: Record<string, string> = JSON.parse(product.dimensionValues);
+                              const entries = Object.entries(vals).filter(([, v]) => v);
+                              if (entries.length === 0) return null;
+                              return (
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-10 gap-y-4">
+                                  {entries.map(([label, value]) => (
+                                    <div key={label} className="text-center">
+                                      <p className="text-xs text-warm-400 uppercase tracking-wider mb-1">{label}</p>
+                                      <p className="text-sm text-warm-700 font-light">{value}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            } catch { return null; }
+                          })() : product.dimensions ? (
                             <div className="text-center">
                               {product.dimensions.split("\n").map((line, i) => (
                                 <p key={i} className="text-sm text-warm-700 font-light leading-relaxed">

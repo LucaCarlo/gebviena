@@ -38,6 +38,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [designers, setDesigners] = useState<DesignerOption[]>([]);
   const [typologies, setTypologies] = useState<TypologyOption[]>([]);
   const [allCategories, setAllCategories] = useState<CategoryOption[]>([]);
+  const [dimensionBlocks, setDimensionBlocks] = useState<{ id: string; name: string; labels: string }[]>([]);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -73,10 +74,12 @@ export default function ProductForm({ productId }: ProductFormProps) {
       fetch("/api/designers").then((r) => r.json()),
       fetch("/api/typologies?contentType=products").then((r) => r.json()),
       fetch("/api/categories?contentType=products").then((r) => r.json()),
-    ]).then(([dData, tData, cData]) => {
+      fetch("/api/dimension-blocks").then((r) => r.json()),
+    ]).then(([dData, tData, cData, dbData]) => {
       if (dData.success) setDesigners(dData.data || []);
       setTypologies(tData.data || []);
       setAllCategories(cData.data || []);
+      if (dbData.success) setDimensionBlocks(dbData.data || []);
     });
   }, []);
 
@@ -146,6 +149,26 @@ export default function ProductForm({ productId }: ProductFormProps) {
       ? current.filter((v) => v !== value)
       : [...current, value];
     setForm((prev) => ({ ...prev, category: next.join(",") }));
+  };
+
+  // DimensionBlock helpers
+  const selectedBlock = dimensionBlocks.find((b) => b.id === form.dimensionBlockId);
+  const blockLabels: string[] = useMemo(() => {
+    if (!selectedBlock) return [];
+    try { return JSON.parse(selectedBlock.labels); } catch { return []; }
+  }, [selectedBlock]);
+
+  const dimensionVals: Record<string, string> = useMemo(() => {
+    try { return JSON.parse(form.dimensionValues); } catch { return {}; }
+  }, [form.dimensionValues]);
+
+  const updateDimensionValue = (label: string, value: string) => {
+    const next = { ...dimensionVals, [label]: value };
+    updateField("dimensionValues", JSON.stringify(next));
+  };
+
+  const handleDimensionBlockChange = (blockId: string) => {
+    setForm((prev) => ({ ...prev, dimensionBlockId: blockId, dimensionValues: prev.dimensionValues || "{}" }));
   };
 
   const handleNameChange = (name: string) => {
@@ -384,15 +407,49 @@ export default function ProductForm({ productId }: ProductFormProps) {
         />
 
         <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Misure</label>
-          <textarea
-            value={form.dimensions}
-            onChange={(e) => updateField("dimensions", e.target.value)}
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Blocco dimensioni</label>
+          <select
+            value={form.dimensionBlockId}
+            onChange={(e) => handleDimensionBlockChange(e.target.value)}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder={"es.\nL 60 cm\nP 55 cm\nH 80 cm"}
-            rows={4}
-          />
+          >
+            <option value="">— Nessun blocco (testo libero) —</option>
+            {dimensionBlocks.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
         </div>
+
+        {form.dimensionBlockId && blockLabels.length > 0 ? (
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Misure</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {blockLabels.map((label) => (
+                <div key={label}>
+                  <label className="block text-[11px] text-warm-500 mb-1">{label}</label>
+                  <input
+                    type="text"
+                    value={dimensionVals[label] || ""}
+                    onChange={(e) => updateDimensionValue(label, e.target.value)}
+                    className="w-full border border-warm-300 rounded px-3 py-2 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+                    placeholder="es. 60 cm"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Misure (testo libero)</label>
+            <textarea
+              value={form.dimensions}
+              onChange={(e) => updateField("dimensions", e.target.value)}
+              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+              placeholder={"es.\nL 60 cm\nP 55 cm\nH 80 cm"}
+              rows={4}
+            />
+          </div>
+        )}
       </div>
 
       {/* IMMAGINI */}
