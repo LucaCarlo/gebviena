@@ -495,7 +495,6 @@ export default function ProductDetailPage() {
                   )}
                 </AnimatePresence>
               </div>
-              )}
 
               {/* --- DIMENSIONI --- */}
               <div>
