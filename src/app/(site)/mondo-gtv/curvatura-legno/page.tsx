@@ -234,13 +234,10 @@ export default async function CurvaturaLegnoPage() {
                     ) : (
                       <div className="absolute inset-0 bg-warm-200" />
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                    <div className="absolute inset-0 flex items-end p-6">
-                      <h4 className="font-sans text-sm md:text-base uppercase tracking-[0.15em] text-white font-light">
-                        {rp.label}
-                      </h4>
-                    </div>
                   </div>
+                  <h4 className="font-sans text-sm md:text-base uppercase tracking-[0.15em] text-black font-light mt-4">
+                    {rp.label}
+                  </h4>
                 </Link>
               );
             })}

@@ -42,7 +42,7 @@ export default async function BrandManifestoPage() {
 
   return (
     <>
-      <section className="gtv-container pt-16 pb-6">
+      <section className="gtv-container pt-28 md:pt-36 pb-4">
         <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light mb-4 text-center">Brand manifesto</p>
         <h1 className="font-serif text-[42px] md:text-[58px] text-black tracking-tight text-center font-light leading-[1.2]">
           <em>Born</em> in Vienna.
@@ -54,7 +54,7 @@ export default async function BrandManifestoPage() {
       </section>
 
       {/* ── Intro paragraph ───────────────────────────────────────── */}
-      <section className="gtv-container py-14 md:py-20">
+      <section className="gtv-container pt-20 md:pt-28 pb-14 md:pb-20">
         <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px]" style={{ marginLeft: "auto", marginRight: "auto" }}>
             Ogni parola riflette una parte fondamentale della nostra essenza: la
             nostra origine storica, l&apos;eccellenza artigianale e la nostra
@@ -68,7 +68,7 @@ export default async function BrandManifestoPage() {
       </section>
 
       {/* ── Our Heritage – Born in Vienna ──────────────────────────── */}
-      <section className="w-full">
+      <section className="w-full bg-warm-50">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
           {/* Left: historical image — same aspect as product page */}
           <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
@@ -124,36 +124,39 @@ export default async function BrandManifestoPage() {
         </div>
       </section>
 
-      {/* ── L'Armonia del Legno (VIDEO) ────────────────────────────── */}
-      <section className="relative w-full" style={{ aspectRatio: "16/9" }}>
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover brightness-[0.45]"
-        >
-          <source src="/images/armonia-del-legno.mp4" type="video/mp4" />
-        </video>
-        <div className="absolute top-12 md:top-16 lg:top-20 left-8 md:left-16 lg:left-20 max-w-lg">
-          <h2 className="font-sans text-2xl md:text-3xl lg:text-[2.5rem] text-white font-light uppercase tracking-wide leading-snug">
-            L&apos;armonia del legno
-          </h2>
-          <Link
-            href="/mondo-gtv/curvatura-legno"
-            className="inline-flex items-center gap-2 mt-4 md:mt-5 uppercase text-sm tracking-[0.15em] font-light text-white/80 hover:text-white transition-colors"
+      {/* ── L'Armonia del Legno (VIDEO) — stesso stile homepage ───── */}
+      <section className="w-full px-1 md:px-2 lg:px-3">
+        <div className="relative w-full" style={{ height: "90vh" }}>
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
           >
-            Scopri l&apos;arte del legno curvato
-            <span className="text-lg">&rarr;</span>
-          </Link>
+            <source src="/images/armonia-del-legno.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute top-14 md:top-18 lg:top-22 left-7 md:left-12 lg:left-16">
+            <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug">
+              L&apos;armonia del legno
+            </h2>
+            <Link
+              href="/mondo-gtv/curvatura-legno"
+              className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-normal transition-colors hover:underline"
+              style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+            >
+              Scopri l&apos;arte del legno curvato &rarr;
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* ── I Nostri Designer – Designed Around the World ─────────── */}
-      <section className="w-full mt-20 md:mt-28">
+      <section className="w-full bg-warm-50 mt-20 md:mt-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
-          {/* Left: text — 50%, vertically centered, same style as Heritage */}
-          <div className="px-10 md:px-16 lg:px-20 py-16 lg:py-20 flex flex-col justify-center">
+          {/* Left: text — same style/padding as Our Heritage */}
+          <div className="flex flex-col justify-center px-10 md:px-16 lg:px-20">
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">I Nostri Designer</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Designed around
@@ -173,31 +176,33 @@ export default async function BrandManifestoPage() {
             </p>
           </div>
 
-          {/* Right: 3x3 designer grid — 50%, fills entire right half, vertical images */}
-          <div className="grid grid-cols-3 grid-rows-3 gap-3 md:gap-4">
-            {designers.map((designer) => (
-              <Link
-                key={designer.id}
-                href={`/designers/${designer.slug}`}
-                className="group relative bg-warm-200 overflow-hidden"
-              >
-                {designer.imageUrl ? (
-                  <Image
-                    src={designer.imageUrl}
-                    alt={designer.name}
-                    fill
-                    className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                    sizes="(max-width: 768px) 33vw, 17vw"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-serif text-4xl text-warm-300">
-                      {designer.name.charAt(0)}
-                    </span>
-                  </div>
-                )}
-              </Link>
-            ))}
+          {/* Right: 3x3 designer grid — same height as Our Heritage image */}
+          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
+            <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-0">
+              {designers.map((designer) => (
+                <Link
+                  key={designer.id}
+                  href={`/designers/${designer.slug}`}
+                  className="group relative bg-warm-200 overflow-hidden"
+                >
+                  {designer.imageUrl ? (
+                    <Image
+                      src={designer.imageUrl}
+                      alt={designer.name}
+                      fill
+                      className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                      sizes="(max-width: 768px) 33vw, 17vw"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="font-serif text-4xl text-warm-300">
+                        {designer.name.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -225,13 +230,10 @@ export default async function BrandManifestoPage() {
                     ) : (
                       <div className="absolute inset-0 bg-warm-200" />
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                    <div className="absolute inset-0 flex items-end p-6">
-                      <h4 className="font-sans text-sm md:text-base uppercase tracking-[0.15em] text-white font-light">
-                        {rp.label}
-                      </h4>
-                    </div>
                   </div>
+                  <h4 className="font-sans text-sm md:text-base uppercase tracking-[0.15em] text-black font-light mt-4">
+                    {rp.label}
+                  </h4>
                 </Link>
               );
             })}
