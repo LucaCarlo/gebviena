@@ -82,7 +82,7 @@ export default async function BrandManifestoPage() {
           </div>
 
           {/* Right: text — same style as product page description */}
-          <div className="flex flex-col justify-center px-10 md:px-16 lg:px-20 xl:px-28 py-16 lg:py-20">
+          <div className="flex flex-col justify-center px-12 md:px-20 lg:px-24 xl:px-32 py-16 lg:py-20">
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">Our Heritage</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Born in Vienna
@@ -156,7 +156,7 @@ export default async function BrandManifestoPage() {
       <section className="w-full bg-warm-50 mt-20 md:mt-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
           {/* Left: text — same style/padding as Our Heritage */}
-          <div className="flex flex-col justify-center px-10 md:px-16 lg:px-20 xl:px-28 py-16 lg:py-20">
+          <div className="flex flex-col justify-center px-12 md:px-20 lg:px-24 xl:px-32 py-16 lg:py-20">
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">I Nostri Designer</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Designed around
