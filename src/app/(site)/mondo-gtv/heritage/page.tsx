@@ -55,9 +55,9 @@ export default async function HeritagePage() {
       {/* ── Foto famiglia + testo ─────────────────────────────────── */}
       <section className="pb-20 md:pb-28">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start">
-            {/* Left: family photo — smaller */}
-            <div className="lg:col-span-5 relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 11" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+            {/* Left: family photo — 50% */}
+            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 11" }}>
               <Image
                 src={imgs["thonet-family"]}
                 alt="Michael Thonet e i suoi cinque figli"
@@ -68,7 +68,7 @@ export default async function HeritagePage() {
               />
             </div>
             {/* Right: text */}
-            <div className="lg:col-span-7 flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "120px", paddingRight: "60px" }}>
+            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "80px", paddingRight: "60px" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Michael Thonet (1796-1871) e i suoi cinque figli furono i
                 produttori di mobili di maggior successo dell&apos;era

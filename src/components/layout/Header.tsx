@@ -42,7 +42,7 @@ export default function Header() {
       <header
         className={`fixed top-0 z-50 ${
           isScrolled
-            ? "bg-white shadow-[0_1px_8px_rgba(0,0,0,0.08)]"
+            ? "bg-white"
             : ""
         }`}
         style={{
