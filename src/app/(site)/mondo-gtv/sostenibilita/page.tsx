@@ -146,7 +146,7 @@ export default async function SostenibilitaPage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-normal uppercase tracking-[inherit] text-center mb-12">
+          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -167,7 +167,7 @@ export default async function SostenibilitaPage() {
                       <div className="absolute inset-0 bg-warm-200" />
                     )}
                   </div>
-                  <h4 className="font-sans text-lg md:text-[22px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
+                  <h4 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
                     {rp.label}
                   </h4>
                 </Link>

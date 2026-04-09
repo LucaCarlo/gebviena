@@ -150,7 +150,7 @@ export default async function HeritagePage() {
           <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-12 text-center">
             L&apos;espansione e la trasformazione
           </h2>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-4xl mx-auto mb-16 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mb-16">
             Consapevolezza tecnologiche e di alto livello, diffusione dei
             prodotti e notoriet&agrave; dell&apos;azienda spinsero i
             pi&ugrave; importanti architetti viennesi a progettare nuovi
@@ -241,13 +241,13 @@ export default async function HeritagePage() {
 
       {/* ── GTV Oggi: tradizione e innovazione ───────────────────── */}
       <section className="pb-20 md:pb-28">
-        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
+        <div className="gtv-container">
           <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-12 text-center">
             Gebrüder Thonet Vienna oggi:
             <br />
             tradizione e innovazione
           </h2>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mb-6">
             Recentemente Gebrüder Thonet Vienna GmbH (GTV) ha sviluppato la
             propria attivit&agrave; fra tradizione e innovazione,
             continuit&agrave; e rinnovamento, dando vita a un programma di
@@ -255,7 +255,7 @@ export default async function HeritagePage() {
             forma di riedizione una serie di oggetti storici creati dalla
             Gebrüder Thonet.
           </p>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
             GTV incarna l&apos;arredamento contemporaneo, unendo tradizione e
             innovazione. Tecniche avanzate, materiali innovativi e design
             contemporaneo caratterizzano i suoi progetti, trasformando
@@ -267,11 +267,11 @@ export default async function HeritagePage() {
         </div>
       </section>
 
-      {/* ── La "Moneta" GTV — immagine sx, testo dx, più alta ──── */}
+      {/* ── La "Moneta" GTV — stesso stile Our Heritage brand manifesto */}
       <section className="w-full bg-warm-50">
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
-          {/* Left: image — full height */}
-          <div className="relative bg-warm-200" style={{ aspectRatio: "4/3" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
+          {/* Left: image */}
+          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
             <Image
               src={imgs["coin-authenticity"]}
               alt="La Moneta GTV — simbolo di autenticità"
@@ -281,8 +281,8 @@ export default async function HeritagePage() {
             />
           </div>
 
-          {/* Right: text — same style as Born in Vienna */}
-          <div className="px-10 md:px-16 lg:px-20 py-16 lg:py-20 flex flex-col justify-center">
+          {/* Right: text */}
+          <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               La &ldquo;Moneta&rdquo; GTV
             </h2>
@@ -303,7 +303,7 @@ export default async function HeritagePage() {
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[90%] max-w-[75%]">
-          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-normal uppercase tracking-[inherit] text-center mb-12">
+          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -324,7 +324,7 @@ export default async function HeritagePage() {
                       <div className="absolute inset-0 bg-warm-200" />
                     )}
                   </div>
-                  <h4 className="font-sans text-lg md:text-[22px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
+                  <h4 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
                     {rp.label}
                   </h4>
                 </Link>
