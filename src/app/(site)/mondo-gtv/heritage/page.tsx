@@ -53,32 +53,36 @@ export default async function HeritagePage() {
       </section>
 
       {/* ── Foto famiglia + testo ─────────────────────────────────── */}
-      <section className="w-full bg-warm-50">
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
-          {/* Left: family photo */}
-          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 3.5" }}>
-            <Image
-              src={imgs["thonet-family"]}
-              alt="Michael Thonet e i suoi cinque figli"
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              priority
-            />
-          </div>
-          {/* Right: text */}
-          <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
-            <p className="text-[20px] text-black leading-snug font-light tracking-normal">
-              Michael Thonet (1796-1871) e i suoi cinque figli furono i
-              produttori di mobili di maggior successo dell&apos;era
-              industriale. Invitato dal cancelliere austriaco Metternich, che
-              aveva visto i suoi prodotti all&apos;Esposizione della
-              Societ&agrave; degli Amici delle Arti di Coblenza, a sviluppare
-              il proprio brevetto in Austria, nel 1842 Michael Thonet
-              lasci&ograve; Boppard, in Germania, per stabilirsi a Vienna,
-              dove nel 1853 fond&ograve; l&apos;azienda &ldquo;Gebrüder
-              Thonet&rdquo; coinvolgendo i suoi cinque figli.
-            </p>
+      <section className="pb-20 md:pb-28">
+        <div className="mx-auto w-[95%] max-w-[90%]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+            {/* Left: family photo — ~55% */}
+            <div className="lg:col-span-6">
+              <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "4 / 5" }}>
+                <Image
+                  src={imgs["thonet-family"]}
+                  alt="Michael Thonet e i suoi cinque figli"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+              </div>
+            </div>
+            {/* Right: text ~45% */}
+            <div className="lg:col-span-6 flex flex-col justify-center" style={{ paddingTop: "96px", paddingBottom: "96px", paddingLeft: "40px", paddingRight: "40px" }}>
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+                Michael Thonet (1796-1871) e i suoi cinque figli furono i
+                produttori di mobili di maggior successo dell&apos;era
+                industriale. Invitato dal cancelliere austriaco Metternich, che
+                aveva visto i suoi prodotti all&apos;Esposizione della
+                Societ&agrave; degli Amici delle Arti di Coblenza, a sviluppare
+                il proprio brevetto in Austria, nel 1842 Michael Thonet
+                lasci&ograve; Boppard, in Germania, per stabilirsi a Vienna,
+                dove nel 1853 fond&ograve; l&apos;azienda &ldquo;Gebrüder
+                Thonet&rdquo; coinvolgendo i suoi cinque figli.
+              </p>
+            </div>
           </div>
         </div>
       </section>
