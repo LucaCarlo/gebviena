@@ -55,9 +55,9 @@ export default async function HeritagePage() {
       {/* ── Foto famiglia + testo ─────────────────────────────────── */}
       <section className="pb-20 md:pb-28">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-            {/* Left: family photo — 50%, no padding */}
-            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 11" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start">
+            {/* Left: family photo — smaller */}
+            <div className="lg:col-span-5 relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 11" }}>
               <Image
                 src={imgs["thonet-family"]}
                 alt="Michael Thonet e i suoi cinque figli"
@@ -67,8 +67,8 @@ export default async function HeritagePage() {
                 priority
               />
             </div>
-            {/* Right: text — 50% with generous padding */}
-            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "80px", paddingRight: "60px" }}>
+            {/* Right: text */}
+            <div className="lg:col-span-7 flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "120px", paddingRight: "60px" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Michael Thonet (1796-1871) e i suoi cinque figli furono i
                 produttori di mobili di maggior successo dell&apos;era
@@ -109,8 +109,8 @@ export default async function HeritagePage() {
           </p>
 
           {/* 2 vertical images — slightly wider than paragraph */}
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-2 gap-10 md:gap-16">
+          <div className="mx-auto" style={{ maxWidth: "85%" }}>
+            <div className="grid grid-cols-2" style={{ gap: "69px" }}>
               <div>
                 <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
                   <Image
@@ -162,35 +162,50 @@ export default async function HeritagePage() {
           </p>
         </div>
 
-        {/* 3 vertical images — bigger, less padding, uniform spacing */}
+        {/* 3 vertical images with captions */}
         <div className="px-4 md:px-6">
           <div className="grid grid-cols-3 gap-3 md:gap-4">
-            <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
-              <Image
-                src={imgs["hayworth-kelly"]}
-                alt="Rita Hayworth e Gene Kelly"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 33vw, 33vw"
-              />
+            <div>
+              <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
+                <Image
+                  src={imgs["hayworth-kelly"]}
+                  alt="Rita Hayworth and Gene Kelly"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 33vw, 33vw"
+                />
+              </div>
+              <p className="text-xs text-black mt-3 font-light text-center">
+                Rita Hayworth and Gene Kelly (Ned Scott/John Kobal Foundation/Getty Images)
+              </p>
             </div>
-            <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
-              <Image
-                src={imgs["le-corbusier"]}
-                alt="Le Corbusier"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 33vw, 33vw"
-              />
+            <div>
+              <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
+                <Image
+                  src={imgs["le-corbusier"]}
+                  alt="Le Corbusier"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 33vw, 33vw"
+                />
+              </div>
+              <p className="text-xs text-black mt-3 font-light text-center">
+                Le Corbusier (Wolfgang Kuhn/United Archives via Getty Images)
+              </p>
             </div>
-            <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
-              <Image
-                src={imgs["winston-churchill"]}
-                alt="Winston Churchill"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 33vw, 33vw"
-              />
+            <div>
+              <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
+                <Image
+                  src={imgs["winston-churchill"]}
+                  alt="Winston Churchill"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 33vw, 33vw"
+                />
+              </div>
+              <p className="text-xs text-black mt-3 font-light text-center">
+                Winston Churchill (CPT TANNER &mdash; No 2 Army Film and /AFP/Getty Images)
+              </p>
             </div>
           </div>
         </div>
