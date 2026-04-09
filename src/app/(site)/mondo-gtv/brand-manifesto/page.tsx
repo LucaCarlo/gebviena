@@ -176,14 +176,14 @@ export default async function BrandManifestoPage() {
             </p>
           </div>
 
-          {/* Right: 3x3 designer grid — with gaps, top/bottom rows cropped */}
-          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
-            <div className="absolute grid grid-cols-3 grid-rows-3 gap-3 md:gap-4" style={{ inset: "-8% 0", height: "116%" }}>
+          {/* Right: 3x3 designer grid — gaps between, top/bottom cropped */}
+          <div className="overflow-hidden">
+            <div className="grid grid-cols-3 gap-3 md:gap-4 -my-[8%]">
               {designers.map((designer) => (
                 <Link
                   key={designer.id}
                   href={`/designers/${designer.slug}`}
-                  className="group relative bg-warm-200 overflow-hidden"
+                  className="group relative aspect-[3/4] bg-warm-200 overflow-hidden"
                 >
                   {designer.imageUrl ? (
                     <Image

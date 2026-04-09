@@ -27,6 +27,9 @@ export default function Header() {
       heroEndRef.current = heroSection.getBoundingClientRect().height;
     }
 
+    // Reset state based on current scroll position (fixes back-navigation bug)
+    setIsScrolled(window.scrollY > heroEndRef.current * 0.7);
+
     const handleScroll = () => {
       setIsScrolled(window.scrollY > heroEndRef.current * 0.7);
     };
