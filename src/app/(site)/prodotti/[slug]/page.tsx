@@ -449,52 +449,6 @@ export default function ProductDetailPage() {
               </div>
               )}
 
-              {/* --- VARIANTI PRODOTTO --- */}
-              <div>
-                <button
-                  onClick={() => setOpenAccordion(openAccordion === "varianti" ? null : "varianti")}
-                  className="w-full flex items-center justify-between py-5 px-2 group"
-                >
-                  <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
-                    Varianti prodotto
-                  </span>
-                  <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
-                    {openAccordion === "varianti" ? <Minus size={18} /> : <Plus size={18} />}
-                  </span>
-                </button>
-                <AnimatePresence>
-                  {openAccordion === "varianti" && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-2 pb-8">
-                        {variants.length > 0 ? (
-                          <div className="flex gap-6 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
-                            {variants.map((v, i) => (
-                              <div key={i} className="flex-shrink-0 text-center" style={{ width: "140px" }}>
-                                <div className="relative aspect-square bg-warm-50 border border-warm-200 rounded overflow-hidden mb-2">
-                                  {v.image ? (
-                                    <Image src={v.image} alt={v.name || `Variante ${i + 1}`} fill className="object-contain p-2" sizes="140px" />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-warm-300 text-xs">N/A</div>
-                                  )}
-                                </div>
-                                {v.name && <p className="text-[11px] text-warm-700 font-light">{v.name}</p>}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-warm-400 font-light">Nessuna variante disponibile.</p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
 
               {/* --- DIMENSIONI --- */}
               <div>

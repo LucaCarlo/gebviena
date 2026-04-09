@@ -159,9 +159,7 @@ export default async function BrandManifestoPage() {
           <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">I Nostri Designer</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              Designed around
-              <br />
-              the world
+              Designed around the world
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
               Collaboriamo con alcuni dei pi&ugrave; grandi maestri del design
@@ -177,8 +175,8 @@ export default async function BrandManifestoPage() {
           </div>
 
           {/* Right: 3x3 designer grid — gaps between, top/bottom cropped */}
-          <div className="overflow-hidden">
-            <div className="grid grid-cols-3 gap-3 md:gap-4 -my-[8%]">
+          <div className="overflow-hidden relative">
+            <div className="grid grid-cols-3 gap-3 md:gap-4 -my-[8%] relative z-10">
               {designers.map((designer) => (
                 <Link
                   key={designer.id}

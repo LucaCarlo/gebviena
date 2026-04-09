@@ -53,36 +53,32 @@ export default async function HeritagePage() {
       </section>
 
       {/* ── Foto famiglia + testo ─────────────────────────────────── */}
-      <section className="pb-20 md:pb-28">
-        <div className="mx-auto w-[95%] max-w-[90%]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-            {/* Left: family photo — smaller, ~50% */}
-            <div className="lg:col-span-6">
-              <div className="relative aspect-[16/9] bg-warm-100 overflow-hidden">
-                <Image
-                  src={imgs["thonet-family"]}
-                  alt="Michael Thonet e i suoi cinque figli"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  priority
-                />
-              </div>
-            </div>
-            {/* Right: text ~50% */}
-            <div className="lg:col-span-6 flex flex-col justify-center lg:px-12 xl:px-16">
-              <p className="text-[20px] text-black leading-snug font-light tracking-normal">
-                Michael Thonet (1796-1871) e i suoi cinque figli furono i
-                produttori di mobili di maggior successo dell&apos;era
-                industriale. Invitato dal cancelliere austriaco Metternich, che
-                aveva visto i suoi prodotti all&apos;Esposizione della
-                Societ&agrave; degli Amici delle Arti di Coblenza, a sviluppare
-                il proprio brevetto in Austria, nel 1842 Michael Thonet
-                lasci&ograve; Boppard, in Germania, per stabilirsi a Vienna,
-                dove nel 1853 fond&ograve; l&apos;azienda &ldquo;Gebrüder
-                Thonet&rdquo; coinvolgendo i suoi cinque figli.
-              </p>
-            </div>
+      <section className="w-full bg-warm-50">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
+          {/* Left: family photo */}
+          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 3.5" }}>
+            <Image
+              src={imgs["thonet-family"]}
+              alt="Michael Thonet e i suoi cinque figli"
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              priority
+            />
+          </div>
+          {/* Right: text */}
+          <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+              Michael Thonet (1796-1871) e i suoi cinque figli furono i
+              produttori di mobili di maggior successo dell&apos;era
+              industriale. Invitato dal cancelliere austriaco Metternich, che
+              aveva visto i suoi prodotti all&apos;Esposizione della
+              Societ&agrave; degli Amici delle Arti di Coblenza, a sviluppare
+              il proprio brevetto in Austria, nel 1842 Michael Thonet
+              lasci&ograve; Boppard, in Germania, per stabilirsi a Vienna,
+              dove nel 1853 fond&ograve; l&apos;azienda &ldquo;Gebrüder
+              Thonet&rdquo; coinvolgendo i suoi cinque figli.
+            </p>
           </div>
         </div>
       </section>
@@ -93,16 +89,21 @@ export default async function HeritagePage() {
           <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center">
             L&apos;innovazione e il successo industriale
           </h2>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-4xl mx-auto mb-16 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mb-6">
             Nella capitale dell&apos;Impero asburgico, Michael Thonet
-            pass&ograve; dalla tecnica del legno laminato incurvato a quella del
-            legno massello esposto a vapore, cio&egrave; a un processo chimico e
+            pass&ograve; dalla tecnica del legno lamellare incollato a quella del
+            tondino incurvato a vapore, cio&egrave; a un processo chimico e
             meccanico di tipo industriale. Grazie a questa innovazione
             inizi&ograve; a produrre mobili in legno proponendo una collezione di
-            forme eleganti e nuove razionali, con un procedimento che consentiva
-            la produzione in grande serie. Il grande e capillare sistema di
-            distribuzione e di vendita al dettaglio gli permise di raggiungere
-            livelli di produzione fino ad allora sconosciuti.
+            forme eleganti e insieme razionali, con un procedimento che consentiva
+            la produzione in grande serie. A questo si aggiunse subito, un sistema
+            di distribuzione e di vendita in grado di penetrare qualsiasi mercato.
+          </p>
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mb-16">
+            In quel periodo nacquero prodotti come la sedia &ldquo;N.1&rdquo;
+            progettata per il famoso palazzo Schwarzenberg di Vienna, considerata
+            la sedia &ldquo;tipo&rdquo; Thonet, da cui derivarono poi
+            innumerevoli modelli fino alla sedia &ldquo;N.14&rdquo;.
           </p>
 
           {/* 2 vertical images — slightly wider than paragraph */}
