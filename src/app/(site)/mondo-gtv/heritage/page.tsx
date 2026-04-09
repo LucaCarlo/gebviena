@@ -54,23 +54,21 @@ export default async function HeritagePage() {
 
       {/* ── Foto famiglia + testo ─────────────────────────────────── */}
       <section className="pb-20 md:pb-28">
-        <div className="mx-auto" style={{ width: "calc(90% - 60px)", maxWidth: "calc(90% - 60px)" }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
-            {/* Left: family photo — 50% */}
-            <div>
-              <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 11" }}>
-                <Image
-                  src={imgs["thonet-family"]}
-                  alt="Michael Thonet e i suoi cinque figli"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  priority
-                />
-              </div>
+        <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+            {/* Left: family photo — 50%, no padding */}
+            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 11" }}>
+              <Image
+                src={imgs["thonet-family"]}
+                alt="Michael Thonet e i suoi cinque figli"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                priority
+              />
             </div>
-            {/* Right: text — 50% with 40px padding */}
-            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "40px", paddingRight: "40px" }}>
+            {/* Right: text — 50% with generous padding */}
+            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "80px", paddingRight: "60px" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Michael Thonet (1796-1871) e i suoi cinque figli furono i
                 produttori di mobili di maggior successo dell&apos;era
