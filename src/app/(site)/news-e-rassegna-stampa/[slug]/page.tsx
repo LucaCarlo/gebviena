@@ -343,10 +343,10 @@ export default function NewsDetailPage() {
                 </h2>
                 <Link
                   href={`/prodotti/${product.slug}`}
-                  className="inline-flex items-center gap-2 mt-4 md:mt-5 uppercase text-sm tracking-[0.15em] font-light text-white/80 hover:text-white transition-colors"
+                  className="inline-flex items-center gap-2 mt-4 md:mt-5 uppercase text-[16px] tracking-[0.03em] font-medium text-white/80 hover:text-white hover:underline transition-colors"
                 >
                   Scopri il prodotto
-                  <span className="text-lg">&rarr;</span>
+                  <span>&rarr;</span>
                 </Link>
               </div>
             </section>

@@ -69,7 +69,7 @@ export default async function ContattiPage() {
                 />
                 <h3 className="text-lg font-semibold text-warm-800 mb-2">{item.title}</h3>
                 <p className="text-sm text-warm-500">{item.description}</p>
-                <span className="inline-block mt-4 text-xs font-medium uppercase tracking-[0.2em] text-warm-400 group-hover:text-warm-800 transition-colors">
+                <span className="inline-block mt-4 text-[16px] font-medium uppercase tracking-[0.03em] text-warm-400 group-hover:text-warm-800 group-hover:underline transition-colors">
                   Scopri →
                 </span>
               </Link>

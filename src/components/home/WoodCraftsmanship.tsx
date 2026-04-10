@@ -41,7 +41,7 @@ export default function WoodCraftsmanship({ videoUrl }: WoodCraftsmanshipProps) 
           </h2>
           <Link
             href="/mondo-gtv"
-            className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-normal transition-colors hover:underline"
+            className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-medium transition-colors hover:underline"
             style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
           >
             Scopri l&apos;arte del legno curvato &rarr;

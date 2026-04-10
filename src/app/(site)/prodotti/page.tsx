@@ -116,7 +116,7 @@ function ProductsHero() {
           {slide.ctaText && slide.ctaLink && (
             <Link
               href={slide.ctaLink}
-              className="inline-block mt-4 uppercase text-sm tracking-[0.2em] text-white font-medium hover:text-white/80 transition-colors"
+              className="inline-block mt-4 uppercase text-[16px] tracking-[0.03em] text-white font-medium hover:text-white/80 hover:underline transition-colors"
             >
               {slide.ctaText} <span className="ml-1">&rarr;</span>
             </Link>

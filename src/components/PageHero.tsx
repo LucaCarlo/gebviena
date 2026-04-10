@@ -95,7 +95,7 @@ export default function PageHero({
         {slide?.ctaText && slide?.ctaLink && (
           <a
             href={slide.ctaLink}
-            className="inline-block mt-6 uppercase text-sm tracking-[0.25em] text-white font-medium hover:text-white/80 transition-colors"
+            className="inline-block mt-6 uppercase text-[16px] tracking-[0.03em] text-white font-medium hover:text-white/80 hover:underline transition-colors"
           >
             {slide.ctaText} <span className="ml-1">&rarr;</span>
           </a>

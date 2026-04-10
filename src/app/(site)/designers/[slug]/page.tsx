@@ -93,7 +93,7 @@ export default async function DesignerDetailPage({ params }: PageProps) {
                     href={designer.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block mt-6 text-sm uppercase tracking-[0.15em] font-light text-dark hover:text-warm-600 transition-colors"
+                    className="inline-block mt-6 text-[16px] uppercase tracking-[0.03em] font-medium text-dark hover:text-warm-600 hover:underline transition-colors"
                   >
                     Visita il sito →
                   </a>

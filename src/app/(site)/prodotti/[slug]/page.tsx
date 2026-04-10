@@ -290,14 +290,14 @@ export default function ProductDetailPage() {
               <div className="mt-12 flex flex-col gap-6">
                 <Link
                   href="/contatti/rete-vendita"
-                  className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
+                  className="inline-block uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"
                   style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
                   Cerca un punto vendita →
                 </Link>
                 <Link
                   href="/contatti/richiesta-info"
-                  className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
+                  className="inline-block uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"
                   style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
                   Richiedi informazioni →
@@ -373,7 +373,7 @@ export default function ProductDetailPage() {
                 )}
                 <Link
                   href={`/designer/${product.designer.slug || product.designer.id}`}
-                  className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline mt-8 inline-block"
+                  className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"
                   style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
                   Vai alla scheda →
@@ -622,7 +622,7 @@ export default function ProductDetailPage() {
                     </h3>
                     <Link
                       href={`/progetti/${product.projects[0].slug}`}
-                      className="inline-flex items-center gap-2 uppercase text-[10px] tracking-[0.15em] text-white/80 hover:text-white transition-colors group mt-4"
+                      className="inline-flex items-center gap-2 uppercase text-[16px] tracking-[0.03em] text-white font-medium hover:text-white/80 hover:underline transition-colors group mt-4"
                     >
                       Scopri di più
                       <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
@@ -643,7 +643,7 @@ export default function ProductDetailPage() {
                   </h3>
                   <Link
                     href="/progetti"
-                    className="inline-flex items-center gap-2 uppercase text-xs tracking-[0.15em] text-warm-900 hover:text-accent transition-colors group mt-8"
+                    className="inline-flex items-center gap-2 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline transition-colors group mt-8"
                   >
                     Esplora le realizzazioni
                     <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
@@ -744,7 +744,7 @@ export default function ProductDetailPage() {
 
             <Link
               href="/contatti/richiesta-info"
-              className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline mt-10 inline-block"
+              className="inline-block mt-10 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"
               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
             >
               Contattaci per il tuo progetto →

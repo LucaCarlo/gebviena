@@ -56,8 +56,8 @@ export default async function HeritagePage() {
       <section className="pb-20 md:pb-28">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-            {/* Left: family photo — slightly less tall than before */}
-            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 10" }}>
+            {/* Left: family photo — landscape, less tall */}
+            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 9" }}>
               <Image
                 src={imgs["thonet-family"]}
                 alt="Michael Thonet e i suoi cinque figli"
@@ -68,7 +68,7 @@ export default async function HeritagePage() {
               />
             </div>
             {/* Right: text */}
-            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "120px", paddingRight: "60px" }}>
+            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "160px", paddingRight: "60px" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Michael Thonet (1796-1871) e i suoi cinque figli furono i
                 produttori di mobili di maggior successo dell&apos;era
@@ -108,11 +108,11 @@ export default async function HeritagePage() {
             innumerevoli modelli fino alla sedia &ldquo;N.14&rdquo;.
           </p>
 
-          {/* 2 vertical images — narrower + slightly wider gap */}
-          <div className="mx-auto" style={{ maxWidth: "70%" }}>
+          {/* 2 vertical images — slightly bigger + slightly taller */}
+          <div className="mx-auto" style={{ maxWidth: "78%" }}>
             <div className="grid grid-cols-2" style={{ gap: "79px" }}>
               <div>
-                <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
+                <div className="relative aspect-[5/7] bg-warm-100 overflow-hidden">
                   <Image
                     src={imgs["sedia-n1"]}
                     alt="Sedia Thonet N.1 — Michael Thonet"
@@ -126,7 +126,7 @@ export default async function HeritagePage() {
                 </p>
               </div>
               <div>
-                <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
+                <div className="relative aspect-[5/7] bg-warm-100 overflow-hidden">
                   <Image
                     src={imgs["sedia-n4"]}
                     alt="Sedia Thonet N.4 — Michael Thonet"
@@ -162,9 +162,9 @@ export default async function HeritagePage() {
           </p>
         </div>
 
-        {/* 3 vertical images with captions — same width as product cards grid */}
-        <div className="gtv-container">
-          <div className="grid grid-cols-3 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20 px-2 md:px-3 lg:px-4">
+        {/* 3 vertical images with captions — full width like product cards grid */}
+        <div className="px-2 md:px-3 lg:px-4">
+          <div className="grid grid-cols-3 gap-x-3 md:gap-x-4">
             <div>
               <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
                 <Image
@@ -211,12 +211,12 @@ export default async function HeritagePage() {
         </div>
       </section>
 
-      {/* ── Testo storico + immagine ─────────────────────────────── */}
+      {/* ── Testo storico + immagine — same width wrapper as 1st section ── */}
       <section className="py-20 md:py-28">
-        <div className="gtv-container">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
-            {/* Left: text */}
-            <div className="lg:px-6 xl:px-10">
+        <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+            {/* Left: text — same paddings as 1st section right column */}
+            <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "0", paddingRight: "60px" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-8">
                 Nel 1911 il catalogo Gebrüder Thonet contava 860 modelli distinti.
                 Al termine della seconda guerra mondiale rimasero unit&agrave; di
@@ -257,7 +257,7 @@ export default async function HeritagePage() {
       {/* ── GTV Oggi: tradizione e innovazione ───────────────────── */}
       <section className="pb-20 md:pb-28">
         <div className="gtv-container">
-          <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-12 text-center">
+          <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-24 text-center">
             Gebrüder Thonet Vienna oggi:
             <br />
             tradizione e innovazione
