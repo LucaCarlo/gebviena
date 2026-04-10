@@ -62,7 +62,7 @@ export default async function HeritagePage() {
                 src={imgs["thonet-family"]}
                 alt="Michael Thonet e i suoi cinque figli"
                 fill
-                className="object-cover object-top"
+                className="object-contain"
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 priority
               />
@@ -108,8 +108,8 @@ export default async function HeritagePage() {
             innumerevoli modelli fino alla sedia &ldquo;N.14&rdquo;.
           </p>
 
-          {/* 2 vertical images — 20px piu strette, 10px meno alte */}
-          <div className="mx-auto" style={{ maxWidth: "75%" }}>
+          {/* 2 vertical images — 20px piu strette, 10px meno alte (poi -5px ciascuna) */}
+          <div className="mx-auto" style={{ maxWidth: "74.4%" }}>
             <div className="grid grid-cols-2" style={{ gap: "79px" }}>
               <div>
                 <div className="relative aspect-[5/7.2] bg-warm-100 overflow-hidden">
