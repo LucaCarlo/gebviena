@@ -49,7 +49,7 @@ export default async function CurvaturaLegnoPage() {
   return (
     <>
       {/* ── Hero — stessa altezza dell'hero del prodotto singolo (aspect 16/9), strutturata identica ── */}
-      <section className="relative w-full overflow-hidden bg-warm-900" style={{ height: "min(100vh, 1080px)" }}>
+      <section className="relative w-full overflow-hidden bg-warm-900" style={{ height: "min(118vh, 1107px)" }}>
         <Image
           src={heroImage}
           alt={heroTitle}
