@@ -48,8 +48,8 @@ export default async function CurvaturaLegnoPage() {
 
   return (
     <>
-      {/* ── Hero — stessa altezza dell'hero del prodotto singolo (aspect 16/9) ─── */}
-      <section className="relative w-full overflow-hidden flex items-center justify-center bg-warm-900" style={{ aspectRatio: "16 / 9" }}>
+      {/* ── Hero — stessa altezza dell'hero del prodotto singolo (aspect 16/9), strutturata identica ── */}
+      <section className="relative w-full overflow-hidden bg-warm-900" style={{ aspectRatio: "16 / 9" }}>
         <Image
           src={heroImage}
           alt={heroTitle}
@@ -59,7 +59,7 @@ export default async function CurvaturaLegnoPage() {
           sizes="100vw"
           priority
         />
-        <div className="relative text-center px-8" style={{ marginTop: "25px" }}>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8" style={{ paddingTop: "25px" }}>
           <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight">
             {heroTitle}
           </h1>
@@ -102,7 +102,7 @@ export default async function CurvaturaLegnoPage() {
       {/* ── La Tecnica — stesso wrapper di heritage 1a sezione, testo sx + immagine dx allineata ─── */}
       <section className="pt-20 pb-20 md:pb-28">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
             {/* Left: text */}
             <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "0", paddingRight: "60px" }}>
               <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -162,7 +162,7 @@ export default async function CurvaturaLegnoPage() {
       {/* ── Il Brevetto — stesso wrapper, immagine sx allineata, testo dx ── */}
       <section className="pb-20 md:pb-28">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
             {/* Left: image — flush left, square (matcha source 768x769) */}
             <div className="relative aspect-square bg-warm-100 overflow-hidden mr-auto" style={{ maxWidth: "76%", width: "100%" }}>
               <Image
