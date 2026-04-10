@@ -28,7 +28,7 @@ export default function BornInVienna({ historicalImage }: BornInViennaProps) {
           </h2>
           <Link
             href="/mondo-gtv"
-            className="inline-block mt-[20px] uppercase text-[16px] tracking-[0.03em] !text-black font-normal transition-colors hover:text-accent hover:underline"
+            className="inline-block mt-[20px] uppercase text-[16px] tracking-[0.03em] !text-black font-medium transition-colors hover:text-accent hover:underline"
             style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
           >
             Scopri il mondo GTV &rarr;

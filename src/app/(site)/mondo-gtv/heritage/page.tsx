@@ -56,8 +56,8 @@ export default async function HeritagePage() {
       <section className="pb-20 md:pb-28">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-            {/* Left: family photo — 50% */}
-            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 11" }}>
+            {/* Left: family photo — slightly less tall than before */}
+            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 10" }}>
               <Image
                 src={imgs["thonet-family"]}
                 alt="Michael Thonet e i suoi cinque figli"
@@ -68,7 +68,7 @@ export default async function HeritagePage() {
               />
             </div>
             {/* Right: text */}
-            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "80px", paddingRight: "60px" }}>
+            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "120px", paddingRight: "60px" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Michael Thonet (1796-1871) e i suoi cinque figli furono i
                 produttori di mobili di maggior successo dell&apos;era
@@ -108,9 +108,9 @@ export default async function HeritagePage() {
             innumerevoli modelli fino alla sedia &ldquo;N.14&rdquo;.
           </p>
 
-          {/* 2 vertical images — slightly wider than paragraph */}
-          <div className="mx-auto" style={{ maxWidth: "85%" }}>
-            <div className="grid grid-cols-2" style={{ gap: "69px" }}>
+          {/* 2 vertical images — narrower + slightly wider gap */}
+          <div className="mx-auto" style={{ maxWidth: "70%" }}>
+            <div className="grid grid-cols-2" style={{ gap: "79px" }}>
               <div>
                 <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
                   <Image
@@ -162,9 +162,9 @@ export default async function HeritagePage() {
           </p>
         </div>
 
-        {/* 3 vertical images with captions */}
-        <div className="px-4 md:px-6">
-          <div className="grid grid-cols-3 gap-3 md:gap-4">
+        {/* 3 vertical images with captions — same width as product cards grid */}
+        <div className="gtv-container">
+          <div className="grid grid-cols-3 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20 px-2 md:px-3 lg:px-4">
             <div>
               <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
                 <Image

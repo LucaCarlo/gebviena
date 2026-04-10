@@ -70,8 +70,8 @@ export default async function BrandManifestoPage() {
       {/* ── Our Heritage – Born in Vienna ──────────────────────────── */}
       <section className="w-full bg-warm-50">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
-          {/* Left: historical image — same aspect as product page */}
-          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
+          {/* Left: historical image — compact landscape so it doesn't dwarf the text column */}
+          <div className="relative overflow-hidden" style={{ aspectRatio: "4 / 3" }}>
             <Image
               src={imgs["born-in-vienna"]}
               alt="Michael Thonet 1853 — Gebrüder Thonet"
@@ -96,7 +96,7 @@ export default async function BrandManifestoPage() {
             </p>
             <Link
               href="/mondo-gtv/heritage"
-              className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline mt-8"
+              className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
             >
               Le nostre origini &rarr;
@@ -143,7 +143,7 @@ export default async function BrandManifestoPage() {
             </h2>
             <Link
               href="/mondo-gtv/curvatura-legno"
-              className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-normal transition-colors hover:underline"
+              className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-medium transition-colors hover:underline"
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
               Scopri l&apos;arte del legno curvato &rarr;

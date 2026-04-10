@@ -137,7 +137,7 @@ export default function HeroSection() {
           {slide.ctaText && slide.ctaLink && (
             <Link
               href={slide.ctaLink}
-              className="inline mt-4 uppercase text-sm md:text-base tracking-[0.03em] text-white font-normal hover:text-white/60 transition-colors duration-300 hover:underline"
+              className="inline-block mt-4 uppercase text-[16px] tracking-[0.03em] text-white font-medium hover:text-white/80 transition-colors duration-300 hover:underline"
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
               {slide.ctaText} &rarr;
