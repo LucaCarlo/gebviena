@@ -83,32 +83,11 @@ function NewsContent() {
 
   return (
     <>
-      {/* ===== HERO — solo titolo su sfondo dark ===== */}
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "min(118vh, 1107px)" }}>
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.3 }}
-          className="font-serif text-[58px] text-white tracking-normal"
-          style={{ marginTop: "-12px" }}
-        >
+      {/* ===== TITLE ===== */}
+      <section className="gtv-container pt-16 pb-16">
+        <h1 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight text-center font-light">
           News &amp; Rassegna Stampa
-        </motion.h1>
-      </section>
-
-      {/* ===== DESCRIPTION ===== */}
-      <section className="gtv-container py-14 md:py-20">
-        <motion.p
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-[20px] text-black leading-snug max-w-[940px] font-light tracking-normal"
-          style={{ marginLeft: "auto", marginRight: "auto" }}
-        >
-          Tutte le ultime novit&agrave; dal mondo Gebrüder Thonet Vienna: comunicati stampa,
-          rassegna stampa, eventi e approfondimenti sul design e la tradizione GTV.
-        </motion.p>
+        </h1>
       </section>
 
       {/* ===== CATEGORIES FILTER — pill style come prodotti ===== */}
