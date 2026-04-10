@@ -191,7 +191,7 @@ export default function ProductDetailPage() {
   return (
     <>
       {/* ===== 1. HERO — responsive height, 16/9 + 50px ===== */}
-      <section className="relative w-full overflow-hidden" style={{ height: "calc(100vw * 9 / 16 + 50px)" }}>
+      <section className="relative w-full overflow-hidden" style={{ height: "calc(100vw * 9 / 16 + 50px)", maxHeight: "100vh" }}>
         <Image
           src={heroImg}
           alt={product.name}
