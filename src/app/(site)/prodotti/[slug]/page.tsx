@@ -190,8 +190,8 @@ export default function ProductDetailPage() {
 
   return (
     <>
-      {/* ===== 1. HERO — responsive height, scales with page width ===== */}
-      <section className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 9" }}>
+      {/* ===== 1. HERO — responsive height, 16/9 + 50px ===== */}
+      <section className="relative w-full overflow-hidden" style={{ height: "calc(100vw * 9 / 16 + 50px)" }}>
         <Image
           src={heroImg}
           alt={product.name}
