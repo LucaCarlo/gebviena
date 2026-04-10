@@ -207,7 +207,8 @@ export default async function BrandManifestoPage() {
 
       {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
       <section className="py-20 md:py-28">
-        <div className="mx-auto w-[90%] max-w-[75%]">
+        <div className="gtv-container">
+          <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
           <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
@@ -235,6 +236,7 @@ export default async function BrandManifestoPage() {
                 </Link>
               );
             })}
+          </div>
           </div>
         </div>
       </section>

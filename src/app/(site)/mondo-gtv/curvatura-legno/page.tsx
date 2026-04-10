@@ -47,17 +47,17 @@ export default async function CurvaturaLegnoPage() {
 
   return (
     <>
-      {/* ── Hero — solo titolo, più alta ─────────────────────────── */}
+      {/* ── Hero — solo titolo, più alta, sfondo piu scuro ───────── */}
       <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "min(110vh, 900px)" }}>
         <Image
           src={heroImage}
           alt={heroTitle}
           fill
-          className="object-cover opacity-30"
+          className="object-cover opacity-20"
           sizes="100vw"
           priority
         />
-        <div className="relative text-center px-8">
+        <div className="relative text-center px-8" style={{ marginTop: "25px" }}>
           <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight">
             {heroTitle}
           </h1>
@@ -69,10 +69,10 @@ export default async function CurvaturaLegnoPage() {
         </div>
       </section>
 
-      {/* ── Descrizione sotto la hero ────────────────────────────── */}
-      <section className="py-16 md:py-24">
-        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+      {/* ── Descrizione sotto la hero — stile paragrafo standard ─── */}
+      <section className="py-20">
+        <div className="gtv-container">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
             La tecnica della curvatura del legno &egrave; un metodo antico,
             presente nell&apos;artigianato di diverse civilt&agrave;, ma rimasto
             a lungo in secondo piano a causa del suo limitato vantaggio in
@@ -93,12 +93,12 @@ export default async function CurvaturaLegnoPage() {
         </video>
       </section>
 
-      {/* ── La Tecnica — testo sx 60%, immagine dx 40% ───────────── */}
-      <section className="py-20 md:py-28">
-        <div className="mx-auto w-[95%] max-w-[90%]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-28 items-start">
-            {/* Left: text — 60% */}
-            <div className="lg:col-span-7">
+      {/* ── La Tecnica — stesso wrapper di heritage 1a sezione, testo sx + immagine dx allineata ─── */}
+      <section className="pb-20 md:pb-28">
+        <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+            {/* Left: text */}
+            <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "0", paddingRight: "60px" }}>
               <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-10">
                 La Tecnica
               </h2>
@@ -122,56 +122,54 @@ export default async function CurvaturaLegnoPage() {
               </p>
             </div>
 
-            {/* Right: image — 40% */}
-            <div className="lg:col-span-5">
-              <div className="relative aspect-square bg-warm-100 overflow-hidden">
-                <Image
-                  src={imgs["tecnica-legname"]}
-                  alt="La tecnica della curvatura del legno"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 40vw"
-                />
-              </div>
+            {/* Right: image — flush right */}
+            <div className="relative aspect-square bg-warm-100 overflow-hidden">
+              <Image
+                src={imgs["tecnica-legname"]}
+                alt="La tecnica della curvatura del legno"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Immagine orizzontale centrale — stessa larghezza del vecchio video ── */}
+      {/* ── Immagine orizzontale centrale — leggermente piu stretta delle card "Potrebbe Interessarti" ── */}
       <section className="pb-20 md:pb-28">
-        <div className="mx-auto w-[90%] max-w-[75%]">
-          <div className="relative aspect-[16/9] bg-warm-100 overflow-hidden">
-            <Image
-              src={imgs["curvatura-detail"]}
-              alt="La curvatura del legno — dettaglio"
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 75vw"
-            />
+        <div className="gtv-container">
+          <div className="mx-auto" style={{ maxWidth: "72%" }}>
+            <div className="relative aspect-[16/9] bg-warm-100 overflow-hidden">
+              <Image
+                src={imgs["curvatura-detail"]}
+                alt="La curvatura del legno — dettaglio"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 72vw"
+              />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Il Brevetto — immagine sx 40%, testo dx 60% ──────────── */}
+      {/* ── Il Brevetto — stesso wrapper, immagine sx allineata, testo dx ── */}
       <section className="pb-20 md:pb-28">
-        <div className="mx-auto w-[95%] max-w-[90%]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-28 items-start">
-            {/* Left: image — 40% */}
-            <div className="lg:col-span-5">
-              <div className="relative aspect-square bg-warm-100 overflow-hidden">
-                <Image
-                  src={imgs.brevetto}
-                  alt="Il brevetto Thonet"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 40vw"
-                />
-              </div>
+        <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+            {/* Left: image — flush left */}
+            <div className="relative aspect-square bg-warm-100 overflow-hidden">
+              <Image
+                src={imgs.brevetto}
+                alt="Il brevetto Thonet"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
             </div>
 
-            {/* Right: text — 60% */}
-            <div className="lg:col-span-7 lg:pr-12 xl:pr-20">
+            {/* Right: text */}
+            <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "60px", paddingRight: "0" }}>
               <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-10">
                 Il Brevetto
               </h2>
@@ -195,10 +193,10 @@ export default async function CurvaturaLegnoPage() {
         </div>
       </section>
 
-      {/* ── Paragrafo chiusura ────────────────────────────────────── */}
-      <section className="pt-2 md:pt-4 pb-20 md:pb-28">
-        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+      {/* ── Paragrafo chiusura — stile standard, 5rem sopra / 10rem sotto ── */}
+      <section className="pt-20 pb-40">
+        <div className="gtv-container">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
             Eleganza formale, solidità e leggerezza hanno decretato il
             successo dell&apos;azienda, che in pochi anni ha aperto
             stabilimenti produttivi in tutto il mondo. Un metodo di produzione
@@ -211,9 +209,10 @@ export default async function CurvaturaLegnoPage() {
         </div>
       </section>
 
-      {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
+      {/* ── Potrebbe Interessarti Anche — stessa larghezza heritage ─── */}
       <section className="py-20 md:py-28">
-        <div className="mx-auto w-[90%] max-w-[75%]">
+        <div className="gtv-container">
+          <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
           <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
@@ -241,6 +240,7 @@ export default async function CurvaturaLegnoPage() {
                 </Link>
               );
             })}
+          </div>
           </div>
         </div>
       </section>
