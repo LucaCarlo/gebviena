@@ -56,13 +56,13 @@ export default async function HeritagePage() {
       <section className="pb-20">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-            {/* Left: family photo — 10px narrower, same height (aspect compensa), object-top per non tagliare i capelli */}
-            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 9.6", marginRight: "10px" }}>
+            {/* Left: family photo — container ingrandito (4/3) per contenere la foto intera senza crop */}
+            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "4 / 3", marginRight: "10px" }}>
               <Image
                 src={imgs["thonet-family"]}
                 alt="Michael Thonet e i suoi cinque figli"
                 fill
-                className="object-contain"
+                className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 priority
               />
@@ -109,7 +109,7 @@ export default async function HeritagePage() {
           </p>
 
           {/* 2 vertical images — 20px piu strette, 10px meno alte (poi -5px ciascuna) */}
-          <div className="mx-auto" style={{ maxWidth: "74.4%" }}>
+          <div className="mx-auto" style={{ maxWidth: "73.8%" }}>
             <div className="grid grid-cols-2" style={{ gap: "79px" }}>
               <div>
                 <div className="relative aspect-[5/7.2] bg-warm-100 overflow-hidden">
