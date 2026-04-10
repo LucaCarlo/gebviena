@@ -83,28 +83,32 @@ export default async function CurvaturaLegnoPage() {
         </div>
       </section>
 
-      {/* ── Video sezione — più largo, click-to-play ──────────── */}
-      <section className="mx-auto w-[95%] max-w-[90%] relative" style={{ aspectRatio: "16/9" }}>
-        <video
-          controls
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="/images/armonia-del-legno.mp4" type="video/mp4" />
-        </video>
+      {/* ── Video sezione — stessa larghezza di "La Tecnica" ───── */}
+      <section>
+        <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
+          <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+            <video
+              controls
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            >
+              <source src="/images/armonia-del-legno.mp4" type="video/mp4" />
+            </video>
+          </div>
+        </div>
       </section>
 
       {/* ── La Tecnica — stesso wrapper di heritage 1a sezione, testo sx + immagine dx allineata ─── */}
-      <section className="pb-20 md:pb-28">
+      <section className="pt-20 pb-20 md:pb-28">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-center">
             {/* Left: text */}
             <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "0", paddingRight: "60px" }}>
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-10">
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 La Tecnica
               </h2>
-              <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 mb-6">
                 L&apos;intuizione di Michael Thonet nacque dall&apos;osservazione
                 che il legno fresco &egrave; più flessibile di quello secco.
                 Partendo da questa considerazione, Thonet e alcuni suoi
@@ -124,14 +128,14 @@ export default async function CurvaturaLegnoPage() {
               </p>
             </div>
 
-            {/* Right: image — flush right */}
-            <div className="relative aspect-square bg-warm-100 overflow-hidden">
+            {/* Right: image — flush right, piu piccola */}
+            <div className="relative aspect-[4/3] bg-warm-100 overflow-hidden ml-auto" style={{ maxWidth: "75%", width: "100%" }}>
               <Image
                 src={imgs["tecnica-legname"]}
                 alt="La tecnica della curvatura del legno"
                 fill
                 className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
+                sizes="(max-width: 1024px) 100vw, 40vw"
               />
             </div>
           </div>
@@ -158,24 +162,24 @@ export default async function CurvaturaLegnoPage() {
       {/* ── Il Brevetto — stesso wrapper, immagine sx allineata, testo dx ── */}
       <section className="pb-20 md:pb-28">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-            {/* Left: image — flush left */}
-            <div className="relative aspect-square bg-warm-100 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-center">
+            {/* Left: image — flush left, piu piccola */}
+            <div className="relative aspect-[4/3] bg-warm-100 overflow-hidden mr-auto" style={{ maxWidth: "75%", width: "100%" }}>
               <Image
                 src={imgs.brevetto}
                 alt="Il brevetto Thonet"
                 fill
                 className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
+                sizes="(max-width: 1024px) 100vw, 40vw"
               />
             </div>
 
             {/* Right: text */}
             <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "60px", paddingRight: "0" }}>
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-10">
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 Il Brevetto
               </h2>
-              <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 mb-6">
                 Nel 1842, Michael Thonet brevettò il processo che lo rese famoso
                 in tutto il mondo: le strisce di legno (preferibilmente faggio,
                 grazie alla sua fibra lunga, regolare e senza nodi) venivano
@@ -195,8 +199,8 @@ export default async function CurvaturaLegnoPage() {
         </div>
       </section>
 
-      {/* ── Paragrafo chiusura — stile standard, 5rem sopra / 10rem sotto ── */}
-      <section className="pt-20 pb-40">
+      {/* ── Paragrafo chiusura — stile standard, dimezzato ── */}
+      <section className="pt-10 pb-20">
         <div className="gtv-container">
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
             Eleganza formale, solidità e leggerezza hanno decretato il
