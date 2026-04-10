@@ -56,8 +56,8 @@ export default async function HeritagePage() {
       <section className="pb-20">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-            {/* Left: family photo — container ingrandito (4/3) per contenere la foto intera senza crop */}
-            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "4 / 3", marginRight: "10px" }}>
+            {/* Left: family photo — aspect 16/10 = ratio nativo della foto (1000x625), zero crop */}
+            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 10", marginRight: "10px" }}>
               <Image
                 src={imgs["thonet-family"]}
                 alt="Michael Thonet e i suoi cinque figli"
@@ -109,7 +109,7 @@ export default async function HeritagePage() {
           </p>
 
           {/* 2 vertical images — 20px piu strette, 10px meno alte (poi -5px ciascuna) */}
-          <div className="mx-auto" style={{ maxWidth: "73.8%" }}>
+          <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
             <div className="grid grid-cols-2" style={{ gap: "79px" }}>
               <div>
                 <div className="relative aspect-[5/7.2] bg-warm-100 overflow-hidden">
@@ -121,7 +121,7 @@ export default async function HeritagePage() {
                     sizes="(max-width: 768px) 45vw, 35vw"
                   />
                 </div>
-                <p className="text-xs text-warm-400 mt-3 font-light">
+                <p className="text-xs text-black mt-3 font-light text-center">
                   N. 1 — Michael Thonet
                 </p>
               </div>
@@ -135,7 +135,7 @@ export default async function HeritagePage() {
                     sizes="(max-width: 768px) 45vw, 35vw"
                   />
                 </div>
-                <p className="text-xs text-warm-400 mt-3 font-light">
+                <p className="text-xs text-black mt-3 font-light text-center">
                   N. 4 — Michael Thonet
                 </p>
               </div>
@@ -315,9 +315,10 @@ export default async function HeritagePage() {
         </div>
       </section>
 
-      {/* ── Potrebbe Interessarti Anche ───────────────────────────── */}
+      {/* ── Potrebbe Interessarti Anche — stessa larghezza N1/N4 ─── */}
       <section className="py-20 md:py-28">
-        <div className="mx-auto w-[90%] max-w-[75%]">
+        <div className="gtv-container">
+          <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
           <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             Potrebbe interessarti anche
           </h3>
@@ -345,6 +346,7 @@ export default async function HeritagePage() {
                 </Link>
               );
             })}
+          </div>
           </div>
         </div>
       </section>
