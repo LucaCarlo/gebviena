@@ -46,18 +46,18 @@ export default async function HeritagePage() {
 
   return (
     <>
-      <section className="gtv-container pt-16 pb-16">
+      <section className="gtv-container pt-16 pb-8">
         <h1 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight text-center font-light">
           Le origini di &ldquo;Gebrüder Thonet&rdquo;
         </h1>
       </section>
 
       {/* ── Foto famiglia + testo ─────────────────────────────────── */}
-      <section className="pb-20 md:pb-28">
+      <section className="pb-20">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-            {/* Left: family photo — landscape, less tall */}
-            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 9" }}>
+            {/* Left: family photo — landscape, ~10px taller than 16/9 */}
+            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 9.2" }}>
               <Image
                 src={imgs["thonet-family"]}
                 alt="Michael Thonet e i suoi cinque figli"
@@ -68,7 +68,7 @@ export default async function HeritagePage() {
               />
             </div>
             {/* Right: text */}
-            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "160px", paddingRight: "60px" }}>
+            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "155px", paddingRight: "0" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Michael Thonet (1796-1871) e i suoi cinque figli furono i
                 produttori di mobili di maggior successo dell&apos;era
