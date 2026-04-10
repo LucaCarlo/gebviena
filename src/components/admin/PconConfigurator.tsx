@@ -147,8 +147,29 @@ export default function PconConfigurator({ value, onChange }: Props) {
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-warm-300 bg-warm-50 p-4 text-sm text-warm-600">
-          Nessuna configurazione pCon. Il visualizzatore 3D non verrà mostrato sulla pagina prodotto finché non ne imposti una.
+        <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-5 space-y-3">
+          <div className="text-sm font-semibold text-amber-900 uppercase tracking-wider">
+            Nessuna configurazione pCon impostata
+          </div>
+          <p className="text-xs text-amber-800 leading-relaxed">
+            Il visualizzatore 3D non verrà mostrato sulla pagina prodotto finché non importi una configurazione. <strong>Sfogliare il catalogo qui sotto da solo non basta</strong>: la navigazione avviene dentro pCon e non possiamo leggerla. Segui questi passaggi:
+          </p>
+          <ol className="text-xs text-amber-900 space-y-1.5 list-decimal list-inside marker:font-semibold">
+            <li>Clicca <strong>&ldquo;Apri pCon in nuova scheda&rdquo;</strong> qui sotto (apre pCon in una scheda separata).</li>
+            <li>Nella nuova scheda, scegli serie, articolo e varianti che vuoi mostrare.</li>
+            <li>Quando sei contento del risultato, <strong>copia l&apos;URL dalla barra del browser</strong>.</li>
+            <li>Torna qui, incollalo in <strong>&ldquo;Importa da URL pCon&rdquo;</strong> in basso e clicca <strong>Importa</strong>.</li>
+            <li>Salva il prodotto.</li>
+          </ol>
+          <a
+            href={adminPanelUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded bg-amber-600 text-white px-4 py-2 text-xs font-semibold hover:bg-amber-700 transition-colors mt-1"
+          >
+            <ExternalLink size={14} />
+            Apri pCon in nuova scheda
+          </a>
         </div>
       )}
 
@@ -156,7 +177,7 @@ export default function PconConfigurator({ value, onChange }: Props) {
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="text-xs font-semibold text-warm-600 uppercase tracking-wider">
-            {isConfigured ? "Anteprima configurazione" : "Catalogo pCon"}
+            {isConfigured ? "Anteprima configurazione" : "Catalogo pCon (solo per esplorare)"}
           </label>
           <a
             href={adminPanelUrl}
@@ -179,6 +200,11 @@ export default function PconConfigurator({ value, onChange }: Props) {
             title="pCon configurator"
           />
         </div>
+        {!isConfigured && (
+          <p className="mt-2 text-[11px] text-warm-500 italic">
+            ⚠ Quello che scegli qui dentro non viene salvato automaticamente. Per salvare devi aprire pCon in una nuova scheda, configurarlo lì, e incollare l&apos;URL nel campo &ldquo;Importa&rdquo; in fondo.
+          </p>
+        )}
       </div>
 
       {/* Cattura automatica (solo se user-tracking attivo su pcon) */}
@@ -204,11 +230,13 @@ export default function PconConfigurator({ value, onChange }: Props) {
       )}
 
       {/* Import via paste */}
-      <div className="rounded-lg border border-warm-200 bg-warm-50/60 p-4 space-y-3">
+      <div className={`rounded-lg p-4 space-y-3 ${isConfigured ? "border border-warm-200 bg-warm-50/60" : "border-2 border-amber-400 bg-amber-50"}`}>
         <div>
-          <div className="text-xs font-semibold text-warm-800 uppercase tracking-wider">Importa da URL pCon</div>
-          <p className="text-[11px] text-warm-500 mt-0.5">
-            Configura il prodotto su pCon (usa il bottone sopra), poi copia l&apos;URL della barra del browser e incollalo qui.
+          <div className={`text-xs font-semibold uppercase tracking-wider ${isConfigured ? "text-warm-800" : "text-amber-900"}`}>
+            {isConfigured ? "Importa da URL pCon" : "Step 4 — Incolla qui l'URL da pCon"}
+          </div>
+          <p className={`text-[11px] mt-0.5 ${isConfigured ? "text-warm-500" : "text-amber-800"}`}>
+            Configura il prodotto su pCon (apri in nuova scheda dal bottone sopra), poi copia l&apos;URL dalla barra del browser e incollalo qui.
           </p>
         </div>
         <div className="flex gap-2">
