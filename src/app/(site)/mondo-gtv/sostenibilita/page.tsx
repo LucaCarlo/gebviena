@@ -95,12 +95,23 @@ export default async function SostenibilitaPage() {
         </div>
       </section>
 
-      {/* ── Legno Certificato FSC® — stesso stile di "La Tecnica" curvatura-legno ─── */}
+      {/* ── Legno Certificato FSC® — stesso stile di "Il Brevetto" curvatura-legno (image sx, testo dx) ─── */}
       <section className="pb-20 md:pb-28">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-            {/* Left: text */}
-            <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "0", paddingRight: "60px" }}>
+            {/* Left: image — flush left, square */}
+            <div className="relative aspect-square bg-warm-100 overflow-hidden mr-auto" style={{ maxWidth: "76%", width: "100%" }}>
+              <Image
+                src={imgs["legno-fsc"]}
+                alt="Legno Certificato FSC®"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 40vw"
+              />
+            </div>
+
+            {/* Right: text */}
+            <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "60px", paddingRight: "0" }}>
               <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 Legno Certificato FSC&reg; (C123220)
               </h2>
@@ -127,17 +138,6 @@ export default async function SostenibilitaPage() {
                 Beaulieu, progettata con un&apos;attenzione particolare alla
                 sostenibilit&agrave;.
               </p>
-            </div>
-
-            {/* Right: image — flush right, square */}
-            <div className="relative aspect-square bg-warm-100 overflow-hidden ml-auto" style={{ maxWidth: "76%", width: "100%" }}>
-              <Image
-                src={imgs["legno-fsc"]}
-                alt="Legno Certificato FSC®"
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 40vw"
-              />
             </div>
           </div>
         </div>
