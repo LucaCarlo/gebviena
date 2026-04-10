@@ -41,20 +41,22 @@ export default async function SostenibilitaPage() {
   const heroImage = heroSlide?.imageUrl || "/images/sostenibilita-hero.webp";
   const heroTitle = heroSlide?.title || "Sostenibilità";
   const heroSubtitle = heroSlide?.subtitle || null;
+  const heroImagePosition = heroSlide?.imagePosition || "center center";
 
   return (
     <>
-      {/* ── Hero — solo titolo, più alta ─────────────────────────── */}
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "min(110vh, 900px)" }}>
+      {/* ── Hero — identica a curvatura-legno ─────────────────────────── */}
+      <section className="relative w-full overflow-hidden bg-warm-900" style={{ height: "min(118vh, 1107px)" }}>
         <Image
           src={heroImage}
           alt={heroTitle}
           fill
-          className="object-cover opacity-30"
+          className="object-cover opacity-20"
+          style={{ objectPosition: heroImagePosition }}
           sizes="100vw"
           priority
         />
-        <div className="relative text-center px-8">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8" style={{ paddingTop: "25px" }}>
           <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight">
             {heroTitle}
           </h1>
@@ -66,15 +68,15 @@ export default async function SostenibilitaPage() {
         </div>
       </section>
 
-      {/* ── Titolo + Introduzione — stile GTV Oggi ────────────── */}
-      <section className="pt-20 md:pt-28 pb-20 md:pb-28">
-        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center">
+      {/* ── Titolo + Introduzione — stile mondo-gtv standard ────── */}
+      <section className="py-20">
+        <div className="gtv-container">
+          <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-24 text-center">
             La tutela ambientale: una sfida per
             <br />
             il futuro, un&apos;opportunit&agrave; per GTV.
           </h2>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mb-6">
             Anno dopo anno, GTV ha sviluppato una crescente sensibilit&agrave;
             verso le tematiche ambientali e, nell&apos;ottica di un
             miglioramento continuo, aderisce alle normative che privilegiano
@@ -83,7 +85,7 @@ export default async function SostenibilitaPage() {
             continuit&agrave;, anche etica, tra il ciclo produttivo e il
             prodotto.
           </p>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
             Un impegno concreto da parte dell&apos;azienda per offrire garanzie
             reali in termini di sostenibilit&agrave; ambientale e tutela della
             salute dei consumatori, con l&apos;obiettivo di costruire un
@@ -93,29 +95,16 @@ export default async function SostenibilitaPage() {
         </div>
       </section>
 
-      {/* ── Legno Certificato FSC® — stile Il Brevetto ─────────── */}
+      {/* ── Legno Certificato FSC® — stesso stile di "La Tecnica" curvatura-legno ─── */}
       <section className="pb-20 md:pb-28">
-        <div className="mx-auto w-[95%] max-w-[90%]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-28 items-start">
-            {/* Left: image — 40% */}
-            <div className="lg:col-span-5">
-              <div className="relative aspect-square bg-warm-100 overflow-hidden">
-                <Image
-                  src={imgs["legno-fsc"]}
-                  alt="Legno Certificato FSC®"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 40vw"
-                />
-              </div>
-            </div>
-
-            {/* Right: text — 60% */}
-            <div className="lg:col-span-7 lg:pr-12 xl:pr-20">
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-10">
+        <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+            {/* Left: text */}
+            <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "0", paddingRight: "60px" }}>
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 Legno Certificato FSC&reg; (C123220)
               </h2>
-              <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 mb-6">
                 Per la realizzazione delle proprie collezioni, Gebrüder Thonet
                 Vienna GmbH sceglie di utilizzare legno certificato FSC&reg;
                 (Forest Stewardship Council&reg;), il principale sistema
@@ -138,6 +127,17 @@ export default async function SostenibilitaPage() {
                 Beaulieu, progettata con un&apos;attenzione particolare alla
                 sostenibilit&agrave;.
               </p>
+            </div>
+
+            {/* Right: image — flush right, square */}
+            <div className="relative aspect-square bg-warm-100 overflow-hidden ml-auto" style={{ maxWidth: "76%", width: "100%" }}>
+              <Image
+                src={imgs["legno-fsc"]}
+                alt="Legno Certificato FSC®"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 40vw"
+              />
             </div>
           </div>
         </div>
