@@ -115,6 +115,10 @@ model Product {
   model2dUrl       String? @db.Text
   model3dUrl       String? @db.Text
   pconUrl          String? @db.Text
+  pconMoc          String? @db.VarChar(32)
+  pconBan          String? @db.VarChar(64)
+  pconSid          String? @db.VarChar(64)
+  pconOvc          String? @db.Text
   year             Int?
   imageUrl         String @db.Text           @default("")
   isFeatured       Boolean          @default(false)

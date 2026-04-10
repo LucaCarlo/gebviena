@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE `Product`
+  ADD COLUMN `pconMoc` VARCHAR(32) NULL,
+  ADD COLUMN `pconBan` VARCHAR(64) NULL,
+  ADD COLUMN `pconSid` VARCHAR(64) NULL,
+  ADD COLUMN `pconOvc` TEXT NULL;

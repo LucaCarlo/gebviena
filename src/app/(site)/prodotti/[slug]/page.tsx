@@ -7,6 +7,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import type { Product, Designer, Project } from "@/types";
+import { buildPconUrl } from "@/lib/pcon";
 
 interface ProductDetail extends Omit<Product, "projects"> {
   related: (Product & { designer?: Designer })[];
@@ -405,43 +406,54 @@ export default function ProductDetailPage() {
             <div className="divide-y divide-black border-t border-b border-black">
 
               {/* --- PRODOTTO (pCon 3D viewer, solo se presente) --- */}
-              {product.pconUrl && (
-              <div>
-                <button
-                  onClick={() => setOpenAccordion(openAccordion === "prodotto" ? null : "prodotto")}
-                  className="w-full flex items-center justify-between py-5 px-2 group"
-                >
-                  <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
-                    Prodotto
-                  </span>
-                  <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
-                    {openAccordion === "prodotto" ? <Minus size={18} /> : <Plus size={18} />}
-                  </span>
-                </button>
-                <AnimatePresence>
-                  {openAccordion === "prodotto" && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
+              {(() => {
+                const pconSrc = product.pconBan
+                  ? buildPconUrl({
+                      moc: product.pconMoc,
+                      ban: product.pconBan,
+                      sid: product.pconSid,
+                      ovc: product.pconOvc,
+                    })
+                  : product.pconUrl || null;
+                if (!pconSrc) return null;
+                return (
+                  <div>
+                    <button
+                      onClick={() => setOpenAccordion(openAccordion === "prodotto" ? null : "prodotto")}
+                      className="w-full flex items-center justify-between py-5 px-2 group"
                     >
-                      <div className="px-2 pb-8">
-                        <iframe
-                          src={product.pconUrl}
-                          className="w-full border-0 rounded"
-                          style={{ height: "560px" }}
-                          allowFullScreen
-                          allow="xr-spatial-tracking"
-                          title={`Visualizzatore 3D ${product.name}`}
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-              )}
+                      <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
+                        Prodotto
+                      </span>
+                      <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
+                        {openAccordion === "prodotto" ? <Minus size={18} /> : <Plus size={18} />}
+                      </span>
+                    </button>
+                    <AnimatePresence>
+                      {openAccordion === "prodotto" && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-2 pb-8">
+                            <iframe
+                              src={pconSrc}
+                              className="w-full border-0 rounded"
+                              style={{ height: "560px" }}
+                              allowFullScreen
+                              allow="xr-spatial-tracking"
+                              title={`Visualizzatore 3D ${product.name}`}
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })()}
 
 
               {/* --- DIMENSIONI --- */}

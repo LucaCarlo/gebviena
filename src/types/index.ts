@@ -51,6 +51,10 @@ export interface Product {
   model2dUrl: string | null;
   model3dUrl: string | null;
   pconUrl: string | null;
+  pconMoc: string | null;
+  pconBan: string | null;
+  pconSid: string | null;
+  pconOvc: string | null;
   year: number | null;
   imageUrl: string;
   isNew: boolean;

@@ -8,6 +8,7 @@ import ImageUploadField from "./ImageUploadField";
 import GalleryUploadField from "./GalleryUploadField";
 import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
+import PconConfigurator from "./PconConfigurator";
 
 interface ProductFormProps {
   productId?: string;
@@ -61,6 +62,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
     model2dUrl: "",
     model3dUrl: "",
     pconUrl: "",
+    pconMoc: "",
+    pconBan: "",
+    pconSid: "",
+    pconOvc: "",
     year: "",
     isFeatured: false,
     isNew: false,
@@ -111,6 +116,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
         model2dUrl: p.model2dUrl || "",
         model3dUrl: p.model3dUrl || "",
         pconUrl: p.pconUrl || "",
+        pconMoc: p.pconMoc || "",
+        pconBan: p.pconBan || "",
+        pconSid: p.pconSid || "",
+        pconOvc: p.pconOvc || "",
         year: p.year != null ? String(p.year) : "",
         isFeatured: p.isFeatured,
         isNew: p.isNew || false,
@@ -202,6 +211,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
         model2dUrl: form.model2dUrl || null,
         model3dUrl: form.model3dUrl || null,
         pconUrl: form.pconUrl || null,
+        pconMoc: form.pconMoc || null,
+        pconBan: form.pconBan || null,
+        pconSid: form.pconSid || null,
+        pconOvc: form.pconOvc || null,
         techSheetUrl: form.techSheetUrl || null,
       };
       const res = await fetch(url, {
@@ -566,19 +579,28 @@ export default function ProductForm({ productId }: ProductFormProps) {
       {/* CONFIGURATORE 3D pCon */}
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
         <div>
-          <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Configuratore 3D</h3>
-          <p className="text-[10px] text-warm-400 mt-0.5">Incolla l&apos;URL src dall&apos;iframe pCon Impress. Se compilato, sostituisce varianti e dimensioni.</p>
+          <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Configuratore pCon</h3>
+          <p className="text-[10px] text-warm-400 mt-0.5">
+            Imposta la serie, il codice articolo e le varianti da mostrare sulla pagina prodotto. Se nessuna configurazione è impostata, l&apos;accordion 3D non verrà visualizzato.
+          </p>
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">URL pCon</label>
-          <input
-            type="url"
-            value={form.pconUrl}
-            onChange={(e) => updateField("pconUrl", e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder="https://impress.pcon-solutions.com/?glb=..."
-          />
-        </div>
+        <PconConfigurator
+          value={{
+            moc: form.pconMoc,
+            ban: form.pconBan,
+            sid: form.pconSid,
+            ovc: form.pconOvc,
+          }}
+          onChange={(next) => {
+            setForm((prev) => ({
+              ...prev,
+              pconMoc: next.moc || "",
+              pconBan: next.ban || "",
+              pconSid: next.sid || "",
+              pconOvc: next.ovc || "",
+            }));
+          }}
+        />
       </div>
 
       {/* DOCUMENTAZIONE PDF */}
