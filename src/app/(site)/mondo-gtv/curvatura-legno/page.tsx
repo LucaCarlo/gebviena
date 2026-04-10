@@ -128,8 +128,8 @@ export default async function CurvaturaLegnoPage() {
               </p>
             </div>
 
-            {/* Right: image — flush right, piu piccola */}
-            <div className="relative aspect-[4/3] bg-warm-100 overflow-hidden ml-auto" style={{ maxWidth: "75%", width: "100%" }}>
+            {/* Right: image — flush right, square (matcha source 916x916) */}
+            <div className="relative aspect-square bg-warm-100 overflow-hidden ml-auto" style={{ maxWidth: "76%", width: "100%" }}>
               <Image
                 src={imgs["tecnica-legname"]}
                 alt="La tecnica della curvatura del legno"
@@ -163,8 +163,8 @@ export default async function CurvaturaLegnoPage() {
       <section className="pb-20 md:pb-28">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-center">
-            {/* Left: image — flush left, piu piccola */}
-            <div className="relative aspect-[4/3] bg-warm-100 overflow-hidden mr-auto" style={{ maxWidth: "75%", width: "100%" }}>
+            {/* Left: image — flush left, square (matcha source 768x769) */}
+            <div className="relative aspect-square bg-warm-100 overflow-hidden mr-auto" style={{ maxWidth: "76%", width: "100%" }}>
               <Image
                 src={imgs.brevetto}
                 alt="Il brevetto Thonet"
@@ -199,8 +199,8 @@ export default async function CurvaturaLegnoPage() {
         </div>
       </section>
 
-      {/* ── Paragrafo chiusura — stile standard, dimezzato ── */}
-      <section className="pt-10 pb-20">
+      {/* ── Paragrafo chiusura — stile standard, ulteriormente ridotto ── */}
+      <section className="pt-5 pb-10">
         <div className="gtv-container">
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
             Eleganza formale, solidità e leggerezza hanno decretato il
