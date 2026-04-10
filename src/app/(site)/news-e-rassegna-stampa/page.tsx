@@ -84,8 +84,8 @@ function NewsContent() {
   return (
     <>
       {/* ===== TITLE ===== */}
-      <section className="gtv-container pt-16 pb-16">
-        <h1 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight text-center font-light">
+      <section className="gtv-container pt-16 pb-28">
+        <h1 className="font-serif text-[58px] text-black tracking-tight text-center font-light">
           News &amp; Rassegna Stampa
         </h1>
       </section>
