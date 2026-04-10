@@ -56,19 +56,19 @@ export default async function HeritagePage() {
       <section className="pb-20">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-            {/* Left: family photo — landscape, height bumped via min-height (~10px taller, visible) */}
-            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 9.5" }}>
+            {/* Left: family photo — 10px narrower, same height (aspect compensa), object-top per non tagliare i capelli */}
+            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 9.6", marginRight: "10px" }}>
               <Image
                 src={imgs["thonet-family"]}
                 alt="Michael Thonet e i suoi cinque figli"
                 fill
-                className="object-cover"
+                className="object-cover object-top"
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 priority
               />
             </div>
             {/* Right: text */}
-            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "155px", paddingRight: "0" }}>
+            <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "151px", paddingRight: "0" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
                 Michael Thonet (1796-1871) e i suoi cinque figli furono i
                 produttori di mobili di maggior successo dell&apos;era
@@ -108,11 +108,11 @@ export default async function HeritagePage() {
             innumerevoli modelli fino alla sedia &ldquo;N.14&rdquo;.
           </p>
 
-          {/* 2 vertical images — slightly bigger + slightly taller */}
-          <div className="mx-auto" style={{ maxWidth: "78%" }}>
+          {/* 2 vertical images — 20px piu strette, 10px meno alte */}
+          <div className="mx-auto" style={{ maxWidth: "75%" }}>
             <div className="grid grid-cols-2" style={{ gap: "79px" }}>
               <div>
-                <div className="relative aspect-[5/7] bg-warm-100 overflow-hidden">
+                <div className="relative aspect-[5/7.2] bg-warm-100 overflow-hidden">
                   <Image
                     src={imgs["sedia-n1"]}
                     alt="Sedia Thonet N.1 — Michael Thonet"
@@ -126,7 +126,7 @@ export default async function HeritagePage() {
                 </p>
               </div>
               <div>
-                <div className="relative aspect-[5/7] bg-warm-100 overflow-hidden">
+                <div className="relative aspect-[5/7.2] bg-warm-100 overflow-hidden">
                   <Image
                     src={imgs["sedia-n4"]}
                     alt="Sedia Thonet N.4 — Michael Thonet"
