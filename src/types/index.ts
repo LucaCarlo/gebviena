@@ -244,6 +244,7 @@ export interface HeroSlide {
   videoUrl: string | null;
   position: string;
   verticalPosition: string;
+  imagePosition: string;
   darkOverlay: boolean;
   overlayOpacity: number;
   page: string;

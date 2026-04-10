@@ -260,6 +260,7 @@ model HeroSlide {
   videoUrl         String? @db.Text
   position         String @db.Text   @default("center")
   verticalPosition String @db.Text   @default("center")
+  imagePosition    String @db.VarChar(32) @default("center center")
   darkOverlay      Boolean  @default(false)
   overlayOpacity   Int      @default(60)
   page             String   @default("homepage")

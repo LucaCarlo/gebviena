@@ -24,6 +24,7 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
     videoUrl: "",
     position: "center",
     verticalPosition: "center",
+    imagePosition: "center center",
     darkOverlay: false,
     overlayOpacity: 60,
     page: defaultPage || "homepage",
@@ -47,6 +48,7 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
         videoUrl: s.videoUrl || "",
         position: s.position || "center",
         verticalPosition: s.verticalPosition || "center",
+        imagePosition: s.imagePosition || "center center",
         darkOverlay: s.darkOverlay ?? false,
         overlayOpacity: s.overlayOpacity ?? 60,
         page: s.page || "homepage",
@@ -175,6 +177,31 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
           folder="hero"
           helpText="Immagine di sfondo per lo slide hero"
         />
+
+        {/* Image crop position selector */}
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+            Crop immagine (zona da mantenere visibile)
+          </label>
+          <select
+            value={form.imagePosition}
+            onChange={(e) => updateField("imagePosition", e.target.value)}
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          >
+            <option value="center top">Alto centro</option>
+            <option value="left top">Alto sinistra</option>
+            <option value="right top">Alto destra</option>
+            <option value="center center">Centro</option>
+            <option value="left center">Centro sinistra</option>
+            <option value="right center">Centro destra</option>
+            <option value="center bottom">Basso centro</option>
+            <option value="left bottom">Basso sinistra</option>
+            <option value="right bottom">Basso destra</option>
+          </select>
+          <p className="text-[10px] text-warm-400 mt-1">
+            Determina quale parte dell&apos;immagine restera visibile dopo il crop. Default: centro.
+          </p>
+        </div>
 
         <ImageUploadField
           label="Immagine di copertina (card)"

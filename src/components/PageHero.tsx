@@ -63,6 +63,7 @@ export default function PageHero({
         alt={heroTitle}
         fill
         className="object-cover"
+        style={{ objectPosition: slide?.imagePosition || "center center" }}
         sizes="100vw"
         priority
       />

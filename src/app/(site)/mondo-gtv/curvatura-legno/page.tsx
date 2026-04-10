@@ -44,6 +44,7 @@ export default async function CurvaturaLegnoPage() {
   const heroImage = heroSlide?.imageUrl || "/images/curvatura-hero.webp";
   const heroTitle = heroSlide?.title || "La curvatura del legno";
   const heroSubtitle = heroSlide?.subtitle || null;
+  const heroImagePosition = heroSlide?.imagePosition || "center center";
 
   return (
     <>
@@ -54,6 +55,7 @@ export default async function CurvaturaLegnoPage() {
           alt={heroTitle}
           fill
           className="object-cover opacity-20"
+          style={{ objectPosition: heroImagePosition }}
           sizes="100vw"
           priority
         />

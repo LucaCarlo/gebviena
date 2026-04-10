@@ -20,6 +20,7 @@ const FALLBACK_SLIDE: HeroSlide = {
   videoUrl: null,
   position: "center",
   verticalPosition: "bottom",
+  imagePosition: "center center",
   darkOverlay: false,
   overlayOpacity: 60,
   page: "homepage",
