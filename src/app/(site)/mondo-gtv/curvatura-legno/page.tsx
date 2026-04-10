@@ -48,8 +48,8 @@ export default async function CurvaturaLegnoPage() {
 
   return (
     <>
-      {/* ── Hero — solo titolo, più alta, sfondo piu scuro ───────── */}
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "min(110vh, 900px)" }}>
+      {/* ── Hero — stessa altezza dell'hero del prodotto singolo (aspect 16/9) ─── */}
+      <section className="relative w-full overflow-hidden flex items-center justify-center bg-warm-900" style={{ aspectRatio: "16 / 9" }}>
         <Image
           src={heroImage}
           alt={heroTitle}
