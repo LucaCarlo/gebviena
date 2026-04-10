@@ -46,7 +46,7 @@ export default async function HeritagePage() {
 
   return (
     <>
-      <section className="gtv-container pt-16 pb-8">
+      <section className="gtv-container pt-16 pb-16">
         <h1 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight text-center font-light">
           Le origini di &ldquo;Gebrüder Thonet&rdquo;
         </h1>
@@ -56,8 +56,8 @@ export default async function HeritagePage() {
       <section className="pb-20">
         <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-            {/* Left: family photo — landscape, ~10px taller than 16/9 */}
-            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 9.2" }}>
+            {/* Left: family photo — landscape, height bumped via min-height (~10px taller, visible) */}
+            <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 9.5" }}>
               <Image
                 src={imgs["thonet-family"]}
                 alt="Michael Thonet e i suoi cinque figli"
