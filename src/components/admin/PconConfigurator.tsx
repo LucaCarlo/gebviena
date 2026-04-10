@@ -191,6 +191,7 @@ export default function PconConfigurator({ value, onChange }: Props) {
         </div>
         <div className="rounded-lg overflow-hidden border border-warm-300 bg-white">
           <iframe
+            key={iframeSrc}
             ref={iframeRef}
             src={iframeSrc}
             className="w-full border-0 block"
