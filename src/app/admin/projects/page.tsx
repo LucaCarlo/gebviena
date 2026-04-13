@@ -15,7 +15,7 @@ export default function AdminProjectsPage() {
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
 
   const fetchProjects = () => {
-    fetch("/api/projects?limit=100")
+    fetch("/api/projects?limit=10000")
       .then((r) => r.json())
       .then((data) => { setProjects(data.data || []); setLoading(false); });
   };
