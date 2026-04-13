@@ -215,6 +215,24 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
           />
         </div>
 
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+            Slug (URL pagina) *
+          </label>
+          <p className="text-[10px] text-warm-400 mb-1.5">
+            Usato nell&apos;URL: /progetti/<span className="font-mono">{form.slug || "…"}</span>. Solo minuscole, numeri e trattini.
+          </p>
+          <input
+            type="text"
+            value={form.slug}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, slug: slugify(e.target.value) }))
+            }
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm font-mono focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+            required
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
