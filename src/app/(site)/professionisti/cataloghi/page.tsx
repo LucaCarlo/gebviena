@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import PageHero from "@/components/PageHero";
 import type { Catalog } from "@/types";
 
 export default function CataloghiPage() {
@@ -31,12 +30,29 @@ export default function CataloghiPage() {
 
   return (
     <>
-      {/* ── Hero Section ────────────────────────────────────── */}
-      <PageHero
-        page="cataloghi"
-        defaultTitle="Cataloghi"
-        defaultImage="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=800&fit=crop"
-      />
+      {/* ── Tabs nav ─────────────────────────────────────────── */}
+      <section className="pt-12 md:pt-16 pb-8">
+        <div className="flex items-center justify-center gap-3">
+          <span className="px-4 py-1.5 rounded-full border border-black bg-white text-[13px] tracking-[0.02em] text-black">
+            Modelli 2D e 3D
+          </span>
+          <Link
+            href="/professionisti/materiale-tecnico"
+            className="px-4 py-1.5 rounded-full border border-warm-200 bg-warm-50 text-[13px] tracking-[0.02em] text-warm-700 hover:bg-warm-100 transition-colors"
+          >
+            Schede Tecniche
+          </Link>
+        </div>
+      </section>
+
+      {/* ── Titolo ────────────────────────────────────────────── */}
+      <section className="pb-12 md:pb-16">
+        <div className="gtv-container">
+          <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
+            Cataloghi
+          </h1>
+        </div>
+      </section>
 
       {/* ── CATALOGHI SECTIONS — alternati testo sx/dx ───────── */}
       {cataloghiItems.map((item, i) => (

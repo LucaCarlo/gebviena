@@ -13,6 +13,7 @@ export async function GET() {
       name: true,
       designerName: true,
       techSheetUrl: true,
+      category: true,
     },
     orderBy: { name: "asc" },
   });
