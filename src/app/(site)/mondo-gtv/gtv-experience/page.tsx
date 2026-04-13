@@ -173,16 +173,16 @@ export default async function GtvExperiencePage() {
         </div>
       </section>
 
-      {/* ── Lobby — stile La Tecnica ─────────────────────────────── */}
-      <section className="py-20 md:py-28">
-        <div className="mx-auto w-[95%] max-w-[90%]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-28 items-start">
-            {/* Left: text — 60% */}
-            <div className="lg:col-span-7">
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-10">
+      {/* ── Lobby — stesso stile/layout di "La Tecnica" ─────────── */}
+      <section className="pt-20 pb-20 md:pb-28">
+        <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+            {/* Left: text */}
+            <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "0", paddingRight: "60px" }}>
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 Lobby
               </h2>
-              <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 mb-6">
                 Il Foyer &egrave; il punto di arrivo e partenza, un ambiente
                 espressivo e di grande impatto, dove le sedute iconiche di GTV
                 accolgono gli ospiti in un&apos;atmosfera sospesa tra classico e
@@ -190,25 +190,23 @@ export default async function GtvExperiencePage() {
               </p>
             </div>
 
-            {/* Right: image — 40% */}
-            <div className="lg:col-span-5">
-              <div className="relative aspect-square bg-warm-100 overflow-hidden">
-                <Image
-                  src={imgs.lobby}
-                  alt="Lobby — Interno Marche Design Hotel"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 40vw"
-                />
-              </div>
+            {/* Right: image — flush right, square */}
+            <div className="relative aspect-square bg-warm-100 overflow-hidden ml-auto" style={{ maxWidth: "76%", width: "100%" }}>
+              <Image
+                src={imgs.lobby}
+                alt="Lobby — Interno Marche Design Hotel"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 40vw"
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Due immagini affiancate — full-width ─────────────────── */}
+      {/* ── Due immagini affiancate — larghezza grid prodotti ──── */}
       <section className="pb-20 md:pb-28">
-        <div className="px-4 md:px-6">
+        <div className="px-2 md:px-3 lg:px-4">
           <div className="grid grid-cols-2 gap-3 md:gap-4">
           <div className="relative aspect-[16/10] bg-warm-100 overflow-hidden">
             <Image
@@ -232,29 +230,27 @@ export default async function GtvExperiencePage() {
         </div>
       </section>
 
-      {/* ── I Corridoi — stile Il Brevetto (immagine sx, testo dx) ── */}
+      {/* ── I Corridoi — stesso stile/layout di "Il Brevetto" ──── */}
       <section className="pb-20 md:pb-28">
-        <div className="mx-auto w-[95%] max-w-[90%]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-28 items-start">
-            {/* Left: image — 40% */}
-            <div className="lg:col-span-5">
-              <div className="relative aspect-square bg-warm-100 overflow-hidden">
-                <Image
-                  src={imgs.corridors}
-                  alt="I corridoi — Interno Marche Design Hotel"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 40vw"
-                />
-              </div>
+        <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+            {/* Left: image — flush left, square */}
+            <div className="relative aspect-square bg-warm-100 overflow-hidden mr-auto" style={{ maxWidth: "76%", width: "100%" }}>
+              <Image
+                src={imgs.corridors}
+                alt="I corridoi — Interno Marche Design Hotel"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 40vw"
+              />
             </div>
 
-            {/* Right: text — 60% */}
-            <div className="lg:col-span-7 lg:pr-12 xl:pr-20">
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-10">
+            {/* Right: text */}
+            <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "60px", paddingRight: "0" }}>
+              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 I corridoi
               </h2>
-              <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+              <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 mb-6">
                 I corridoi diventano spazi espositivi, gallerie intime dove le
                 creazioni GTV punteggiano il percorso, trasformando il semplice
                 passaggio in un&apos;esperienza estetica. Pezzi di design che
@@ -265,9 +261,9 @@ export default async function GtvExperiencePage() {
         </div>
       </section>
 
-      {/* ── Tre immagini verticali — stile L'espansione ──────────── */}
+      {/* ── Tre immagini verticali — larghezza grid prodotti ─── */}
       <section className="pb-10 md:pb-16">
-        <div className="px-4 md:px-6">
+        <div className="px-2 md:px-3 lg:px-4">
           <div className="grid grid-cols-3 gap-3 md:gap-4">
             <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
               <Image
@@ -320,11 +316,11 @@ export default async function GtvExperiencePage() {
         ]}
       />
 
-      {/* ── Vivi la GTV Experience — stile Born in Vienna (img sx) ── */}
+      {/* ── Vivi la GTV Experience — stesso stile "Born in Vienna" brand-manifesto ── */}
       <section className="w-full bg-warm-50">
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
-          {/* Left: image */}
-          <div className="relative bg-warm-200" style={{ aspectRatio: "4/3" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
+          {/* Left: image — aspect 3/4.2 */}
+          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
             <Image
               src={imgs.gamfratesi}
               alt="Vivi la GTV Experience"
@@ -334,8 +330,8 @@ export default async function GtvExperiencePage() {
             />
           </div>
 
-          {/* Right: text */}
-          <div className="px-10 md:px-16 lg:px-20 py-16 lg:py-20 flex flex-col justify-center">
+          {/* Right: text — padding 96px 150px */}
+          <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Vivi la GTV Experience
             </h2>
