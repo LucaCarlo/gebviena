@@ -27,6 +27,15 @@ export default function AdminAwardsPage() {
     fetchAwards();
   };
 
+  const toggleVisible = async (a: Award) => {
+    setAwards((prev) => prev.map((x) => (x.id === a.id ? { ...x, isActive: !a.isActive } : x)));
+    await fetch(`/api/awards/${a.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...a, isActive: !a.isActive }),
+    });
+  };
+
   const handleExport = async () => {
     try {
       const res = await fetch("/api/export/awards");
@@ -133,6 +142,7 @@ export default function AdminAwardsPage() {
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Prodotto</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Anno</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Organizzazione</th>
+                <th className="text-center px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Visibile</th>
                 <th className="text-right px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Azioni</th>
               </tr>
             </thead>
@@ -143,6 +153,15 @@ export default function AdminAwardsPage() {
                   <td className="px-6 py-4 text-warm-600">{a.productName || "—"}</td>
                   <td className="px-6 py-4 text-warm-600">{a.year || "—"}</td>
                   <td className="px-6 py-4 text-warm-600">{a.organization || "—"}</td>
+                  <td className="px-6 py-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={a.isActive ?? true}
+                      onChange={() => toggleVisible(a)}
+                      className="w-4 h-4 accent-warm-800 cursor-pointer"
+                      title={a.isActive ? "Visibile sul sito" : "Nascosto"}
+                    />
+                  </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Link href={`/admin/awards/${a.id}`} className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors">

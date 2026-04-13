@@ -4,7 +4,6 @@ import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
 export async function GET() {
   const data = await prisma.award.findMany({
-    where: { isActive: true },
     orderBy: { year: "desc" },
   });
 

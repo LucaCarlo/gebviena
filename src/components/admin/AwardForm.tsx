@@ -29,6 +29,7 @@ export default function AwardForm({ awardId }: AwardFormProps) {
     seoTitle: "",
     seoDescription: "",
     seoKeywords: "[]",
+    isActive: true,
   });
 
   const loadAward = useCallback(async () => {
@@ -50,6 +51,7 @@ export default function AwardForm({ awardId }: AwardFormProps) {
         seoTitle: a.seoTitle || "",
         seoDescription: a.seoDescription || "",
         seoKeywords: a.seoKeywords || "[]",
+        isActive: a.isActive ?? true,
       });
     }
   }, [awardId]);
@@ -102,7 +104,7 @@ export default function AwardForm({ awardId }: AwardFormProps) {
     }
   };
 
-  const updateField = (field: string, value: string | number) => {
+  const updateField = (field: string, value: string | number | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -255,6 +257,21 @@ export default function AwardForm({ awardId }: AwardFormProps) {
           }
         }}
       />
+
+      <div className="bg-white border border-warm-200 rounded-lg p-4">
+        <label className="flex items-center gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={form.isActive}
+            onChange={(e) => updateField("isActive", e.target.checked)}
+            className="w-4 h-4 accent-warm-800"
+          />
+          <span className="text-sm text-warm-800 font-medium">Visibile sul sito</span>
+          <span className="text-xs text-warm-500">
+            (se disattivato, il premio non comparirà nella pagina &ldquo;Designer e Premi&rdquo;)
+          </span>
+        </label>
+      </div>
 
       <div className="flex gap-3">
         <button
