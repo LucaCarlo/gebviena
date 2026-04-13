@@ -19,7 +19,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   try {
     const body = await req.json();
-    const { productIds, products: _products, ...awardData } = body;
+    const { productIds, ...rest } = body;
+    // strip `products` (relation array sent back by GET) before passing to Prisma
+    const awardData = { ...rest };
+    delete (awardData as Record<string, unknown>).products;
     const data = await prisma.award.update({ where: { id: params.id }, data: awardData });
 
     if (Array.isArray(productIds)) {
