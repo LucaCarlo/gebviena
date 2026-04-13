@@ -1,8 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { getPageImages } from "@/lib/page-images";
-import PageHero from "@/components/PageHero";
 
 const DEFAULTS: Record<string, string> = {
   main: "/images/PEERS-design-by-Front-for-GTV-2-1024x768.jpg",
@@ -13,41 +11,51 @@ export default async function UfficioStampaPage() {
 
   return (
     <>
-      {/* ── Hero Section ────────────────────────────────────── */}
-      <PageHero
-        page="ufficio-stampa"
-        defaultTitle="Ufficio Stampa"
-        defaultImage="/images/PEERS-design-by-Front-for-GTV-2-1024x768.jpg"
-      />
+      {/* ── Titolo — stile pagina Prodotti ───────────────────── */}
+      <section className="pt-20 md:pt-28 pb-16 md:pb-20">
+        <div className="gtv-container">
+          <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
+            Ufficio Stampa
+          </h1>
+        </div>
+      </section>
 
-      {/* ── IMAGE + TEXT ─────────────────────────────────────── */}
-      <section className="w-full bg-warm-50" style={{ minHeight: "100vh" }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0 h-full" style={{ minHeight: "100vh" }}>
+      {/* ── Sezione stile "Born in Vienna" — testo sx, immagine dx ── */}
+      <section className="w-full bg-warm-50">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
           {/* Left: text */}
-          <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
-            <div className="text-lg text-dark leading-[1.8] font-light">
-              <p>
-                Per materiali stampa, interviste o altre informazioni ufficiali, contattateci a:
-              </p>
-              <p className="mt-8 font-sans text-xl md:text-2xl uppercase tracking-wide font-medium text-dark">
-                Agence Melchior
-              </p>
-              <p className="mt-4">
-                Debora Agostini:{" "}
-                <a href="mailto:debora@agencemelchior.com" className="underline underline-offset-4 hover:text-warm-500 transition-colors">
-                  debora@agencemelchior.com
-                </a>
-              </p>
-              <p className="mt-2">
-                Allegra Emilia Amatori:{" "}
-                <a href="mailto:allegra@agencemelchior.com" className="underline underline-offset-4 hover:text-warm-500 transition-colors">
-                  allegra@agencemelchior.com
-                </a>
-              </p>
-            </div>
+          <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal">
+              Per materiali stampa, interviste o altre informazioni ufficiali,
+              contattateci a:
+            </p>
+            <p className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-8">
+              Agence Melchior
+            </p>
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-6">
+              Debora Agostini:{" "}
+              <a
+                href="mailto:debora@agencemelchior.com"
+                className="underline underline-offset-4 hover:text-warm-600"
+                style={{ textDecorationThickness: "0.5px" }}
+              >
+                debora@agencemelchior.com
+              </a>
+            </p>
+            <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-2">
+              Allegra Emilia Amatori:{" "}
+              <a
+                href="mailto:allegra@agencemelchior.com"
+                className="underline underline-offset-4 hover:text-warm-600"
+                style={{ textDecorationThickness: "0.5px" }}
+              >
+                allegra@agencemelchior.com
+              </a>
+            </p>
           </div>
+
           {/* Right: image */}
-          <div className="relative bg-warm-200" style={{ aspectRatio: "16/9" }}>
+          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
             <Image
               src={imgs.main}
               alt="Ufficio Stampa"
@@ -59,15 +67,15 @@ export default async function UfficioStampaPage() {
         </div>
       </section>
 
-      {/* ── BREADCRUMBS ──────────────────────────────────────── */}
-      <div className="gtv-container py-12">
-        <nav className="flex items-center gap-2 text-[10px] uppercase tracking-[0.15em] text-warm-400">
-          <Link href="/" className="hover:text-warm-700 transition-colors">Home</Link>
-          <ChevronRight size={10} />
-          <Link href="/contatti" className="hover:text-warm-700 transition-colors">Contatti</Link>
-          <ChevronRight size={10} />
-          <span className="text-warm-600">Ufficio Stampa</span>
-        </nav>
+      {/* ── Breadcrumbs — stile mondo-gtv ────────────────────── */}
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
+          <span>&gt;</span>
+          <Link href="/contatti">Contatti</Link>
+          <span>&gt;</span>
+          <span>Ufficio Stampa</span>
+        </div>
       </div>
     </>
   );

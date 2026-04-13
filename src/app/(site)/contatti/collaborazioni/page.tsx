@@ -216,7 +216,7 @@ export default function CollaborazioniPage() {
             className="mt-1 accent-black"
             required={field.required}
           />
-          <span className="text-[13px] text-black font-light leading-snug">
+          <span className="text-[16px] text-black font-light leading-snug">
             {labelHtml}{field.required && "*"}
           </span>
         </label>
@@ -228,7 +228,7 @@ export default function CollaborazioniPage() {
     if (field.type === "select") {
       return (
         <div key={field.key}>
-          <label className="block text-[13px] text-black font-light mb-2">
+          <label className="block text-[14px] text-black font-light mb-2">
             {field.label}{field.required && "*"}
           </label>
           <select
@@ -249,7 +249,7 @@ export default function CollaborazioniPage() {
     if (field.type === "textarea") {
       return (
         <div key={field.key}>
-          <label className="block text-[13px] text-black font-light mb-2">
+          <label className="block text-[14px] text-black font-light mb-2">
             {field.label}{field.required && "*"}
           </label>
           <textarea
