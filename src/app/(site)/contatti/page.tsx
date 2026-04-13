@@ -1,94 +1,83 @@
+import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Users, Newspaper, Mail, QrCode } from "lucide-react";
-import { getPageImages } from "@/lib/page-images";
-import PageHero from "@/components/PageHero";
+import { getRelatedCardImages } from "@/lib/page-images";
 
-const contactLinks = [
-  {
-    icon: MapPin,
-    title: "Rete di vendita",
-    description: "Trova il punto vendita o agente più vicino a te.",
-    href: "/contatti/rete-vendita",
-  },
-  {
-    icon: Users,
-    title: "Collaborazione nuovi designer",
-    description: "Invia la tua candidatura per collaborare con GTV.",
-    href: "/contatti/collaborazioni",
-  },
-  {
-    icon: Newspaper,
-    title: "Ufficio stampa",
-    description: "Materiali stampa, press kit e contatti per i media.",
-    href: "/contatti/ufficio-stampa",
-  },
-  {
-    icon: Mail,
-    title: "Richiesta informazioni",
-    description: "Per qualsiasi altra informazione, scrivici.",
-    href: "/contatti/richiesta-info",
-  },
-  {
-    icon: QrCode,
-    title: "Landing Page",
-    description: "Registrati per ricevere il tuo QR code personale per l'evento.",
-    href: "/evento-mdw-2026",
-  },
+const PAGES = [
+  { page: "rete-vendita", label: "Rete di Vendita", href: "/contatti/rete-vendita" },
+  { page: "collaborazioni", label: "Collaborazione Nuovi Designer", href: "/contatti/collaborazioni" },
+  { page: "ufficio-stampa", label: "Ufficio Stampa", href: "/contatti/ufficio-stampa" },
+  { page: "richiesta-info", label: "Richiesta Informazioni", href: "/contatti/richiesta-info" },
+  { page: "landing-page", label: "Landing Page", href: "/contatti/landing-page" },
 ];
 
-const DEFAULTS: Record<string, string> = {
-  hero: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop",
-};
-
 export default async function ContattiPage() {
-  const imgs = await getPageImages("contatti", DEFAULTS);
+  const cardImages = await getRelatedCardImages(PAGES.map((p) => p.page));
 
   return (
     <>
-      {/* Hero */}
-      <PageHero
-        page="contatti"
-        defaultTitle="Contatti"
-        defaultImage={imgs.hero}
-      />
+      {/* ── Titolo — stile pagina Prodotti ───────────────────── */}
+      <section className="pt-20 md:pt-28 pb-12 md:pb-16">
+        <div className="gtv-container">
+          <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
+            Contatti
+          </h1>
+        </div>
+      </section>
 
-      {/* Contact Cards */}
-      <section className="section-padding">
-        <div className="luxury-container max-w-4xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {contactLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="group p-8 border border-warm-200 rounded-lg hover:border-warm-400 hover:shadow-md transition-all"
-              >
-                <item.icon
-                  size={28}
-                  className="text-warm-400 group-hover:text-warm-800 transition-colors mb-4"
-                  strokeWidth={1.5}
-                />
-                <h3 className="text-lg font-semibold text-warm-800 mb-2">{item.title}</h3>
-                <p className="text-sm text-warm-500">{item.description}</p>
-                <span className="inline-block mt-4 text-[16px] font-medium uppercase tracking-[0.03em] text-warm-400 group-hover:text-warm-800 group-hover:underline transition-colors">
-                  Scopri →
-                </span>
-              </Link>
-            ))}
+      {/* ── Paragrafo intro — stile pagina Prodotti ──────────── */}
+      <section className="pb-16 md:pb-20">
+        <div className="gtv-container">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
+            Scegli la sezione più adatta alla tua richiesta: la rete vendita per
+            individuare il punto di acquisto più vicino, le collaborazioni per
+            proporci nuovi progetti di design, l&apos;ufficio stampa per i media,
+            la richiesta informazioni per qualunque altra domanda e le landing
+            page dedicate ai nostri eventi.
+          </p>
+        </div>
+      </section>
+
+      {/* ── Card delle pagine — stile "Potrebbe interessarti anche" ── */}
+      <section className="pb-20 md:pb-28">
+        <div className="gtv-container">
+          <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-12">
+              {PAGES.map((p) => {
+                const coverSrc = cardImages[p.page] || null;
+                return (
+                  <Link key={p.page} href={p.href} className="group block">
+                    <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
+                      {coverSrc ? (
+                        <Image
+                          src={coverSrc}
+                          alt={p.label}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-warm-200" />
+                      )}
+                    </div>
+                    <h4 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
+                      {p.label}
+                    </h4>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Company Info */}
-      <section className="section-padding bg-brand-50">
-        <div className="luxury-container max-w-4xl text-center">
-          <h2 className="font-serif text-2xl text-warm-800 mb-8">Sede principale</h2>
-          <div className="space-y-2 text-sm text-warm-600">
-            <p className="font-semibold text-warm-800">Headquarters Gebrüder Thonet Vienna GmbH</p>
-            <p>Via Foggia 23/H – 10152 Torino (Italy)</p>
-            <p>T. +39 0116133330</p>
-          </div>
+      {/* ── Breadcrumbs ──────────────────────────────────────── */}
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
+          <span>&gt;</span>
+          <span>Contatti</span>
         </div>
-      </section>
+      </div>
     </>
   );
 }

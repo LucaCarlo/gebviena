@@ -1,75 +1,81 @@
+import Image from "next/image";
 import Link from "next/link";
-import { getPageImages } from "@/lib/page-images";
-import PageHero from "@/components/PageHero";
+import { getRelatedCardImages } from "@/lib/page-images";
 
-const DEFAULTS: Record<string, string> = {
-  hero: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=600&fit=crop",
-};
+const PAGES = [
+  { page: "cataloghi", label: "Cataloghi", href: "/professionisti/cataloghi" },
+  { page: "materiale-tecnico", label: "Materiale Tecnico", href: "/professionisti/materiale-tecnico" },
+  { page: "realizzazioni-custom", label: "Realizzazioni Custom", href: "/professionisti/realizzazioni-custom" },
+];
 
 export default async function ProfessionistiPage() {
-  const imgs = await getPageImages("professionisti", DEFAULTS);
+  const cardImages = await getRelatedCardImages(PAGES.map((p) => p.page));
 
   return (
     <>
-      {/* Hero */}
-      <PageHero
-        page="professionisti"
-        defaultTitle="Professionisti"
-        defaultImage={imgs.hero}
-      />
+      {/* ── Titolo — stile pagina Prodotti ───────────────────── */}
+      <section className="pt-20 md:pt-28 pb-12 md:pb-16">
+        <div className="gtv-container">
+          <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
+            Professionisti
+          </h1>
+        </div>
+      </section>
 
-      {/* Content */}
-      <section className="section-padding">
-        <div className="luxury-container max-w-4xl">
-          <h2 className="font-serif text-3xl md:text-4xl text-warm-800 mb-8 text-center">
-            Per architetti e <em>interior designer</em>
-          </h2>
+      {/* ── Paragrafo intro — stile pagina Prodotti ──────────── */}
+      <section className="pb-16 md:pb-20">
+        <div className="gtv-container">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
+            Gebrüder Thonet Vienna mette a disposizione di architetti, interior
+            designer e progettisti gli strumenti per supportare ogni fase del
+            lavoro: cataloghi completi della collezione, materiali tecnici per
+            la specifica di prodotto e il servizio di realizzazione di soluzioni
+            su misura per progetti contract, hospitality e residenziali.
+          </p>
+        </div>
+      </section>
 
-          <div className="space-y-6 text-sm text-warm-600 leading-relaxed">
-            <p>
-              Gebrüder Thonet Vienna collabora con architetti, interior designer e professionisti
-              del settore contract per la realizzazione di progetti su misura. Il nostro team è a
-              disposizione per offrire consulenze personalizzate, supporto tecnico e soluzioni
-              progettuali dedicate.
-            </p>
-            <p>
-              Offriamo un servizio completo che include: campionature materiali, personalizzazioni
-              di finiture e tessuti, pianificazione delle forniture per il settore hospitality, ristorazione
-              e spazi commerciali.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
-            <div className="text-center p-8 border border-warm-200 rounded-lg">
-              <h3 className="font-semibold text-warm-800 mb-3">Consulenza progettuale</h3>
-              <p className="text-xs text-warm-500 leading-relaxed">
-                Supporto dedicato nella scelta dei prodotti e delle finiture più adatte al progetto.
-              </p>
+      {/* ── Card delle pagine — stile "Potrebbe interessarti anche" ── */}
+      <section className="pb-20 md:pb-28">
+        <div className="gtv-container">
+          <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-12">
+              {PAGES.map((p) => {
+                const coverSrc = cardImages[p.page] || null;
+                return (
+                  <Link key={p.page} href={p.href} className="group block">
+                    <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
+                      {coverSrc ? (
+                        <Image
+                          src={coverSrc}
+                          alt={p.label}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-warm-200" />
+                      )}
+                    </div>
+                    <h4 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
+                      {p.label}
+                    </h4>
+                  </Link>
+                );
+              })}
             </div>
-            <div className="text-center p-8 border border-warm-200 rounded-lg">
-              <h3 className="font-semibold text-warm-800 mb-3">Personalizzazioni</h3>
-              <p className="text-xs text-warm-500 leading-relaxed">
-                Finiture, tessuti e configurazioni su misura per rispondere alle esigenze specifiche.
-              </p>
-            </div>
-            <div className="text-center p-8 border border-warm-200 rounded-lg">
-              <h3 className="font-semibold text-warm-800 mb-3">Contract</h3>
-              <p className="text-xs text-warm-500 leading-relaxed">
-                Forniture complete per hospitality, ristorazione e spazi commerciali.
-              </p>
-            </div>
-          </div>
-
-          <div className="text-center mt-16">
-            <Link
-              href="/contatti/richiesta-info"
-              className="inline-block px-8 py-3 border border-warm-800 text-xs font-medium uppercase tracking-[0.2em] text-warm-800 hover:bg-warm-800 hover:text-white transition-all duration-300"
-            >
-              Richiedi informazioni
-            </Link>
           </div>
         </div>
       </section>
+
+      {/* ── Breadcrumbs ──────────────────────────────────────── */}
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
+          <span>&gt;</span>
+          <span>Professionisti</span>
+        </div>
+      </div>
     </>
   );
 }
