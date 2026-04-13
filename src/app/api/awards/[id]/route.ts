@@ -3,7 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const data = await prisma.award.findUnique({ where: { id: params.id } });
+  const data = await prisma.award.findUnique({
+    where: { id: params.id },
+    include: { products: { select: { productId: true } } },
+  });
   if (!data) {
     return NextResponse.json({ success: false, error: "Non trovato" }, { status: 404 });
   }
@@ -16,7 +19,19 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   try {
     const body = await req.json();
-    const data = await prisma.award.update({ where: { id: params.id }, data: body });
+    const { productIds, products: _products, ...awardData } = body;
+    const data = await prisma.award.update({ where: { id: params.id }, data: awardData });
+
+    if (Array.isArray(productIds)) {
+      await prisma.awardProduct.deleteMany({ where: { awardId: params.id } });
+      if (productIds.length > 0) {
+        await prisma.awardProduct.createMany({
+          data: productIds.map((productId: string) => ({ awardId: params.id, productId })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (e) {
     return NextResponse.json({ success: false, error: String(e) }, { status: 400 });

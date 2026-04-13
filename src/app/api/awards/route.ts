@@ -16,7 +16,16 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const data = await prisma.award.create({ data: body });
+    const { productIds, ...awardData } = body;
+    const data = await prisma.award.create({ data: awardData });
+
+    if (Array.isArray(productIds) && productIds.length > 0) {
+      await prisma.awardProduct.createMany({
+        data: productIds.map((productId: string) => ({ awardId: data.id, productId })),
+        skipDuplicates: true,
+      });
+    }
+
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (e) {
     return NextResponse.json({ success: false, error: String(e) }, { status: 400 });
