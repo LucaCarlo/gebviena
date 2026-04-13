@@ -3,12 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, ChevronLeft } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
 import type { HeroSlide } from "@/types";
-
-const HERO_AUTOPLAY = 5000;
 
 interface FieldConfig {
   key: string;
@@ -33,132 +30,41 @@ const DEFAULT_COLLABORATION_FIELDS: FieldConfig[] = [
   { key: "subscribeNewsletter", label: "Desidero ricevere aggiornamenti e novità", type: "checkbox", required: false, enabled: true, order: 10 },
 ];
 
-/* ── HERO ──────────────────────────────────────────────── */
+/* ── HERO — stesso stile pagina GTV Experience ──────────── */
 function CollaborazioniHero() {
-  const [slides, setSlides] = useState<HeroSlide[]>([]);
-  const [current, setCurrent] = useState(0);
-  const [loaded, setLoaded] = useState(false);
+  const [slide, setSlide] = useState<HeroSlide | null>(null);
 
   useEffect(() => {
     fetch("/api/hero-slides?page=collaborazioni")
       .then((r) => r.json())
       .then((data) => {
-        setSlides(data.data || []);
-        setLoaded(true);
+        const slides = data.data || [];
+        if (slides.length > 0) setSlide(slides[0]);
       })
-      .catch(() => setLoaded(true));
+      .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (slides.length <= 1) return;
-    const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % slides.length);
-    }, HERO_AUTOPLAY);
-    return () => clearInterval(timer);
-  }, [slides.length, current]);
-
-  if (loaded && slides.length === 0) {
-    return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 6rem)" }}>
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.3 }}
-          className="font-serif text-[46px] md:text-[58px] lg:text-[70px] text-white tracking-wide"
-        >
-          Collaborazioni
-        </motion.h1>
-      </section>
-    );
-  }
-
-  if (!loaded) {
-    return (
-      <section className="relative w-full flex items-center justify-center bg-warm-100" style={{ height: "calc(100vh - 6rem)" }}>
-        <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
-      </section>
-    );
-  }
-
-  const slide = slides[current];
-
-  const textAlignH =
-    slide.position === "left" ? "items-start text-left pl-8 md:pl-20" :
-    slide.position === "right" ? "items-end text-right pr-8 md:pr-20" :
-    "items-center text-center";
-
-  const textAlignV =
-    slide.verticalPosition === "top" ? "top-20 bottom-auto" :
-    slide.verticalPosition === "bottom" ? "bottom-20 top-auto" :
-    "top-1/2 -translate-y-1/2";
+  const heroImage = slide?.imageUrl || "/images/collaborazioni-hero.webp";
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 6rem)" }}>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={slide.id}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8 }}
-          className="absolute inset-0"
-        >
-          <Image src={slide.imageUrl} alt={slide.title} fill className="object-cover" priority sizes="100vw" />
-        </motion.div>
-      </AnimatePresence>
-
-      {slide.darkOverlay ? (
-        <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-      )}
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={`text-${slide.id}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
-        >
-          <h1 className="font-serif text-[40px] md:text-[50px] lg:text-[60px] text-white tracking-wide">
-            {slide.title}
-          </h1>
-          {slide.subtitle && (
-            <p className="text-sm md:text-base text-white/70 mt-2 max-w-2xl">{slide.subtitle}</p>
-          )}
-          {slide.ctaText && slide.ctaLink && (
-            <Link href={slide.ctaLink} className="inline-block mt-4 uppercase text-[16px] tracking-[0.03em] text-white font-medium hover:text-white/80 hover:underline transition-colors">
-              {slide.ctaText} <span className="ml-1">&rarr;</span>
-            </Link>
-          )}
-        </motion.div>
-      </AnimatePresence>
-
-      {slides.length > 1 && (
-        <>
-          <button onClick={() => setCurrent((prev) => (prev - 1 + slides.length) % slides.length)} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm text-white/70 flex items-center justify-center hover:bg-black/40 hover:text-white transition-all z-10" aria-label="Slide precedente">
-            <ChevronLeft size={20} />
-          </button>
-          <button onClick={() => setCurrent((prev) => (prev + 1) % slides.length)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm text-white/70 flex items-center justify-center hover:bg-black/40 hover:text-white transition-all z-10" aria-label="Slide successivo">
-            <ChevronRight size={20} />
-          </button>
-        </>
-      )}
-
-      {slides.length > 1 && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
-          {slides.map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => setCurrent(idx)}
-              className={`rounded-full transition-all duration-300 ${idx === current ? "w-6 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/40 hover:bg-white/60"}`}
-              aria-label={`Vai allo slide ${idx + 1}`}
-            />
-          ))}
-        </div>
-      )}
+    <section
+      className="relative w-full overflow-hidden bg-warm-900"
+      style={{ height: "min(118vh, 1107px)" }}
+    >
+      <Image
+        src={heroImage}
+        alt="Collaborazione nuovi designer"
+        fill
+        className="object-cover"
+        sizes="100vw"
+        priority
+      />
+      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 flex items-center justify-center text-center px-8">
+        <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight">
+          Collaborazione nuovi designer
+        </h1>
+      </div>
     </section>
   );
 }
@@ -264,18 +170,18 @@ export default function CollaborazioniPage() {
       if (field.key === "acceptPrivacy") {
         return (
           <label key={field.key} className="flex items-start gap-3 cursor-pointer">
-            <input type="checkbox" checked={!!value} onChange={(e) => setForm({ ...form, [field.key]: e.target.checked })} className="mt-0.5 accent-warm-800" required={field.required} />
-            <span className="text-sm text-warm-600">
+            <input type="checkbox" checked={!!value} onChange={(e) => setForm({ ...form, [field.key]: e.target.checked })} className="mt-1 accent-black" required={field.required} />
+            <span className="text-[14px] text-black font-light">
               Accetto la{" "}
-              <Link href="/privacy-policy" className="text-warm-800 underline hover:text-warm-900">privacy policy</Link>{" "}*
+              <Link href="/privacy-policy" className="underline underline-offset-2 hover:text-warm-600">privacy policy</Link>{" "}*
             </span>
           </label>
         );
       }
       return (
         <label key={field.key} className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" checked={!!value} onChange={(e) => setForm({ ...form, [field.key]: e.target.checked })} className="mt-0.5 accent-warm-800" />
-          <span className="text-sm text-warm-600">{field.label}</span>
+          <input type="checkbox" checked={!!value} onChange={(e) => setForm({ ...form, [field.key]: e.target.checked })} className="mt-1 accent-black" />
+          <span className="text-[14px] text-black font-light">{field.label}</span>
         </label>
       );
     }
@@ -283,13 +189,13 @@ export default function CollaborazioniPage() {
     if (field.type === "select") {
       return (
         <div key={field.key}>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+          <label className="block uppercase text-[12px] tracking-[0.05em] text-black font-light mb-2">
             {field.label} {field.required && "*"}
           </label>
           <select
             value={value as string}
             onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
+            className="w-full border-0 border-b border-black px-0 py-2 text-[16px] text-black font-light bg-transparent focus:outline-none focus:border-black"
             required={field.required}
           >
             <option value="">Seleziona...</option>
@@ -304,14 +210,14 @@ export default function CollaborazioniPage() {
     if (field.type === "textarea") {
       return (
         <div key={field.key}>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+          <label className="block uppercase text-[12px] tracking-[0.05em] text-black font-light mb-2">
             {field.label} {field.required && "*"}
           </label>
           <textarea
             value={value as string}
             onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
-            rows={6}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
+            rows={5}
+            className="w-full border-0 border-b border-black px-0 py-2 text-[16px] text-black font-light bg-transparent focus:outline-none focus:border-black resize-none"
             required={field.required}
           />
         </div>
@@ -320,14 +226,14 @@ export default function CollaborazioniPage() {
 
     return (
       <div key={field.key}>
-        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+        <label className="block uppercase text-[12px] tracking-[0.05em] text-black font-light mb-2">
           {field.label} {field.required && "*"}
         </label>
         <input
           type={field.type}
           value={value as string}
           onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
-          className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
+          className="w-full border-0 border-b border-black px-0 py-2 text-[16px] text-black font-light bg-transparent focus:outline-none focus:border-black"
           required={field.required}
         />
       </div>
@@ -344,7 +250,7 @@ export default function CollaborazioniPage() {
     for (let i = 0; i < normalFields.length; i += 2) {
       if (i + 1 < normalFields.length) {
         rows.push(
-          <div key={`row-${normalFields[i].key}-${normalFields[i + 1].key}`} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div key={`row-${normalFields[i].key}-${normalFields[i + 1].key}`} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
             {renderField(normalFields[i])}
             {renderField(normalFields[i + 1])}
           </div>
@@ -358,7 +264,7 @@ export default function CollaborazioniPage() {
 
     if (checkboxFields.length > 0) {
       rows.push(
-        <div key="checkbox-group" className="space-y-3">
+        <div key="checkbox-group" className="space-y-3 pt-4">
           {checkboxFields.map((f) => renderField(f))}
         </div>
       );
@@ -371,64 +277,68 @@ export default function CollaborazioniPage() {
     <>
       <CollaborazioniHero />
 
-      {/* ── TEXT (stile Made in Italy) ──────────────────────── */}
-      <section className="section-padding">
-        <div className="gtv-container-narrow">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
+      {/* ── Paragrafo intro — stile pagina prodotti ────────── */}
+      <section className="pt-20 md:pt-28 pb-12 md:pb-16">
+        <div className="gtv-container">
+          <motion.p
+            initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
+            className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto"
           >
-            <p className="text-lg text-dark leading-[1.8] font-light">
-              GTV è sempre alla ricerca di nuove visioni e talenti nel design.
-              Se desideri collaborare con noi e proporre le tue idee, inviaci la
-              tua candidatura attraverso il form sottostante. Siamo pronti a
-              esplorare insieme nuove possibilità.
-            </p>
-          </motion.div>
+            GTV è sempre alla ricerca di nuove visioni e talenti nel design.
+            Se desideri collaborare con noi e proporre le tue idee, inviaci la
+            tua candidatura attraverso il form sottostante. Siamo pronti a
+            esplorare insieme nuove possibilità.
+          </motion.p>
         </div>
       </section>
 
       {/* ── FORM ───────────────────────────────────────────── */}
-      <section className="pb-20 md:pb-28 lg:pb-36">
-        <div className="gtv-container-narrow">
-          {sent ? (
-            <div className="text-center py-12">
-              <h2 className="font-serif text-2xl text-warm-800 mb-4">Grazie!</h2>
-              <p className="text-sm text-warm-600">La tua candidatura è stata inviata con successo.</p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-4 py-3">
-                  {error}
+      <section className="pb-20 md:pb-28">
+        <div className="gtv-container">
+          <div className="max-w-[940px] mx-auto">
+            {sent ? (
+              <div className="text-center py-12">
+                <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">Grazie!</h2>
+                <p className="text-[16px] text-black font-light">La tua candidatura è stata inviata con successo.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-8">
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-4 py-3">
+                    {error}
+                  </div>
+                )}
+
+                {renderFields()}
+
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
+                  >
+                    {submitting ? "Invio in corso..." : "Invia candidatura"} &rarr;
+                  </button>
                 </div>
-              )}
-
-              {renderFields()}
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-warm-800 text-white py-3 rounded text-sm font-medium uppercase tracking-wider hover:bg-warm-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? "Invio in corso..." : "Invia candidatura"}
-              </button>
-            </form>
-          )}
+              </form>
+            )}
+          </div>
         </div>
       </section>
 
-      {/* ── BREADCRUMBS ──────────────────────────────────────── */}
-      <div className="gtv-container pb-12">
-        <nav className="flex items-center gap-2 text-[10px] uppercase tracking-[0.15em] text-warm-400">
-          <Link href="/" className="hover:text-warm-700 transition-colors">Home</Link>
-          <ChevronRight size={10} />
-          <Link href="/contatti" className="hover:text-warm-700 transition-colors">Contatti</Link>
-          <ChevronRight size={10} />
-          <span className="text-warm-600">Collaborazioni Nuovi Designer</span>
-        </nav>
+      {/* ── Breadcrumbs — stile mondo-gtv ────────────────────── */}
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
+          <span>&gt;</span>
+          <Link href="/contatti">Contatti</Link>
+          <span>&gt;</span>
+          <span>Collaborazione nuovi designer</span>
+        </div>
       </div>
     </>
   );

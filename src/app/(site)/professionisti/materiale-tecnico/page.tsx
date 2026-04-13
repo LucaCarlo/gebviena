@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Plus, Minus, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,16 +9,21 @@ interface ProductSheet {
   id: string;
   name: string;
   designerName: string;
-  techSheetUrl: string;
+  techSheetUrl: string | null;
+  model2dUrl: string | null;
+  model3dUrl: string | null;
   category: string | null;
 }
 
 const CATEGORY_ORDER = ["SEDUTE", "IMBOTTITI", "COMPLEMENTI", "TAVOLI", "OUTDOOR"];
 
+type Tab = "modelli" | "schede";
+
 export default function MaterialeTecnicoPage() {
   const [products, setProducts] = useState<ProductSheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("schede");
 
   useEffect(() => {
     fetch("/api/products/tech-sheets")
@@ -29,44 +34,69 @@ export default function MaterialeTecnicoPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Group products by primary category (uppercase, first token of category field)
-  const grouped = new Map<string, ProductSheet[]>();
-  for (const p of products) {
-    const cat = (p.category || "").split(",")[0].trim().toUpperCase() || "ALTRO";
-    if (!grouped.has(cat)) grouped.set(cat, []);
-    grouped.get(cat)!.push(p);
-  }
-  const categories = [
-    ...CATEGORY_ORDER.filter((c) => grouped.has(c)),
-    ...Array.from(grouped.keys()).filter((c) => !CATEGORY_ORDER.includes(c)),
-  ];
+  // Filter products by tab availability
+  const filtered = useMemo(() => {
+    if (tab === "schede") return products.filter((p) => p.techSheetUrl?.trim());
+    return products.filter((p) => p.model2dUrl?.trim() || p.model3dUrl?.trim());
+  }, [products, tab]);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, ProductSheet[]>();
+    for (const p of filtered) {
+      const cat = (p.category || "").split(",")[0].trim().toUpperCase() || "ALTRO";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(p);
+    }
+    return map;
+  }, [filtered]);
+
+  const categories = useMemo(() => {
+    return [
+      ...CATEGORY_ORDER.filter((c) => grouped.has(c)),
+      ...Array.from(grouped.keys()).filter((c) => !CATEGORY_ORDER.includes(c)),
+    ];
+  }, [grouped]);
+
+  // Reset open accordion when tab changes
+  useEffect(() => { setOpenCategory(null); }, [tab]);
+
+  const title = tab === "schede" ? "Schede Tecniche" : "Modelli 2D e 3D";
 
   return (
     <>
-      {/* ── Tabs nav ─────────────────────────────────────────── */}
-      <section className="pt-12 md:pt-16 pb-8">
-        <div className="flex items-center justify-center gap-3">
-          <Link
-            href="/professionisti/cataloghi"
-            className="px-4 py-1.5 rounded-full border border-warm-200 bg-warm-50 text-[13px] tracking-[0.02em] text-warm-700 hover:bg-warm-100 transition-colors"
-          >
-            Modelli 2D e 3D
-          </Link>
-          <span className="px-4 py-1.5 rounded-full border border-black bg-white text-[13px] tracking-[0.02em] text-black">
-            Schede Tecniche
-          </span>
-        </div>
-      </section>
-
-      {/* ── Titolo + Accordion per categoria ─────────────────── */}
-      <section className="pb-16 lg:pb-24" style={{ backgroundColor: "#f9f8f6" }}>
-        <div className="gtv-container py-16 lg:py-20">
-          <div className="text-center mb-12">
+      {/* ── Titolo + Tabs (stile pill pagina prodotti) ──────── */}
+      <section className="pt-16 md:pt-20 pb-8" style={{ backgroundColor: "#f9f8f6" }}>
+        <div className="gtv-container">
+          <div className="text-center mb-8">
             <h1 className="font-sans text-[38px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              Schede Tecniche
+              {title}
             </h1>
           </div>
 
+          <div className="flex flex-wrap gap-x-5 gap-y-5 justify-center">
+            <button
+              onClick={() => setTab("modelli")}
+              className={`px-2.5 py-1 rounded-full text-[16px] font-light uppercase tracking-[0.01em] transition-all ${
+                tab === "modelli" ? "bg-dark text-white" : "bg-warm-100 text-dark hover:bg-warm-200"
+              }`}
+            >
+              Modelli 2D e 3D
+            </button>
+            <button
+              onClick={() => setTab("schede")}
+              className={`px-2.5 py-1 rounded-full text-[16px] font-light uppercase tracking-[0.01em] transition-all ${
+                tab === "schede" ? "bg-dark text-white" : "bg-warm-100 text-dark hover:bg-warm-200"
+              }`}
+            >
+              Schede Tecniche
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Accordion per categoria ─────────────────────────── */}
+      <section className="pb-16 lg:pb-24" style={{ backgroundColor: "#f9f8f6" }}>
+        <div className="gtv-container pt-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -74,8 +104,8 @@ export default function MaterialeTecnicoPage() {
           >
             {loading ? (
               <div className="py-20 text-center text-warm-400 text-sm">Caricamento...</div>
-            ) : products.length === 0 ? (
-              <div className="py-20 text-center text-warm-400 text-sm">Nessuna scheda tecnica disponibile.</div>
+            ) : filtered.length === 0 ? (
+              <div className="py-20 text-center text-warm-400 text-sm">Nessun file disponibile.</div>
             ) : (
               <div className="divide-y divide-black border-t border-b border-black">
                 {categories.map((cat) => {
@@ -108,7 +138,7 @@ export default function MaterialeTecnicoPage() {
                                 {items.map((p) => (
                                   <div
                                     key={p.id}
-                                    className="flex items-center justify-between py-4 gap-4"
+                                    className="flex items-center justify-between py-4 gap-4 flex-wrap"
                                   >
                                     <div className="flex-1 min-w-0">
                                       <span className="uppercase text-[14px] tracking-[0.05em] text-black font-light">
@@ -120,19 +150,53 @@ export default function MaterialeTecnicoPage() {
                                         </span>
                                       )}
                                     </div>
-                                    <a
-                                      href={p.techSheetUrl}
-                                      download
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-2 uppercase text-[12px] tracking-[0.1em] text-black hover:text-accent transition-colors group flex-shrink-0"
-                                    >
-                                      Download
-                                      <Download
-                                        size={14}
-                                        className="transition-transform group-hover:translate-y-0.5"
-                                      />
-                                    </a>
+                                    <div className="flex items-center gap-5 flex-shrink-0">
+                                      {tab === "schede" && p.techSheetUrl && (
+                                        <a
+                                          href={p.techSheetUrl}
+                                          download
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-2 uppercase text-[12px] tracking-[0.1em] text-black hover:text-accent transition-colors group"
+                                        >
+                                          Download
+                                          <Download
+                                            size={14}
+                                            className="transition-transform group-hover:translate-y-0.5"
+                                          />
+                                        </a>
+                                      )}
+                                      {tab === "modelli" && p.model2dUrl && (
+                                        <a
+                                          href={p.model2dUrl}
+                                          download
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-2 uppercase text-[12px] tracking-[0.1em] text-black hover:text-accent transition-colors group"
+                                        >
+                                          2D
+                                          <Download
+                                            size={14}
+                                            className="transition-transform group-hover:translate-y-0.5"
+                                          />
+                                        </a>
+                                      )}
+                                      {tab === "modelli" && p.model3dUrl && (
+                                        <a
+                                          href={p.model3dUrl}
+                                          download
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-2 uppercase text-[12px] tracking-[0.1em] text-black hover:text-accent transition-colors group"
+                                        >
+                                          3D
+                                          <Download
+                                            size={14}
+                                            className="transition-transform group-hover:translate-y-0.5"
+                                          />
+                                        </a>
+                                      )}
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -156,7 +220,7 @@ export default function MaterialeTecnicoPage() {
           <span>&gt;</span>
           <Link href="/professionisti">Professionisti</Link>
           <span>&gt;</span>
-          <span>Schede Tecniche</span>
+          <span>{title}</span>
         </div>
       </div>
     </>

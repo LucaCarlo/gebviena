@@ -12,7 +12,7 @@ const contactLinks = [
   },
   {
     icon: Users,
-    title: "Collaborazioni nuovi designer",
+    title: "Collaborazione nuovi designer",
     description: "Invia la tua candidatura per collaborare con GTV.",
     href: "/contatti/collaborazioni",
   },
