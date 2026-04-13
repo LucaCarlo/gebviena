@@ -172,20 +172,19 @@ export default function ProjectDetailPage() {
       {/* ===== 4. PRODUCTS USED — same card style as product listing page ===== */}
       {products.length > 0 && (
         <section className="py-16 lg:py-24">
-          <div className="gtv-container">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-12"
-            >
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-                Prodotti utilizzati nel progetto
-              </h2>
-            </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+              Prodotti utilizzati nel progetto
+            </h2>
+          </motion.div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-8 md:gap-x-4 md:gap-y-12 px-2 md:px-3 lg:px-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20 px-2 md:px-3 lg:px-4">
               {products.map((product, i) => (
                 <motion.div
                   key={product.id}
@@ -215,7 +214,6 @@ export default function ProjectDetailPage() {
                   </Link>
                 </motion.div>
               ))}
-            </div>
           </div>
         </section>
       )}

@@ -62,7 +62,7 @@ export default function AdminProductsPage() {
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
 
   const fetchProducts = () => {
-    fetch("/api/products?limit=100")
+    fetch("/api/products?limit=10000")
       .then((r) => r.json())
       .then((data) => { setProducts(data.data || []); setLoading(false); });
   };
