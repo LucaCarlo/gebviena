@@ -44,6 +44,7 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
     year: "",
     architect: "",
     description: "",
+    shortDescription: "",
     imageUrl: "",
     coverImage: "",
     heroImage: "",
@@ -97,6 +98,7 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
         year: p.year ? String(p.year) : "",
         architect: p.architect || "",
         description: p.description || "",
+        shortDescription: p.shortDescription || "",
         imageUrl: p.imageUrl,
         coverImage: p.coverImage || "",
         heroImage: p.heroImage || "",
@@ -292,8 +294,25 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
           </div>
         </div>
 
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+            Descrizione
+          </label>
+          <p className="text-[10px] text-warm-400 mb-1.5">
+            Paragrafo introduttivo mostrato in cima alla pagina progetto (opzionale).
+          </p>
+          <textarea
+            value={form.shortDescription}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, shortDescription: e.target.value }))
+            }
+            rows={4}
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          />
+        </div>
+
         <RichTextEditor
-          label="Descrizione"
+          label="Progetto"
           value={form.description}
           onChange={(html) => setForm((prev) => ({ ...prev, description: html }))}
         />

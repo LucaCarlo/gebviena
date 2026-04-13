@@ -82,6 +82,7 @@ export interface Project {
   architect: string | null;
   country: string;
   description: string | null;
+  shortDescription: string | null;
   imageUrl: string;
   coverImage: string | null;
   heroImage: string | null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,6 +17,8 @@ export default function ProjectDetailPage() {
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [imageOrientations, setImageOrientations] = useState<Record<string, "h" | "v">>({});
 
   useEffect(() => {
     async function load() {
@@ -28,6 +30,25 @@ export default function ProjectDetailPage() {
     }
     load();
   }, [slug]);
+
+  // Measure image orientations for gallery split (horizontal vs vertical)
+  useEffect(() => {
+    if (!project?.galleryUrls) return;
+    let urls: string[] = [];
+    try { urls = JSON.parse(project.galleryUrls); } catch { /* ignore */ }
+    if (urls.length === 0) return;
+    let cancelled = false;
+    urls.forEach((url) => {
+      const img = new window.Image();
+      img.onload = () => {
+        if (cancelled) return;
+        const orient: "h" | "v" = img.naturalWidth >= img.naturalHeight ? "h" : "v";
+        setImageOrientations((prev) => (prev[url] ? prev : { ...prev, [url]: orient }));
+      };
+      img.src = url;
+    });
+    return () => { cancelled = true; };
+  }, [project?.galleryUrls]);
 
   if (loading) {
     return (
@@ -52,6 +73,11 @@ export default function ProjectDetailPage() {
     } catch { /* ignore */ }
     return [];
   })();
+
+  const horizontalImages = gallery.filter((u) => imageOrientations[u] !== "v");
+  const verticalImages = gallery.filter((u) => imageOrientations[u] === "v");
+  // While orientations are unknown, all images show in the horizontal slideshow
+  // and migrate to the vertical one as they're measured.
 
   const products = project.products?.map((pp) => pp.product).filter(Boolean) || [];
   const heroImg = project.heroImage || project.coverImage || project.imageUrl;
@@ -108,8 +134,35 @@ export default function ProjectDetailPage() {
             />
           </motion.div>
 
-          {/* Right — 3 info columns like original, with product-matching fonts */}
+          {/* Right — optional short description + 3 info columns, product-matching fonts */}
           <div className="flex flex-col justify-start pt-12 lg:pt-20 px-10 md:px-16 lg:px-20">
+            {project.shortDescription && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+                className="mb-10 lg:mb-14"
+              >
+                <div
+                  className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none overflow-hidden [&_p]:m-0"
+                  style={{ textAlign: "justify", ...(!descExpanded ? { maxHeight: "5.6em" } : {}) }}
+                >
+                  {project.shortDescription.includes("<") ? (
+                    <div dangerouslySetInnerHTML={{ __html: project.shortDescription }} />
+                  ) : (
+                    <p>{project.shortDescription}</p>
+                  )}
+                </div>
+                <button
+                  className="inline-block mt-[20px] uppercase text-xs tracking-[0.08em] text-warm-900 font-light border-b border-warm-900 pb-1"
+                  onClick={() => setDescExpanded(!descExpanded)}
+                >
+                  {descExpanded ? "Mostra meno" : "Continua a leggere"}
+                </button>
+              </motion.div>
+            )}
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -166,8 +219,15 @@ export default function ProjectDetailPage() {
       {/* White space separator */}
       <div className="h-16 lg:h-24 bg-white" />
 
-      {/* ===== 3. GALLERY — full-width slideshow with arrow navigation ===== */}
-      {gallery.length > 0 && <GallerySlideshow images={gallery} projectName={project.name} />}
+      {/* ===== 3. GALLERY — horizontal full-width slideshow ===== */}
+      {horizontalImages.length > 0 && (
+        <GallerySlideshow images={horizontalImages} projectName={project.name} />
+      )}
+
+      {/* ===== 3b. VERTICAL GALLERY — same style as product inspiration carousel ===== */}
+      {verticalImages.length > 0 && (
+        <VerticalCarousel images={verticalImages} projectName={project.name} />
+      )}
 
       {/* ===== 4. PRODUCTS USED — same card style as product listing page ===== */}
       {products.length > 0 && (
@@ -312,6 +372,118 @@ function GallerySlideshow({ images, projectName }: { images: string[]; projectNa
           <span className="text-[11px] text-warm-400 tracking-wider">
             {current + 1} / {images.length}
           </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Vertical Carousel — horizontal scroll of vertical images (product-page style) ─── */
+function VerticalCarousel({ images, projectName }: { images: string[]; projectName: string }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
+
+  const ARROW_CURSOR = hoverSide === "left"
+    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='21' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M28 22 L16 22 M21 17 L16 22 L21 27' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 22 22, pointer"
+    : hoverSide === "right"
+    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='21' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M16 22 L28 22 M23 17 L28 22 L23 27' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 22 22, pointer"
+    : "pointer";
+
+  const updateProgress = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    if (maxScroll <= 0) { setScrollProgress(0); return; }
+    setScrollProgress(el.scrollLeft / maxScroll);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+    return () => el.removeEventListener("scroll", updateProgress);
+  }, [updateProgress]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setIsDragging(true);
+    setStartX(e.pageX - el.offsetLeft);
+    setScrollLeft(el.scrollLeft);
+  };
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (isDragging) {
+      e.preventDefault();
+      const x = e.pageX - el.offsetLeft;
+      el.scrollLeft = scrollLeft - (x - startX) * 1.5;
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    if (cx < rect.width / 3) setHoverSide("left");
+    else if (cx > (rect.width * 2) / 3) setHoverSide("right");
+    else setHoverSide(null);
+  };
+  const handleMouseUp = () => setIsDragging(false);
+
+  if (images.length === 0) return null;
+
+  return (
+    <section className="pb-16 lg:pb-24">
+      <div className="relative">
+        <div
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={() => { handleMouseUp(); setHoverSide(null); }}
+          className={`flex gap-4 lg:gap-6 overflow-x-auto px-4 lg:px-6 pb-2 ${isDragging ? "select-none" : ""}`}
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none", cursor: ARROW_CURSOR }}
+        >
+          {images.map((url, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.08 }}
+              className="flex-shrink-0"
+            >
+              <div
+                className="relative overflow-hidden"
+                style={{ width: "calc(28vw - 14px)", minWidth: "242px", aspectRatio: "2.5 / 4" }}
+              >
+                <Image
+                  src={url}
+                  alt={`${projectName} ${i + 1}`}
+                  fill
+                  className="object-cover"
+                  draggable={false}
+                  sizes="45vw"
+                />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="gtv-container mt-8">
+        <div className="relative h-[1px] bg-warm-200 w-full max-w-3xl mx-auto">
+          <div
+            className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-150 ease-out"
+            style={{
+              width: "33%",
+              transform: `translateX(${scrollProgress * 200}%)`,
+            }}
+          />
         </div>
       </div>
     </section>

@@ -149,6 +149,7 @@ model Project {
   year           Int?
   architect      String? @db.Text
   description    String? @db.Text
+  shortDescription String? @db.Text
   imageUrl       String @db.Text
   coverImage     String? @db.Text
   heroImage      String? @db.Text
