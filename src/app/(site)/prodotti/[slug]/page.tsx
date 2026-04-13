@@ -22,6 +22,13 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
+  const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
+
+  const ARROW_CURSOR = hoverSide === "left"
+    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='29' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M38 30 L22 30 M28 24 L22 30 L28 36' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 30 30, pointer"
+    : hoverSide === "right"
+    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='29' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M22 30 L38 30 M32 24 L38 30 L32 36' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 30 30, pointer"
+    : "grab";
 
   const updateProgress = useCallback(() => {
     const el = scrollRef.current;
@@ -47,12 +54,17 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
     setScrollLeft(el.scrollLeft);
   };
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    e.preventDefault();
     const el = scrollRef.current;
     if (!el) return;
-    const x = e.pageX - el.offsetLeft;
-    el.scrollLeft = scrollLeft - (x - startX) * 1.5;
+    if (isDragging) {
+      e.preventDefault();
+      const x = e.pageX - el.offsetLeft;
+      el.scrollLeft = scrollLeft - (x - startX) * 1.5;
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    setHoverSide(x < rect.width / 2 ? "left" : "right");
   };
   const handleMouseUp = () => setIsDragging(false);
 
@@ -66,11 +78,9 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          className={`flex gap-4 lg:gap-6 overflow-x-auto px-4 lg:px-6 pb-2 ${
-            isDragging ? "cursor-grabbing select-none" : "cursor-grab"
-          }`}
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          onMouseLeave={() => { handleMouseUp(); setHoverSide(null); }}
+          className={`flex gap-4 lg:gap-6 overflow-x-auto px-4 lg:px-6 pb-2 ${isDragging ? "select-none" : ""}`}
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none", cursor: ARROW_CURSOR }}
         >
           {images.map((url, i) => (
             <motion.div

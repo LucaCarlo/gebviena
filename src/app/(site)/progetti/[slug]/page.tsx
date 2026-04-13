@@ -255,8 +255,8 @@ function GallerySlideshow({ images, projectName }: { images: string[]; projectNa
   };
 
   const cursorStyle = hoverSide === "left"
-    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='29' fill='none' stroke='white' stroke-width='1'/%3E%3Cpath d='M38 30 L22 30 M28 24 L22 30 L28 36' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E\") 30 30, pointer"
-    : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='29' fill='none' stroke='white' stroke-width='1'/%3E%3Cpath d='M22 30 L38 30 M32 24 L38 30 L32 36' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E\") 30 30, pointer";
+    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='29' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M38 30 L22 30 M28 24 L22 30 L28 36' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 30 30, pointer"
+    : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='29' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M22 30 L38 30 M32 24 L38 30 L32 36' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 30 30, pointer";
 
   return (
     <section className="pb-16 lg:pb-24">
