@@ -246,17 +246,21 @@ function GallerySlideshow({ images, projectName }: { images: string[]; projectNa
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    setHoverSide(x < rect.width / 2 ? "left" : "right");
+    if (x < rect.width / 3) setHoverSide("left");
+    else if (x > (rect.width * 2) / 3) setHoverSide("right");
+    else setHoverSide(null);
   };
 
   const handleClick = () => {
     if (hoverSide === "left") goPrev();
-    else goNext();
+    else if (hoverSide === "right") goNext();
   };
 
   const cursorStyle = hoverSide === "left"
-    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='29' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M38 30 L22 30 M28 24 L22 30 L28 36' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 30 30, pointer"
-    : "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Ccircle cx='30' cy='30' r='29' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M22 30 L38 30 M32 24 L38 30 L32 36' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 30 30, pointer";
+    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='21' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M28 22 L16 22 M21 17 L16 22 L21 27' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 22 22, pointer"
+    : hoverSide === "right"
+    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='21' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M16 22 L28 22 M23 17 L28 22 L23 27' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 22 22, pointer"
+    : "pointer";
 
   return (
     <section className="pb-16 lg:pb-24">
