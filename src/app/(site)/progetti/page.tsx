@@ -331,11 +331,13 @@ function ProjectsContent() {
         });
       });
       setProductOptions(
-        (productsResp.data || []).map((p: { id: string; name: string }) => ({
-          value: p.id,
-          label: p.name,
-          count: productCounts[p.id] || 0,
-        }))
+        (productsResp.data || [])
+          .map((p: { id: string; name: string }) => ({
+            value: p.id,
+            label: p.name,
+            count: productCounts[p.id] || 0,
+          }))
+          .filter((o: FilterOption) => o.count > 0)
       );
     });
   }, []);
