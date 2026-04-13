@@ -260,7 +260,7 @@ export default function ProductDetailPage() {
               {product.description && (
                 <div
                   className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none overflow-hidden [&_p]:m-0"
-                  style={{ textAlign: "justify", ...(!descExpanded ? { maxHeight: "5.6em" } : {}) }}
+                  style={{ ...(!descExpanded ? { maxHeight: "5.6em" } : {}) }}
                   dangerouslySetInnerHTML={{ __html: product.description.includes("<") ? product.description : `<p>${product.description}</p>` }}
                 />
               )}

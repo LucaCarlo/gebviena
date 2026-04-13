@@ -314,10 +314,10 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
 
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            Descrizione
+            Progetto
           </label>
           <p className="text-[10px] text-warm-400 mb-1.5">
-            Paragrafo introduttivo mostrato in cima alla pagina progetto (opzionale).
+            Testo breve mostrato nella colonna &ldquo;Progetto&rdquo; accanto a Foto da e Location.
           </p>
           <textarea
             value={form.shortDescription}
@@ -330,7 +330,7 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
         </div>
 
         <RichTextEditor
-          label="Progetto"
+          label="Descrizione"
           value={form.description}
           onChange={(html) => setForm((prev) => ({ ...prev, description: html }))}
         />

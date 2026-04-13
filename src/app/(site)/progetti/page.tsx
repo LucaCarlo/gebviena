@@ -306,28 +306,38 @@ function ProjectsContent() {
   }, [fetchProjects]);
 
   useEffect(() => {
-    fetch("/api/projects?limit=500")
-      .then((r) => r.json())
-      .then((data) => {
-        const projects = data.data || [];
-        // Count per country
-        const countryCounts: Record<string, number> = {};
-        projects.forEach((p: Project) => {
-          countryCounts[p.country] = (countryCounts[p.country] || 0) + 1;
+    Promise.all([
+      fetch("/api/projects?limit=500").then((r) => r.json()),
+      fetch("/api/products?limit=500").then((r) => r.json()),
+    ]).then(([projectsResp, productsResp]) => {
+      const projects: (Project & { products?: { productId: string }[] })[] = projectsResp.data || [];
+
+      // Count per country
+      const countryCounts: Record<string, number> = {};
+      projects.forEach((p) => {
+        countryCounts[p.country] = (countryCounts[p.country] || 0) + 1;
+      });
+      setCountryOptions(
+        Object.entries(countryCounts)
+          .sort(([, a], [, b]) => b - a)
+          .map(([country, count]) => ({ value: country, label: country, count }))
+      );
+
+      // Count per product (number of projects featuring each product)
+      const productCounts: Record<string, number> = {};
+      projects.forEach((p) => {
+        (p.products || []).forEach((pp) => {
+          productCounts[pp.productId] = (productCounts[pp.productId] || 0) + 1;
         });
-        setCountryOptions(
-          Object.entries(countryCounts)
-            .sort(([, a], [, b]) => b - a)
-            .map(([country, count]) => ({ value: country, label: country, count }))
-        );
       });
-    fetch("/api/products?limit=500")
-      .then((r) => r.json())
-      .then((data) => {
-        setProductOptions(
-          (data.data || []).map((p: { id: string; name: string }) => ({ value: p.id, label: p.name, count: 0 }))
-        );
-      });
+      setProductOptions(
+        (productsResp.data || []).map((p: { id: string; name: string }) => ({
+          value: p.id,
+          label: p.name,
+          count: productCounts[p.id] || 0,
+        }))
+      );
+    });
   }, []);
 
   const setType = (type: string) => {

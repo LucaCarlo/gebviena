@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
       where,
       include: {
         _count: { select: { products: true } },
+        products: { select: { productId: true } },
       },
       skip: (page - 1) * limit,
       take: limit,

@@ -136,7 +136,7 @@ export default function ProjectDetailPage() {
 
           {/* Right — optional short description + 3 info columns, product-matching fonts */}
           <div className="flex flex-col justify-start pt-12 lg:pt-20 px-10 md:px-16 lg:px-20">
-            {project.shortDescription && (
+            {project.description && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -146,12 +146,12 @@ export default function ProjectDetailPage() {
               >
                 <div
                   className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none overflow-hidden [&_p]:m-0"
-                  style={{ textAlign: "justify", ...(!descExpanded ? { maxHeight: "5.6em" } : {}) }}
+                  style={{ ...(!descExpanded ? { maxHeight: "5.6em" } : {}) }}
                 >
-                  {project.shortDescription.includes("<") ? (
-                    <div dangerouslySetInnerHTML={{ __html: project.shortDescription }} />
+                  {project.description.includes("<") ? (
+                    <div dangerouslySetInnerHTML={{ __html: project.description }} />
                   ) : (
-                    <p>{project.shortDescription}</p>
+                    <p>{project.description}</p>
                   )}
                 </div>
                 <button
@@ -175,17 +175,12 @@ export default function ProjectDetailPage() {
                   <p className="uppercase text-[16px] tracking-[0.03em] text-black font-bold mb-4">
                     Progetto
                   </p>
-                  {project.description && (
-                    project.description.includes("<") ? (
-                      <div
-                        className="leading-snug text-[20px] font-light max-w-none text-black [&_p]:m-0"
-                        dangerouslySetInnerHTML={{ __html: project.description }}
-                      />
-                    ) : (
-                      <p className="leading-snug text-[20px] font-light text-black">
-                        {project.description}
-                      </p>
-                    )
+                  {project.shortDescription ? (
+                    <p className="leading-snug text-[20px] font-light text-black whitespace-pre-line">
+                      {project.shortDescription}
+                    </p>
+                  ) : (
+                    <p className="text-[20px] font-light text-black/40">—</p>
                   )}
                 </div>
 
