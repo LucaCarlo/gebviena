@@ -9,7 +9,7 @@ CREATE TABLE `AwardProduct` (
 
     UNIQUE INDEX `AwardProduct_awardId_productId_key`(`awardId`, `productId`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;
 
 -- AddForeignKey
 ALTER TABLE `AwardProduct` ADD CONSTRAINT `AwardProduct_awardId_fkey` FOREIGN KEY (`awardId`) REFERENCES `Award`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
