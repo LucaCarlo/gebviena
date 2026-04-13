@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { GripVertical, Check, Plus, X } from "lucide-react";
+import { GripVertical, Check, Plus, X, Trash2 } from "lucide-react";
 
 interface FieldConfig {
   key: string;
@@ -10,22 +10,25 @@ interface FieldConfig {
   required: boolean;
   enabled: boolean;
   order: number;
+  placeholder?: string;
 }
+
+const FIELD_TYPES = [
+  { value: "text", label: "Testo" },
+  { value: "email", label: "Email" },
+  { value: "tel", label: "Telefono" },
+  { value: "number", label: "Numero" },
+  { value: "url", label: "URL" },
+  { value: "textarea", label: "Testo lungo" },
+  { value: "checkbox", label: "Checkbox" },
+  { value: "select", label: "Selezione" },
+];
 
 const FORM_TYPE_LABELS: Record<string, string> = {
   info_request: "Richiesta Informazioni",
   store_contact: "Contatto Agente / Negozio",
   newsletter: "Newsletter",
   collaboration: "Collaborazioni",
-};
-
-const TYPE_BADGES: Record<string, string> = {
-  text: "Testo",
-  email: "Email",
-  tel: "Telefono",
-  textarea: "Testo lungo",
-  checkbox: "Checkbox",
-  select: "Selezione",
 };
 
 const TABS_WITH_REASONS = ["info_request", "store_contact", "collaboration"];
@@ -87,6 +90,43 @@ export default function AdminFormsPage() {
         c.formType === activeTab
           ? { ...c, fields: c.fields.map((f, i) => (i === index ? { ...f, ...updates } : f)) }
           : c
+      )
+    );
+    setSaved(false);
+  };
+
+  const deleteField = (index: number) => {
+    if (!confirm("Rimuovere questo campo? L'azione sarà definitiva al salvataggio.")) return;
+    setConfigs((prev) =>
+      prev.map((c) =>
+        c.formType === activeTab
+          ? { ...c, fields: c.fields.filter((_, i) => i !== index).map((f, i) => ({ ...f, order: i })) }
+          : c
+      )
+    );
+    setSaved(false);
+  };
+
+  const addField = () => {
+    if (!activeConfig) return;
+    const existingKeys = new Set(activeConfig.fields.map((f) => f.key));
+    let i = 1;
+    let newKey = `custom_field_${i}`;
+    while (existingKeys.has(newKey)) {
+      i++;
+      newKey = `custom_field_${i}`;
+    }
+    const newField: FieldConfig = {
+      key: newKey,
+      label: "Nuovo campo",
+      type: "text",
+      required: false,
+      enabled: true,
+      order: activeConfig.fields.length,
+    };
+    setConfigs((prev) =>
+      prev.map((c) =>
+        c.formType === activeTab ? { ...c, fields: [...c.fields, newField] } : c
       )
     );
     setSaved(false);
@@ -235,88 +275,127 @@ export default function AdminFormsPage() {
       {/* Fields */}
       {activeConfig && (
         <div className="bg-white rounded-xl shadow-sm border border-warm-200">
-          <div className="p-4 border-b border-warm-200">
-            <div className="grid grid-cols-12 gap-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider">
-              <div className="col-span-1"></div>
-              <div className="col-span-4">Campo</div>
-              <div className="col-span-2">Tipo</div>
-              <div className="col-span-2 text-center">Obbligatorio</div>
-              <div className="col-span-2 text-center">Attivo</div>
-              <div className="col-span-1"></div>
-            </div>
-          </div>
-
           <div className="divide-y divide-warm-100">
             {activeConfig.fields.map((field, index) => (
               <div
-                key={field.key}
+                key={`${field.key}-${index}`}
                 draggable
                 onDragStart={() => handleDragStart(index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDragEnd={handleDragEnd}
-                className={`grid grid-cols-12 gap-2 items-center px-4 py-3 transition-colors ${
+                className={`px-4 py-4 transition-colors ${
                   dragIndex === index ? "bg-warm-50" : "hover:bg-warm-50/50"
-                } ${!field.enabled ? "opacity-50" : ""}`}
+                } ${!field.enabled ? "opacity-60" : ""}`}
               >
-                {/* Drag handle */}
-                <div className="col-span-1 flex justify-center cursor-grab active:cursor-grabbing">
-                  <GripVertical size={16} className="text-warm-300" />
-                </div>
+                <div className="flex items-start gap-3">
+                  <div className="pt-2 cursor-grab active:cursor-grabbing">
+                    <GripVertical size={16} className="text-warm-300" />
+                  </div>
 
-                {/* Label (editable) */}
-                <div className="col-span-4">
-                  <input
-                    type="text"
-                    value={field.label}
-                    onChange={(e) => updateField(index, { label: e.target.value })}
-                    className="w-full text-sm text-warm-800 bg-transparent border-b border-transparent hover:border-warm-300 focus:border-warm-800 focus:outline-none px-1 py-0.5 transition-colors"
-                  />
-                  <span className="text-[10px] text-warm-400 px-1">{field.key}</span>
-                </div>
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3">
+                    {/* Label */}
+                    <div className="md:col-span-5">
+                      <label className="block text-[10px] font-semibold text-warm-500 uppercase mb-1">Etichetta</label>
+                      <input
+                        type="text"
+                        value={field.label}
+                        onChange={(e) => updateField(index, { label: e.target.value })}
+                        className="w-full text-sm border border-warm-300 rounded px-2 py-1.5 focus:border-warm-800 focus:outline-none"
+                      />
+                    </div>
 
-                {/* Type badge */}
-                <div className="col-span-2">
-                  <span className="inline-block text-[10px] font-medium bg-warm-100 text-warm-600 px-2 py-0.5 rounded">
-                    {TYPE_BADGES[field.type] || field.type}
-                  </span>
-                </div>
+                    {/* Key */}
+                    <div className="md:col-span-3">
+                      <label className="block text-[10px] font-semibold text-warm-500 uppercase mb-1">Chiave</label>
+                      <input
+                        type="text"
+                        value={field.key}
+                        onChange={(e) => updateField(index, { key: e.target.value.replace(/[^a-zA-Z0-9_]/g, "") })}
+                        className="w-full text-sm border border-warm-300 rounded px-2 py-1.5 focus:border-warm-800 focus:outline-none font-mono"
+                      />
+                    </div>
 
-                {/* Required toggle */}
-                <div className="col-span-2 flex justify-center">
+                    {/* Type */}
+                    <div className="md:col-span-2">
+                      <label className="block text-[10px] font-semibold text-warm-500 uppercase mb-1">Tipo</label>
+                      <select
+                        value={field.type}
+                        onChange={(e) => updateField(index, { type: e.target.value })}
+                        className="w-full text-sm border border-warm-300 rounded px-2 py-1.5 focus:border-warm-800 focus:outline-none bg-white"
+                      >
+                        {FIELD_TYPES.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Toggles */}
+                    <div className="md:col-span-2 flex items-end gap-2 pb-1">
+                      <button
+                        type="button"
+                        onClick={() => updateField(index, { required: !field.required })}
+                        title={field.required ? "Obbligatorio" : "Opzionale"}
+                        className={`flex-1 text-[10px] uppercase tracking-wider px-2 py-1.5 rounded border transition-colors ${
+                          field.required
+                            ? "bg-warm-800 border-warm-800 text-white"
+                            : "border-warm-300 text-warm-500 hover:border-warm-500"
+                        }`}
+                      >
+                        Obbl.
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateField(index, { enabled: !field.enabled })}
+                        className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
+                          field.enabled ? "bg-green-500" : "bg-warm-300"
+                        }`}
+                        title={field.enabled ? "Attivo" : "Disattivato"}
+                      >
+                        <span
+                          className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                            field.enabled ? "left-[18px]" : "left-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Placeholder (for text/textarea/select) */}
+                    {(field.type === "text" || field.type === "email" || field.type === "tel" || field.type === "number" || field.type === "url" || field.type === "textarea") && (
+                      <div className="md:col-span-12">
+                        <label className="block text-[10px] font-semibold text-warm-500 uppercase mb-1">Placeholder (opzionale)</label>
+                        <input
+                          type="text"
+                          value={field.placeholder || ""}
+                          onChange={(e) => updateField(index, { placeholder: e.target.value })}
+                          className="w-full text-sm border border-warm-200 rounded px-2 py-1.5 focus:border-warm-800 focus:outline-none"
+                          placeholder="Testo guida nel campo vuoto..."
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     type="button"
-                    onClick={() => updateField(index, { required: !field.required })}
-                    className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                      field.required
-                        ? "bg-warm-800 border-warm-800 text-white"
-                        : "border-warm-300 hover:border-warm-500"
-                    }`}
+                    onClick={() => deleteField(index)}
+                    className="text-warm-400 hover:text-red-600 transition-colors p-1"
+                    title="Elimina campo"
                   >
-                    {field.required && <Check size={12} />}
+                    <Trash2 size={16} />
                   </button>
                 </div>
-
-                {/* Enabled toggle */}
-                <div className="col-span-2 flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => updateField(index, { enabled: !field.enabled })}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${
-                      field.enabled ? "bg-green-500" : "bg-warm-300"
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                        field.enabled ? "left-5" : "left-0.5"
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Key (readonly) */}
-                <div className="col-span-1" />
               </div>
             ))}
+          </div>
+
+          {/* Add field */}
+          <div className="p-4 border-t border-warm-100">
+            <button
+              type="button"
+              onClick={addField}
+              className="bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors flex items-center gap-1"
+            >
+              <Plus size={14} /> Aggiungi campo
+            </button>
           </div>
 
           {/* Save button */}

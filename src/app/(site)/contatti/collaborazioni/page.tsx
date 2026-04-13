@@ -14,20 +14,18 @@ interface FieldConfig {
   required: boolean;
   enabled: boolean;
   order: number;
+  placeholder?: string;
 }
 
 const DEFAULT_COLLABORATION_FIELDS: FieldConfig[] = [
-  { key: "name", label: "Nome e Cognome", type: "text", required: true, enabled: true, order: 0 },
-  { key: "email", label: "Email", type: "email", required: true, enabled: true, order: 1 },
-  { key: "company", label: "Nome dello studio", type: "text", required: false, enabled: true, order: 2 },
-  { key: "phone", label: "Telefono", type: "tel", required: false, enabled: true, order: 3 },
-  { key: "vatNumber", label: "Partita IVA", type: "text", required: false, enabled: true, order: 4 },
-  { key: "contactReason", label: "Motivo del contatto", type: "select", required: false, enabled: false, order: 5 },
-  { key: "subject", label: "Oggetto", type: "text", required: false, enabled: false, order: 6 },
-  { key: "message", label: "Messaggio", type: "textarea", required: true, enabled: true, order: 7 },
-  { key: "notes", label: "Altre note", type: "textarea", required: false, enabled: true, order: 8 },
-  { key: "acceptPrivacy", label: "Accetto la privacy policy", type: "checkbox", required: true, enabled: true, order: 9 },
-  { key: "subscribeNewsletter", label: "Desidero ricevere aggiornamenti e novità", type: "checkbox", required: false, enabled: true, order: 10 },
+  { key: "firstName", label: "Nome", type: "text", required: true, enabled: true, order: 0 },
+  { key: "lastName", label: "Cognome", type: "text", required: true, enabled: true, order: 1 },
+  { key: "email", label: "Indirizzo email", type: "email", required: true, enabled: true, order: 2 },
+  { key: "company", label: "Nome dello studio", type: "text", required: false, enabled: true, order: 3 },
+  { key: "vatNumber", label: "Partita IVA", type: "text", required: true, enabled: true, order: 4 },
+  { key: "notes", label: "Altre informazioni", type: "textarea", required: false, enabled: true, order: 5, placeholder: "Hai qualcosa da aggiungere? Inserisci qui le tue note" },
+  { key: "acceptPrivacy", label: "Conferma di aver preso visione dell'informativa della Privacy e sull'utilizzo dei dati personali", type: "checkbox", required: true, enabled: true, order: 6 },
+  { key: "acceptProfiling", label: "Presto il consenso per le attività di profilazione", type: "checkbox", required: true, enabled: true, order: 7 },
 ];
 
 /* ── HERO — stesso stile pagina GTV Experience ──────────── */
@@ -114,8 +112,14 @@ export default function CollaborazioniPage() {
     e.preventDefault();
     setError("");
 
-    if (!form.acceptPrivacy) {
+    const privacyField = activeConfig.find((f) => f.key === "acceptPrivacy");
+    if (privacyField?.required && !form.acceptPrivacy) {
       setError("Devi accettare la privacy policy per inviare il messaggio.");
+      return;
+    }
+    const profilingField = activeConfig.find((f) => f.key === "acceptProfiling");
+    if (profilingField?.required && !form.acceptProfiling) {
+      setError("Devi accettare la profilazione per inviare il messaggio.");
       return;
     }
 
@@ -127,11 +131,12 @@ export default function CollaborazioniPage() {
         recaptchaToken = await executeRecaptcha("contact_collaboration");
       }
 
+      const fullName = [form.firstName, form.lastName].filter(Boolean).join(" ").trim() || (form.name as string) || "";
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: form.name || "",
+          name: fullName,
           email: form.email || "",
           company: form.company || undefined,
           phone: form.phone || undefined,
@@ -139,8 +144,9 @@ export default function CollaborazioniPage() {
           subject: form.subject || undefined,
           message: [
             form.vatNumber ? `Partita IVA: ${form.vatNumber}` : "",
-            form.notes ? `Altre note: ${form.notes}` : "",
+            form.notes ? `Altre informazioni: ${form.notes}` : "",
             form.message || "",
+            form.acceptProfiling ? "Consenso profilazione: SI" : "",
           ].filter(Boolean).join("\n\n"),
           type: "collaboration",
           recaptchaToken,
@@ -167,35 +173,68 @@ export default function CollaborazioniPage() {
     const value = form[field.key] ?? (field.type === "checkbox" ? false : "");
 
     if (field.type === "checkbox") {
-      if (field.key === "acceptPrivacy") {
-        return (
-          <label key={field.key} className="flex items-start gap-3 cursor-pointer">
-            <input type="checkbox" checked={!!value} onChange={(e) => setForm({ ...form, [field.key]: e.target.checked })} className="mt-1 accent-black" required={field.required} />
-            <span className="text-[14px] text-black font-light">
-              Accetto la{" "}
-              <Link href="/privacy-policy" className="underline underline-offset-2 hover:text-warm-600">privacy policy</Link>{" "}*
-            </span>
-          </label>
-        );
-      }
+      // Render label with embedded link if it mentions Privacy/profilazione
+      const labelHtml = (() => {
+        const text = field.label;
+        const lc = text.toLowerCase();
+        if (lc.includes("privacy")) {
+          // Wrap "informativa della Privacy" or "privacy policy" with link
+          const match = text.match(/(privacy policy|informativa della privacy)/i);
+          if (match) {
+            const idx = text.toLowerCase().indexOf(match[0].toLowerCase());
+            return (
+              <>
+                {text.slice(0, idx)}
+                <Link href="/privacy-policy" className="underline underline-offset-2 hover:text-warm-600">{text.slice(idx, idx + match[0].length)}</Link>
+                {text.slice(idx + match[0].length)}
+              </>
+            );
+          }
+        }
+        if (lc.includes("profilazione")) {
+          const match = text.match(/(le attività di profilazione|attività di profilazione)/i);
+          if (match) {
+            const idx = text.toLowerCase().indexOf(match[0].toLowerCase());
+            return (
+              <>
+                {text.slice(0, idx)}
+                <Link href="/privacy-policy#profilazione" className="underline underline-offset-2 hover:text-warm-600">{text.slice(idx, idx + match[0].length)}</Link>
+                {text.slice(idx + match[0].length)}
+              </>
+            );
+          }
+        }
+        return text;
+      })();
+
       return (
         <label key={field.key} className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" checked={!!value} onChange={(e) => setForm({ ...form, [field.key]: e.target.checked })} className="mt-1 accent-black" />
-          <span className="text-[14px] text-black font-light">{field.label}</span>
+          <input
+            type="checkbox"
+            checked={!!value}
+            onChange={(e) => setForm({ ...form, [field.key]: e.target.checked })}
+            className="mt-1 accent-black"
+            required={field.required}
+          />
+          <span className="text-[13px] text-black font-light leading-snug">
+            {labelHtml}{field.required && "*"}
+          </span>
         </label>
       );
     }
 
+    const inputBase = "w-full border border-black bg-white text-[16px] text-black font-light px-3 py-3 focus:outline-none focus:border-black placeholder:text-warm-400";
+
     if (field.type === "select") {
       return (
         <div key={field.key}>
-          <label className="block uppercase text-[12px] tracking-[0.05em] text-black font-light mb-2">
-            {field.label} {field.required && "*"}
+          <label className="block text-[13px] text-black font-light mb-2">
+            {field.label}{field.required && "*"}
           </label>
           <select
             value={value as string}
             onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
-            className="w-full border-0 border-b border-black px-0 py-2 text-[16px] text-black font-light bg-transparent focus:outline-none focus:border-black"
+            className={inputBase}
             required={field.required}
           >
             <option value="">Seleziona...</option>
@@ -210,14 +249,15 @@ export default function CollaborazioniPage() {
     if (field.type === "textarea") {
       return (
         <div key={field.key}>
-          <label className="block uppercase text-[12px] tracking-[0.05em] text-black font-light mb-2">
-            {field.label} {field.required && "*"}
+          <label className="block text-[13px] text-black font-light mb-2">
+            {field.label}{field.required && "*"}
           </label>
           <textarea
             value={value as string}
             onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
-            rows={5}
-            className="w-full border-0 border-b border-black px-0 py-2 text-[16px] text-black font-light bg-transparent focus:outline-none focus:border-black resize-none"
+            rows={4}
+            placeholder={field.placeholder}
+            className={`${inputBase} resize-y`}
             required={field.required}
           />
         </div>
@@ -226,14 +266,15 @@ export default function CollaborazioniPage() {
 
     return (
       <div key={field.key}>
-        <label className="block uppercase text-[12px] tracking-[0.05em] text-black font-light mb-2">
-          {field.label} {field.required && "*"}
+        <label className="block text-[13px] text-black font-light mb-2">
+          {field.label}{field.required && "*"}
         </label>
         <input
           type={field.type}
           value={value as string}
           onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
-          className="w-full border-0 border-b border-black px-0 py-2 text-[16px] text-black font-light bg-transparent focus:outline-none focus:border-black"
+          placeholder={field.placeholder}
+          className={inputBase}
           required={field.required}
         />
       </div>
@@ -241,26 +282,12 @@ export default function CollaborazioniPage() {
   };
 
   const renderFields = () => {
-    const normalFields = activeConfig.filter((f) => f.type !== "checkbox" && f.type !== "textarea");
-    const textareaFields = activeConfig.filter((f) => f.type === "textarea");
+    const normalFields = activeConfig.filter((f) => f.type !== "checkbox");
     const checkboxFields = activeConfig.filter((f) => f.type === "checkbox");
 
-    const rows: React.ReactNode[] = [];
-
-    for (let i = 0; i < normalFields.length; i += 2) {
-      if (i + 1 < normalFields.length) {
-        rows.push(
-          <div key={`row-${normalFields[i].key}-${normalFields[i + 1].key}`} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
-            {renderField(normalFields[i])}
-            {renderField(normalFields[i + 1])}
-          </div>
-        );
-      } else {
-        rows.push(<div key={`row-${normalFields[i].key}`}>{renderField(normalFields[i])}</div>);
-      }
-    }
-
-    textareaFields.forEach((f) => { rows.push(renderField(f)); });
+    const rows: React.ReactNode[] = normalFields.map((f) => (
+      <div key={f.key}>{renderField(f)}</div>
+    ));
 
     if (checkboxFields.length > 0) {
       rows.push(
@@ -305,7 +332,7 @@ export default function CollaborazioniPage() {
                 <p className="text-[16px] text-black font-light">La tua candidatura è stata inviata con successo.</p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
                   <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-4 py-3">
                     {error}
@@ -314,14 +341,14 @@ export default function CollaborazioniPage() {
 
                 {renderFields()}
 
-                <div className="pt-4">
+                <div className="pt-6">
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
+                    className="uppercase text-[14px] tracking-[0.1em] text-black font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ textUnderlineOffset: "6px", textDecorationThickness: "0.5px" }}
                   >
-                    {submitting ? "Invio in corso..." : "Invia candidatura"} &rarr;
+                    {submitting ? "Invio in corso..." : "Invia i tuoi dati"}
                   </button>
                 </div>
               </form>
