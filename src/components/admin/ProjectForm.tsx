@@ -320,9 +320,9 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
             Testo breve mostrato nella colonna &ldquo;Progetto&rdquo; accanto a Foto da e Location.
           </p>
           <textarea
-            value={form.shortDescription}
+            value={form.description}
             onChange={(e) =>
-              setForm((prev) => ({ ...prev, shortDescription: e.target.value }))
+              setForm((prev) => ({ ...prev, description: e.target.value }))
             }
             rows={4}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
@@ -331,8 +331,8 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
 
         <RichTextEditor
           label="Descrizione"
-          value={form.description}
-          onChange={(html) => setForm((prev) => ({ ...prev, description: html }))}
+          value={form.shortDescription}
+          onChange={(html) => setForm((prev) => ({ ...prev, shortDescription: html }))}
         />
       </div>
 
