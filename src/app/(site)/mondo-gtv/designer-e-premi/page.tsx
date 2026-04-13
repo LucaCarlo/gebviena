@@ -5,6 +5,8 @@ import { getRelatedCardImages } from "@/lib/page-images";
 import type { Metadata } from "next";
 import DesignerGrid from "./DesignerGrid";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Designer e Premi | Gebrüder Thonet Vienna",
   description:
