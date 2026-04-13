@@ -74,8 +74,8 @@ export default async function GtvExperiencePage() {
           priority
         />
         <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute bottom-[12.5vh] left-0 right-0 flex flex-col items-center text-center px-8">
-          <h1 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white leading-snug font-light uppercase tracking-[inherit]">
+        <div className="absolute inset-0 flex items-center justify-center text-center px-8">
+          <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight">
             GTV Experience
             <br />
             Interno Marche Design Hotel
@@ -86,7 +86,7 @@ export default async function GtvExperiencePage() {
       {/* ── Intro — titolo + testo ───────────────────────────────── */}
       <section className="pt-20 md:pt-28 pb-20 md:pb-28">
         <div className="gtv-container">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center max-w-[940px] mx-auto">
+          <h2 className="font-serif text-[44px] text-black leading-[1.15] text-center max-w-[940px] mx-auto" style={{ marginBottom: "63px" }}>
             GTV arreda gli spazi
             <br />
             prestigiosi di Interno Marche
@@ -122,21 +122,10 @@ export default async function GtvExperiencePage() {
         </div>
       </section>
 
-      {/* ── Storie, Visioni, Ispirazioni — stesso stile "Born in Vienna" ──── */}
+      {/* ── Storie, Visioni, Ispirazioni — stile "Born in Vienna" (testo sx, img dx) ──── */}
       <section className="w-full bg-warm-50">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
-          {/* Left: image — stesso aspect di Born in Vienna */}
-          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
-            <Image
-              src={imgs.stories}
-              alt="Storie, visioni, ispirazioni — Interno Marche"
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
-          </div>
-
-          {/* Right: text — stesso padding/tipografia di Born in Vienna */}
+          {/* Left: text */}
           <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               Storie, visioni, ispirazioni
@@ -149,16 +138,27 @@ export default async function GtvExperiencePage() {
               per l&apos;eccellenza.
             </p>
           </div>
+
+          {/* Right: image */}
+          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
+            <Image
+              src={imgs.stories}
+              alt="Storie, visioni, ispirazioni — Interno Marche"
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+            />
+          </div>
         </div>
       </section>
 
-      {/* ── La rinascita di Villa Gabrielli — titolo + testo ──────── */}
-      <section className="pt-20 md:pt-28 pb-16 md:pb-20">
-        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center">
+      {/* ── La rinascita di Villa Gabrielli — stesso stile "GTV arreda" ──── */}
+      <section className="pt-20 md:pt-28 pb-20 md:pb-28">
+        <div className="gtv-container">
+          <h2 className="font-serif text-[44px] text-black leading-[1.15] text-center max-w-[940px] mx-auto" style={{ marginBottom: "63px" }}>
             La rinascita di Villa Gabrielli
           </h2>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left max-w-[940px] mx-auto">
             Villa Gabrielli, un gioiello tardo Liberty, simbolo dello sviluppo
             della citt&agrave; di Tolentino nel secolo scorso. Nel 1922,
             l&apos;edificio era inizialmente una fabbrica e la residenza

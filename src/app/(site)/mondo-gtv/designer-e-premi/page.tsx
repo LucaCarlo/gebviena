@@ -71,7 +71,7 @@ export default async function DesignerPremiPage() {
       {/* ── Titolo + Intro ─────────────────────────────────────── */}
       <section className="pt-20 md:pt-28 pb-16 md:pb-20">
         <div className="gtv-container">
-          <h1 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-[100px]">
+          <h1 className="font-serif text-[58px] text-black tracking-normal text-center mb-[200px]">
             Designer e premi
           </h1>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
