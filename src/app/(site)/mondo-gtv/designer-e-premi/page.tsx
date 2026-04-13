@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getRelatedCardImages } from "@/lib/page-images";
-import PageHero from "@/components/PageHero";
 import type { Metadata } from "next";
 import DesignerGrid from "./DesignerGrid";
 
@@ -31,6 +30,17 @@ const RELATED_PAGES = [
 ];
 
 export default async function DesignerPremiPage() {
+  // Fetch hero slide for this page
+  const heroSlide = await prisma.heroSlide.findFirst({
+    where: { page: "designer-e-premi", isActive: true },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  const heroImage = heroSlide?.imageUrl || "/images/designer-premi-hero.webp";
+  const heroTitle = heroSlide?.title || "Designer e premi";
+  const heroSubtitle = heroSlide?.subtitle || null;
+  const heroImagePosition = heroSlide?.imagePosition || "center center";
+
   // Fetch all active designers
   const designers = await prisma.designer.findMany({
     where: { isActive: true },
@@ -69,12 +79,28 @@ export default async function DesignerPremiPage() {
 
   return (
     <>
-      {/* ── Hero Section ───────────────────────────────────────── */}
-      <PageHero
-        page="designer-e-premi"
-        defaultTitle="Designer e premi"
-        defaultImage="https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1920&h=800&fit=crop"
-      />
+      {/* ── Hero — stessa struttura delle altre pagine mondo-gtv ── */}
+      <section className="relative w-full overflow-hidden bg-warm-900" style={{ height: "min(118vh, 1107px)" }}>
+        <Image
+          src={heroImage}
+          alt={heroTitle}
+          fill
+          className="object-cover opacity-20"
+          style={{ objectPosition: heroImagePosition }}
+          sizes="100vw"
+          priority
+        />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8" style={{ paddingTop: "25px" }}>
+          <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight">
+            {heroTitle}
+          </h1>
+          {heroSubtitle && (
+            <p className="text-lg md:text-xl text-white/80 font-light mt-4 max-w-2xl mx-auto">
+              {heroSubtitle}
+            </p>
+          )}
+        </div>
+      </section>
 
       {/* ── Intro — text left-aligned ────────────────────────────── */}
       <section className="pb-16 md:pb-20">
@@ -154,9 +180,9 @@ export default async function DesignerPremiPage() {
                     <div className="absolute left-[10px] bottom-0 w-px bg-dark" style={{ top: 64 }} />
                   </div>
 
-                  {/* Right: products — large */}
+                  {/* Right: products — stesso stile card pagina /prodotti */}
                   <div className="flex-1 pl-6 md:pl-10">
-                    <div className={`grid gap-6 md:gap-8 ${awards.length === 1 ? "grid-cols-1 max-w-lg" : "grid-cols-1 md:grid-cols-2"}`}>
+                    <div className={`grid gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20 ${awards.length === 1 ? "grid-cols-1 max-w-md" : "grid-cols-1 md:grid-cols-2"}`}>
                       {awards.map((award) => {
                         const prod = award.productSlug
                           ? productBySlug.get(award.productSlug)
@@ -173,13 +199,13 @@ export default async function DesignerPremiPage() {
                             }
                             className="group block"
                           >
-                            <div className="relative aspect-square bg-warm-50 overflow-hidden mb-4">
+                            <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "4/5" }}>
                               {imgSrc ? (
                                 <Image
                                   src={imgSrc}
                                   alt={award.productName || award.name}
                                   fill
-                                  className="object-contain p-6 group-hover:scale-105 transition-transform duration-500"
+                                  className="object-cover mix-blend-multiply"
                                   sizes="(max-width: 768px) 80vw, 40vw"
                                 />
                               ) : (
@@ -190,14 +216,16 @@ export default async function DesignerPremiPage() {
                                 </div>
                               )}
                             </div>
-                            {award.productCategory && (
-                              <p className="text-xs uppercase tracking-[0.15em] text-black font-normal">
-                                {award.productCategory}
-                              </p>
-                            )}
-                            <h3 className="text-base md:text-lg font-normal uppercase tracking-[0.08em] text-black mt-1 group-hover:text-warm-500 transition-colors">
-                              {award.productName || award.name}
-                            </h3>
+                            <div className="mt-4">
+                              {award.productCategory && (
+                                <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
+                                  {award.productCategory}
+                                </p>
+                              )}
+                              <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                                {award.productName || award.name}
+                              </h3>
+                            </div>
                           </Link>
                         );
                       })}
