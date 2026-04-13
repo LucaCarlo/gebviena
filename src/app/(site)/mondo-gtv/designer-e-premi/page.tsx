@@ -30,17 +30,6 @@ const RELATED_PAGES = [
 ];
 
 export default async function DesignerPremiPage() {
-  // Fetch hero slide for this page
-  const heroSlide = await prisma.heroSlide.findFirst({
-    where: { page: "designer-e-premi", isActive: true },
-    orderBy: { sortOrder: "asc" },
-  });
-
-  const heroImage = heroSlide?.imageUrl || "/images/designer-premi-hero.webp";
-  const heroTitle = heroSlide?.title || "Designer e premi";
-  const heroSubtitle = heroSlide?.subtitle || null;
-  const heroImagePosition = heroSlide?.imagePosition || "center center";
-
   // Fetch all active designers
   const designers = await prisma.designer.findMany({
     where: { isActive: true },
@@ -79,33 +68,13 @@ export default async function DesignerPremiPage() {
 
   return (
     <>
-      {/* ── Hero — stessa struttura delle altre pagine mondo-gtv ── */}
-      <section className="relative w-full overflow-hidden bg-warm-900" style={{ height: "min(118vh, 1107px)" }}>
-        <Image
-          src={heroImage}
-          alt={heroTitle}
-          fill
-          className="object-cover opacity-20"
-          style={{ objectPosition: heroImagePosition }}
-          sizes="100vw"
-          priority
-        />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8" style={{ paddingTop: "25px" }}>
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight">
-            {heroTitle}
+      {/* ── Titolo + Intro ─────────────────────────────────────── */}
+      <section className="pt-20 md:pt-28 pb-16 md:pb-20">
+        <div className="gtv-container">
+          <h1 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-[100px]">
+            Designer e premi
           </h1>
-          {heroSubtitle && (
-            <p className="text-lg md:text-xl text-white/80 font-light mt-4 max-w-2xl mx-auto">
-              {heroSubtitle}
-            </p>
-          )}
-        </div>
-      </section>
-
-      {/* ── Intro — text left-aligned ────────────────────────────── */}
-      <section className="pb-16 md:pb-20">
-        <div className="mx-auto w-[90%] max-w-[75%]">
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-3xl mx-auto">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
             GTV collabora con designer di talento per reinterpretare la
             tradizione attraverso un linguaggio contemporaneo. Questo impegno
             nella ricerca e nell&apos;innovazione &egrave; riconosciuto a

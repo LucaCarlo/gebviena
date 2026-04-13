@@ -60,21 +60,22 @@ export default async function GtvExperiencePage() {
 
   return (
     <>
-      {/* ── Hero ─────────────────────────────────────────────────── */}
+      {/* ── Hero — stessa altezza/comportamento della homepage ── */}
       <section
-        className="relative w-full flex items-center justify-center bg-warm-900"
-        style={{ height: "min(110vh, 900px)" }}
+        className="relative w-full overflow-hidden bg-warm-900"
+        style={{ height: "min(118vh, 1107px)" }}
       >
         <Image
           src={heroImage}
           alt="GTV Experience — Interno Marche Design Hotel"
           fill
-          className="object-cover opacity-30"
+          className="object-cover"
           sizes="100vw"
           priority
         />
-        <div className="relative text-center px-8">
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight">
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute bottom-[12.5vh] left-0 right-0 flex flex-col items-center text-center px-8">
+          <h1 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white leading-snug font-light uppercase tracking-[inherit]">
             GTV Experience
             <br />
             Interno Marche Design Hotel
@@ -84,13 +85,13 @@ export default async function GtvExperiencePage() {
 
       {/* ── Intro — titolo + testo ───────────────────────────────── */}
       <section className="pt-20 md:pt-28 pb-20 md:pb-28">
-        <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
-          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center">
+        <div className="gtv-container">
+          <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] mb-12 text-center max-w-[940px] mx-auto">
             GTV arreda gli spazi
             <br />
             prestigiosi di Interno Marche
           </h2>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left max-w-[940px] mx-auto">
             Gebrüder Thonet Vienna GmbH (GTV) arreda gli spazi prestigiosi di
             Interno Marche, il primo Design Experience Hotel che racconta la
             storia di 100 anni di storia del design. Nel centro delle Marche, in
@@ -102,7 +103,7 @@ export default async function GtvExperiencePage() {
             cui si ispirano alcune delle stanze del design hotel, arricchite
             dalle loro opere più iconiche.
           </p>
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left">
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left max-w-[940px] mx-auto">
             Protagonisti degli spazi raffinati come la lobby, il lounge bar e il
             patio, alcune delle creazioni più famose e contemporanee del brand,
             come la lounge Loie di Chiara Andreatti e il divano Targa di
@@ -121,13 +122,24 @@ export default async function GtvExperiencePage() {
         </div>
       </section>
 
-      {/* ── Storie, Visioni, Ispirazioni — stile Born in Vienna ───── */}
+      {/* ── Storie, Visioni, Ispirazioni — stesso stile "Born in Vienna" ──── */}
       <section className="w-full bg-warm-50">
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
-          {/* Left: text */}
-          <div className="px-10 md:px-16 lg:px-20 py-16 lg:py-20 flex flex-col justify-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
+          {/* Left: image — stesso aspect di Born in Vienna */}
+          <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
+            <Image
+              src={imgs.stories}
+              alt="Storie, visioni, ispirazioni — Interno Marche"
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+            />
+          </div>
+
+          {/* Right: text — stesso padding/tipografia di Born in Vienna */}
+          <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              Storie, visioni, ispirazioni.
+              Storie, visioni, ispirazioni
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
               Interno Marche &egrave; il frutto di una visione che intreccia
@@ -136,17 +148,6 @@ export default async function GtvExperiencePage() {
               dove ogni scelta materica e di arredo racconta la stessa passione
               per l&apos;eccellenza.
             </p>
-          </div>
-
-          {/* Right: image */}
-          <div className="relative bg-warm-200" style={{ aspectRatio: "4/3" }}>
-            <Image
-              src={imgs.stories}
-              alt="Storie, visioni, ispirazioni — Interno Marche"
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
           </div>
         </div>
       </section>

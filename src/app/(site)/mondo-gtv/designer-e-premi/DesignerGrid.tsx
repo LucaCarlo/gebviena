@@ -57,10 +57,10 @@ export default function DesignerGrid({ designers }: { designers: Designer[] }) {
         <div className="text-center mt-16">
           <button
             onClick={() => setCount((prev) => prev + BATCH)}
-            className="inline-block uppercase text-[16px] tracking-[0.03em] !text-black font-medium transition-colors hover:text-accent hover:underline"
+            className="inline-block whitespace-nowrap uppercase text-[16px] tracking-[0.03em] !text-black font-medium transition-colors hover:text-accent hover:underline"
             style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
           >
-            <span className="mr-1">+</span> Carica altri designer
+            + Carica altri designer
           </button>
         </div>
       )}
