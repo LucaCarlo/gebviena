@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
 import {
   Mail,
   Shield,
@@ -14,7 +13,6 @@ import {
   Download,
   Upload,
   Loader2,
-  ArrowRight,
   Languages,
 } from "lucide-react";
 
