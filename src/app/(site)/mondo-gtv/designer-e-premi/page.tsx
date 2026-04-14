@@ -39,31 +39,28 @@ export default async function DesignerPremiPage() {
     select: { id: true, name: true, slug: true, imageUrl: true },
   });
 
-  // Fetch awards from DB
+  // Fetch awards from DB with associated products
   const allAwards = await prisma.award.findMany({
     where: { isActive: true },
-    orderBy: { year: "asc" },
+    orderBy: [{ year: "asc" }, { createdAt: "asc" }],
+    include: {
+      products: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              category: true,
+              subcategory: true,
+              coverImage: true,
+              imageUrl: true,
+            },
+          },
+        },
+      },
+    },
   });
-
-  // Group awards by organization + year
-  const awardGroups = new Map<string, typeof allAwards>();
-  for (const award of allAwards) {
-    const key = `${award.organization}-${award.year}`;
-    if (!awardGroups.has(key)) {
-      awardGroups.set(key, []);
-    }
-    awardGroups.get(key)!.push(award);
-  }
-
-  // Fetch product images for awards that have productSlug
-  const awardSlugs = allAwards
-    .map((a) => a.productSlug)
-    .filter((s): s is string => !!s);
-  const awardProducts = await prisma.product.findMany({
-    where: { slug: { in: awardSlugs } },
-    select: { slug: true, coverImage: true, imageUrl: true },
-  });
-  const productBySlug = new Map(awardProducts.map((p) => [p.slug, p]));
 
   // Related page covers
   const cardImages = await getRelatedCardImages(RELATED_PAGES.map((p) => p.page));
@@ -107,17 +104,17 @@ export default async function DesignerPremiPage() {
           </h2>
 
           <div className="space-y-24">
-            {Array.from(awardGroups.entries()).map(([key, awards]) => {
-              const first = awards[0];
+            {allAwards.map((award) => {
+              const products = award.products.map((ap) => ap.product).filter(Boolean);
               return (
-                <div key={key} className="flex items-start gap-0">
+                <div key={award.id} className="flex items-start gap-0">
                   {/* Left: award image — square, small */}
                   <div className="flex-shrink-0 w-[120px] md:w-[160px] pt-2">
-                    {first.imageUrl ? (
+                    {award.imageUrl ? (
                       <div className="relative aspect-square">
                         <Image
-                          src={first.imageUrl}
-                          alt={`${first.organization} ${first.year}`}
+                          src={award.imageUrl}
+                          alt={`${award.organization ?? ""} ${award.year}`.trim()}
                           fill
                           className="object-contain"
                           sizes="160px"
@@ -126,7 +123,7 @@ export default async function DesignerPremiPage() {
                     ) : (
                       <div className="aspect-square bg-warm-100 flex items-center justify-center">
                         <span className="text-xs text-warm-400 text-center px-2">
-                          {first.organization}
+                          {award.organization || award.name}
                         </span>
                       </div>
                     )}
@@ -134,9 +131,7 @@ export default async function DesignerPremiPage() {
 
                   {/* Vertical line with > chevron near the top (award level) */}
                   <div className="relative flex-shrink-0 w-[32px] self-stretch ml-3">
-                    {/* Top segment of line — overlaps 1px into chevron */}
                     <div className="absolute left-[10px] top-0 w-px bg-dark" style={{ height: 44 }} />
-                    {/* Chevron > — left edge of V aligns with the line */}
                     <svg
                       className="absolute left-[9px]"
                       style={{ top: 42 }}
@@ -147,60 +142,64 @@ export default async function DesignerPremiPage() {
                     >
                       <path d="M1 1L15 12L1 23" stroke="#1a1a1a" strokeWidth="1" />
                     </svg>
-                    {/* Bottom segment of line — overlaps 1px into chevron */}
                     <div className="absolute left-[10px] bottom-0 w-px bg-dark" style={{ top: 64 }} />
                   </div>
 
                   {/* Right: products — stesso stile card pagina /prodotti */}
                   <div className="flex-1 pl-6 md:pl-10">
-                    <div className={`grid gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20 ${awards.length === 1 ? "grid-cols-1 max-w-md" : "grid-cols-1 md:grid-cols-2"}`}>
-                      {awards.map((award) => {
-                        const prod = award.productSlug
-                          ? productBySlug.get(award.productSlug)
-                          : null;
-                        const imgSrc =
-                          prod?.coverImage || prod?.imageUrl || null;
-                        return (
-                          <Link
-                            key={award.id}
-                            href={
-                              award.productSlug
-                                ? `/prodotti/${award.productSlug}`
-                                : "#"
-                            }
-                            className="group block"
-                          >
-                            <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "4/5" }}>
-                              {imgSrc ? (
-                                <Image
-                                  src={imgSrc}
-                                  alt={award.productName || award.name}
-                                  fill
-                                  className="object-cover mix-blend-multiply"
-                                  sizes="(max-width: 768px) 80vw, 40vw"
-                                />
-                              ) : (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <span className="font-serif text-4xl text-warm-300">
-                                    {(award.productName || award.name).charAt(0)}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="mt-4">
-                              {award.productCategory && (
-                                <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
-                                  {award.productCategory}
-                                </p>
-                              )}
-                              <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-                                {award.productName || award.name}
-                              </h3>
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
+                    {products.length === 0 ? (
+                      <div className="py-4">
+                        <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                          {award.name}
+                        </h3>
+                        {award.organization && (
+                          <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light mt-1">
+                            {award.organization} {award.year}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className={`grid gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20 ${products.length === 1 ? "grid-cols-1 max-w-md" : "grid-cols-1 md:grid-cols-2"}`}>
+                        {products.map((prod) => {
+                          const imgSrc = prod.coverImage || prod.imageUrl || null;
+                          return (
+                            <Link
+                              key={prod.id}
+                              href={`/prodotti/${prod.slug}`}
+                              className="group block"
+                            >
+                              <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "4/5" }}>
+                                {imgSrc ? (
+                                  <Image
+                                    src={imgSrc}
+                                    alt={prod.name}
+                                    fill
+                                    className="object-cover mix-blend-multiply"
+                                    sizes="(max-width: 768px) 80vw, 40vw"
+                                  />
+                                ) : (
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="font-serif text-4xl text-warm-300">
+                                      {prod.name.charAt(0)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="mt-4">
+                                {(prod.subcategory || prod.category) && (
+                                  <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
+                                    {prod.subcategory || prod.category}
+                                  </p>
+                                )}
+                                <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                                  {prod.name}
+                                </h3>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
