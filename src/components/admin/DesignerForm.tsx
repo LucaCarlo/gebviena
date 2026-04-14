@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Upload } from "lucide-react";
 import { slugify } from "@/lib/utils";
-import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
+import { useTranslationCtx } from "@/contexts/TranslationContext";
+import { TInput, TRichText } from "./TranslatableField";
 
 interface DesignerFormProps {
   designerId?: string;
@@ -14,6 +15,7 @@ interface DesignerFormProps {
 
 export default function DesignerForm({ designerId }: DesignerFormProps) {
   const router = useRouter();
+  const tCtx = useTranslationCtx();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -94,7 +96,12 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
     e.preventDefault();
     setLoading(true);
     setError("");
-
+    if (tCtx?.isTranslating) {
+      const ok = await tCtx.saveTranslation();
+      setLoading(false);
+      if (ok) router.push("/admin/designers");
+      return;
+    }
     try {
       const url = designerId ? `/api/designers/${designerId}` : "/api/designers";
       const method = designerId ? "PUT" : "POST";
@@ -134,12 +141,11 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Nome *
           </label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => handleNameChange(e.target.value)}
+          <TInput
+            fieldKey="name"
+            defaultValue={form.name}
+            onDefaultChange={handleNameChange}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            required
           />
         </div>
 
@@ -148,10 +154,10 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
               Slug
             </label>
-            <input
-              type="text"
-              value={form.slug}
-              onChange={(e) => handleSlugChange(e.target.value)}
+            <TInput
+              fieldKey="slug"
+              defaultValue={form.slug}
+              onDefaultChange={handleSlugChange}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none"
               placeholder="es. nome-cognome"
             />
@@ -160,20 +166,23 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
               Paese
             </label>
-            <input
-              type="text"
-              value={form.country}
-              onChange={(e) => updateField("country", e.target.value)}
+            <TInput
+              fieldKey="country"
+              defaultValue={form.country}
+              onDefaultChange={(v) => updateField("country", v)}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
             />
           </div>
         </div>
 
-        <RichTextEditor
-          label="Biografia"
-          value={form.bio}
-          onChange={(html) => updateField("bio", html)}
-        />
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Biografia</label>
+          <TRichText
+            fieldKey="bio"
+            defaultValue={form.bio}
+            onDefaultChange={(html) => updateField("bio", html)}
+          />
+        </div>
 
         {/* Image upload */}
         <div>

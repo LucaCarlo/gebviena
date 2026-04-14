@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Upload } from "lucide-react";
 import { slugify } from "@/lib/utils";
-import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
+import { useTranslationCtx } from "@/contexts/TranslationContext";
+import { TInput, TRichText } from "./TranslatableField";
 
 interface CampaignFormProps {
   campaignId?: string;
@@ -20,6 +21,7 @@ interface CategoryOption {
 
 export default function CampaignForm({ campaignId }: CampaignFormProps) {
   const router = useRouter();
+  const tCtx = useTranslationCtx();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -96,6 +98,12 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    if (tCtx?.isTranslating) {
+      e.preventDefault();
+      const ok = await tCtx.saveTranslation();
+      if (ok) router.push("/admin/campaigns");
+      return;
+    }
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -139,12 +147,11 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Nome *
           </label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => handleNameChange(e.target.value)}
+          <TInput
+            fieldKey="name"
+            defaultValue={form.name}
+            onDefaultChange={handleNameChange}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            required
           />
         </div>
 
@@ -153,10 +160,10 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
               Slug
             </label>
-            <input
-              type="text"
-              value={form.slug}
-              onChange={(e) => updateField("slug", e.target.value)}
+            <TInput
+              fieldKey="slug"
+              defaultValue={form.slug}
+              onDefaultChange={(v) => updateField("slug", v)}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none"
             />
           </div>
@@ -193,19 +200,22 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Sottotitolo
           </label>
-          <input
-            type="text"
-            value={form.subtitle}
-            onChange={(e) => updateField("subtitle", e.target.value)}
+          <TInput
+            fieldKey="subtitle"
+            defaultValue={form.subtitle}
+            onDefaultChange={(v) => updateField("subtitle", v)}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
           />
         </div>
 
-        <RichTextEditor
-          label="Descrizione"
-          value={form.description}
-          onChange={(html) => updateField("description", html)}
-        />
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Descrizione</label>
+          <TRichText
+            fieldKey="description"
+            defaultValue={form.description}
+            onDefaultChange={(html) => updateField("description", html)}
+          />
+        </div>
 
         {/* Image upload */}
         <div>

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Upload, FileText } from "lucide-react";
 import { slugify } from "@/lib/utils";
+import { useTranslationCtx } from "@/contexts/TranslationContext";
+import { TInput, TTextarea } from "./TranslatableField";
 
 interface CatalogFormProps {
   catalogId?: string;
@@ -16,6 +18,7 @@ const SECTIONS = [
 ];
 
 export default function CatalogForm({ catalogId }: CatalogFormProps) {
+  const tCtx = useTranslationCtx();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -111,6 +114,12 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    if (tCtx?.isTranslating) {
+      const ok = await tCtx.saveTranslation();
+      setLoading(false);
+      if (ok) router.push("/admin/catalogs");
+      return;
+    }
 
     try {
       const url = catalogId ? `/api/catalogs/${catalogId}` : "/api/catalogs";
@@ -151,13 +160,7 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Nome (interno) *
           </label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            required
-          />
+          <TInput fieldKey="name" defaultValue={form.name} onDefaultChange={handleNameChange} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
         </div>
 
         <div className="grid grid-cols-3 gap-4">
@@ -165,12 +168,7 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
               Slug
             </label>
-            <input
-              type="text"
-              value={form.slug}
-              onChange={(e) => updateField("slug", e.target.value)}
-              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none"
-            />
+            <TInput fieldKey="slug" defaultValue={form.slug} onDefaultChange={(v) => updateField("slug", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none" />
           </div>
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
@@ -203,38 +201,21 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Pre-titolo
           </label>
-          <input
-            type="text"
-            value={form.pretitle}
-            onChange={(e) => updateField("pretitle", e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder="es. Slow Living Magazine | Issue N° 2"
-          />
+          <TInput fieldKey="pretitle" defaultValue={form.pretitle} onDefaultChange={(v) => updateField("pretitle", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="es. Slow Living Magazine | Issue N° 2" />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Titolo
           </label>
-          <input
-            type="text"
-            value={form.title}
-            onChange={(e) => updateField("title", e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder="es. Interno Marche"
-          />
+          <TInput fieldKey="title" defaultValue={form.title} onDefaultChange={(v) => updateField("title", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="es. Interno Marche" />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Descrizione
           </label>
-          <textarea
-            value={form.description}
-            onChange={(e) => updateField("description", e.target.value)}
-            rows={4}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-          />
+          <TTextarea fieldKey="description" defaultValue={form.description} onDefaultChange={(v) => updateField("description", v)} rows={4} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
         </div>
 
         {/* Image upload */}
@@ -301,13 +282,7 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Testo pulsante scarica
           </label>
-          <input
-            type="text"
-            value={form.linkText}
-            onChange={(e) => updateField("linkText", e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder="es. Scarica il catalogo 2025"
-          />
+          <TInput fieldKey="linkText" defaultValue={form.linkText} onDefaultChange={(v) => updateField("linkText", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="es. Scarica il catalogo 2025" />
         </div>
 
         {/* Active toggle */}

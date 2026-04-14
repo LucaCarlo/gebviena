@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Search, X, Package } from "lucide-react";
 import { slugify } from "@/lib/utils";
-import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
+import { useTranslationCtx } from "@/contexts/TranslationContext";
+import { TInput, TTextarea, TRichText } from "./TranslatableField";
 import ImageUploadField from "./ImageUploadField";
 import GalleryUploadField from "./GalleryUploadField";
 
@@ -32,6 +33,7 @@ interface CategoryOption {
 
 export default function ProjectForm({ projectId }: ProjectFormProps) {
   const router = useRouter();
+  const tCtx = useTranslationCtx();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [projectCategories, setProjectCategories] = useState<CategoryOption[]>([]);
@@ -157,6 +159,12 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    if (tCtx?.isTranslating) {
+      const ok = await tCtx.saveTranslation();
+      setLoading(false);
+      if (ok) router.push("/admin/projects");
+      return;
+    }
     try {
       const url = projectId
         ? `/api/projects/${projectId}`
@@ -206,12 +214,11 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Nome *
           </label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => handleNameChange(e.target.value)}
+          <TInput
+            fieldKey="name"
+            defaultValue={form.name}
+            onDefaultChange={handleNameChange}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            required
           />
         </div>
 
@@ -222,14 +229,11 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
           <p className="text-[10px] text-warm-400 mb-1.5">
             Usato nell&apos;URL: /progetti/<span className="font-mono">{form.slug || "…"}</span>. Solo minuscole, numeri e trattini.
           </p>
-          <input
-            type="text"
-            value={form.slug}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, slug: slugify(e.target.value) }))
-            }
+          <TInput
+            fieldKey="slug"
+            defaultValue={form.slug}
+            onDefaultChange={(v) => setForm((prev) => ({ ...prev, slug: slugify(v) }))}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm font-mono focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            required
           />
         </div>
 
@@ -274,12 +278,10 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
               Citta
             </label>
-            <input
-              type="text"
-              value={form.city}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, city: e.target.value }))
-              }
+            <TInput
+              fieldKey="city"
+              defaultValue={form.city}
+              onDefaultChange={(v) => setForm((prev) => ({ ...prev, city: v }))}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
             />
           </div>
@@ -301,12 +303,10 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
               Architetto
             </label>
-            <input
-              type="text"
-              value={form.architect}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, architect: e.target.value }))
-              }
+            <TInput
+              fieldKey="architect"
+              defaultValue={form.architect}
+              onDefaultChange={(v) => setForm((prev) => ({ ...prev, architect: v }))}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
             />
           </div>
@@ -319,21 +319,23 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
           <p className="text-[10px] text-warm-400 mb-1.5">
             Testo breve mostrato nella colonna &ldquo;Progetto&rdquo; accanto a Foto da e Location.
           </p>
-          <textarea
-            value={form.description}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, description: e.target.value }))
-            }
+          <TTextarea
+            fieldKey="description"
+            defaultValue={form.description}
+            onDefaultChange={(v) => setForm((prev) => ({ ...prev, description: v }))}
             rows={4}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
           />
         </div>
 
-        <RichTextEditor
-          label="Descrizione"
-          value={form.shortDescription}
-          onChange={(html) => setForm((prev) => ({ ...prev, shortDescription: html }))}
-        />
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Descrizione</label>
+          <TRichText
+            fieldKey="shortDescription"
+            defaultValue={form.shortDescription}
+            onDefaultChange={(html) => setForm((prev) => ({ ...prev, shortDescription: html }))}
+          />
+        </div>
       </div>
 
       {/* IMMAGINI PROGETTO */}

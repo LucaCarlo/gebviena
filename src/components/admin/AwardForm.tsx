@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Upload, Package, Search, X } from "lucide-react";
-import RichTextEditor from "./RichTextEditor";
+import { useTranslationCtx } from "@/contexts/TranslationContext";
+import { TInput, TRichText } from "./TranslatableField";
 import SeoPanel from "./SeoPanel";
 import { useMemo } from "react";
 
@@ -22,6 +23,7 @@ interface AwardFormProps {
 }
 
 export default function AwardForm({ awardId }: AwardFormProps) {
+  const tCtx = useTranslationCtx();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -125,7 +127,12 @@ export default function AwardForm({ awardId }: AwardFormProps) {
     e.preventDefault();
     setLoading(true);
     setError("");
-
+    if (tCtx?.isTranslating) {
+      const ok = await tCtx.saveTranslation();
+      setLoading(false);
+      if (ok) router.push("/admin/awards");
+      return;
+    }
     try {
       const url = awardId ? `/api/awards/${awardId}` : "/api/awards";
       const method = awardId ? "PUT" : "POST";
@@ -165,12 +172,7 @@ export default function AwardForm({ awardId }: AwardFormProps) {
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Nome
           </label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => updateField("name", e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-          />
+          <TInput fieldKey="name" defaultValue={form.name} onDefaultChange={(v) => updateField("name", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -199,11 +201,10 @@ export default function AwardForm({ awardId }: AwardFormProps) {
           </div>
         </div>
 
-        <RichTextEditor
-          label="Descrizione"
-          value={form.description}
-          onChange={(html) => updateField("description", html)}
-        />
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Descrizione</label>
+          <TRichText fieldKey="description" defaultValue={form.description} onDefaultChange={(html) => updateField("description", html)} />
+        </div>
 
         {/* Image upload */}
         <div>

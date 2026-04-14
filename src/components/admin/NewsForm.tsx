@@ -7,6 +7,8 @@ import Image from "next/image";
 import ImageUploadField from "./ImageUploadField";
 import SeoPanel from "./SeoPanel";
 import RichTextEditor from "./RichTextEditor";
+import { useTranslationCtx } from "@/contexts/TranslationContext";
+import { TInput, TRichText } from "./TranslatableField";
 import { slugify } from "@/lib/utils";
 
 interface NewsFormProps {
@@ -66,6 +68,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default function NewsForm({ articleId, category: categoryProp }: NewsFormProps) {
+  const tCtx = useTranslationCtx();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -187,6 +190,12 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
     e.preventDefault();
     setLoading(true);
     setError("");
+    if (tCtx?.isTranslating) {
+      const ok = await tCtx.saveTranslation();
+      setLoading(false);
+      if (ok) router.push("/admin/news");
+      return;
+    }
     try {
       const body = {
         ...form,
@@ -229,12 +238,12 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo *</label>
-            <input type="text" value={form.title} onChange={(e) => handleTitleChange(e.target.value)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" required />
+            <TInput fieldKey="title" defaultValue={form.title} onDefaultChange={handleTitleChange} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Slug</label>
-            <input type="text" value={form.slug} onChange={(e) => updateField("slug", e.target.value)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+            <TInput fieldKey="slug" defaultValue={form.slug} onDefaultChange={(v) => updateField("slug", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -292,14 +301,13 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
 
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo sezione</label>
-            <input type="text" value={form.subtitle} onChange={(e) => updateField("subtitle", e.target.value)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+            <TInput fieldKey="subtitle" defaultValue={form.subtitle} onDefaultChange={(v) => updateField("subtitle", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
           </div>
 
-          <RichTextEditor
-            label="Testo"
-            value={form.content}
-            onChange={(html) => updateField("content", html)}
-          />
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo</label>
+            <TRichText fieldKey="content" defaultValue={form.content} onDefaultChange={(html) => updateField("content", html)} />
+          </div>
         </div>
 
         {/* ══════════════════════════════════════════════════════

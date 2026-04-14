@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { HERO_POSITIONS, HERO_VERTICAL_POSITIONS, HERO_PAGES } from "@/lib/constants";
 import ImageUploadField from "./ImageUploadField";
+import { useTranslationCtx } from "@/contexts/TranslationContext";
+import { TInput } from "./TranslatableField";
 
 interface HeroSlideFormProps {
   slideId?: string;
@@ -11,6 +13,7 @@ interface HeroSlideFormProps {
 }
 
 export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormProps) {
+  const tCtx = useTranslationCtx();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -66,7 +69,12 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
     e.preventDefault();
     setLoading(true);
     setError("");
-
+    if (tCtx?.isTranslating) {
+      const ok = await tCtx.saveTranslation();
+      setLoading(false);
+      if (ok) router.push("/admin/hero");
+      return;
+    }
     try {
       const url = slideId ? `/api/hero-slides/${slideId}` : "/api/hero-slides";
       const method = slideId ? "PUT" : "POST";
@@ -122,24 +130,14 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Titolo
           </label>
-          <input
-            type="text"
-            value={form.title}
-            onChange={(e) => updateField("title", e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-          />
+          <TInput fieldKey="title" defaultValue={form.title} onDefaultChange={(v) => updateField("title", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             Sottotitolo
           </label>
-          <input
-            type="text"
-            value={form.subtitle}
-            onChange={(e) => updateField("subtitle", e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-          />
+          <TInput fieldKey="subtitle" defaultValue={form.subtitle} onDefaultChange={(v) => updateField("subtitle", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -147,25 +145,13 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
               Testo CTA
             </label>
-            <input
-              type="text"
-              value={form.ctaText}
-              onChange={(e) => updateField("ctaText", e.target.value)}
-              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-              placeholder="Scopri di più"
-            />
+            <TInput fieldKey="ctaText" defaultValue={form.ctaText} onDefaultChange={(v) => updateField("ctaText", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="Scopri di più" />
           </div>
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
               Link CTA
             </label>
-            <input
-              type="text"
-              value={form.ctaLink}
-              onChange={(e) => updateField("ctaLink", e.target.value)}
-              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-              placeholder="/prodotti"
-            />
+            <TInput fieldKey="ctaLink" defaultValue={form.ctaLink} onDefaultChange={(v) => updateField("ctaLink", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="/prodotti" />
           </div>
         </div>
 
