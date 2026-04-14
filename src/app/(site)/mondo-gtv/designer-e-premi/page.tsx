@@ -159,7 +159,7 @@ export default async function DesignerPremiPage() {
                         )}
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
                         {products.map((prod) => {
                           const imgSrc = prod.coverImage || prod.imageUrl || null;
                           return (
