@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Logo from "./Logo";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
 
 interface FieldConfig {
@@ -359,9 +360,12 @@ export default function Footer() {
 
       {/* Copyright */}
       <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-[9.9rem] pt-16 md:pt-24">
-        <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
-          Copyright 2025 © GEBRUDER THONET VIENNA GMBH
-        </p>
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-3">
+          <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
+            Copyright 2025 © GEBRUDER THONET VIENNA GMBH
+          </p>
+          <LanguageSwitcher />
+        </div>
         <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#000" }}>
           Si prega di osservare che l&apos;utilizzo del marchio e il nome della società &ldquo;Gebrüder Thonet Vienna&rdquo; negli
           Stati Uniti e l&apos;uso del marchio di fabbrica &ldquo;Gebrüder Thonet Vienna&rdquo; in Germania comporta restrizioni,
