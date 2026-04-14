@@ -5,6 +5,7 @@ import { requirePermission, isErrorResponse } from "@/lib/permissions";
 export async function GET() {
   const data = await prisma.award.findMany({
     orderBy: { year: "desc" },
+    include: { _count: { select: { products: true } } },
   });
 
   return NextResponse.json({ success: true, data });

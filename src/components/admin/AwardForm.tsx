@@ -28,9 +28,6 @@ export default function AwardForm({ awardId }: AwardFormProps) {
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     name: "",
-    productName: "",
-    productSlug: "",
-    productCategory: "",
     year: new Date().getFullYear(),
     organization: "",
     description: "",
@@ -86,9 +83,6 @@ export default function AwardForm({ awardId }: AwardFormProps) {
       const a = data.data;
       setForm({
         name: a.name || "",
-        productName: a.productName || "",
-        productSlug: a.productSlug || "",
-        productCategory: a.productCategory || "",
         year: a.year || new Date().getFullYear(),
         organization: a.organization || "",
         description: a.description || "",
@@ -176,45 +170,6 @@ export default function AwardForm({ awardId }: AwardFormProps) {
             onChange={(e) => updateField("name", e.target.value)}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
           />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            Nome Prodotto
-          </label>
-          <input
-            type="text"
-            value={form.productName}
-            onChange={(e) => updateField("productName", e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-              Slug Prodotto
-            </label>
-            <input
-              type="text"
-              value={form.productSlug}
-              onChange={(e) => updateField("productSlug", e.target.value)}
-              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-              placeholder="es. n-811"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-              Categoria Prodotto
-            </label>
-            <input
-              type="text"
-              value={form.productCategory}
-              onChange={(e) => updateField("productCategory", e.target.value)}
-              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-              placeholder="es. Sedie con braccioli"
-            />
-          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

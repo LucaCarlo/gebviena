@@ -73,11 +73,10 @@ export async function GET(req: Request) {
           isActive: true,
           OR: [
             { name: { contains: q } },
-            { productName: { contains: q } },
             { organization: { contains: q } },
           ],
         },
-        select: { id: true, name: true, year: true, organization: true, imageUrl: true, productName: true },
+        select: { id: true, name: true, year: true, organization: true, imageUrl: true },
         take: 4,
         orderBy: { year: "desc" },
       }),

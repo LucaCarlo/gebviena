@@ -206,7 +206,6 @@ export interface SeparatorBlockData {
 export interface Award {
   id: string;
   name: string;
-  productName: string | null;
   year: number | null;
   organization: string | null;
   description: string | null;
@@ -215,6 +214,7 @@ export interface Award {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  _count?: { products: number };
 }
 
 export interface Catalog {

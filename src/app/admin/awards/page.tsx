@@ -87,7 +87,7 @@ export default function AdminAwardsPage() {
   const filteredAwards = useMemo(() => {
     let result = awards;
     const q = search.toLowerCase().trim();
-    if (q) result = result.filter((a) => a.name.toLowerCase().includes(q) || a.productName?.toLowerCase().includes(q));
+    if (q) result = result.filter((a) => a.name.toLowerCase().includes(q));
     if (activeFilters.year) result = result.filter((a) => String(a.year) === activeFilters.year);
     if (activeFilters.organization) result = result.filter((a) => a.organization === activeFilters.organization);
     return result;
@@ -127,7 +127,7 @@ export default function AdminAwardsPage() {
         <AdminListFilters
           search={search}
           onSearchChange={setSearch}
-          searchPlaceholder="Cerca premio o prodotto..."
+          searchPlaceholder="Cerca premio..."
           filters={filters}
           activeFilters={activeFilters}
           onFilterChange={(key, value) => setActiveFilters((prev) => ({ ...prev, [key]: value }))}
@@ -139,7 +139,7 @@ export default function AdminAwardsPage() {
             <thead className="bg-warm-50 border-b border-warm-200">
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Nome</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Prodotto</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Prodotti</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Anno</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Organizzazione</th>
                 <th className="text-center px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Visibile</th>
@@ -150,7 +150,7 @@ export default function AdminAwardsPage() {
               {filteredAwards.map((a) => (
                 <tr key={a.id} className="hover:bg-warm-50 transition-colors">
                   <td className="px-6 py-4 font-medium text-warm-800">{a.name}</td>
-                  <td className="px-6 py-4 text-warm-600">{a.productName || "—"}</td>
+                  <td className="px-6 py-4 text-warm-600">{a._count?.products ?? 0}</td>
                   <td className="px-6 py-4 text-warm-600">{a.year || "—"}</td>
                   <td className="px-6 py-4 text-warm-600">{a.organization || "—"}</td>
                   <td className="px-6 py-4 text-center">
