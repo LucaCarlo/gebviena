@@ -6,7 +6,6 @@ import { slugify } from "@/lib/utils";
 import { Plus, X, Upload, FileText, Trash2 } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
 import GalleryUploadField from "./GalleryUploadField";
-import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
 import PconConfigurator from "./PconConfigurator";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
