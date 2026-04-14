@@ -25,6 +25,7 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
     position: "center",
     verticalPosition: "center",
     imagePosition: "center center",
+    textColor: "white",
     darkOverlay: false,
     overlayOpacity: 60,
     page: defaultPage || "homepage",
@@ -49,6 +50,7 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
         position: s.position || "center",
         verticalPosition: s.verticalPosition || "center",
         imagePosition: s.imagePosition || "center center",
+        textColor: s.textColor || "white",
         darkOverlay: s.darkOverlay ?? false,
         overlayOpacity: s.overlayOpacity ?? 60,
         page: s.page || "homepage",
@@ -200,6 +202,23 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
           </select>
           <p className="text-[10px] text-warm-400 mt-1">
             Determina quale parte dell&apos;immagine restera visibile dopo il crop. Default: centro.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+            Colore testo
+          </label>
+          <select
+            value={form.textColor}
+            onChange={(e) => updateField("textColor", e.target.value)}
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          >
+            <option value="white">Bianco</option>
+            <option value="black">Nero</option>
+          </select>
+          <p className="text-[10px] text-warm-400 mt-1">
+            Colore di titolo, sottotitolo e CTA sopra l&apos;immagine hero.
           </p>
         </div>
 

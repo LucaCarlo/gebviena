@@ -21,6 +21,7 @@ const FALLBACK_SLIDE: HeroSlide = {
   position: "center",
   verticalPosition: "bottom",
   imagePosition: "center center",
+  textColor: "white",
   darkOverlay: false,
   overlayOpacity: 60,
   page: "homepage",
@@ -127,18 +128,18 @@ export default function HeroSection() {
           transition={{ duration: 1, delay: 0.3 }}
           className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white leading-snug font-light uppercase tracking-[inherit] whitespace-nowrap" style={{ marginTop: "-5px" }}>
+          <h1 className={`font-sans text-2xl md:text-3xl lg:text-[38px] ${slide.textColor === "black" ? "text-black" : "text-white"} leading-snug font-light uppercase tracking-[inherit] whitespace-nowrap`} style={{ marginTop: "-5px" }}>
             {slide.title}
           </h1>
           {slide.subtitle && (
-            <p className="text-[16px] text-white/60 mt-2 max-w-2xl">
+            <p className={`text-[16px] ${slide.textColor === "black" ? "text-black/60" : "text-white/60"} mt-2 max-w-2xl`}>
               {slide.subtitle}
             </p>
           )}
           {slide.ctaText && slide.ctaLink && (
             <Link
               href={slide.ctaLink}
-              className="inline-block mt-4 uppercase text-[16px] tracking-[0.03em] text-white font-medium hover:text-white/80 transition-colors duration-300 hover:underline"
+              className={`inline-block mt-4 uppercase text-[16px] tracking-[0.03em] ${slide.textColor === "black" ? "text-black hover:text-black/70" : "text-white hover:text-white/80"} font-medium transition-colors duration-300 hover:underline`}
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
               {slide.ctaText} &rarr;

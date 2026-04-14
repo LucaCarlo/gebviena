@@ -274,6 +274,7 @@ model HeroSlide {
   position         String @db.Text   @default("center")
   verticalPosition String @db.Text   @default("center")
   imagePosition    String @db.VarChar(32) @default("center center")
+  textColor        String @db.VarChar(16) @default("white")
   darkOverlay      Boolean  @default(false)
   overlayOpacity   Int      @default(60)
   page             String   @default("homepage")

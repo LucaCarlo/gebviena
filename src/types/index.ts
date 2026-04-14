@@ -246,6 +246,7 @@ export interface HeroSlide {
   position: string;
   verticalPosition: string;
   imagePosition: string;
+  textColor: string;
   darkOverlay: boolean;
   overlayOpacity: number;
   page: string;

@@ -38,6 +38,10 @@ export default function PageHero({
   const heroSubtitle = slide?.subtitle || defaultSubtitle || null;
   const darkOverlay = slide?.darkOverlay ?? false;
   const overlayOpacity = slide?.overlayOpacity ?? 60;
+  const isBlackText = slide?.textColor === "black";
+  const textClass = isBlackText ? "text-black" : "text-white";
+  const subtitleClass = isBlackText ? "text-black/70" : "text-white/80";
+  const ctaHoverClass = isBlackText ? "hover:text-black/70" : "hover:text-white/80";
 
   const textAlignH =
     slide?.position === "left"
@@ -85,18 +89,18 @@ export default function PageHero({
         transition={{ duration: 1, delay: 0.3 }}
         className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH} px-8`}
       >
-        <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight">
+        <h1 className={`font-serif text-4xl md:text-5xl lg:text-[4rem] ${textClass} leading-[1.2] tracking-tight`}>
           {heroTitle}
         </h1>
         {heroSubtitle && (
-          <p className="text-lg md:text-xl text-white/80 font-light mt-4 max-w-2xl mx-auto">
+          <p className={`text-lg md:text-xl ${subtitleClass} font-light mt-4 max-w-2xl mx-auto`}>
             {heroSubtitle}
           </p>
         )}
         {slide?.ctaText && slide?.ctaLink && (
           <a
             href={slide.ctaLink}
-            className="inline-block mt-6 uppercase text-[16px] tracking-[0.03em] text-white font-medium hover:text-white/80 hover:underline transition-colors"
+            className={`inline-block mt-6 uppercase text-[16px] tracking-[0.03em] ${textClass} font-medium ${ctaHoverClass} hover:underline transition-colors`}
           >
             {slide.ctaText} <span className="ml-1">&rarr;</span>
           </a>
