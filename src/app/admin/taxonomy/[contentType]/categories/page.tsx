@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Plus, Pencil, Trash2, X, Check } from "lucide-react";
+import InlineLabelTranslator from "@/components/admin/InlineLabelTranslator";
 
 interface Typology {
   id: string;
@@ -189,11 +190,11 @@ export default function CategoriesPage() {
                         />
                       </td>
                       <td className="px-6 py-3">
-                        <input
-                          type="text"
-                          value={editForm.label}
-                          onChange={(e) => setEditForm((p) => ({ ...p, label: e.target.value }))}
-                          className="border border-warm-300 rounded px-2 py-1 text-sm w-full"
+                        <InlineLabelTranslator
+                          entity="category"
+                          entityId={c.id}
+                          defaultLabel={editForm.label}
+                          onDefaultLabelChange={(v) => setEditForm((p) => ({ ...p, label: v }))}
                         />
                       </td>
                       <td className="px-6 py-3">

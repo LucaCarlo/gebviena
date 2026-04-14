@@ -129,6 +129,24 @@ export const TRANSLATION_ENTITIES: Record<string, TranslationEntityDef> = {
       { key: "seoKeywords", label: "SEO Keywords", type: "long" },
     ],
   },
+  category: {
+    delegate: "contentCategoryTranslation",
+    parentField: "categoryId",
+    sourceDelegate: "contentCategory",
+    fields: [{ key: "label", label: "Etichetta", type: "short" }],
+  },
+  typology: {
+    delegate: "contentTypologyTranslation",
+    parentField: "typologyId",
+    sourceDelegate: "contentTypology",
+    fields: [{ key: "label", label: "Etichetta", type: "short" }],
+  },
+  subcategory: {
+    delegate: "contentSubcategoryTranslation",
+    parentField: "subcategoryId",
+    sourceDelegate: "contentSubcategory",
+    fields: [{ key: "label", label: "Etichetta", type: "short" }],
+  },
 };
 
 export function getEntityDef(entity: string): TranslationEntityDef | null {

@@ -315,6 +315,57 @@ model Language {
   heroSlideTranslations  HeroSlideTranslation[]
   awardTranslations      AwardTranslation[]
   uiTranslations         UiTranslationOverride[]
+  categoryTranslations   ContentCategoryTranslation[]
+  typologyTranslations   ContentTypologyTranslation[]
+  subcategoryTranslations ContentSubcategoryTranslation[]
+}
+
+model ContentCategoryTranslation {
+  id           String   @id @default(cuid())
+  categoryId   String
+  languageCode String   @db.VarChar(16)
+  label        String
+  status       String   @default("draft") @db.VarChar(16)
+  isPublished  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  category     ContentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  language     Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([categoryId, languageCode])
+  @@index([languageCode])
+}
+
+model ContentTypologyTranslation {
+  id           String   @id @default(cuid())
+  typologyId   String
+  languageCode String   @db.VarChar(16)
+  label        String
+  status       String   @default("draft") @db.VarChar(16)
+  isPublished  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  typology     ContentTypology @relation(fields: [typologyId], references: [id], onDelete: Cascade)
+  language     Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([typologyId, languageCode])
+  @@index([languageCode])
+}
+
+model ContentSubcategoryTranslation {
+  id            String   @id @default(cuid())
+  subcategoryId String
+  languageCode  String   @db.VarChar(16)
+  label         String
+  status        String   @default("draft") @db.VarChar(16)
+  isPublished   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  subcategory   ContentSubcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  language      Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([subcategoryId, languageCode])
+  @@index([languageCode])
 }
 
 model ProductTranslation {
@@ -635,6 +686,7 @@ model ContentTypology {
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
   categories  ContentTypologyCategory[]
+  translations ContentTypologyTranslation[]
 
   @@unique([contentType, value])
   @@index([contentType])
@@ -651,6 +703,7 @@ model ContentCategory {
   updatedAt     DateTime                  @updatedAt
   typologies    ContentTypologyCategory[]
   subcategories ContentSubcategory[]
+  translations  ContentCategoryTranslation[]
 
   @@unique([contentType, value])
   @@index([contentType])
@@ -676,6 +729,7 @@ model ContentSubcategory {
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
   category   ContentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  translations ContentSubcategoryTranslation[]
 
   @@index([categoryId])
 }

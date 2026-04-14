@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { Plus, Pencil, Trash2, X, Check } from "lucide-react";
+import InlineLabelTranslator from "@/components/admin/InlineLabelTranslator";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 
 interface Typology {
@@ -168,11 +169,11 @@ export default function TypologiesPage() {
                           </div>
                           <div>
                             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1">Etichetta</label>
-                            <input
-                              type="text"
-                              value={editForm.label}
-                              onChange={(e) => setEditForm((p) => ({ ...p, label: e.target.value }))}
-                              className="border border-warm-300 rounded px-2 py-1 text-sm w-full"
+                            <InlineLabelTranslator
+                              entity="typology"
+                              entityId={t.id}
+                              defaultLabel={editForm.label}
+                              onDefaultLabelChange={(v) => setEditForm((p) => ({ ...p, label: v }))}
                             />
                           </div>
                         </div>
