@@ -250,6 +250,7 @@ function ProjectsContent() {
   const router = useRouter();
   const currentType = searchParams.get("type") || "TUTTI";
   const currentPage = parseInt(searchParams.get("page") || "1");
+  const urlProductId = searchParams.get("productId") || "";
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -257,7 +258,7 @@ function ProjectsContent() {
   const [countryOptions, setCountryOptions] = useState<FilterOption[]>([]);
   const [selectedCountry, setSelectedCountry] = useState("");
   const [productOptions, setProductOptions] = useState<FilterOption[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState(urlProductId);
   const [projectCategories, setProjectCategories] = useState<CategoryItem[]>([]);
   const separatorRef = useRef<HTMLDivElement>(null);
   const typeButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});

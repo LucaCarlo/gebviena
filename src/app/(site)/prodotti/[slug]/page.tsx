@@ -602,111 +602,72 @@ export default function ProductDetailPage() {
         </div>
       </section>
 
-      {/* ===== 7. PROJECT REFERENCE — dynamic projects linked to this product ===== */}
+      {/* ===== 7. PROJECT REFERENCE — first project where this product is used ===== */}
       <section id="progetti" className="mt-16 lg:mt-24">
-        {product.projects && product.projects.length > 0 && (
-          <div className="w-full">
-            {product.projects.length === 1 ? (
-              /* Single project — full-width split layout */
-              <div className="grid grid-cols-1 lg:grid-cols-2">
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.8 }}
-                  className="relative"
-                  style={{ aspectRatio: "4 / 3" }}
-                >
-                  <Image
-                    src={product.projects[0].imageUrl}
-                    alt={product.projects[0].name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                  <div className="absolute bottom-0 left-0 p-8 lg:p-12">
-                    {product.projects[0].country && (
-                      <p className="uppercase text-[10px] tracking-[0.2em] text-white/70 mb-2">
-                        {product.projects[0].country}
-                      </p>
-                    )}
-                    <h3 className="font-sans text-lg md:text-xl lg:text-2xl text-white font-light uppercase tracking-wide leading-snug">
-                      {product.projects[0].name}
-                    </h3>
-                    <Link
-                      href={`/progetti/${product.projects[0].slug}`}
-                      className="inline-flex items-center gap-2 uppercase text-[16px] tracking-[0.03em] text-white font-medium hover:text-white/80 hover:underline transition-colors group mt-4"
-                    >
-                      Scopri di più
-                      <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
-                    </Link>
-                  </div>
-                </motion.div>
+        {product.projects && product.projects.length > 0 && (() => {
+          const proj = product.projects[0];
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+                className="relative"
+                style={{ aspectRatio: "4 / 3" }}
+              >
+                <Image
+                  src={proj.imageUrl}
+                  alt={proj.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 p-8 lg:p-12">
+                  {proj.country && (
+                    <p className="uppercase text-[10px] tracking-[0.2em] text-white/70 mb-2">
+                      {proj.country}
+                    </p>
+                  )}
+                  <h3 className="font-sans text-lg md:text-xl lg:text-2xl text-white font-light uppercase tracking-wide leading-snug">
+                    {proj.name}
+                  </h3>
+                </div>
+              </motion.div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="flex flex-col justify-center items-center text-center p-10 lg:p-16 bg-white"
-                >
-                  <p className="uppercase text-[11px] tracking-[0.25em] text-warm-400 mb-4">Progetti</p>
-                  <h3 className="font-sans text-lg md:text-xl lg:text-2xl text-warm-900 font-light uppercase tracking-wide leading-snug">
-                    Gli ambienti si vestono<br />di eleganza con {product.name}
-                  </h3>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="flex flex-col justify-center bg-white"
+                style={{ padding: "72px 80px" }}
+              >
+                <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">Progetti</p>
+                <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                  Gli ambienti si vestono di eleganza con {product.name}
+                </h3>
+                <div className="flex flex-col gap-4 mt-8">
                   <Link
-                    href="/progetti"
-                    className="inline-flex items-center gap-2 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline transition-colors group mt-8"
+                    href={`/progetti/${proj.slug}`}
+                    className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
+                    style={{ textUnderlineOffset: "8px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
                   >
-                    Esplora le realizzazioni
-                    <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                    Scopri di più →
                   </Link>
-                </motion.div>
-              </div>
-            ) : (
-              /* Multiple projects — grid */
-              <div className="gtv-container py-16 lg:py-24">
-                <div className="text-center mb-12">
-                  <p className="uppercase text-[11px] tracking-[0.25em] text-warm-400 mb-4">Progetti</p>
-                  <h3 className="font-sans text-lg md:text-xl lg:text-2xl text-warm-900 font-light uppercase tracking-wide leading-snug">
-                    Gli ambienti si vestono di eleganza con {product.name}
-                  </h3>
+                  <Link
+                    href={`/progetti?productId=${product.id}`}
+                    className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
+                    style={{ textUnderlineOffset: "8px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+                  >
+                    Esplora le realizzazioni →
+                  </Link>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {product.projects.map((proj, i) => (
-                    <motion.div
-                      key={proj.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.6, delay: i * 0.1 }}
-                    >
-                      <Link href={`/progetti/${proj.slug}`} className="group block relative" style={{ aspectRatio: "4 / 3" }}>
-                        <Image
-                          src={proj.imageUrl}
-                          alt={proj.name}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, 50vw"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                        <div className="absolute bottom-0 left-0 p-6 lg:p-8">
-                          {proj.country && (
-                            <p className="uppercase text-[10px] tracking-[0.2em] text-white/70 mb-1">{proj.country}</p>
-                          )}
-                          <h4 className="font-sans text-base md:text-lg text-white font-light uppercase tracking-wide">
-                            {proj.name}
-                          </h4>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+              </motion.div>
+            </div>
+          );
+        })()}
       </section>
 
       {/* ===== 8. SUPPORTO AI PROFESSIONISTI — split text + image ===== */}
