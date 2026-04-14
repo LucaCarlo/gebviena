@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getPageImages } from "@/lib/page-images";
+import { tBatch } from "@/lib/i18n";
 
 const DEFAULTS: Record<string, string> = {
   main: "/images/PEERS-design-by-Front-for-GTV-2-1024x768.jpg",
@@ -8,6 +9,14 @@ const DEFAULTS: Record<string, string> = {
 
 export default async function RichiestaInfoPage() {
   const imgs = await getPageImages("richiesta-info", DEFAULTS);
+  const T = await tBatch([
+    "richiesta-info.title",
+    "richiesta-info.description",
+    "richiesta-info.cta",
+    "richiesta-info.breadcrumb",
+    "common.breadcrumb_home",
+    "nav.contact",
+  ]);
 
   return (
     <>
@@ -15,7 +24,7 @@ export default async function RichiestaInfoPage() {
       <section className="pt-20 md:pt-28 pb-16 md:pb-20">
         <div className="gtv-container">
           <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
-            Richiesta Informazioni
+            {T["richiesta-info.title"]}
           </h1>
         </div>
       </section>
@@ -26,17 +35,14 @@ export default async function RichiestaInfoPage() {
           {/* Left: text */}
           <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal">
-              Hai domande sui nostri prodotti o servizi? Il nostro team è a tua
-              disposizione per fornirti tutte le informazioni di cui hai
-              bisogno. Contattaci e saremo lieti di rispondere alle tue
-              richieste nel più breve tempo possibile.
+              {T["richiesta-info.description"]}
             </p>
             <a
               href="mailto:info@gebruederthonetvienna.com"
               className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline w-fit"
               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
             >
-              Contattaci &rarr;
+              {T["richiesta-info.cta"]}
             </a>
           </div>
 
@@ -56,11 +62,11 @@ export default async function RichiestaInfoPage() {
       {/* ── Breadcrumbs — stile mondo-gtv ────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <Link href="/contatti">Contatti</Link>
+          <Link href="/contatti">{T["nav.contact"]}</Link>
           <span>&gt;</span>
-          <span>Richiesta Informazioni</span>
+          <span>{T["richiesta-info.breadcrumb"]}</span>
         </div>
       </div>
     </>

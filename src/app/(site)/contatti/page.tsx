@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getRelatedCardImages } from "@/lib/page-images";
+import { tBatch } from "@/lib/i18n";
 
 const PAGES = [
   { page: "rete-vendita", label: "Rete di Vendita", href: "/contatti/rete-vendita" },
@@ -12,6 +13,12 @@ const PAGES = [
 
 export default async function ContattiPage() {
   const cardImages = await getRelatedCardImages(PAGES.map((p) => p.page));
+  const T = await tBatch([
+    "contatti.title",
+    "contatti.description",
+    "contatti.breadcrumb",
+    "common.breadcrumb_home",
+  ]);
 
   return (
     <>
@@ -19,7 +26,7 @@ export default async function ContattiPage() {
       <section className="pt-20 md:pt-28 pb-12 md:pb-16">
         <div className="gtv-container">
           <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
-            Contatti
+            {T["contatti.title"]}
           </h1>
         </div>
       </section>
@@ -28,11 +35,7 @@ export default async function ContattiPage() {
       <section className="pb-16 md:pb-20">
         <div className="gtv-container">
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
-            Scegli la sezione più adatta alla tua richiesta: la rete vendita per
-            individuare il punto di acquisto più vicino, le collaborazioni per
-            proporci nuovi progetti di design, l&apos;ufficio stampa per i media,
-            la richiesta informazioni per qualunque altra domanda e le landing
-            page dedicate ai nostri eventi.
+            {T["contatti.description"]}
           </p>
         </div>
       </section>
@@ -73,9 +76,9 @@ export default async function ContattiPage() {
       {/* ── Breadcrumbs ──────────────────────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <span>Contatti</span>
+          <span>{T["contatti.breadcrumb"]}</span>
         </div>
       </div>
     </>

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getPageImages, getRelatedCardImages } from "@/lib/page-images";
+import { tBatch } from "@/lib/i18n";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -29,17 +30,28 @@ const DEFAULTS: Record<string, string> = {
 };
 
 export default async function SostenibilitaPage() {
-  const [heroSlide, imgs, cardImages] = await Promise.all([
+  const [heroSlide, imgs, cardImages, T] = await Promise.all([
     prisma.heroSlide.findFirst({
       where: { page: "sostenibilita", isActive: true },
       orderBy: { sortOrder: "asc" },
     }),
     getPageImages("sostenibilita", DEFAULTS),
     getRelatedCardImages(RELATED_PAGES.map((p) => p.page)),
+    tBatch([
+      "sostenibilita.title",
+      "sostenibilita.intro.p1",
+      "sostenibilita.intro.p2",
+      "sostenibilita.fsc.p2",
+      "sostenibilita.fsc.p3",
+      "sostenibilita.breadcrumb",
+      "common.related",
+      "common.breadcrumb_home",
+      "nav.world",
+    ]),
   ]);
 
   const heroImage = heroSlide?.imageUrl || "/images/sostenibilita-hero.webp";
-  const heroTitle = heroSlide?.title || "Sostenibilità";
+  const heroTitle = heroSlide?.title || T["sostenibilita.title"];
   const heroSubtitle = heroSlide?.subtitle || null;
   const heroImagePosition = heroSlide?.imagePosition || "center center";
 
@@ -77,20 +89,10 @@ export default async function SostenibilitaPage() {
             il futuro, un&apos;opportunit&agrave; per GTV.
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mb-6">
-            Anno dopo anno, GTV ha sviluppato una crescente sensibilit&agrave;
-            verso le tematiche ambientali e, nell&apos;ottica di un
-            miglioramento continuo, aderisce alle normative che privilegiano
-            l&apos;uso di processi e materiali sostenibili. Un segno tangibile,
-            un punto fermo che traccia un percorso orientato alla
-            continuit&agrave;, anche etica, tra il ciclo produttivo e il
-            prodotto.
+            {T["sostenibilita.intro.p1"]}
           </p>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
-            Un impegno concreto da parte dell&apos;azienda per offrire garanzie
-            reali in termini di sostenibilit&agrave; ambientale e tutela della
-            salute dei consumatori, con l&apos;obiettivo di costruire un
-            rapporto di fiducia basato su un approccio integrato allo sviluppo
-            sostenibile.
+            {T["sostenibilita.intro.p2"]}
           </p>
         </div>
       </section>
@@ -124,19 +126,10 @@ export default async function SostenibilitaPage() {
                 ambientali, sociali ed economici.
               </p>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6">
-                Oltre a questa scelta, GTV adotta lavorazioni meno visibili ma
-                altrettanto fondamentali per la sostenibilit&agrave;.
-                L&apos;azienda ha infatti avviato la conversione del processo di
-                verniciatura, sostituendo le vernici poliuretaniche con vernici a
-                base d&apos;acqua, riducendo cos&igrave; le emissioni in
-                atmosfera e garantendo una maggiore tutela per il personale
-                coinvolto.
+                {T["sostenibilita.fsc.p2"]}
               </p>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
-                Nel 2021, GTV ha inaugurato un nuovo progetto Green, introducendo
-                prodotti interamente sostenibili, tra cui la nuova sedia
-                Beaulieu, progettata con un&apos;attenzione particolare alla
-                sostenibilit&agrave;.
+                {T["sostenibilita.fsc.p3"]}
               </p>
             </div>
           </div>
@@ -148,7 +141,7 @@ export default async function SostenibilitaPage() {
         <div className="gtv-container">
           <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
             <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
-              Potrebbe interessarti anche
+              {T["common.related"]}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {RELATED_PAGES.map((rp) => {
@@ -182,11 +175,11 @@ export default async function SostenibilitaPage() {
       {/* ── Breadcrumbs ───────────────────────────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <Link href="/mondo-gtv">Mondo GTV</Link>
+          <Link href="/mondo-gtv">{T["nav.world"]}</Link>
           <span>&gt;</span>
-          <span>Sostenibilit&agrave;</span>
+          <span>{T["sostenibilita.breadcrumb"]}</span>
         </div>
       </div>
     </>

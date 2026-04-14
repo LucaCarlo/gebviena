@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getPageImages, getRelatedCardImages } from "@/lib/page-images";
+import { tBatch } from "@/lib/i18n";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -29,6 +30,26 @@ const DEFAULTS: Record<string, string> = {
 };
 
 export default async function BrandManifestoPage() {
+  const T = await tBatch([
+    "brand-manifesto.subtitle",
+    "brand-manifesto.intro",
+    "brand-manifesto.heritage.label",
+    "brand-manifesto.heritage.title",
+    "brand-manifesto.heritage.description",
+    "brand-manifesto.heritage.cta",
+    "brand-manifesto.production.label",
+    "brand-manifesto.production.title",
+    "brand-manifesto.production.description",
+    "brand-manifesto.wood-harmony.title",
+    "brand-manifesto.wood-harmony.cta",
+    "brand-manifesto.designers.label",
+    "brand-manifesto.designers.title",
+    "brand-manifesto.designers.description",
+    "brand-manifesto.breadcrumb",
+    "common.related",
+    "common.breadcrumb_home",
+    "nav.world",
+  ]);
   const [imgs, cardImages, designers] = await Promise.all([
     getPageImages("brand-manifesto", DEFAULTS),
     getRelatedCardImages(RELATED_PAGES.map((p) => p.page)),
@@ -43,7 +64,7 @@ export default async function BrandManifestoPage() {
   return (
     <>
       <section className="gtv-container pt-24 md:pt-32 pb-4">
-        <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light mb-4 text-center">Brand manifesto</p>
+        <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light mb-4 text-center">{T["brand-manifesto.subtitle"]}</p>
         <h1 className="font-serif text-[42px] md:text-[58px] text-black tracking-tight text-center font-light leading-[1.2]">
           <em>Born</em> in Vienna.
           <br />
@@ -56,14 +77,7 @@ export default async function BrandManifestoPage() {
       {/* ── Intro paragraph ───────────────────────────────────────── */}
       <section className="gtv-container pt-20 md:pt-28 pb-14 md:pb-20">
         <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px]" style={{ marginLeft: "auto", marginRight: "auto" }}>
-            Ogni parola riflette una parte fondamentale della nostra essenza: la
-            nostra origine storica, l&apos;eccellenza artigianale e la nostra
-            visione globale. Non &egrave; semplicemente un claim, ma un viaggio
-            che attraversa il tempo, la cultura e le tradizioni, per raccontare
-            un brand che nasce in un angolo dell&apos;Europa, si esprime in un
-            altro e si proietta verso il mondo intero. Ogni nostro prodotto
-            &egrave; un simbolo di questa fusione: un&apos;unione tra passato e
-            futuro, artigianato e design contemporaneo, locale e globale.
+            {T["brand-manifesto.intro"]}
           </p>
       </section>
 
@@ -83,23 +97,19 @@ export default async function BrandManifestoPage() {
 
           {/* Right: text — same style as product page description */}
           <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
-            <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">Our Heritage</p>
+            <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{T["brand-manifesto.heritage.label"]}</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              Born in Vienna
+              {T["brand-manifesto.heritage.title"]}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
-              La tradizione viennese, intrisa di arte e ingegno, &egrave; il
-              nostro fondamento, un&apos;eredit&agrave; che ci accompagna in ogni
-              creazione. Ma non ci fermiamo qui: il nostro sapere artigianale non
-              &egrave; mai statico, evolve e si rinnova per raccontare storie
-              nuove.
+              {T["brand-manifesto.heritage.description"]}
             </p>
             <Link
               href="/mondo-gtv/heritage"
               className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
             >
-              Le nostre origini &rarr;
+              {T["brand-manifesto.heritage.cta"]}
             </Link>
           </div>
         </div>
@@ -108,18 +118,12 @@ export default async function BrandManifestoPage() {
       {/* ── La Produzione – Made in Italy ──────────────────────────── */}
       <section className="gtv-container" style={{ paddingTop: "96px", paddingBottom: "85px" }}>
         <div className="max-w-[940px] mx-auto">
-          <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">La Produzione</p>
+          <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{T["brand-manifesto.production.label"]}</p>
           <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-            Made in Italy
+            {T["brand-manifesto.production.title"]}
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
-            L&apos;incontro perfetto tra la nostra eredit&agrave; e la maestria
-            artigianale italiana. In Italia, dove il design &egrave;
-            un&apos;arte quotidiana, ogni prodotto nasce dall&apos;incontro di
-            materiali pregiati e abilit&agrave; artigianali che definiscono una
-            qualit&agrave; senza tempo. Qui, la bellezza si mescola con la
-            funzionalit&agrave;, creando pezzi che diventano iconici e
-            resistenti, destinati a durare.
+            {T["brand-manifesto.production.description"]}
           </p>
         </div>
       </section>
@@ -139,14 +143,14 @@ export default async function BrandManifestoPage() {
           <div className="absolute inset-0 bg-black/20" />
           <div className="absolute top-14 md:top-18 lg:top-22 left-7 md:left-12 lg:left-16">
             <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug">
-              L&apos;armonia del legno
+              {T["brand-manifesto.wood-harmony.title"]}
             </h2>
             <Link
               href="/mondo-gtv/curvatura-legno"
               className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-medium transition-colors hover:underline"
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
-              Scopri l&apos;arte del legno curvato &rarr;
+              {T["brand-manifesto.wood-harmony.cta"]}
             </Link>
           </div>
         </div>
@@ -157,20 +161,12 @@ export default async function BrandManifestoPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
           {/* Left: text — same style/padding as Our Heritage */}
           <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
-            <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">I Nostri Designer</p>
+            <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{T["brand-manifesto.designers.label"]}</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              Designed around the world
+              {T["brand-manifesto.designers.title"]}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
-              Collaboriamo con alcuni dei pi&ugrave; grandi maestri del design
-              contemporaneo, provenienti da culture e background diversi, per
-              reinterpretare la nostra eredit&agrave; con uno sguardo sempre
-              nuovo. Ogni pezzo &egrave; il risultato di un dialogo tra
-              passato e futuro, tra il saper fare artigianale e
-              l&apos;innovazione estetica, dando vita a collezioni che si
-              inseriscono con naturalezza in contesti internazionali: un
-              racconto che continua a evolversi, senza mai perdere la propria
-              identit&agrave;.
+              {T["brand-manifesto.designers.description"]}
             </p>
           </div>
 
@@ -210,7 +206,7 @@ export default async function BrandManifestoPage() {
         <div className="gtv-container">
           <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
           <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
-            Potrebbe interessarti anche
+            {T["common.related"]}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {RELATED_PAGES.map((rp) => {
@@ -244,11 +240,11 @@ export default async function BrandManifestoPage() {
       {/* ── Breadcrumbs ───────────────────────────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <Link href="/mondo-gtv">Mondo GTV</Link>
+          <Link href="/mondo-gtv">{T["nav.world"]}</Link>
           <span>&gt;</span>
-          <span>Brand Manifesto</span>
+          <span>{T["brand-manifesto.breadcrumb"]}</span>
         </div>
       </div>
     </>

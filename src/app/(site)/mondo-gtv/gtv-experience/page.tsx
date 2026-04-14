@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getPageImages, getRelatedCardImages } from "@/lib/page-images";
+import { tBatch } from "@/lib/i18n";
 import ExperienceCarousel from "./ExperienceCarousel";
 import type { Metadata } from "next";
 
@@ -47,13 +48,31 @@ const DEFAULTS: Record<string, string> = {
 };
 
 export default async function GtvExperiencePage() {
-  const [heroSlide, imgs, cardImages] = await Promise.all([
+  const [heroSlide, imgs, cardImages, T] = await Promise.all([
     prisma.heroSlide.findFirst({
       where: { page: "gtv-experience", isActive: true },
       orderBy: { sortOrder: "asc" },
     }),
     getPageImages("gtv-experience", DEFAULTS),
     getRelatedCardImages(RELATED_PAGES.map((p) => p.page)),
+    tBatch([
+      "gtv-experience.intro.p1",
+      "gtv-experience.stories.title",
+      "gtv-experience.stories.description",
+      "gtv-experience.villa.title",
+      "gtv-experience.villa.description",
+      "gtv-experience.lobby.title",
+      "gtv-experience.lobby.description",
+      "gtv-experience.corridors.title",
+      "gtv-experience.corridors.description",
+      "gtv-experience.rooms.title",
+      "gtv-experience.live.title",
+      "gtv-experience.live.description",
+      "gtv-experience.breadcrumb",
+      "common.related",
+      "common.breadcrumb_home",
+      "nav.world",
+    ]),
   ]);
 
   const heroImage = heroSlide?.imageUrl || "/images/experience-hero.webp";
@@ -92,16 +111,7 @@ export default async function GtvExperiencePage() {
             prestigiosi di Interno Marche
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left max-w-[940px] mx-auto">
-            Gebrüder Thonet Vienna GmbH (GTV) arreda gli spazi prestigiosi di
-            Interno Marche, il primo Design Experience Hotel che racconta la
-            storia di 100 anni di storia del design. Nel centro delle Marche, in
-            un bellissimo scenario di piccoli borghi e dolci colline, nasce
-            l&apos;hotel dei sogni di Franco Moschini, patron e attuale
-            presidente di Gebrüder Thonet Vienna. Michele De Lucchi,
-            GamFratesi, Vico Magistretti, Front e Nendo sono alcuni dei nomi
-            celebri di architetti e designer che hanno collaborato con GTV e a
-            cui si ispirano alcune delle stanze del design hotel, arricchite
-            dalle loro opere più iconiche.
+            {T["gtv-experience.intro.p1"]}
           </p>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left max-w-[940px] mx-auto">
             Protagonisti degli spazi raffinati come la lobby, il lounge bar e il
@@ -128,14 +138,10 @@ export default async function GtvExperiencePage() {
           {/* Left: text */}
           <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              Storie, visioni, ispirazioni
+              {T["gtv-experience.stories.title"]}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
-              Interno Marche &egrave; il frutto di una visione che intreccia
-              storia, arte e design. Un viaggio alla scoperta di Villa
-              Gabrielli, una dimora storica nel cuore delle colline marchigiane,
-              dove ogni scelta materica e di arredo racconta la stessa passione
-              per l&apos;eccellenza.
+              {T["gtv-experience.stories.description"]}
             </p>
           </div>
 
@@ -156,19 +162,10 @@ export default async function GtvExperiencePage() {
       <section className="pt-20 md:pt-28 pb-20 md:pb-28">
         <div className="gtv-container">
           <h2 className="font-serif text-[44px] text-black leading-[1.15] text-center max-w-[940px] mx-auto" style={{ marginBottom: "63px" }}>
-            La rinascita di Villa Gabrielli
+            {T["gtv-experience.villa.title"]}
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal text-left max-w-[940px] mx-auto">
-            Villa Gabrielli, un gioiello tardo Liberty, simbolo dello sviluppo
-            della citt&agrave; di Tolentino nel secolo scorso. Nel 1922,
-            l&apos;edificio era inizialmente una fabbrica e la residenza
-            dell&apos;imprenditore Nazareno Gabrielli, creatore del famoso
-            marchio di moda italiano. Dopo di lui, divenne il primo sito
-            produttivo della nuova Poltrona Frau e la residenza di Franco
-            Moschini. Il patrimonio del luogo &egrave; conservato nel progetto
-            Interno Marche, che ha ripensato e ricreato con cura questi spazi di
-            lavoro, famiglia, vita vissuta e li ha cos&igrave; restituiti alla
-            citt&agrave;.
+            {T["gtv-experience.villa.description"]}
           </p>
         </div>
       </section>
@@ -180,13 +177,10 @@ export default async function GtvExperiencePage() {
             {/* Left: text */}
             <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "0", paddingRight: "60px" }}>
               <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-                Lobby
+                {T["gtv-experience.lobby.title"]}
               </h2>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 mb-6">
-                Il Foyer &egrave; il punto di arrivo e partenza, un ambiente
-                espressivo e di grande impatto, dove le sedute iconiche di GTV
-                accolgono gli ospiti in un&apos;atmosfera sospesa tra classico e
-                contemporaneo.
+                {T["gtv-experience.lobby.description"]}
               </p>
             </div>
 
@@ -248,13 +242,10 @@ export default async function GtvExperiencePage() {
             {/* Right: text */}
             <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "60px", paddingRight: "0" }}>
               <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-                I corridoi
+                {T["gtv-experience.corridors.title"]}
               </h2>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 mb-6">
-                I corridoi diventano spazi espositivi, gallerie intime dove le
-                creazioni GTV punteggiano il percorso, trasformando il semplice
-                passaggio in un&apos;esperienza estetica. Pezzi di design che
-                dialogano con le superfici e la luce naturale.
+                {T["gtv-experience.corridors.description"]}
               </p>
             </div>
           </div>
@@ -300,7 +291,7 @@ export default async function GtvExperiencePage() {
       <section className="pb-16 md:pb-20">
         <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
           <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] text-center">
-            30 camere iconiche.
+            {T["gtv-experience.rooms.title"]}
           </h2>
         </div>
       </section>
@@ -333,13 +324,10 @@ export default async function GtvExperiencePage() {
           {/* Right: text — padding 96px 150px */}
           <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              Vivi la GTV Experience
+              {T["gtv-experience.live.title"]}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
-              Interno Marche &egrave; un invito a vivere il design nella sua
-              dimensione più autentica. Scopri il fascino delle collezioni GTV
-              immerse in un contesto unico, dove ogni stanza racconta una storia
-              diversa e ogni dettaglio &egrave; pensato per emozionare.
+              {T["gtv-experience.live.description"]}
             </p>
           </div>
         </div>
@@ -350,7 +338,7 @@ export default async function GtvExperiencePage() {
         <div className="gtv-container">
           <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
             <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
-              Potrebbe interessarti anche
+              {T["common.related"]}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {RELATED_PAGES.map((rp) => {
@@ -384,11 +372,11 @@ export default async function GtvExperiencePage() {
       {/* ── Breadcrumbs ───────────────────────────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <Link href="/mondo-gtv">Mondo GTV</Link>
+          <Link href="/mondo-gtv">{T["nav.world"]}</Link>
           <span>&gt;</span>
-          <span>GTV Experience</span>
+          <span>{T["gtv-experience.breadcrumb"]}</span>
         </div>
       </div>
     </>

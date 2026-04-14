@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getPageImages } from "@/lib/page-images";
+import { tBatch } from "@/lib/i18n";
 
 const DEFAULTS: Record<string, string> = {
   main: "/images/professionisti-realizzazioni.webp",
@@ -8,6 +9,14 @@ const DEFAULTS: Record<string, string> = {
 
 export default async function RealizzazioniCustomPage() {
   const imgs = await getPageImages("realizzazioni-custom", DEFAULTS);
+  const T = await tBatch([
+    "realizzazioni-custom.title",
+    "realizzazioni-custom.description",
+    "realizzazioni-custom.cta",
+    "realizzazioni-custom.breadcrumb",
+    "common.breadcrumb_home",
+    "nav.professionals",
+  ]);
 
   return (
     <>
@@ -15,7 +24,7 @@ export default async function RealizzazioniCustomPage() {
       <section className="pt-20 md:pt-28 pb-16 md:pb-20">
         <div className="gtv-container">
           <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
-            Realizzazioni Custom
+            {T["realizzazioni-custom.title"]}
           </h1>
         </div>
       </section>
@@ -26,18 +35,14 @@ export default async function RealizzazioniCustomPage() {
           {/* Left: text */}
           <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal">
-              GTV mette il proprio know-how al servizio di architetti e designer
-              per realizzazioni su misura. Dallo sviluppo di finiture esclusive
-              alla creazione di arredi personalizzati, offriamo soluzioni su
-              misura per progetti contract e residenziali. Contattaci per una
-              consulenza dedicata.
+              {T["realizzazioni-custom.description"]}
             </p>
             <Link
               href="/contatti/richiesta-info"
               className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
             >
-              Scrivici &rarr;
+              {T["realizzazioni-custom.cta"]}
             </Link>
           </div>
 
@@ -57,11 +62,11 @@ export default async function RealizzazioniCustomPage() {
       {/* ── Breadcrumbs — stile mondo-gtv ────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <Link href="/professionisti">Professionisti</Link>
+          <Link href="/professionisti">{T["nav.professionals"]}</Link>
           <span>&gt;</span>
-          <span>Realizzazioni Custom</span>
+          <span>{T["realizzazioni-custom.breadcrumb"]}</span>
         </div>
       </div>
     </>

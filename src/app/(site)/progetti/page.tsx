@@ -6,12 +6,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useT } from "@/contexts/I18nContext";
 import type { Project, HeroSlide } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
 const HERO_AUTOPLAY = 5000;
 
 function ProjectsHero() {
+  const t = useT();
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [current, setCurrent] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -44,7 +46,7 @@ function ProjectsHero() {
           className="font-serif text-[58px] text-white tracking-normal"
           style={{ marginTop: "-12px" }}
         >
-          Progetti
+          {t("progetti.title")}
         </motion.h1>
       </section>
     );
@@ -241,6 +243,7 @@ interface CategoryItem {
 }
 
 function ProjectsContent() {
+  const t = useT();
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentType = searchParams.get("type") || "TUTTI";
@@ -409,7 +412,7 @@ function ProjectsContent() {
                 : "border-transparent hover:border-dark"
             }`}
           >
-            Tutti
+            {t("progetti.filter.all")}
           </button>
           {projectCategories.map((cat) => (
             <button
@@ -455,13 +458,13 @@ function ProjectsContent() {
         {/* Dropdown filters */}
         <div className="flex justify-center gap-3 md:gap-4 pt-16 pb-2">
           <FilterDropdown
-            label="Filtra per Paese"
+            label={t("progetti.filter.country")}
             options={countryOptions}
             value={selectedCountry}
             onChange={setSelectedCountry}
           />
           <FilterDropdown
-            label="Filtra per prodotto"
+            label={t("progetti.filter.product")}
             options={productOptions}
             value={selectedProduct}
             onChange={setSelectedProduct}
@@ -517,7 +520,7 @@ function ProjectsContent() {
 
         {!loading && projects.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-warm-400 text-sm">Nessun progetto trovato per questa selezione.</p>
+            <p className="text-warm-400 text-sm">{t("progetti.empty")}</p>
           </div>
         )}
 
@@ -548,9 +551,9 @@ function ProjectsContent() {
       {/* ===== BREADCRUMBS ===== */}
       <div className="gtv-container pb-2 -mt-10">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{t("common.breadcrumb_home")}</Link>
           <ChevronRight size={12} />
-          <span>Progetti</span>
+          <span>{t("progetti.breadcrumb")}</span>
         </div>
       </div>
     </>

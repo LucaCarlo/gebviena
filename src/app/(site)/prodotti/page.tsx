@@ -6,12 +6,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useT } from "@/contexts/I18nContext";
 import type { Product, HeroSlide } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
 const HERO_AUTOPLAY = 5000;
 
 function ProductsHero() {
+  const t = useT();
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [current, setCurrent] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -46,7 +48,7 @@ function ProductsHero() {
           className="font-serif text-[58px] text-white tracking-normal"
           style={{ marginTop: "-12px" }}
         >
-          Prodotti
+          {t("prodotti.title")}
         </motion.h1>
       </section>
     );
@@ -179,6 +181,7 @@ interface CategoryItem {
 }
 
 function ProductsContent() {
+  const t = useT();
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentCategory = searchParams.get("category") || "TUTTI";
@@ -306,10 +309,7 @@ function ProductsContent() {
           className="text-[20px] text-black leading-snug max-w-[940px] font-light tracking-normal"
           style={{ marginLeft: "auto", marginRight: "auto" }}
         >
-          I prodotti Gebrüder Thonet Vienna uniscono tradizione e innovazione in forme iconiche e senza
-          tempo. Leggerezza visiva, solidità e dettagli artigianali rendono ogni pezzo unico, ideale per spazi
-          residenziali e contract. Personalizzabili in finiture e materiali, portano eleganza e carattere in ogni
-          ambiente.
+          {t("prodotti.description")}
         </motion.p>
       </section>
 
@@ -326,20 +326,20 @@ function ProductsContent() {
                 : "border-transparent hover:border-dark"
             }`}
           >
-            Tutti
+            {t("prodotti.filter.all")}
           </button>
-          {typologies.map((t) => (
+          {typologies.map((typo) => (
             <button
-              key={t.value}
-              ref={(el) => { typoButtonRefs.current[t.value] = el; }}
-              onClick={() => setCategory(t.value)}
+              key={typo.value}
+              ref={(el) => { typoButtonRefs.current[typo.value] = el; }}
+              onClick={() => setCategory(typo.value)}
               className={`text-[16px] font-light tracking-[0.01em] text-dark pb-1 transition-all border-b ${
-                currentCategory === t.value
+                currentCategory === typo.value
                   ? "border-transparent"
                   : "border-transparent hover:border-dark"
               }`}
             >
-              {t.label}
+              {typo.label}
             </button>
           ))}
         </div>
@@ -440,7 +440,7 @@ function ProductsContent() {
         {/* Empty state */}
         {!loading && products.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-warm-400 text-sm">Nessun prodotto trovato per questa selezione.</p>
+            <p className="text-warm-400 text-sm">{t("prodotti.empty")}</p>
           </div>
         )}
 
@@ -471,9 +471,9 @@ function ProductsContent() {
       {/* ===== BREADCRUMBS ===== */}
       <div className="gtv-container pb-2 -mt-10">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{t("common.breadcrumb_home")}</Link>
           <ChevronRight size={12} />
-          <span>Prodotti</span>
+          <span>{t("prodotti.breadcrumb")}</span>
         </div>
       </div>
     </>

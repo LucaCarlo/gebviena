@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { useT } from "@/contexts/I18nContext";
 import type { NewsArticle } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -17,6 +18,7 @@ interface CategoryItem {
 }
 
 function NewsContent() {
+  const t = useT();
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentCategory = searchParams.get("category") || "TUTTI";
@@ -86,7 +88,7 @@ function NewsContent() {
       {/* ===== TITLE ===== */}
       <section className="gtv-container pt-16 pb-28">
         <h1 className="font-serif text-[58px] text-black tracking-tight text-center font-light">
-          News &amp; Rassegna Stampa
+          {t("news.title")}
         </h1>
       </section>
 
@@ -103,7 +105,7 @@ function NewsContent() {
                     : "bg-warm-100 text-dark hover:bg-warm-200"
                 }`}
               >
-                Tutti
+                {t("news.filter.all")}
               </button>
               {categories.map((cat) => (
                 <button
@@ -173,7 +175,7 @@ function NewsContent() {
 
         {!loading && articles.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-warm-400 text-sm">Nessun articolo trovato per questa selezione.</p>
+            <p className="text-warm-400 text-sm">{t("news.empty")}</p>
           </div>
         )}
 
@@ -204,9 +206,9 @@ function NewsContent() {
       {/* ===== BREADCRUMBS ===== */}
       <div className="gtv-container pb-2 -mt-10">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{t("common.breadcrumb_home")}</Link>
           <ChevronRight size={12} />
-          <span>News &amp; Rassegna Stampa</span>
+          <span>{t("news.breadcrumb")}</span>
         </div>
       </div>
     </>

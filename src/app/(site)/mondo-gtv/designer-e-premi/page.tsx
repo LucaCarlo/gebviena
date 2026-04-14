@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getRelatedCardImages } from "@/lib/page-images";
+import { tBatch } from "@/lib/i18n";
 import type { Metadata } from "next";
 import DesignerGrid from "./DesignerGrid";
 
@@ -64,6 +65,16 @@ export default async function DesignerPremiPage() {
 
   // Related page covers
   const cardImages = await getRelatedCardImages(RELATED_PAGES.map((p) => p.page));
+  const T = await tBatch([
+    "designer-premi.title",
+    "designer-premi.intro",
+    "designer-premi.designers.title",
+    "designer-premi.awards.title",
+    "designer-premi.breadcrumb",
+    "common.related",
+    "common.breadcrumb_home",
+    "nav.world",
+  ]);
 
   return (
     <>
@@ -71,14 +82,10 @@ export default async function DesignerPremiPage() {
       <section className="pt-20 md:pt-28 pb-16 md:pb-20">
         <div className="gtv-container">
           <h1 className="font-serif text-[58px] text-black tracking-normal text-center mb-[200px]">
-            Designer e premi
+            {T["designer-premi.title"]}
           </h1>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
-            GTV collabora con designer di talento per reinterpretare la
-            tradizione attraverso un linguaggio contemporaneo. Questo impegno
-            nella ricerca e nell&apos;innovazione &egrave; riconosciuto a
-            livello internazionale, con premi e menzioni che attestano
-            l&apos;eccellenza del brand nel design.
+            {T["designer-premi.intro"]}
           </p>
         </div>
       </section>
@@ -86,7 +93,7 @@ export default async function DesignerPremiPage() {
       {/* ── DESIGNER grid ────────────────────────────────────────── */}
       <section className="w-full py-20 md:py-28">
         <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-10">
-          Designer
+          {T["designer-premi.designers.title"]}
         </h2>
         <DesignerGrid designers={designers} />
       </section>
@@ -100,7 +107,7 @@ export default async function DesignerPremiPage() {
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[95%] max-w-[90%]">
           <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
-            Premi
+            {T["designer-premi.awards.title"]}
           </h2>
 
           <div className="space-y-24">
@@ -213,7 +220,7 @@ export default async function DesignerPremiPage() {
         <div className="gtv-container">
           <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
             <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
-              Potrebbe interessarti anche
+              {T["common.related"]}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {RELATED_PAGES.map((rp) => {
@@ -247,11 +254,11 @@ export default async function DesignerPremiPage() {
       {/* ── Breadcrumbs ───────────────────────────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <Link href="/mondo-gtv">Mondo GTV</Link>
+          <Link href="/mondo-gtv">{T["nav.world"]}</Link>
           <span>&gt;</span>
-          <span>Designer e premi</span>
+          <span>{T["designer-premi.breadcrumb"]}</span>
         </div>
       </div>
     </>

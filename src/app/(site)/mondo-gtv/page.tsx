@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getRelatedCardImages } from "@/lib/page-images";
+import { tBatch } from "@/lib/i18n";
 
 const PAGES = [
   { page: "brand-manifesto", label: "Brand Manifesto", href: "/mondo-gtv/brand-manifesto" },
@@ -13,6 +14,7 @@ const PAGES = [
 
 export default async function MondoGTVPage() {
   const cardImages = await getRelatedCardImages(PAGES.map((p) => p.page));
+  const T = await tBatch(["mondo-gtv.title", "mondo-gtv.intro", "mondo-gtv.breadcrumb", "common.breadcrumb_home"]);
 
   return (
     <>
@@ -20,7 +22,7 @@ export default async function MondoGTVPage() {
       <section className="pt-20 md:pt-28 pb-12 md:pb-16">
         <div className="gtv-container">
           <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
-            Mondo GTV
+            {T["mondo-gtv.title"]}
           </h1>
         </div>
       </section>
@@ -29,13 +31,7 @@ export default async function MondoGTVPage() {
       <section className="pb-16 md:pb-20">
         <div className="gtv-container">
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
-            Mondo GTV racconta l&apos;identità di Gebrüder Thonet Vienna: una
-            tradizione che affonda le radici nella Vienna del XIX secolo e che
-            oggi si rinnova attraverso la collaborazione con i più importanti
-            studi di design internazionali. Esplora il manifesto del brand, la
-            storia dell&apos;azienda, la tecnica della curvatura del legno,
-            l&apos;impegno per la sostenibilità, i designer e i premi, fino
-            all&apos;esperienza di Interno Marche Design Hotel.
+            {T["mondo-gtv.intro"]}
           </p>
         </div>
       </section>
@@ -76,9 +72,9 @@ export default async function MondoGTVPage() {
       {/* ── Breadcrumbs — stile mondo-gtv ────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <span>Mondo GTV</span>
+          <span>{T["mondo-gtv.breadcrumb"]}</span>
         </div>
       </div>
     </>

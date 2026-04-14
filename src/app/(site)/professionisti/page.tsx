@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getRelatedCardImages } from "@/lib/page-images";
+import { tBatch } from "@/lib/i18n";
 
 const PAGES = [
   { page: "cataloghi", label: "Cataloghi", href: "/professionisti/cataloghi" },
@@ -10,6 +11,12 @@ const PAGES = [
 
 export default async function ProfessionistiPage() {
   const cardImages = await getRelatedCardImages(PAGES.map((p) => p.page));
+  const T = await tBatch([
+    "professionisti.title",
+    "professionisti.description",
+    "professionisti.breadcrumb",
+    "common.breadcrumb_home",
+  ]);
 
   return (
     <>
@@ -17,7 +24,7 @@ export default async function ProfessionistiPage() {
       <section className="pt-20 md:pt-28 pb-12 md:pb-16">
         <div className="gtv-container">
           <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
-            Professionisti
+            {T["professionisti.title"]}
           </h1>
         </div>
       </section>
@@ -26,11 +33,7 @@ export default async function ProfessionistiPage() {
       <section className="pb-16 md:pb-20">
         <div className="gtv-container">
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
-            Gebrüder Thonet Vienna mette a disposizione di architetti, interior
-            designer e progettisti gli strumenti per supportare ogni fase del
-            lavoro: cataloghi completi della collezione, materiali tecnici per
-            la specifica di prodotto e il servizio di realizzazione di soluzioni
-            su misura per progetti contract, hospitality e residenziali.
+            {T["professionisti.description"]}
           </p>
         </div>
       </section>
@@ -71,9 +74,9 @@ export default async function ProfessionistiPage() {
       {/* ── Breadcrumbs ──────────────────────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <span>Professionisti</span>
+          <span>{T["professionisti.breadcrumb"]}</span>
         </div>
       </div>
     </>

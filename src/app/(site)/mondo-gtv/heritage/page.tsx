@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getPageImages, getRelatedCardImages } from "@/lib/page-images";
+import { tBatch } from "@/lib/i18n";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -39,16 +40,35 @@ const DEFAULTS: Record<string, string> = {
 };
 
 export default async function HeritagePage() {
-  const [imgs, cardImages] = await Promise.all([
+  const [imgs, cardImages, T] = await Promise.all([
     getPageImages("heritage", DEFAULTS),
     getRelatedCardImages(RELATED_PAGES.map((p) => p.page)),
+    tBatch([
+      "heritage.title",
+      "heritage.family.description",
+      "heritage.innovation.title",
+      "heritage.innovation.p1",
+      "heritage.innovation.p2",
+      "heritage.expansion.title",
+      "heritage.postwar.p1",
+      "heritage.postwar.p2",
+      "heritage.postwar.p3",
+      "heritage.today.p1",
+      "heritage.today.p2",
+      "heritage.coin.title",
+      "heritage.coin.description",
+      "heritage.breadcrumb",
+      "common.related",
+      "common.breadcrumb_home",
+      "nav.world",
+    ]),
   ]);
 
   return (
     <>
       <section className="gtv-container pt-16 pb-16">
         <h1 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight text-center font-light">
-          Le origini di &ldquo;Gebrüder Thonet&rdquo;
+          {T["heritage.title"]}
         </h1>
       </section>
 
@@ -70,15 +90,7 @@ export default async function HeritagePage() {
             {/* Right: text */}
             <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "151px", paddingRight: "0" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
-                Michael Thonet (1796-1871) e i suoi cinque figli furono i
-                produttori di mobili di maggior successo dell&apos;era
-                industriale. Invitato dal cancelliere austriaco Metternich, che
-                aveva visto i suoi prodotti all&apos;Esposizione della
-                Societ&agrave; degli Amici delle Arti di Coblenza, a sviluppare
-                il proprio brevetto in Austria, nel 1842 Michael Thonet
-                lasci&ograve; Boppard, in Germania, per stabilirsi a Vienna,
-                dove nel 1853 fond&ograve; l&apos;azienda &ldquo;Gebrüder
-                Thonet&rdquo; coinvolgendo i suoi cinque figli.
+                {T["heritage.family.description"]}
               </p>
             </div>
           </div>
@@ -89,23 +101,13 @@ export default async function HeritagePage() {
       <section className="pb-20 md:pb-28">
         <div className="gtv-container">
           <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-12 text-center">
-            L&apos;innovazione e il successo industriale
+            {T["heritage.innovation.title"]}
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mb-6">
-            Nella capitale dell&apos;Impero asburgico, Michael Thonet
-            pass&ograve; dalla tecnica del legno lamellare incollato a quella del
-            tondino incurvato a vapore, cio&egrave; a un processo chimico e
-            meccanico di tipo industriale. Grazie a questa innovazione
-            inizi&ograve; a produrre mobili in legno proponendo una collezione di
-            forme eleganti e insieme razionali, con un procedimento che consentiva
-            la produzione in grande serie. A questo si aggiunse subito, un sistema
-            di distribuzione e di vendita in grado di penetrare qualsiasi mercato.
+            {T["heritage.innovation.p1"]}
           </p>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mb-16">
-            In quel periodo nacquero prodotti come la sedia &ldquo;N.1&rdquo;
-            progettata per il famoso palazzo Schwarzenberg di Vienna, considerata
-            la sedia &ldquo;tipo&rdquo; Thonet, da cui derivarono poi
-            innumerevoli modelli fino alla sedia &ldquo;N.14&rdquo;.
+            {T["heritage.innovation.p2"]}
           </p>
 
           {/* 2 vertical images — 20px piu strette, 10px meno alte (poi -5px ciascuna) */}
@@ -148,7 +150,7 @@ export default async function HeritagePage() {
       <section className="pb-10 md:pb-16">
         <div className="gtv-container">
           <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-12 text-center">
-            L&apos;espansione e la trasformazione
+            {T["heritage.expansion.title"]}
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mb-16">
             Consapevolezza tecnologiche e di alto livello, diffusione dei
@@ -218,24 +220,13 @@ export default async function HeritagePage() {
             {/* Left: text — same paddings as 1st section right column */}
             <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "0", paddingRight: "60px" }}>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-8">
-                Nel 1911 il catalogo Gebrüder Thonet contava 860 modelli distinti.
-                Al termine della seconda guerra mondiale rimasero unit&agrave; di
-                produzione indipendenti in varie nazioni che acquistarono il nome
-                diversi: in Austria, patria di Gebrüder Thonet, divent&ograve;
-                Thonet-Mundus; da alcuni discendenti di Michael Thonet, figli
-                Gebrüder Thonet e Richard Thonet. Dopo la guerra, diventava
-                ricominciare da capo, con pochi pezzi che una passione e conoscenza
-                per i mobili.
+                {T["heritage.postwar.p1"]}
               </p>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-8">
-                Gebrüder Thonet Vienna nasce proprio dai vecchi magazzini di
-                Gebrüder Thonet, a partire dal 1948. Ricostruita, Richard e
-                Gebrüder Thonet edificarono un stabilimento a Rethway, Steiermark,
-                prima di realizzare il loro sito produttivo a Friedberg in 1952.
+                {T["heritage.postwar.p2"]}
               </p>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal">
-                Nel 1976 la societ&agrave; cambi&ograve; nome in Gebrüder Thonet
-                Vienna.
+                {T["heritage.postwar.p3"]}
               </p>
             </div>
 
@@ -263,21 +254,10 @@ export default async function HeritagePage() {
             tradizione e innovazione
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mb-6">
-            Recentemente Gebrüder Thonet Vienna GmbH (GTV) ha sviluppato la
-            propria attivit&agrave; fra tradizione e innovazione,
-            continuit&agrave; e rinnovamento, dando vita a un programma di
-            produzione articolato, che si propone in primo luogo di recuperare in
-            forma di riedizione una serie di oggetti storici creati dalla
-            Gebrüder Thonet.
+            {T["heritage.today.p1"]}
           </p>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">
-            GTV incarna l&apos;arredamento contemporaneo, unendo tradizione e
-            innovazione. Tecniche avanzate, materiali innovativi e design
-            contemporaneo caratterizzano i suoi progetti, trasformando
-            l&apos;eredit&agrave; classica in nuove soluzioni. Icone come la
-            sedia N14, con oltre 50 milioni di esemplari prodotti, continuano a
-            ispirare. GTV guarda al futuro, reinterpretando il passato per
-            creare collezioni attuali e versatili.
+            {T["heritage.today.p2"]}
           </p>
         </div>
       </section>
@@ -299,17 +279,10 @@ export default async function HeritagePage() {
           {/* Right: text */}
           <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              La &ldquo;Moneta&rdquo; GTV
+              {T["heritage.coin.title"]}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
-              L&apos;inimitabile valore, materiale e immateriale nella struttura
-              di ogni singolo pezzo: un particolare emblema che ne attesta
-              autenticit&agrave;, originalit&agrave; e qualit&agrave; e acquisito
-              stabilit&agrave; fra industria e sapiente artigianato, fra
-              l&apos;eredit&agrave; del passato e l&apos;esecuzione dettagliata,
-              la moneta con l&apos;effigie del marchio, che storicamente si
-              apponeva internamente ai siti produttivi Thonet, appare in tutte
-              le produzioni.
+              {T["heritage.coin.description"]}
             </p>
           </div>
         </div>
@@ -320,7 +293,7 @@ export default async function HeritagePage() {
         <div className="gtv-container">
           <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
           <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
-            Potrebbe interessarti anche
+            {T["common.related"]}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {RELATED_PAGES.map((rp) => {
@@ -354,11 +327,11 @@ export default async function HeritagePage() {
       {/* ── Breadcrumbs ───────────────────────────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <Link href="/mondo-gtv">Mondo GTV</Link>
+          <Link href="/mondo-gtv">{T["nav.world"]}</Link>
           <span>&gt;</span>
-          <span>Heritage</span>
+          <span>{T["heritage.breadcrumb"]}</span>
         </div>
       </div>
     </>
