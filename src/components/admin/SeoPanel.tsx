@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { Check, X as XIcon, Plus, Trash2 } from "lucide-react";
+import { useTranslationCtx } from "@/contexts/TranslationContext";
+import { TInput, TTextarea } from "./TranslatableField";
 
 interface SeoPanelProps {
   seoTitle: string;
@@ -28,8 +30,12 @@ function countWords(text: string): number {
   return clean.split(/\s+/).length;
 }
 
-export default function SeoPanel({ seoTitle, seoDescription, seoKeywords, slug, content, onChange }: SeoPanelProps) {
+export default function SeoPanel({ seoTitle: rawSeoTitle, seoDescription: rawSeoDescription, seoKeywords, slug, content, onChange }: SeoPanelProps) {
   const [newKeyword, setNewKeyword] = useState("");
+  const tCtx = useTranslationCtx();
+  // When translating, show translated values for analytics; the inputs themselves are TInput/TTextarea (already lang-aware)
+  const seoTitle = tCtx?.isTranslating ? tCtx.getValue("seoTitle", rawSeoTitle) : rawSeoTitle;
+  const seoDescription = tCtx?.isTranslating ? tCtx.getValue("seoDescription", rawSeoDescription) : rawSeoDescription;
 
   const addKeyword = useCallback(() => {
     const kw = newKeyword.trim().toLowerCase();
@@ -178,10 +184,10 @@ export default function SeoPanel({ seoTitle, seoDescription, seoKeywords, slug, 
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1">
               Titolo SEO
             </label>
-            <input
-              type="text"
-              value={seoTitle}
-              onChange={(e) => onChange("seoTitle", e.target.value)}
+            <TInput
+              fieldKey="seoTitle"
+              defaultValue={rawSeoTitle}
+              onDefaultChange={(v) => onChange("seoTitle", v)}
               placeholder="Titolo per i motori di ricerca"
               className="w-full border border-warm-300 rounded px-3 py-2 text-sm focus:border-warm-800 focus:outline-none"
             />
@@ -203,9 +209,10 @@ export default function SeoPanel({ seoTitle, seoDescription, seoKeywords, slug, 
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1">
               Meta Description
             </label>
-            <textarea
-              value={seoDescription}
-              onChange={(e) => onChange("seoDescription", e.target.value)}
+            <TTextarea
+              fieldKey="seoDescription"
+              defaultValue={rawSeoDescription}
+              onDefaultChange={(v) => onChange("seoDescription", v)}
               placeholder="Descrizione per i motori di ricerca"
               rows={3}
               className="w-full border border-warm-300 rounded px-3 py-2 text-sm focus:border-warm-800 focus:outline-none resize-none"

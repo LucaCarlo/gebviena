@@ -9,6 +9,8 @@ import GalleryUploadField from "./GalleryUploadField";
 import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
 import PconConfigurator from "./PconConfigurator";
+import { useTranslationCtx } from "@/contexts/TranslationContext";
+import { TInput, TTextarea, TRichText } from "./TranslatableField";
 
 interface ProductFormProps {
   productId?: string;
@@ -34,6 +36,7 @@ interface CategoryOption {
 
 export default function ProductForm({ productId }: ProductFormProps) {
   const router = useRouter();
+  const tCtx = useTranslationCtx();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [designers, setDesigners] = useState<DesignerOption[]>([]);
@@ -201,6 +204,13 @@ export default function ProductForm({ productId }: ProductFormProps) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    // If editing in a non-default language, save translation only
+    if (tCtx?.isTranslating) {
+      const ok = await tCtx.saveTranslation();
+      setLoading(false);
+      if (ok) router.push("/admin/products");
+      return;
+    }
     try {
       const url = productId ? `/api/products/${productId}` : "/api/products";
       const method = productId ? "PUT" : "POST";
@@ -272,22 +282,21 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Nome *</label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => handleNameChange(e.target.value)}
+          <TInput
+            fieldKey="name"
+            defaultValue={form.name}
+            onDefaultChange={handleNameChange}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            required
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Slug</label>
-            <input
-              type="text"
-              value={form.slug}
-              onChange={(e) => updateField("slug", e.target.value)}
+            <TInput
+              fieldKey="slug"
+              defaultValue={form.slug}
+              onDefaultChange={(v) => updateField("slug", v)}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none"
             />
           </div>
@@ -355,10 +364,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Materiali</label>
-            <input
-              type="text"
-              value={form.materials}
-              onChange={(e) => updateField("materials", e.target.value)}
+            <TInput
+              fieldKey="materials"
+              defaultValue={form.materials}
+              onDefaultChange={(v) => updateField("materials", v)}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
               placeholder="es. Legno massello di faggio curvato"
             />
@@ -375,11 +384,14 @@ export default function ProductForm({ productId }: ProductFormProps) {
           </div>
         </div>
 
-        <RichTextEditor
-          label="Descrizione"
-          value={form.description}
-          onChange={(html) => updateField("description", html)}
-        />
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Descrizione</label>
+          <TRichText
+            fieldKey="description"
+            defaultValue={form.description}
+            onDefaultChange={(html) => updateField("description", html)}
+          />
+        </div>
 
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
@@ -454,9 +466,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
         ) : (
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Misure (testo libero)</label>
-            <textarea
-              value={form.dimensions}
-              onChange={(e) => updateField("dimensions", e.target.value)}
+            <TTextarea
+              fieldKey="dimensions"
+              defaultValue={form.dimensions}
+              onDefaultChange={(v) => updateField("dimensions", v)}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
               placeholder={"es.\nL 60 cm\nP 55 cm\nH 80 cm"}
               rows={4}
