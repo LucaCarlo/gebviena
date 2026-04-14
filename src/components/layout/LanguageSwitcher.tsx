@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLang } from "@/contexts/I18nContext";
+import { translateSegmentsBackward, translateSegmentsForward, DEFAULT_LANG } from "@/lib/path-segments";
 
 interface Language {
   code: string;
@@ -42,13 +43,20 @@ export default function LanguageSwitcher() {
   const switchTo = (lang: Language) => {
     setOpen(false);
     const knownPrefixes = languages.filter((l) => !l.isDefault && l.urlPrefix).map((l) => l.urlPrefix);
-    const segments = pathname.split("/").filter(Boolean);
-    if (segments[0] && knownPrefixes.includes(segments[0])) segments.shift();
-    const basePath = "/" + segments.join("/");
+    let segments = pathname.split("/").filter(Boolean);
+    // Step 1: drop current lang prefix and convert segments back to IT canonical
+    if (segments[0] && knownPrefixes.includes(segments[0])) {
+      const currentPrefix = segments[0];
+      segments = translateSegmentsBackward(segments.slice(1), currentPrefix);
+    }
+    // Step 2: forward-translate to target lang
+    const target = lang.isDefault ? DEFAULT_LANG : (lang.urlPrefix || lang.code);
+    const translated = translateSegmentsForward(segments, target);
+    const path = translated.length ? "/" + translated.join("/") : "/";
     if (lang.isDefault) {
-      router.push(basePath || "/");
+      router.push(path);
     } else {
-      router.push(`/${lang.urlPrefix}${basePath === "/" ? "" : basePath}`);
+      router.push(`/${target}${path === "/" ? "" : path}`);
     }
   };
 
