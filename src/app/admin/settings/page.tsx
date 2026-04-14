@@ -912,7 +912,7 @@ function TranslationsAITab({ showToast }: { showToast: (m: string, t: "success" 
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-warm-800">Traduzioni automatiche con AI</h2>
-        <p className="text-sm text-warm-500 mt-1">Configura il provider AI usato dal bottone "Traduci con AI" in admin.</p>
+        <p className="text-sm text-warm-500 mt-1">Configura il provider AI usato dal bottone &ldquo;Traduci con AI&rdquo; in admin.</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
