@@ -307,6 +307,7 @@ export const MEDIA_FOLDERS = [
   { value: "campaigns", label: "Campagne" },
   { value: "hero", label: "Hero" },
   { value: "premi", label: "Premi" },
+  { value: "tech-sheets", label: "Schede tecniche e 2D/3D" },
 ] as const;
 
 export const NAV_ITEMS = [
