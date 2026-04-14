@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Upload, Package, Search, X } from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
+import TranslationsPanel from "./TranslationsPanel";
 import { useMemo } from "react";
 
 type ProductPickerItem = {
@@ -390,6 +391,7 @@ export default function AwardForm({ awardId }: AwardFormProps) {
           Annulla
         </button>
       </div>
+      {awardId && <TranslationsPanel entity="award" entityId={awardId} />}
     </form>
   );
 }

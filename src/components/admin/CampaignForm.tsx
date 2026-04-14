@@ -7,6 +7,7 @@ import { Upload } from "lucide-react";
 import { slugify } from "@/lib/utils";
 import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
+import TranslationsPanel from "./TranslationsPanel";
 
 interface CampaignFormProps {
   campaignId?: string;
@@ -281,6 +282,7 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
           Annulla
         </button>
       </div>
+      {campaignId && <TranslationsPanel entity="campaign" entityId={campaignId} />}
     </form>
   );
 }
