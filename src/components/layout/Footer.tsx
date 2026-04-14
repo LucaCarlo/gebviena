@@ -252,12 +252,7 @@ export default function Footer() {
 
             {/* Language selector */}
             <div className="pt-4">
-              <div className="inline-flex items-center border border-black px-5 py-3 text-[16px] cursor-pointer hover:underline" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                <span>Italiano</span>
-                <svg className="ml-24 w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </div>
+              <LanguageSwitcher />
             </div>
           </div>
 
@@ -360,12 +355,9 @@ export default function Footer() {
 
       {/* Copyright */}
       <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-[9.9rem] pt-16 md:pt-24">
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-3">
-          <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
-            Copyright 2025 © GEBRUDER THONET VIENNA GMBH
-          </p>
-          <LanguageSwitcher />
-        </div>
+        <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
+          Copyright 2025 © GEBRUDER THONET VIENNA GMBH
+        </p>
         <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#000" }}>
           Si prega di osservare che l&apos;utilizzo del marchio e il nome della società &ldquo;Gebrüder Thonet Vienna&rdquo; negli
           Stati Uniti e l&apos;uso del marchio di fabbrica &ldquo;Gebrüder Thonet Vienna&rdquo; in Germania comporta restrizioni,

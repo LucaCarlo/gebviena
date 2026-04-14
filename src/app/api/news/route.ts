@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
+import { DEFAULT_LANG } from "@/lib/i18n";
+import { mergeFirstTranslation, resolveLangFromRequest, TRANSLATABLE_FIELDS } from "@/lib/translate-payload";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -9,6 +11,8 @@ export async function GET(req: NextRequest) {
   const admin = searchParams.get("admin") === "true";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "16");
+  const lang = resolveLangFromRequest(req, DEFAULT_LANG);
+  const includeTranslations = !admin && lang !== DEFAULT_LANG;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {};
@@ -21,15 +25,23 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  const [data, total] = await Promise.all([
+  const [rawData, total] = await Promise.all([
     prisma.newsArticle.findMany({
       where,
+      ...(includeTranslations
+        ? { include: { translations: { where: { languageCode: lang } } } }
+        : {}),
       skip: (page - 1) * limit,
       take: limit,
       orderBy: admin ? { updatedAt: "desc" } : { sortOrder: "asc" },
     }),
     prisma.newsArticle.count({ where }),
   ]);
+
+  const data = includeTranslations
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? (rawData as any[]).map((p) => mergeFirstTranslation(p, TRANSLATABLE_FIELDS.news))
+    : rawData;
 
   return NextResponse.json({
     success: true,

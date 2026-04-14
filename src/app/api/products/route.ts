@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
+import { DEFAULT_LANG } from "@/lib/i18n";
+import { mergeFirstTranslation, resolveLangFromRequest, TRANSLATABLE_FIELDS } from "@/lib/translate-payload";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -9,22 +11,42 @@ export async function GET(req: NextRequest) {
   const featured = searchParams.get("featured");
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "12");
+  const lang = resolveLangFromRequest(req, DEFAULT_LANG);
 
   const where: Record<string, unknown> = { isActive: true };
   if (category && category !== "TUTTI") where.category = { contains: category };
   if (subcategory) where.subcategory = subcategory;
   if (featured === "true") where.isFeatured = true;
 
-  const [data, total] = await Promise.all([
+  const includeTranslations = lang !== DEFAULT_LANG;
+
+  const [rawData, total] = await Promise.all([
     prisma.product.findMany({
       where,
-      include: { designer: true },
+      include: {
+        designer: includeTranslations
+          ? { include: { translations: { where: { languageCode: lang } } } }
+          : true,
+        ...(includeTranslations ? { translations: { where: { languageCode: lang } } } : {}),
+      },
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { sortOrder: "asc" },
     }),
     prisma.product.count({ where }),
   ]);
+
+  const data = includeTranslations
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? (rawData as any[]).map((p) => {
+        const merged = mergeFirstTranslation(p, TRANSLATABLE_FIELDS.product);
+        if (merged && (merged as { designer?: unknown }).designer) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (merged as any).designer = mergeFirstTranslation((merged as any).designer, TRANSLATABLE_FIELDS.designer);
+        }
+        return merged;
+      })
+    : rawData;
 
   return NextResponse.json({
     success: true,

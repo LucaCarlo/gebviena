@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useT } from "@/contexts/I18nContext";
+import { useT, useLang } from "@/contexts/I18nContext";
 import type { Project, HeroSlide } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -14,19 +14,20 @@ const HERO_AUTOPLAY = 5000;
 
 function ProjectsHero() {
   const t = useT();
+  const lang = useLang();
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [current, setCurrent] = useState(0);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch("/api/hero-slides?page=projects")
+    fetch(`/api/hero-slides?page=projects&lang=${lang}`)
       .then((r) => r.json())
       .then((data) => {
         setSlides(data.data || []);
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     if (slides.length <= 1) return;
@@ -244,6 +245,7 @@ interface CategoryItem {
 
 function ProjectsContent() {
   const t = useT();
+  const lang = useLang();
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentType = searchParams.get("type") || "TUTTI";
@@ -283,10 +285,10 @@ function ProjectsContent() {
   }, [currentType, projectCategories]);
 
   useEffect(() => {
-    fetch("/api/categories?contentType=projects")
+    fetch(`/api/categories?contentType=projects&lang=${lang}`)
       .then((r) => r.json())
       .then((data) => setProjectCategories(data.data || []));
-  }, []);
+  }, [lang]);
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -296,13 +298,14 @@ function ProjectsContent() {
     if (selectedProduct) params.set("productId", selectedProduct);
     params.set("page", currentPage.toString());
     params.set("limit", ITEMS_PER_PAGE.toString());
+    params.set("lang", lang);
 
     const res = await fetch(`/api/projects?${params}`);
     const data = await res.json();
     setProjects(data.data || []);
     setTotalPages(data.meta?.totalPages || 1);
     setLoading(false);
-  }, [currentType, currentPage, selectedCountry, selectedProduct]);
+  }, [currentType, currentPage, selectedCountry, selectedProduct, lang]);
 
   useEffect(() => {
     fetchProjects();
@@ -310,8 +313,8 @@ function ProjectsContent() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/projects?limit=500").then((r) => r.json()),
-      fetch("/api/products?limit=500").then((r) => r.json()),
+      fetch(`/api/projects?limit=500&lang=${lang}`).then((r) => r.json()),
+      fetch(`/api/products?limit=500&lang=${lang}`).then((r) => r.json()),
     ]).then(([projectsResp, productsResp]) => {
       const projects: (Project & { products?: { productId: string }[] })[] = projectsResp.data || [];
 
@@ -343,7 +346,7 @@ function ProjectsContent() {
           .filter((o: FilterOption) => o.count > 0)
       );
     });
-  }, []);
+  }, [lang]);
 
   const setType = (type: string) => {
     const params = new URLSearchParams();

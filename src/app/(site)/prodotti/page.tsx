@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useT } from "@/contexts/I18nContext";
+import { useT, useLang } from "@/contexts/I18nContext";
 import type { Product, HeroSlide } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -14,19 +14,20 @@ const HERO_AUTOPLAY = 5000;
 
 function ProductsHero() {
   const t = useT();
+  const lang = useLang();
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [current, setCurrent] = useState(0);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch("/api/hero-slides?page=products")
+    fetch(`/api/hero-slides?page=products&lang=${lang}`)
       .then((r) => r.json())
       .then((data) => {
         setSlides(data.data || []);
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
-  }, []);
+  }, [lang]);
 
   // Autoplay
   useEffect(() => {
@@ -182,6 +183,7 @@ interface CategoryItem {
 
 function ProductsContent() {
   const t = useT();
+  const lang = useLang();
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentCategory = searchParams.get("category") || "TUTTI";
@@ -221,13 +223,13 @@ function ProductsContent() {
   // Load typologies and categories from DB
   useEffect(() => {
     Promise.all([
-      fetch("/api/typologies?contentType=products").then((r) => r.json()),
-      fetch("/api/categories?contentType=products").then((r) => r.json()),
+      fetch(`/api/typologies?contentType=products&lang=${lang}`).then((r) => r.json()),
+      fetch(`/api/categories?contentType=products&lang=${lang}`).then((r) => r.json()),
     ]).then(([tData, cData]) => {
       setTypologies(tData.data || []);
       setAllCategories(cData.data || []);
     });
-  }, []);
+  }, [lang]);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -236,13 +238,14 @@ function ProductsContent() {
     if (currentSubcategory) params.set("subcategory", currentSubcategory);
     params.set("page", currentPage.toString());
     params.set("limit", ITEMS_PER_PAGE.toString());
+    params.set("lang", lang);
 
     const res = await fetch(`/api/products?${params}`);
     const data = await res.json();
     setProducts(data.data || []);
     setTotalPages(data.meta?.totalPages || 1);
     setLoading(false);
-  }, [currentCategory, currentSubcategory, currentPage]);
+  }, [currentCategory, currentSubcategory, currentPage, lang]);
 
   useEffect(() => {
     fetchProducts();

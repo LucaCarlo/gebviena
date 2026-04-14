@@ -3,35 +3,84 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
+import { getCurrentLang, DEFAULT_LANG } from "@/lib/i18n";
+import { mergeFirstTranslation, TRANSLATABLE_FIELDS } from "@/lib/translate-payload";
 
 interface PageProps {
   params: { slug: string };
 }
 
+async function resolveDesignerId(slug: string, lang: string): Promise<string | null> {
+  if (lang !== DEFAULT_LANG) {
+    const tr = await prisma.designerTranslation.findFirst({
+      where: { languageCode: lang, slug },
+      select: { designerId: true },
+    });
+    if (tr) return tr.designerId;
+  }
+  const d = await prisma.designer.findUnique({ where: { slug }, select: { id: true } });
+  return d?.id ?? null;
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const designer = await prisma.designer.findUnique({
-    where: { slug: params.slug },
-    select: { name: true, seoTitle: true, seoDescription: true },
+  const lang = getCurrentLang();
+  const designerId = await resolveDesignerId(params.slug, lang);
+  if (!designerId) return { title: "Designer non trovato" };
+
+  const includeTranslations = lang !== DEFAULT_LANG;
+  const raw = await prisma.designer.findUnique({
+    where: { id: designerId },
+    select: {
+      name: true,
+      seoTitle: true,
+      seoDescription: true,
+      ...(includeTranslations
+        ? {
+            translations: {
+              where: { languageCode: lang },
+              select: { name: true, seoTitle: true, seoDescription: true },
+            },
+          }
+        : {}),
+    },
   });
 
-  if (!designer) return { title: "Designer non trovato" };
+  if (!raw) return { title: "Designer non trovato" };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d: any = includeTranslations
+    ? mergeFirstTranslation(raw as Record<string, unknown>, ["name", "seoTitle", "seoDescription"])
+    : raw;
 
   return {
-    title: designer.seoTitle || `${designer.name} | Gebrüder Thonet Vienna`,
+    title: d.seoTitle || `${d.name} | Gebrüder Thonet Vienna`,
     description:
-      designer.seoDescription ||
-      `Scopri i prodotti disegnati da ${designer.name} per GTV.`,
+      d.seoDescription ||
+      `Scopri i prodotti disegnati da ${d.name} per GTV.`,
   };
 }
 
 export default async function DesignerDetailPage({ params }: PageProps) {
-  const designer = await prisma.designer.findUnique({
-    where: { slug: params.slug },
+  const lang = getCurrentLang();
+  const includeTranslations = lang !== DEFAULT_LANG;
+  const designerId = await resolveDesignerId(params.slug, lang);
+  if (!designerId) notFound();
+
+  const rawDesigner = await prisma.designer.findUnique({
+    where: { id: designerId },
+    ...(includeTranslations
+      ? { include: { translations: { where: { languageCode: lang } } } }
+      : {}),
   });
 
-  if (!designer || !designer.isActive) notFound();
+  if (!rawDesigner || !rawDesigner.isActive) notFound();
 
-  const products = await prisma.product.findMany({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const designer: any = includeTranslations
+    ? mergeFirstTranslation(rawDesigner as unknown as Record<string, unknown>, TRANSLATABLE_FIELDS.designer)
+    : rawDesigner;
+
+  const rawProducts = await prisma.product.findMany({
     where: { designerId: designer.id, isActive: true },
     orderBy: { sortOrder: "asc" },
     select: {
@@ -41,8 +90,21 @@ export default async function DesignerDetailPage({ params }: PageProps) {
       category: true,
       coverImage: true,
       imageUrl: true,
+      ...(includeTranslations
+        ? {
+            translations: {
+              where: { languageCode: lang },
+              select: { name: true, slug: true },
+            },
+          }
+        : {}),
     },
   });
+
+  const products = includeTranslations
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? (rawProducts as any[]).map((p) => mergeFirstTranslation(p, ["name", "slug"]))
+    : rawProducts;
 
   return (
     <>
@@ -113,18 +175,18 @@ export default async function DesignerDetailPage({ params }: PageProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {products.map((product) => {
                 const imgSrc =
-                  product.coverImage || product.imageUrl || null;
+                  product!.coverImage || product!.imageUrl || null;
                 return (
                   <Link
-                    key={product.id}
-                    href={`/prodotti/${product.slug}`}
+                    key={product!.id}
+                    href={`/prodotti/${product!.slug}`}
                     className="group block"
                   >
                     <div className="relative aspect-square bg-warm-50 overflow-hidden mb-4">
                       {imgSrc ? (
                         <Image
                           src={imgSrc}
-                          alt={product.name}
+                          alt={product!.name}
                           fill
                           className="object-contain p-6 group-hover:scale-105 transition-transform duration-500"
                           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -132,16 +194,16 @@ export default async function DesignerDetailPage({ params }: PageProps) {
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <span className="font-serif text-4xl text-warm-300">
-                            {product.name.charAt(0)}
+                            {product!.name.charAt(0)}
                           </span>
                         </div>
                       )}
                     </div>
                     <p className="text-[10px] uppercase tracking-[0.15em] text-warm-500 mb-1">
-                      {(product.category || "").split(",")[0]}
+                      {(product!.category || "").split(",")[0]}
                     </p>
                     <p className="font-sans text-sm md:text-base uppercase tracking-[0.1em] text-dark font-medium">
-                      {product.name}
+                      {product!.name}
                     </p>
                   </Link>
                 );

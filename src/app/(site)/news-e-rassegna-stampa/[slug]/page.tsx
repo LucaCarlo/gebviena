@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ChevronRight, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import type { NewsArticle } from "@/types";
+import { useLang } from "@/contexts/I18nContext";
 
 interface ArticleWithRelated extends NewsArticle {
   related?: NewsArticle[];
@@ -155,20 +156,21 @@ function ImageTextSection({ section, imageRight }: { section: StoriaSection; ima
 export default function NewsDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
+  const lang = useLang();
   const [article, setArticle] = useState<ArticleWithRelated | null>(null);
   const [product, setProduct] = useState<ProductData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!slug) return;
-    fetch(`/api/news/slug?slug=${slug}`)
+    fetch(`/api/news/slug?slug=${slug}&lang=${lang}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success) setArticle(data.data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [slug]);
+  }, [slug, lang]);
 
   /* Parse storia blocks */
   const storia: StoriaBlocks | null = (() => {

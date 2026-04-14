@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import type { Product, Designer, Project } from "@/types";
 import { buildPconUrl } from "@/lib/pcon";
+import { useLang } from "@/contexts/I18nContext";
 
 interface ProductDetail extends Omit<Product, "projects"> {
   related: (Product & { designer?: Designer })[];
@@ -143,6 +144,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
 export default function ProductDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
+  const lang = useLang();
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -153,7 +155,7 @@ export default function ProductDetailPage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const res = await fetch(`/api/products/slug?slug=${slug}`);
+      const res = await fetch(`/api/products/slug?slug=${slug}&lang=${lang}`);
       const json = await res.json();
       if (json.success) {
         setProduct(json.data);
@@ -165,7 +167,7 @@ export default function ProductDetailPage() {
       const img = (d.data || []).find((i: { section: string }) => i.section === "supporto-professionisti");
       if (img?.imageUrl) setSupportImg(img.imageUrl);
     });
-  }, [slug]);
+  }, [slug, lang]);
 
   if (loading) {
     return (

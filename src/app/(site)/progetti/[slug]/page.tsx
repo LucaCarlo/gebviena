@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import type { Project, Product, Designer } from "@/types";
+import { useLang } from "@/contexts/I18nContext";
 
 interface ProjectDetail extends Omit<Project, "products"> {
   products: { product: Product & { designer?: Designer } }[];
@@ -14,6 +15,7 @@ interface ProjectDetail extends Omit<Project, "products"> {
 export default function ProjectDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
+  const lang = useLang();
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,13 +25,13 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const res = await fetch(`/api/projects/slug?slug=${slug}`);
+      const res = await fetch(`/api/projects/slug?slug=${slug}&lang=${lang}`);
       const json = await res.json();
       if (json.success) setProject(json.data);
       setLoading(false);
     }
     load();
-  }, [slug]);
+  }, [slug, lang]);
 
   // Measure image orientations for gallery split (horizontal vs vertical)
   useEffect(() => {

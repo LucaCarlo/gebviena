@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Globe } from "lucide-react";
 import { useLang } from "@/contexts/I18nContext";
 
 interface Language {
@@ -20,6 +19,7 @@ export default function LanguageSwitcher() {
   const currentLang = useLang();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/languages")
@@ -29,9 +29,18 @@ export default function LanguageSwitcher() {
       });
   }, []);
 
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
   const switchTo = (lang: Language) => {
     setOpen(false);
-    // Strip current lang prefix from path if present
     const knownPrefixes = languages.filter((l) => !l.isDefault && l.urlPrefix).map((l) => l.urlPrefix);
     const segments = pathname.split("/").filter(Boolean);
     if (segments[0] && knownPrefixes.includes(segments[0])) segments.shift();
@@ -39,31 +48,36 @@ export default function LanguageSwitcher() {
     if (lang.isDefault) {
       router.push(basePath || "/");
     } else {
-      router.push(`/${lang.urlPrefix}${basePath === "/" ? "" : basePath}` || "/");
+      router.push(`/${lang.urlPrefix}${basePath === "/" ? "" : basePath}`);
     }
   };
 
   const current = languages.find((l) => l.code === currentLang);
+  const currentName = current?.name || (currentLang === "it" ? "Italiano" : currentLang.toUpperCase());
 
   return (
-    <div className="relative inline-block">
+    <div ref={ref} className="relative inline-block">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 text-sm hover:opacity-70"
+        className="inline-flex items-center justify-between border border-black px-5 py-3 text-[16px] cursor-pointer hover:underline min-w-[180px]"
+        style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}
       >
-        <Globe size={14} />
-        <span>{current?.flag || ""} {current?.name || currentLang.toUpperCase()}</span>
+        <span>{currentName}</span>
+        <svg className={`ml-6 w-5 h-5 transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
       </button>
       {open && (
-        <div className="absolute bottom-full mb-2 left-0 bg-white border border-warm-200 rounded-lg shadow-lg py-1 min-w-[160px] z-50">
+        <div className="absolute bottom-full mb-1 left-0 right-0 bg-white border border-black z-50">
           {languages.map((l) => (
             <button
               key={l.code}
               onClick={() => switchTo(l)}
-              className={`w-full text-left px-3 py-1.5 text-sm hover:bg-warm-50 ${l.code === currentLang ? "font-semibold" : ""}`}
+              className={`w-full text-left px-5 py-3 text-[16px] hover:bg-black hover:text-white transition-colors ${l.code === currentLang ? "font-semibold" : ""}`}
+              style={{ color: l.code === currentLang ? undefined : "#000" }}
             >
-              {l.flag || ""} {l.name}
+              {l.name}
             </button>
           ))}
         </div>

@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { useT } from "@/contexts/I18nContext";
+import { useT, useLang } from "@/contexts/I18nContext";
 import type { NewsArticle } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -19,6 +19,7 @@ interface CategoryItem {
 
 function NewsContent() {
   const t = useT();
+  const lang = useLang();
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentCategory = searchParams.get("category") || "TUTTI";
@@ -29,10 +30,10 @@ function NewsContent() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
 
   useEffect(() => {
-    fetch("/api/categories?contentType=news")
+    fetch(`/api/categories?contentType=news&lang=${lang}`)
       .then((r) => r.json())
       .then((data) => setCategories(data.data || []));
-  }, []);
+  }, [lang]);
 
   const fetchArticles = useCallback(async () => {
     setLoading(true);
@@ -40,13 +41,14 @@ function NewsContent() {
     if (currentCategory !== "TUTTI") params.set("category", currentCategory);
     params.set("page", currentPage.toString());
     params.set("limit", ITEMS_PER_PAGE.toString());
+    params.set("lang", lang);
 
     const res = await fetch(`/api/news?${params}`);
     const data = await res.json();
     setArticles(data.data || []);
     setTotalPages(data.meta?.totalPages || 1);
     setLoading(false);
-  }, [currentCategory, currentPage]);
+  }, [currentCategory, currentPage, lang]);
 
   useEffect(() => {
     fetchArticles();
