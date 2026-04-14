@@ -288,18 +288,35 @@ export default function UiTranslationsPage() {
                       <td className="px-4 py-2 align-top">
                         <code className="text-[11px] text-warm-500">{s.key}</code>
                       </td>
-                      <td className="px-4 py-2 align-top text-warm-700">{s.defaultValue}</td>
+                      <td className="px-4 py-2 align-top text-warm-700 whitespace-pre-wrap">{s.defaultValue}</td>
                       <td className="px-4 py-2 align-top">
-                        <input
-                          type="text"
-                          value={drafts[s.key] || ""}
-                          onChange={(e) => setDrafts((p) => ({ ...p, [s.key]: e.target.value }))}
-                          onBlur={() => handleBlur(s.key)}
-                          placeholder={hasOverride ? "" : "(usa default)"}
-                          className={`w-full border rounded px-2 py-1 text-sm focus:outline-none ${
-                            hasOverride ? "border-green-300 bg-green-50" : "border-warm-300"
-                          }`}
-                        />
+                        {(() => {
+                          const isLong = s.defaultValue.length > 80 || s.defaultValue.includes("\n");
+                          const rows = isLong ? Math.max(2, Math.ceil(s.defaultValue.length / 80)) : 1;
+                          return isLong ? (
+                            <textarea
+                              value={drafts[s.key] || ""}
+                              onChange={(e) => setDrafts((p) => ({ ...p, [s.key]: e.target.value }))}
+                              onBlur={() => handleBlur(s.key)}
+                              placeholder={hasOverride ? "" : "(usa default)"}
+                              rows={rows}
+                              className={`w-full border rounded px-2 py-1 text-sm focus:outline-none resize-y ${
+                                hasOverride ? "border-green-300 bg-green-50" : "border-warm-300"
+                              }`}
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              value={drafts[s.key] || ""}
+                              onChange={(e) => setDrafts((p) => ({ ...p, [s.key]: e.target.value }))}
+                              onBlur={() => handleBlur(s.key)}
+                              placeholder={hasOverride ? "" : "(usa default)"}
+                              className={`w-full border rounded px-2 py-1 text-sm focus:outline-none ${
+                                hasOverride ? "border-green-300 bg-green-50" : "border-warm-300"
+                              }`}
+                            />
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-2 align-top">
                         <div className="flex items-center justify-end gap-1">

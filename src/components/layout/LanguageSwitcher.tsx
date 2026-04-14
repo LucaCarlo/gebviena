@@ -82,8 +82,8 @@ export default function LanguageSwitcher() {
             <button
               key={l.code}
               onClick={() => switchTo(l)}
-              className={`w-full text-left px-5 py-3 text-[16px] hover:bg-black hover:text-white transition-colors ${l.code === currentLang ? "font-semibold" : ""}`}
-              style={{ color: l.code === currentLang ? undefined : "#000" }}
+              className={`w-full text-left px-5 py-3 text-[16px] hover:underline transition-all ${l.code === currentLang ? "font-semibold" : ""}`}
+              style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}
             >
               {l.name}
             </button>
