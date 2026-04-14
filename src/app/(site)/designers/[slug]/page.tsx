@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import { getCurrentLang, DEFAULT_LANG } from "@/lib/i18n";
 import { mergeFirstTranslation, TRANSLATABLE_FIELDS } from "@/lib/translate-payload";
+import { buildAlternates } from "@/lib/seo-alternates";
 
 interface PageProps {
   params: { slug: string };
@@ -52,11 +53,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? mergeFirstTranslation(raw as Record<string, unknown>, ["name", "seoTitle", "seoDescription"])
     : raw;
 
+  // Build slug map for alternates
+  const allTr = await prisma.designerTranslation.findMany({
+    where: { designerId },
+    select: { languageCode: true, slug: true },
+  });
+  const slugByLang: Record<string, string> = { it: params.slug };
+  for (const t of allTr) if (t.slug) slugByLang[t.languageCode] = t.slug;
+  const alternates = await buildAlternates(`/designers/${params.slug}`, slugByLang);
+
   return {
     title: d.seoTitle || `${d.name} | Gebrüder Thonet Vienna`,
-    description:
-      d.seoDescription ||
-      `Scopri i prodotti disegnati da ${d.name} per GTV.`,
+    description: d.seoDescription || `Scopri i prodotti disegnati da ${d.name} per GTV.`,
+    alternates,
   };
 }
 

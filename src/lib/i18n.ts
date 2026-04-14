@@ -18,6 +18,14 @@ export function getCurrentLang(): string {
   }
 }
 
+export function getCanonicalPath(): string {
+  try {
+    return headers().get("x-gtv-canonical-path") || "/";
+  } catch {
+    return "/";
+  }
+}
+
 /**
  * Per-request cache of UI overrides for the active language.
  * We load all overrides once per request to avoid N queries.

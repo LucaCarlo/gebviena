@@ -34,7 +34,10 @@ export function middleware(req: NextRequest) {
 
   const url = req.nextUrl.clone();
   url.pathname = strippedPath;
-  const res = NextResponse.rewrite(url);
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-gtv-lang", lang);
+  requestHeaders.set("x-gtv-canonical-path", strippedPath);
+  const res = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
   res.headers.set("x-gtv-lang", lang);
   return res;
 }
