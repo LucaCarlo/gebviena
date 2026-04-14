@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { NAV_ITEMS } from "@/lib/constants";
+import { useT, useLang } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -13,6 +15,8 @@ interface MobileMenuProps {
 }
 
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
+  const t = useT();
+  const lang = useLang();
   const [activeItem, setActiveItem] = useState<string | null>(null);
 
   // Reset submenu when menu closes
@@ -87,15 +91,15 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                               isActive ? "underline underline-offset-[10px] decoration-[0.5px]" : ""
                             }`}
                           >
-                            {item.label}
+                            {t(item.i18nKey)}
                           </button>
                         ) : (
                           <Link
-                            href={item.href}
+                            href={localizePath(item.href, lang)}
                             onClick={onClose}
                             className="font-sans text-lg md:text-xl lg:text-2xl uppercase tracking-wider font-light text-dark transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[0.5px]"
                           >
-                            {item.label}
+                            {t(item.i18nKey)}
                           </Link>
                         )}
                       </li>
@@ -144,12 +148,12 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                       {activeNav.children.map((child) => (
                         <li key={child.label}>
                           <Link
-                            href={child.href}
+                            href={localizePath(child.href, lang)}
                             onClick={onClose}
                             className="block font-sans text-sm md:text-base uppercase tracking-wider font-light transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap"
                             style={{ color: "#000000" }}
                           >
-                            {child.label}
+                            {t(child.i18nKey)}
                           </Link>
                         </li>
                       ))}

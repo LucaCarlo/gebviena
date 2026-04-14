@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Logo from "./Logo";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { useT, useLang } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
 
 interface FieldConfig {
@@ -26,6 +28,8 @@ const DEFAULT_NEWSLETTER_FIELDS: FieldConfig[] = [
 ];
 
 export default function Footer() {
+  const t = useT();
+  const lang = useLang();
   const [fieldConfig, setFieldConfig] = useState<FieldConfig[] | null>(null);
   const [formData, setFormData] = useState<Record<string, string | boolean>>({});
   const [subscribed, setSubscribed] = useState(false);
@@ -265,28 +269,28 @@ export default function Footer() {
             </h4>
             <ul className="space-y-6">
               <li>
-                <Link href="/prodotti" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  Prodotti
+                <Link href={localizePath("/prodotti", lang)} className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
+                  {t("menu.products")}
                 </Link>
               </li>
               <li>
-                <Link href="/progetti" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  Progetti
+                <Link href={localizePath("/progetti", lang)} className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
+                  {t("menu.projects")}
                 </Link>
               </li>
               <li>
-                <Link href="/mondo-gtv" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  Mondo GTV
+                <Link href={localizePath("/mondo-gtv", lang)} className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
+                  {t("menu.world")}
                 </Link>
               </li>
               <li>
-                <Link href="/professionisti" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  Professionisti
+                <Link href={localizePath("/professionisti", lang)} className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
+                  {t("menu.professionals")}
                 </Link>
               </li>
               <li>
-                <Link href="/contatti" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  Contatti
+                <Link href={localizePath("/contatti", lang)} className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
+                  {t("menu.contact")}
                 </Link>
               </li>
             </ul>
