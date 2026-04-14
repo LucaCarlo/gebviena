@@ -4,7 +4,32 @@ import { translateSegmentsBackward } from "@/lib/path-segments";
 const KNOWN_PREFIXES = ["en", "de", "fr"];
 const DEFAULT_LANG = "it";
 
-export function middleware(req: NextRequest) {
+interface RedirectRow {
+  fromPath: string;
+  toPath: string;
+  statusCode: number;
+}
+
+// In-memory cache of enabled redirects (refreshed every 60s).
+let redirectCache: { rows: RedirectRow[]; ts: number } | null = null;
+const REDIRECT_TTL = 60_000;
+
+async function getRedirects(origin: string): Promise<RedirectRow[]> {
+  const now = Date.now();
+  if (redirectCache && now - redirectCache.ts < REDIRECT_TTL) return redirectCache.rows;
+  try {
+    const res = await fetch(`${origin}/api/redirects`, { next: { revalidate: 60 } });
+    if (!res.ok) return redirectCache?.rows || [];
+    const json = await res.json();
+    const rows = json?.data || [];
+    redirectCache = { rows, ts: now };
+    return rows;
+  } catch {
+    return redirectCache?.rows || [];
+  }
+}
+
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (
@@ -17,6 +42,28 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // 1. Apply admin-defined redirects first (matched against canonical path)
+  const origin = req.nextUrl.origin;
+  const redirects = await getRedirects(origin);
+  if (redirects.length > 0) {
+    // Match against pathname (with and without trailing slash)
+    const candidates = [pathname, pathname.replace(/\/$/, ""), pathname + "/"];
+    const match = redirects.find((r) => candidates.includes(r.fromPath));
+    if (match) {
+      const target = /^https?:\/\//.test(match.toPath)
+        ? match.toPath
+        : new URL(match.toPath, req.url).toString();
+      // Fire-and-forget hits update (don't await — keep redirect fast)
+      fetch(`${origin}/api/redirects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromPath: match.fromPath }),
+      }).catch(() => {});
+      return NextResponse.redirect(target, match.statusCode);
+    }
+  }
+
+  // 2. Lang prefix detection + backward segment translation
   const segments = pathname.split("/").filter(Boolean);
   const first = segments[0];
 
@@ -26,7 +73,6 @@ export function middleware(req: NextRequest) {
   if (first && KNOWN_PREFIXES.includes(first)) {
     lang = first;
     rest = segments.slice(1);
-    // Translate non-IT segments back to IT canonical so the page route resolves
     rest = translateSegmentsBackward(rest, lang);
   }
 
