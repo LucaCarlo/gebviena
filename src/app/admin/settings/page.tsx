@@ -15,6 +15,7 @@ import {
   Upload,
   Loader2,
   ArrowRight,
+  Languages,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -39,7 +40,7 @@ interface BackupPreview {
   [key: string]: number;
 }
 
-type TabKey = "smtp" | "recaptcha" | "languages" | "stats" | "backup" | "storage";
+type TabKey = "smtp" | "recaptcha" | "languages" | "translations" | "stats" | "backup" | "storage";
 
 interface TabDef {
   key: TabKey;
@@ -51,6 +52,7 @@ const TABS: TabDef[] = [
   { key: "smtp", label: "Email / SMTP", icon: Mail },
   { key: "recaptcha", label: "reCAPTCHA", icon: Shield },
   { key: "languages", label: "Lingue", icon: Globe },
+  { key: "translations", label: "Traduzioni AI", icon: Languages },
   { key: "stats", label: "Statistiche", icon: BarChart3 },
   { key: "backup", label: "Backup", icon: Database },
   { key: "storage", label: "Storage Cloud", icon: Cloud },
@@ -830,6 +832,148 @@ function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "erro
   );
 }
 
+// ─── Translations AI Tab ─────────────────────────────────────────────────────
+
+interface LanguageOption { code: string; name: string; isDefault: boolean }
+
+function TranslationsAITab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
+  const [form, setForm] = useState({
+    ai_provider: "anthropic",
+    ai_anthropic_api_key: "",
+    ai_anthropic_model: "claude-sonnet-4-6",
+    ai_openai_api_key: "",
+    ai_openai_model: "gpt-4o-mini",
+    ai_fallback_language: "it",
+  });
+  const [languages, setLanguages] = useState<LanguageOption[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings?group=translations")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          const next = { ...form };
+          for (const s of data.data) {
+            if (s.key in next) (next as Record<string, string>)[s.key] = s.value;
+          }
+          setForm(next);
+        }
+      });
+    fetch("/api/languages")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.data) setLanguages(data.data);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const settings = Object.entries(form).map(([key, value]) => ({ key, value, group: "translations" }));
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (data.success) showToast("Impostazioni traduzioni salvate", "success");
+      else showToast(data.error || "Errore nel salvataggio", "error");
+    } catch {
+      showToast("Errore di connessione", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    try {
+      const res = await fetch("/api/admin/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "Ciao, questo è un test.", fromLang: "it", toLang: "en" }),
+      });
+      const data = await res.json();
+      if (data.success) showToast(`Test ok: "${data.translation}"`, "success");
+      else showToast(data.error || "Errore di test", "error");
+    } catch {
+      showToast("Errore di connessione", "error");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const update = (key: string, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-warm-800">Traduzioni automatiche con AI</h2>
+        <p className="text-sm text-warm-500 mt-1">Configura il provider AI usato dal bottone "Traduci con AI" in admin.</p>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
+        <div>
+          <label className={labelClass}>Provider AI</label>
+          <select value={form.ai_provider} onChange={(e) => update("ai_provider", e.target.value)} className={inputClass}>
+            <option value="anthropic">Anthropic Claude</option>
+            <option value="openai">OpenAI ChatGPT</option>
+          </select>
+          <p className="text-xs text-warm-400 mt-1">Solo il provider selezionato verrà usato per tradurre.</p>
+        </div>
+
+        <div>
+          <label className={labelClass}>Lingua di fallback</label>
+          <select value={form.ai_fallback_language} onChange={(e) => update("ai_fallback_language", e.target.value)} className={inputClass}>
+            {languages.map((l) => (
+              <option key={l.code} value={l.code}>{l.name} ({l.code}){l.isDefault ? " — default" : ""}</option>
+            ))}
+          </select>
+          <p className="text-xs text-warm-400 mt-1">Mostrata sul sito pubblico se manca la traduzione nella lingua richiesta.</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
+        <h3 className="text-sm font-semibold text-warm-800">Anthropic Claude</h3>
+        <div>
+          <label className={labelClass}>API Key Claude</label>
+          <input type="password" value={form.ai_anthropic_api_key} onChange={(e) => update("ai_anthropic_api_key", e.target.value)} className={inputClass} placeholder="sk-ant-..." autoComplete="off" />
+        </div>
+        <div>
+          <label className={labelClass}>Modello Claude</label>
+          <input type="text" value={form.ai_anthropic_model} onChange={(e) => update("ai_anthropic_model", e.target.value)} className={inputClass} placeholder="claude-sonnet-4-6" />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
+        <h3 className="text-sm font-semibold text-warm-800">OpenAI ChatGPT</h3>
+        <div>
+          <label className={labelClass}>API Key OpenAI</label>
+          <input type="password" value={form.ai_openai_api_key} onChange={(e) => update("ai_openai_api_key", e.target.value)} className={inputClass} placeholder="sk-..." autoComplete="off" />
+        </div>
+        <div>
+          <label className={labelClass}>Modello OpenAI</label>
+          <input type="text" value={form.ai_openai_model} onChange={(e) => update("ai_openai_model", e.target.value)} className={inputClass} placeholder="gpt-4o-mini" />
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button onClick={handleSave} disabled={saving} className={btnPrimary}>
+          {saving && <Loader2 size={16} className="animate-spin" />}
+          Salva
+        </button>
+        <button onClick={handleTest} disabled={testing} className={btnSecondary}>
+          {testing && <Loader2 size={16} className="animate-spin" />}
+          Testa traduzione (IT → EN)
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Settings Page ──────────────────────────────────────────────────────
 
 export default function AdminSettingsPage() {
@@ -848,6 +992,8 @@ export default function AdminSettingsPage() {
         return <RecaptchaTab showToast={showToast} />;
       case "languages":
         return <LanguagesTab />;
+      case "translations":
+        return <TranslationsAITab showToast={showToast} />;
       case "stats":
         return <StatsTab />;
       case "backup":
