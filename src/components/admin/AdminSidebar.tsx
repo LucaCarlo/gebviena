@@ -26,6 +26,7 @@ import {
   Menu,
   X,
   PenLine,
+  Languages,
   Shield,
   QrCode,
   FileText,
@@ -131,6 +132,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/gestione-immagini", label: "Gestione Immagini", icon: Images, permission: "hero.view" },
       { href: "/admin/media", label: "Media", icon: ImageIcon, permission: "media.view" },
+      { href: "/admin/translations", label: "Traduzioni del sito", icon: Languages, permission: "settings.view" },
     ],
   },
   {
