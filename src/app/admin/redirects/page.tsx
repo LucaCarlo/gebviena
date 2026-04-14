@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ArrowRight, Plus, Trash2, Check, AlertCircle, Loader2, Power, Search, ExternalLink } from "lucide-react";
+import { ArrowRight, Plus, Trash2, Check, AlertCircle, Loader2, Power, Search, ExternalLink, Pencil, X } from "lucide-react";
 
 interface Redirect {
   id: string;
@@ -27,6 +27,8 @@ export default function RedirectsPage() {
   const [search, setSearch] = useState("");
   const [form, setForm] = useState({ fromPath: "", toPath: "", statusCode: 301, note: "" });
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ fromPath: "", toPath: "", statusCode: 301, note: "" });
   const [toast, setToast] = useState<Toast | null>(null);
 
   const showToast = useCallback((message: string, type: "success" | "error") => {
@@ -83,6 +85,32 @@ export default function RedirectsPage() {
       setRedirects((prev) => prev.map((x) => (x.id === r.id ? { ...x, enabled: !r.enabled } : x)));
     } else {
       showToast(data.error || "Errore", "error");
+    }
+  };
+
+  const startEdit = (r: Redirect) => {
+    setEditingId(r.id);
+    setEditForm({ fromPath: r.fromPath, toPath: r.toPath, statusCode: r.statusCode, note: r.note || "" });
+  };
+
+  const handleEditSave = async (id: string) => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/redirects/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRedirects((prev) => prev.map((x) => (x.id === id ? { ...x, ...editForm, note: editForm.note || null } : x)));
+        setEditingId(null);
+        showToast("Redirect aggiornato", "success");
+      } else {
+        showToast(data.error || "Errore", "error");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -226,46 +254,115 @@ export default function RedirectsPage() {
             <tbody className="divide-y divide-warm-100">
               {filtered.map((r) => (
                 <tr key={r.id} className={`hover:bg-warm-50 ${!r.enabled ? "opacity-50" : ""}`}>
-                  <td className="px-4 py-3">
-                    <code className="text-xs text-warm-700">{r.fromPath}</code>
-                    {r.note && <p className="text-[10px] text-warm-400 mt-0.5">{r.note}</p>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <ArrowRight size={12} className="text-warm-400" />
-                      <code className="text-xs text-warm-700">{r.toPath}</code>
-                      {/^https?:\/\//.test(r.toPath) && <ExternalLink size={10} className="text-warm-400" />}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded ${r.statusCode === 301 ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}`}>
-                      {r.statusCode}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span className="text-xs text-warm-600">{r.hits}</span>
-                    {r.lastHitAt && (
-                      <p className="text-[10px] text-warm-400">{new Date(r.lastHitAt).toLocaleDateString("it-IT")}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => toggleEnabled(r)}
-                        title={r.enabled ? "Disattiva" : "Attiva"}
-                        className={`p-1 ${r.enabled ? "text-green-600 hover:text-green-800" : "text-warm-400 hover:text-warm-800"}`}
-                      >
-                        <Power size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(r)}
-                        title="Elimina"
-                        className="p-1 text-warm-400 hover:text-red-600"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
+                  {editingId === r.id ? (
+                    <>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={editForm.fromPath}
+                          onChange={(e) => setEditForm((p) => ({ ...p, fromPath: e.target.value }))}
+                          className="w-full border border-warm-300 rounded px-2 py-1 text-xs font-mono focus:border-warm-800 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={editForm.note}
+                          onChange={(e) => setEditForm((p) => ({ ...p, note: e.target.value }))}
+                          placeholder="Nota"
+                          className="w-full mt-1 border border-warm-200 rounded px-2 py-1 text-[10px] focus:border-warm-800 focus:outline-none"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={editForm.toPath}
+                          onChange={(e) => setEditForm((p) => ({ ...p, toPath: e.target.value }))}
+                          className="w-full border border-warm-300 rounded px-2 py-1 text-xs font-mono focus:border-warm-800 focus:outline-none"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={editForm.statusCode}
+                          onChange={(e) => setEditForm((p) => ({ ...p, statusCode: parseInt(e.target.value) }))}
+                          className="border border-warm-300 rounded px-2 py-1 text-xs focus:border-warm-800 focus:outline-none"
+                        >
+                          <option value={301}>301</option>
+                          <option value={302}>302</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="text-xs text-warm-400">{r.hits}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEditSave(r.id)}
+                            disabled={saving}
+                            title="Salva"
+                            className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50"
+                          >
+                            {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            title="Annulla"
+                            className="p-1 text-warm-400 hover:text-warm-800"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-4 py-3">
+                        <code className="text-xs text-warm-700">{r.fromPath}</code>
+                        {r.note && <p className="text-[10px] text-warm-400 mt-0.5">{r.note}</p>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <ArrowRight size={12} className="text-warm-400" />
+                          <code className="text-xs text-warm-700">{r.toPath}</code>
+                          {/^https?:\/\//.test(r.toPath) && <ExternalLink size={10} className="text-warm-400" />}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-0.5 rounded ${r.statusCode === 301 ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}`}>
+                          {r.statusCode}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="text-xs text-warm-600">{r.hits}</span>
+                        {r.lastHitAt && (
+                          <p className="text-[10px] text-warm-400">{new Date(r.lastHitAt).toLocaleDateString("it-IT")}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => startEdit(r)}
+                            title="Modifica"
+                            className="p-1 text-warm-400 hover:text-warm-800"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => toggleEnabled(r)}
+                            title={r.enabled ? "Disattiva" : "Attiva"}
+                            className={`p-1 ${r.enabled ? "text-green-600 hover:text-green-800" : "text-warm-400 hover:text-warm-800"}`}
+                          >
+                            <Power size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(r)}
+                            title="Elimina"
+                            className="p-1 text-warm-400 hover:text-red-600"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
