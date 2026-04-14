@@ -410,27 +410,170 @@ function RecaptchaTab({ showToast }: { showToast: (m: string, t: "success" | "er
 
 // ─── Languages Tab ───────────────────────────────────────────────────────────
 
+interface LangRow {
+  id: string;
+  code: string;
+  name: string;
+  nativeName: string | null;
+  flag: string | null;
+  urlPrefix: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  sortOrder: number;
+}
+
 function LanguagesTab() {
+  const [langs, setLangs] = useState<LangRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Partial<LangRow>>({});
+  const [showNew, setShowNew] = useState(false);
+  const [newForm, setNewForm] = useState<Partial<LangRow>>({ code: "", name: "", flag: "", urlPrefix: "", isActive: true, isDefault: false, sortOrder: 0 });
+  const [busy, setBusy] = useState(false);
+
+  const fetchAll = async () => {
+    setLoading(true);
+    const res = await fetch("/api/languages");
+    const data = await res.json();
+    if (data.success) setLangs(data.data);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchAll(); }, []);
+
+  const startEdit = (l: LangRow) => {
+    setEditingId(l.id);
+    setDraft({ ...l });
+  };
+
+  const handleSave = async (id: string) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/languages/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      if (res.ok) {
+        setEditingId(null);
+        fetchAll();
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = async (l: LangRow) => {
+    if (l.isDefault) { alert("Non puoi eliminare la lingua principale"); return; }
+    if (!confirm(`Eliminare la lingua "${l.name}"?`)) return;
+    await fetch(`/api/languages/${l.id}`, { method: "DELETE" });
+    fetchAll();
+  };
+
+  const handleCreate = async () => {
+    if (!newForm.code || !newForm.name) { alert("Codice e nome obbligatori"); return; }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/languages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newForm),
+      });
+      if (res.ok) {
+        setShowNew(false);
+        setNewForm({ code: "", name: "", flag: "", urlPrefix: "", isActive: true, isDefault: false, sortOrder: 0 });
+        fetchAll();
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const inputCls = "border border-warm-300 rounded px-2 py-1 text-sm w-full focus:border-warm-800 focus:outline-none";
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-warm-800">Gestione Lingue</h2>
-        <p className="text-sm text-warm-500 mt-1">Configura le lingue disponibili sul sito.</p>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-warm-800">Lingue del sito</h2>
+          <p className="text-sm text-warm-500 mt-1">Configura le lingue, imposta la principale e i prefissi URL.</p>
+        </div>
+        <button onClick={() => setShowNew(true)} className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900">+ Nuova lingua</button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-8 text-center">
-        <Globe size={48} className="mx-auto text-warm-300 mb-4" />
-        <h3 className="text-warm-800 font-semibold mb-2">Lingue del sito</h3>
-        <p className="text-sm text-warm-500 mb-6 max-w-md mx-auto">
-          Gestisci le lingue disponibili, imposta la lingua predefinita e configura le traduzioni del sito dalla pagina dedicata.
-        </p>
-        <Link
-          href="/admin/languages"
-          className="inline-flex items-center gap-2 bg-warm-800 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
-        >
-          Gestisci Lingue <ArrowRight size={16} />
-        </Link>
-      </div>
+      {showNew && (
+        <div className="bg-white rounded-xl border border-warm-200 p-4">
+          <h3 className="text-sm font-semibold text-warm-800 mb-3">Nuova lingua</h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+            <div><label className="block text-[10px] uppercase text-warm-500 mb-1">Bandiera</label><input value={newForm.flag || ""} onChange={(e) => setNewForm((p) => ({ ...p, flag: e.target.value }))} className={inputCls} placeholder="🇪🇸" /></div>
+            <div><label className="block text-[10px] uppercase text-warm-500 mb-1">Nome *</label><input value={newForm.name || ""} onChange={(e) => setNewForm((p) => ({ ...p, name: e.target.value }))} className={inputCls} placeholder="Spagnolo" /></div>
+            <div><label className="block text-[10px] uppercase text-warm-500 mb-1">Codice *</label><input value={newForm.code || ""} onChange={(e) => setNewForm((p) => ({ ...p, code: e.target.value.toLowerCase() }))} className={inputCls} placeholder="es" maxLength={5} /></div>
+            <div><label className="block text-[10px] uppercase text-warm-500 mb-1">Prefisso URL</label><input value={newForm.urlPrefix || ""} onChange={(e) => setNewForm((p) => ({ ...p, urlPrefix: e.target.value.toLowerCase() }))} className={inputCls} placeholder="es" maxLength={5} /></div>
+            <div><label className="block text-[10px] uppercase text-warm-500 mb-1">Ordine</label><input type="number" value={newForm.sortOrder || 0} onChange={(e) => setNewForm((p) => ({ ...p, sortOrder: parseInt(e.target.value) || 0 }))} className={inputCls} /></div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleCreate} disabled={busy} className="bg-warm-800 text-white px-4 py-1.5 rounded text-sm hover:bg-warm-900 disabled:opacity-50">{busy ? <Loader2 size={14} className="animate-spin inline" /> : "Crea"}</button>
+            <button onClick={() => setShowNew(false)} className="px-4 py-1.5 rounded text-sm text-warm-600 border border-warm-300 hover:bg-warm-100">Annulla</button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-warm-400">Caricamento...</div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-warm-50 border-b border-warm-200">
+              <tr>
+                <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-600 uppercase">Bandiera</th>
+                <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-600 uppercase">Nome</th>
+                <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-600 uppercase">Codice</th>
+                <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-600 uppercase">Prefisso URL</th>
+                <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-600 uppercase">Principale</th>
+                <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-600 uppercase">Attiva</th>
+                <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-600 uppercase">Ordine</th>
+                <th className="px-4 py-2 w-24 text-right text-[10px] font-semibold text-warm-600 uppercase">Azioni</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-warm-100">
+              {langs.map((l) => (
+                <tr key={l.id} className="hover:bg-warm-50">
+                  {editingId === l.id ? (
+                    <>
+                      <td className="px-4 py-2"><input value={draft.flag || ""} onChange={(e) => setDraft((p) => ({ ...p, flag: e.target.value }))} className={inputCls + " w-16"} /></td>
+                      <td className="px-4 py-2"><input value={draft.name || ""} onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))} className={inputCls} /></td>
+                      <td className="px-4 py-2"><input value={draft.code || ""} onChange={(e) => setDraft((p) => ({ ...p, code: e.target.value.toLowerCase() }))} className={inputCls + " w-20"} maxLength={5} /></td>
+                      <td className="px-4 py-2"><input value={draft.urlPrefix || ""} onChange={(e) => setDraft((p) => ({ ...p, urlPrefix: e.target.value.toLowerCase() || null }))} className={inputCls + " w-20"} maxLength={5} placeholder="(default)" /></td>
+                      <td className="px-4 py-2"><input type="checkbox" checked={!!draft.isDefault} onChange={(e) => setDraft((p) => ({ ...p, isDefault: e.target.checked }))} /></td>
+                      <td className="px-4 py-2"><input type="checkbox" checked={!!draft.isActive} onChange={(e) => setDraft((p) => ({ ...p, isActive: e.target.checked }))} /></td>
+                      <td className="px-4 py-2"><input type="number" value={draft.sortOrder || 0} onChange={(e) => setDraft((p) => ({ ...p, sortOrder: parseInt(e.target.value) || 0 }))} className={inputCls + " w-16"} /></td>
+                      <td className="px-4 py-2 text-right">
+                        <button onClick={() => handleSave(l.id)} disabled={busy} className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50">{busy ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}</button>
+                        <button onClick={() => setEditingId(null)} className="p-1 text-warm-400 hover:text-warm-800">✕</button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-4 py-2 text-2xl">{l.flag || "🏳"}</td>
+                      <td className="px-4 py-2 font-medium text-warm-800">{l.name}</td>
+                      <td className="px-4 py-2 text-warm-600 uppercase font-mono text-xs">{l.code}</td>
+                      <td className="px-4 py-2 text-warm-600 font-mono text-xs">{l.urlPrefix || <span className="text-warm-400 italic">(no prefix)</span>}</td>
+                      <td className="px-4 py-2">{l.isDefault && <span className="px-2 py-0.5 bg-warm-800 text-white text-[10px] rounded">Default</span>}</td>
+                      <td className="px-4 py-2"><span className={`inline-block w-2 h-2 rounded-full ${l.isActive ? "bg-green-500" : "bg-red-400"}`} /></td>
+                      <td className="px-4 py-2 text-warm-500 text-xs">{l.sortOrder}</td>
+                      <td className="px-4 py-2 text-right">
+                        <button onClick={() => startEdit(l)} title="Modifica" className="p-1 text-warm-400 hover:text-warm-800">✎</button>
+                        <button onClick={() => handleDelete(l)} title="Elimina" className="p-1 text-warm-400 hover:text-red-600">🗑</button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {langs.length === 0 && <div className="text-center py-12 text-warm-400">Nessuna lingua</div>}
+        </div>
+      )}
     </div>
   );
 }
