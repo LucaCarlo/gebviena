@@ -88,6 +88,7 @@ model Designer {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   products       Product[]
+  translations   DesignerTranslation[]
 
   @@index([slug])
 }
@@ -133,6 +134,7 @@ model Product {
   designer         Designer?        @relation(fields: [designerId], references: [id])
   projects         ProjectProduct[]
   awards           AwardProduct[]
+  translations     ProductTranslation[]
 
   @@index([category])
   @@index([subcategory])
@@ -164,6 +166,7 @@ model Project {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   products       ProjectProduct[]
+  translations   ProjectTranslation[]
 
   @@index([type])
   @@index([country])
@@ -198,6 +201,7 @@ model Campaign {
   seoKeywords    String? @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  translations   CampaignTranslation[]
 
   @@index([slug])
   @@index([type])
@@ -225,6 +229,7 @@ model NewsArticle {
   seoKeywords    String? @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  translations   NewsArticleTranslation[]
 
   @@index([slug])
   @@index([category])
@@ -248,6 +253,7 @@ model Award {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   products        AwardProduct[]
+  translations    AwardTranslation[]
 
   @@index([year])
 }
@@ -282,6 +288,7 @@ model HeroSlide {
   sortOrder        Int      @default(0)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  translations     HeroSlideTranslation[]
 
   @@index([page])
 }
@@ -292,11 +299,217 @@ model Language {
   name       String
   nativeName String? @db.Text
   flag       String? @db.Text
+  urlPrefix  String?  @unique @db.VarChar(16)
   isDefault  Boolean  @default(false)
   isActive   Boolean  @default(true)
   sortOrder  Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  productTranslations    ProductTranslation[]
+  designerTranslations   DesignerTranslation[]
+  projectTranslations    ProjectTranslation[]
+  campaignTranslations   CampaignTranslation[]
+  newsTranslations       NewsArticleTranslation[]
+  catalogTranslations    CatalogTranslation[]
+  heroSlideTranslations  HeroSlideTranslation[]
+  awardTranslations      AwardTranslation[]
+  uiTranslations         UiTranslationOverride[]
+}
+
+model ProductTranslation {
+  id             String   @id @default(cuid())
+  productId      String
+  languageCode   String   @db.VarChar(16)
+  name           String
+  slug           String   @db.VarChar(191)
+  description    String?  @db.Text
+  materials      String?  @db.Text
+  dimensions     String?  @db.Text
+  variants       String?  @db.Text
+  seoTitle       String?  @db.Text
+  seoDescription String?  @db.Text
+  seoKeywords    String?  @db.Text
+  status         String   @default("draft") @db.VarChar(16)
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  language       Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([productId, languageCode])
+  @@unique([languageCode, slug])
+  @@index([languageCode])
+}
+
+model DesignerTranslation {
+  id             String   @id @default(cuid())
+  designerId     String
+  languageCode   String   @db.VarChar(16)
+  name           String
+  slug           String   @db.VarChar(191)
+  bio            String?  @db.Text
+  country        String?  @db.Text
+  seoTitle       String?  @db.Text
+  seoDescription String?  @db.Text
+  seoKeywords    String?  @db.Text
+  status         String   @default("draft") @db.VarChar(16)
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  designer       Designer @relation(fields: [designerId], references: [id], onDelete: Cascade)
+  language       Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([designerId, languageCode])
+  @@unique([languageCode, slug])
+  @@index([languageCode])
+}
+
+model ProjectTranslation {
+  id               String   @id @default(cuid())
+  projectId        String
+  languageCode     String   @db.VarChar(16)
+  name             String
+  slug             String   @db.VarChar(191)
+  city             String?  @db.Text
+  architect        String?  @db.Text
+  description      String?  @db.Text
+  shortDescription String?  @db.Text
+  seoTitle         String?  @db.Text
+  seoDescription   String?  @db.Text
+  seoKeywords      String?  @db.Text
+  status           String   @default("draft") @db.VarChar(16)
+  isPublished      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  project          Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  language         Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([projectId, languageCode])
+  @@unique([languageCode, slug])
+  @@index([languageCode])
+}
+
+model CampaignTranslation {
+  id             String   @id @default(cuid())
+  campaignId     String
+  languageCode   String   @db.VarChar(16)
+  name           String
+  slug           String   @db.VarChar(191)
+  subtitle       String?  @db.Text
+  description    String?  @db.Text
+  seoTitle       String?  @db.Text
+  seoDescription String?  @db.Text
+  seoKeywords    String?  @db.Text
+  status         String   @default("draft") @db.VarChar(16)
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  campaign       Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  language       Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([campaignId, languageCode])
+  @@unique([languageCode, slug])
+  @@index([languageCode])
+}
+
+model NewsArticleTranslation {
+  id             String   @id @default(cuid())
+  newsArticleId  String
+  languageCode   String   @db.VarChar(16)
+  title          String
+  slug           String   @db.VarChar(191)
+  subtitle       String?  @db.Text
+  excerpt        String?  @db.Text
+  content        String?  @db.Text
+  blocks         String?  @db.Text
+  seoTitle       String?  @db.Text
+  seoDescription String?  @db.Text
+  seoKeywords    String?  @db.Text
+  status         String   @default("draft") @db.VarChar(16)
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  newsArticle    NewsArticle @relation(fields: [newsArticleId], references: [id], onDelete: Cascade)
+  language       Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([newsArticleId, languageCode])
+  @@unique([languageCode, slug])
+  @@index([languageCode])
+}
+
+model CatalogTranslation {
+  id           String   @id @default(cuid())
+  catalogId    String
+  languageCode String   @db.VarChar(16)
+  name         String
+  slug         String   @db.VarChar(191)
+  pretitle     String?  @db.Text
+  title        String?  @db.Text
+  description  String?  @db.Text
+  linkText     String?  @db.Text
+  status       String   @default("draft") @db.VarChar(16)
+  isPublished  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  catalog      Catalog  @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  language     Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([catalogId, languageCode])
+  @@unique([languageCode, slug])
+  @@index([languageCode])
+}
+
+model HeroSlideTranslation {
+  id           String   @id @default(cuid())
+  heroSlideId  String
+  languageCode String   @db.VarChar(16)
+  title        String
+  subtitle     String?  @db.Text
+  ctaText      String?  @db.Text
+  ctaLink      String?  @db.Text
+  status       String   @default("draft") @db.VarChar(16)
+  isPublished  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  heroSlide    HeroSlide @relation(fields: [heroSlideId], references: [id], onDelete: Cascade)
+  language     Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([heroSlideId, languageCode])
+  @@index([languageCode])
+}
+
+model AwardTranslation {
+  id             String   @id @default(cuid())
+  awardId        String
+  languageCode   String   @db.VarChar(16)
+  name           String
+  description    String?  @db.Text
+  seoTitle       String?  @db.Text
+  seoDescription String?  @db.Text
+  seoKeywords    String?  @db.Text
+  status         String   @default("draft") @db.VarChar(16)
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  award          Award    @relation(fields: [awardId], references: [id], onDelete: Cascade)
+  language       Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([awardId, languageCode])
+  @@index([languageCode])
+}
+
+model UiTranslationOverride {
+  id           String   @id @default(cuid())
+  key          String   @db.VarChar(191)
+  languageCode String   @db.VarChar(16)
+  value        String   @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  language     Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([key, languageCode])
+  @@index([languageCode])
 }
 
 model MediaFile {
@@ -492,6 +705,7 @@ model Catalog {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  translations CatalogTranslation[]
 
   @@index([slug])
   @@index([section])
