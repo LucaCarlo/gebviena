@@ -107,6 +107,7 @@ export default function AwardForm({ awardId }: AwardFormProps) {
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("folder", "premi");
     try {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
