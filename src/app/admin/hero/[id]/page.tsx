@@ -2,11 +2,13 @@
 
 import { useParams } from "next/navigation";
 import HeroSlideForm from "@/components/admin/HeroSlideForm";
+import EntityTranslationShell from "@/components/admin/EntityTranslationShell";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export default function EditHeroSlidePage() {
   const params = useParams();
+  const id = params.id as string;
 
   return (
     <div>
@@ -19,7 +21,9 @@ export default function EditHeroSlidePage() {
         </Link>
         <h1 className="text-2xl font-semibold text-warm-800">Modifica Slide</h1>
       </div>
-      <HeroSlideForm slideId={params.id as string} />
+      <EntityTranslationShell entity="hero" entityId={id}>
+        <HeroSlideForm slideId={id} />
+      </EntityTranslationShell>
     </div>
   );
 }

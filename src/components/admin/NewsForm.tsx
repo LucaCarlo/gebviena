@@ -8,7 +8,6 @@ import ImageUploadField from "./ImageUploadField";
 import SeoPanel from "./SeoPanel";
 import RichTextEditor from "./RichTextEditor";
 import { slugify } from "@/lib/utils";
-import TranslationsPanel from "./TranslationsPanel";
 
 interface NewsFormProps {
   articleId?: string;
@@ -456,7 +455,6 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           </button>
         </div>
 
-        {articleId && <TranslationsPanel entity="news" entityId={articleId} />}
       </div>
 
       {/* Right: SEO sidebar */}

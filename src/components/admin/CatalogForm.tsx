@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Upload, FileText } from "lucide-react";
 import { slugify } from "@/lib/utils";
-import TranslationsPanel from "./TranslationsPanel";
 
 interface CatalogFormProps {
   catalogId?: string;
@@ -342,7 +341,6 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
           Annulla
         </button>
       </div>
-      {catalogId && <TranslationsPanel entity="catalog" entityId={catalogId} />}
     </form>
   );
 }

@@ -9,7 +9,6 @@ import GalleryUploadField from "./GalleryUploadField";
 import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
 import PconConfigurator from "./PconConfigurator";
-import TranslationsPanel from "./TranslationsPanel";
 
 interface ProductFormProps {
   productId?: string;
@@ -648,7 +647,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
         </button>
       </div>
 
-      {productId && <TranslationsPanel entity="product" entityId={productId} />}
       </div>
 
       {/* Right: SEO sidebar */}

@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import ProductForm from "@/components/admin/ProductForm";
+import EntityTranslationShell from "@/components/admin/EntityTranslationShell";
 
 export default function EditProductPage() {
   const params = useParams();
@@ -10,7 +11,9 @@ export default function EditProductPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold text-warm-800 mb-8">Modifica Prodotto</h1>
-      <ProductForm productId={id} />
+      <EntityTranslationShell entity="product" entityId={id}>
+        <ProductForm productId={id} />
+      </EntityTranslationShell>
     </div>
   );
 }

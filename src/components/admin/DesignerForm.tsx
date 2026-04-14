@@ -7,7 +7,6 @@ import { Upload } from "lucide-react";
 import { slugify } from "@/lib/utils";
 import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
-import TranslationsPanel from "./TranslationsPanel";
 
 interface DesignerFormProps {
   designerId?: string;
@@ -250,7 +249,6 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
           Annulla
         </button>
       </div>
-      {designerId && <TranslationsPanel entity="designer" entityId={designerId} />}
     </form>
   );
 }

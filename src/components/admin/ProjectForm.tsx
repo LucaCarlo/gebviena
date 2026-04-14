@@ -9,7 +9,6 @@ import RichTextEditor from "./RichTextEditor";
 import SeoPanel from "./SeoPanel";
 import ImageUploadField from "./ImageUploadField";
 import GalleryUploadField from "./GalleryUploadField";
-import TranslationsPanel from "./TranslationsPanel";
 
 interface Product {
   id: string;
@@ -548,7 +547,6 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
         </button>
       </div>
 
-      {projectId && <TranslationsPanel entity="project" entityId={projectId} />}
       </div>
 
       {/* Right: SEO sidebar */}

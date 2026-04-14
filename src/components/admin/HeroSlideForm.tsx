@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { HERO_POSITIONS, HERO_VERTICAL_POSITIONS, HERO_PAGES } from "@/lib/constants";
 import ImageUploadField from "./ImageUploadField";
-import TranslationsPanel from "./TranslationsPanel";
 
 interface HeroSlideFormProps {
   slideId?: string;
@@ -350,7 +349,6 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
           Annulla
         </button>
       </div>
-      {slideId && <TranslationsPanel entity="hero" entityId={slideId} />}
     </form>
   );
 }
