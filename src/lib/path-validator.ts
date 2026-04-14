@@ -1,4 +1,18 @@
 import { prisma } from "./prisma";
+import { translateSegmentsBackward, SEGMENT_TRANSLATIONS } from "./path-segments";
+
+const LANG_PREFIXES = Object.keys(SEGMENT_TRANSLATIONS);
+
+/** Strip lang prefix and translate segments back to IT canonical. */
+function toCanonicalPath(path: string): string {
+  const segments = path.split("/").filter(Boolean);
+  if (segments.length > 0 && LANG_PREFIXES.includes(segments[0])) {
+    const lang = segments[0];
+    const rest = translateSegmentsBackward(segments.slice(1), lang);
+    return "/" + rest.join("/");
+  }
+  return "/" + segments.join("/");
+}
 
 /**
  * Static (non-dynamic) public routes of the site, in canonical IT form.
@@ -50,8 +64,9 @@ export async function validateDestinationPath(path: string): Promise<{ ok: boole
   const p = path.trim();
   if (!p.startsWith("/")) return { ok: false, reason: "Il path deve iniziare con /" };
 
-  // Strip query/hash for matching
-  const cleanPath = p.split("?")[0].split("#")[0].replace(/\/+$/, "") || "/";
+  // Strip query/hash + trailing slash, then convert to IT canonical (handles /en/products/...)
+  const rawPath = p.split("?")[0].split("#")[0].replace(/\/+$/, "") || "/";
+  const cleanPath = toCanonicalPath(rawPath) || "/";
 
   if (STATIC_PATHS.has(cleanPath)) return { ok: true };
 
