@@ -102,14 +102,16 @@ export default async function CampaignDetailPage({ params }: Params) {
               return (
                 <section key={block.id} className="gtv-container">
                   {d.title && (
-                    <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto">
-                      {d.title}
-                    </h2>
+                    <h2
+                      className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto"
+                      dangerouslySetInnerHTML={{ __html: d.title }}
+                    />
                   )}
                   {d.body && (
-                    <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto whitespace-pre-line">
-                      {d.body}
-                    </p>
+                    <p
+                      className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto whitespace-pre-line"
+                      dangerouslySetInnerHTML={{ __html: d.body }}
+                    />
                   )}
                 </section>
               );
@@ -135,17 +137,19 @@ export default async function CampaignDetailPage({ params }: Params) {
                       </div>
                       <div
                         className={`flex flex-col justify-start ${imgLeft ? "lg:order-2" : "lg:order-1"}`}
-                        style={{ padding: "0 96px" }}
+                        style={{ padding: "0 96px 0 192px" }}
                       >
                         {d.title && (
-                          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">
-                            {d.title}
-                          </h2>
+                          <h2
+                            className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4"
+                            dangerouslySetInnerHTML={{ __html: d.title }}
+                          />
                         )}
                         {d.text && (
-                          <p className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line">
-                            {d.text}
-                          </p>
+                          <p
+                            className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line"
+                            dangerouslySetInnerHTML={{ __html: d.text }}
+                          />
                         )}
                         {d.secondaryImageUrl && (
                           <div className="relative w-full" style={{ marginTop: "65px" }}>

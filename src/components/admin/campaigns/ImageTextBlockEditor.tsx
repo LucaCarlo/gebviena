@@ -1,6 +1,7 @@
 "use client";
 
 import ImageUploadField from "../ImageUploadField";
+import RichTextField from "../RichTextField";
 import type { CampaignImageTextData } from "@/types";
 
 interface Props {
@@ -47,11 +48,9 @@ export default function ImageTextBlockEditor({ data, onChange }: Props) {
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
           Titolo (opzionale)
         </label>
-        <input
-          type="text"
+        <RichTextField
           value={data.title || ""}
-          onChange={(e) => onChange({ ...data, title: e.target.value })}
-          className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          onChange={(html) => onChange({ ...data, title: html })}
           placeholder="es. IL GESTO CREA SPAZIO..."
         />
       </div>
@@ -60,11 +59,11 @@ export default function ImageTextBlockEditor({ data, onChange }: Props) {
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
           Testo
         </label>
-        <textarea
-          value={data.text}
-          onChange={(e) => onChange({ ...data, text: e.target.value })}
-          rows={6}
-          className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+        <RichTextField
+          value={data.text || ""}
+          onChange={(html) => onChange({ ...data, text: html })}
+          multiline
+          minHeight={140}
         />
       </div>
 
