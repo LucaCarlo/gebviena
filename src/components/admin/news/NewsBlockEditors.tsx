@@ -9,6 +9,8 @@ import type {
   NewsImageTextBgData,
   NewsThreeImagesData,
   NewsSingleImageData,
+  NewsImageWithParagraphData,
+  NewsFullwidthBannerData,
   NewsProductData,
 } from "@/types";
 
@@ -113,6 +115,45 @@ export function SingleImageEditor({ data, onChange }: { data: NewsSingleImageDat
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Didascalia (opzionale)</label>
         <input type="text" value={data.caption || ""} onChange={(e) => onChange({ ...data, caption: e.target.value })} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+      </div>
+    </div>
+  );
+}
+
+export function ImageWithParagraphEditor({ data, onChange }: { data: NewsImageWithParagraphData; onChange: (d: NewsImageWithParagraphData) => void }) {
+  return (
+    <div className="space-y-4">
+      <ImageUploadField label="Immagine" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" />
+      <div>
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (opzionale)</label>
+        <RichTextField value={data.title || ""} onChange={(html) => onChange({ ...data, title: html })} placeholder="Titolo" />
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Paragrafo (centrato sotto l&apos;immagine)</label>
+        <RichTextField value={data.body || ""} onChange={(html) => onChange({ ...data, body: html })} multiline minHeight={140} />
+      </div>
+    </div>
+  );
+}
+
+export function FullwidthBannerEditor({ data, onChange }: { data: NewsFullwidthBannerData; onChange: (d: NewsFullwidthBannerData) => void }) {
+  return (
+    <div className="space-y-4">
+      <ImageUploadField label="Immagine (full-width, scura)" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="hero" folder="news" aspectRatio={1600 / 900} />
+      <div>
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (sovraimpresso)</label>
+        <input type="text" value={data.title || ""} onChange={(e) => onChange({ ...data, title: e.target.value })} placeholder="Sedute che invitano a restare, momenti che prendono forma" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+        <p className="text-[10px] text-warm-400 mt-1">Usa &laquo;\\n&raquo; per andare a capo.</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — etichetta (opzionale)</label>
+          <input type="text" value={data.ctaLabel || ""} onChange={(e) => onChange({ ...data, ctaLabel: e.target.value })} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — link</label>
+          <input type="text" value={data.ctaHref || ""} onChange={(e) => onChange({ ...data, ctaHref: e.target.value })} placeholder="/progetti" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+        </div>
       </div>
     </div>
   );

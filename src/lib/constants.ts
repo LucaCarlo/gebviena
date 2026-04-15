@@ -360,8 +360,8 @@ export const NAV_ITEMS = [
       { label: "SOSTENIBILITÀ", i18nKey: "menu.world.sustainability", href: "/mondo-gtv/sostenibilita" },
       { label: "DESIGNER E PREMI", i18nKey: "menu.world.designers", href: "/mondo-gtv/designer-e-premi" },
       { label: "GTV EXPERIENCE", i18nKey: "menu.world.experience", href: "/mondo-gtv/gtv-experience" },
-      { label: "CAMPAGNE & VIDEO", i18nKey: "menu.campaigns", href: "/campagne-e-video" },
-      { label: "NEWS & RASSEGNA STAMPA", i18nKey: "menu.news", href: "/news-e-rassegna-stampa" },
+      { label: "CAMPAGNE & VIDEO", i18nKey: "menu.campaigns", href: "/campaigns" },
+      { label: "NEWS & RASSEGNA STAMPA", i18nKey: "menu.news", href: "/news" },
     ],
   },
   {

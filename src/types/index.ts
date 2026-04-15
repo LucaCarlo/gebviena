@@ -193,6 +193,8 @@ export type NewsBlockV2Type =
   | "image_text_bg"
   | "three_images"
   | "single_image"
+  | "image_with_paragraph"
+  | "fullwidth_banner"
   | "product"
   | "share"
   | "related";
@@ -220,6 +222,19 @@ export interface NewsSingleImageData {
   caption?: string;
 }
 
+export interface NewsImageWithParagraphData {
+  imageUrl: string;
+  title?: string;
+  body: string;
+}
+
+export interface NewsFullwidthBannerData {
+  imageUrl: string;
+  title: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+}
+
 export type NewsShareData = Record<string, never>;
 export type NewsRelatedData = Record<string, never>;
 
@@ -235,6 +250,8 @@ export interface NewsBlockV2 {
     | NewsImageTextBgData
     | NewsThreeImagesData
     | NewsSingleImageData
+    | NewsImageWithParagraphData
+    | NewsFullwidthBannerData
     | NewsProductData
     | NewsShareData
     | NewsRelatedData;

@@ -207,7 +207,7 @@ export default async function CampaignDetailPage({ params }: Params) {
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
               {related.map((c) => (
-                <Link key={c.id} href={`/campagne-e-video/${c.slug}`} className="group block">
+                <Link key={c.id} href={`/campaigns/${c.slug}`} className="group block">
                   <div className="relative aspect-[1/1] bg-warm-100 overflow-hidden">
                     {c.imageUrl && (
                       <Image src={c.imageUrl} alt={c.name} fill className="object-cover mix-blend-multiply" sizes="(max-width: 768px) 50vw, 25vw" />
@@ -233,7 +233,7 @@ export default async function CampaignDetailPage({ params }: Params) {
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
           <Link href="/">Home</Link>
           <span>&gt;</span>
-          <Link href="/campagne-e-video">Campagne e Video</Link>
+          <Link href="/campaigns">Campagne e Video</Link>
           <span>&gt;</span>
           <span>{campaign.name}</span>
         </div>

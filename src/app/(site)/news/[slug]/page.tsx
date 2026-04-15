@@ -8,7 +8,8 @@ import { ChevronRight, Facebook, Link as LinkIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import type {
   NewsArticle, NewsBlockV2,
-  NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData, NewsProductData,
+  NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
+  NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
 } from "@/types";
 import { useLang } from "@/contexts/I18nContext";
 
@@ -37,6 +38,50 @@ function ProductBlock({ productId }: { productId: string }) {
         <Link href={`/prodotti/${product.slug}`} className="inline-flex items-center gap-2 mt-4 md:mt-5 uppercase text-[16px] tracking-[0.03em] font-medium text-white/80 hover:text-white hover:underline transition-colors">
           Scopri il prodotto<span>&rarr;</span>
         </Link>
+      </div>
+    </section>
+  );
+}
+
+function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
+  if (!d.imageUrl && !d.body) return null;
+  return (
+    <section className="gtv-container">
+      <div className="mx-auto max-w-[940px]">
+        {d.imageUrl && (
+          <Image src={d.imageUrl} alt="" width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 940px) 100vw, 940px" />
+        )}
+        {d.title && (
+          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mt-10" dangerouslySetInnerHTML={{ __html: d.title }} />
+        )}
+        {d.body && (
+          <div className="text-[20px] text-black leading-snug font-light tracking-normal text-center mt-6 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.body }} />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
+  if (!d.imageUrl) return null;
+  return (
+    <section className="relative w-full" style={{ height: "85vh" }}>
+      <Image src={d.imageUrl} alt={d.title || ""} fill className="object-cover brightness-[0.6]" sizes="100vw" />
+      <div className="absolute top-14 md:top-18 lg:top-22 left-7 md:left-12 lg:left-16 max-w-[720px]">
+        {d.title && (
+          <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug whitespace-pre-line">
+            {d.title.replace(/\\n/g, "\n")}
+          </h2>
+        )}
+        {d.ctaLabel && d.ctaHref && (
+          <Link
+            href={d.ctaHref}
+            className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-medium transition-colors hover:underline"
+            style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+          >
+            {d.ctaLabel} &rarr;
+          </Link>
+        )}
       </div>
     </section>
   );
@@ -154,7 +199,7 @@ function RelatedBlock({ related }: { related: NewsArticle[] }) {
         <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">Continua a leggere</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
           {related.slice(0, 4).map((rel) => (
-            <Link key={rel.id} href={`/news-e-rassegna-stampa/${rel.slug}`} className="group block">
+            <Link key={rel.id} href={`/news/${rel.slug}`} className="group block">
               <div className="relative aspect-[1/1] bg-warm-100 overflow-hidden">
                 {rel.imageUrl && <Image src={rel.imageUrl} alt={rel.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 50vw, 25vw" />}
               </div>
@@ -204,7 +249,7 @@ export default function NewsDetailPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <p className="text-warm-500">Articolo non trovato</p>
-        <Link href="/news-e-rassegna-stampa" className="gtv-link">Torna alle news</Link>
+        <Link href="/news" className="gtv-link">Torna alle news</Link>
       </div>
     );
   }
@@ -244,6 +289,8 @@ export default function NewsDetailPage() {
                   case "image_text_bg": node = <ImageTextBg d={b.data as NewsImageTextBgData} title={article.title} />; break;
                   case "three_images": node = <ThreeImages d={b.data as NewsThreeImagesData} />; break;
                   case "single_image": node = <SingleImage d={b.data as NewsSingleImageData} />; break;
+                  case "image_with_paragraph": node = <ImageWithParagraph d={b.data as NewsImageWithParagraphData} />; break;
+                  case "fullwidth_banner": node = <FullwidthBanner d={b.data as NewsFullwidthBannerData} />; break;
                   case "product": node = <ProductBlock productId={(b.data as NewsProductData).productId} />; break;
                   case "share": node = <ShareBlock title={article.title} />; break;
                   default: node = null;
@@ -265,7 +312,7 @@ export default function NewsDetailPage() {
         <nav className="flex items-center gap-2 text-[14px] tracking-normal text-black font-light">
           <Link href="/">Home</Link>
           <ChevronRight size={12} />
-          <Link href="/news-e-rassegna-stampa">News & Rassegna Stampa</Link>
+          <Link href="/news">News & Rassegna Stampa</Link>
           <ChevronRight size={12} />
           <span>{article.title}</span>
         </nav>

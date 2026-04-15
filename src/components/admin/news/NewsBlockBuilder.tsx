@@ -3,20 +3,24 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   GripVertical, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Plus,
-  Type, LayoutTemplate, Grid3x3, Image as ImageIcon, Share2, Package,
+  Type, LayoutTemplate, Grid3x3, Image as ImageIcon, Share2, Package, AlignCenter, Maximize2,
 } from "lucide-react";
 import type {
   NewsBlockV2, NewsBlockV2Type,
-  NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData, NewsProductData,
+  NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
+  NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
 } from "@/types";
 import {
-  ParagraphEditor, ImageTextBgEditor, ThreeImagesEditor, SingleImageEditor, ProductEditor, ShareInfo, RelatedInfo,
+  ParagraphEditor, ImageTextBgEditor, ThreeImagesEditor, SingleImageEditor,
+  ImageWithParagraphEditor, FullwidthBannerEditor, ProductEditor, ShareInfo, RelatedInfo,
 } from "./NewsBlockEditors";
 
 const MENU: { type: NewsBlockV2Type; icon: React.ElementType; label: string }[] = [
   { type: "image_text_bg", icon: LayoutTemplate, label: "Immagine + Testo (sfondo)" },
   { type: "three_images", icon: Grid3x3, label: "Tre immagini" },
   { type: "single_image", icon: ImageIcon, label: "Immagine singola" },
+  { type: "image_with_paragraph", icon: AlignCenter, label: "Immagine + paragrafo centrato" },
+  { type: "fullwidth_banner", icon: Maximize2, label: "Banner full-width con testo" },
   { type: "paragraph", icon: Type, label: "Paragrafo" },
   { type: "product", icon: Package, label: "Prodotto correlato" },
   { type: "share", icon: Share2, label: "Condividi" },
@@ -32,6 +36,8 @@ function defaultData(t: NewsBlockV2Type): NewsBlockV2["data"] {
     case "image_text_bg": return { title: "", text: "", imageUrl: "", imagePosition: "left" } satisfies NewsImageTextBgData;
     case "three_images": return { images: [{ url: "", caption: "" }, { url: "", caption: "" }, { url: "", caption: "" }] } satisfies NewsThreeImagesData;
     case "single_image": return { imageUrl: "", caption: "" } satisfies NewsSingleImageData;
+    case "image_with_paragraph": return { imageUrl: "", title: "", body: "" } satisfies NewsImageWithParagraphData;
+    case "fullwidth_banner": return { imageUrl: "", title: "", ctaLabel: "", ctaHref: "" } satisfies NewsFullwidthBannerData;
     case "product": return { productId: "" } satisfies NewsProductData;
     case "share": return {};
     case "related": return {};
@@ -90,6 +96,8 @@ export default function NewsBlockBuilder({ value, onChange }: Props) {
       case "image_text_bg": return <ImageTextBgEditor data={b.data as NewsImageTextBgData} onChange={(d) => upd(b.id, d)} />;
       case "three_images": return <ThreeImagesEditor data={b.data as NewsThreeImagesData} onChange={(d) => upd(b.id, d)} />;
       case "single_image": return <SingleImageEditor data={b.data as NewsSingleImageData} onChange={(d) => upd(b.id, d)} />;
+      case "image_with_paragraph": return <ImageWithParagraphEditor data={b.data as NewsImageWithParagraphData} onChange={(d) => upd(b.id, d)} />;
+      case "fullwidth_banner": return <FullwidthBannerEditor data={b.data as NewsFullwidthBannerData} onChange={(d) => upd(b.id, d)} />;
       case "product": return <ProductEditor data={b.data as NewsProductData} onChange={(d) => upd(b.id, d)} />;
       case "share": return <ShareInfo />;
       case "related": return <RelatedInfo />;

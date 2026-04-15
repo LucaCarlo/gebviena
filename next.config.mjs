@@ -25,6 +25,14 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      { source: "/news-e-rassegna-stampa", destination: "/news", permanent: true },
+      { source: "/news-e-rassegna-stampa/:slug", destination: "/news/:slug", permanent: true },
+      { source: "/campagne-e-video", destination: "/campaigns", permanent: true },
+      { source: "/campagne-e-video/:slug", destination: "/campaigns/:slug", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

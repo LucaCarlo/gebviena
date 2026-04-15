@@ -7,7 +7,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useT, useLang } from "@/contexts/I18nContext";
-import type { NewsArticle } from "@/types";
+import type { Campaign } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
 
@@ -17,25 +17,25 @@ interface CategoryItem {
   id: string;
 }
 
-function NewsContent() {
+function CampaignsContent() {
   const t = useT();
   const lang = useLang();
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentCategory = searchParams.get("category") || "TUTTI";
   const currentPage = parseInt(searchParams.get("page") || "1");
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
 
   useEffect(() => {
-    fetch(`/api/categories?contentType=news&lang=${lang}`)
+    fetch(`/api/categories?contentType=campaigns&lang=${lang}`)
       .then((r) => r.json())
       .then((data) => setCategories(data.data || []));
   }, [lang]);
 
-  const fetchArticles = useCallback(async () => {
+  const fetchCampaigns = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (currentCategory !== "TUTTI") params.set("category", currentCategory);
@@ -43,21 +43,21 @@ function NewsContent() {
     params.set("limit", ITEMS_PER_PAGE.toString());
     params.set("lang", lang);
 
-    const res = await fetch(`/api/news?${params}`);
+    const res = await fetch(`/api/campaigns?${params}`);
     const data = await res.json();
-    setArticles(data.data || []);
+    setCampaigns(data.data || []);
     setTotalPages(data.meta?.totalPages || 1);
     setLoading(false);
   }, [currentCategory, currentPage, lang]);
 
   useEffect(() => {
-    fetchArticles();
-  }, [fetchArticles]);
+    fetchCampaigns();
+  }, [fetchCampaigns]);
 
   const setCategory = (cat: string) => {
     const params = new URLSearchParams();
     if (cat !== "TUTTI") params.set("category", cat);
-    router.push(`/news-e-rassegna-stampa?${params}`, { scroll: false });
+    router.push(`/campaigns?${params}`, { scroll: false });
     setTimeout(() => document.querySelector("section.py-8")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
@@ -65,7 +65,7 @@ function NewsContent() {
     const params = new URLSearchParams();
     if (currentCategory !== "TUTTI") params.set("category", currentCategory);
     params.set("page", page.toString());
-    router.push(`/news-e-rassegna-stampa?${params}`, { scroll: false });
+    router.push(`/campaigns?${params}`, { scroll: false });
     setTimeout(() => document.querySelector("section.py-8")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
@@ -90,7 +90,7 @@ function NewsContent() {
       {/* ===== TITLE ===== */}
       <section className="gtv-container pt-16 pb-28">
         <h1 className="font-serif text-[58px] text-black tracking-tight text-center font-light">
-          {t("news.title")}
+          {t("campagne-video.title")}
         </h1>
       </section>
 
@@ -107,7 +107,7 @@ function NewsContent() {
                     : "bg-warm-100 text-dark hover:bg-warm-200"
                 }`}
               >
-                {t("news.filter.all")}
+                {t("campagne-video.filter.all")}
               </button>
               {categories.map((cat) => (
                 <button
@@ -127,7 +127,7 @@ function NewsContent() {
         )}
       </div>
 
-      {/* ===== NEWS GRID — stesso layout prodotti ===== */}
+      {/* ===== CAMPAIGNS GRID — stesso layout prodotti ===== */}
       <section className="py-8 md:py-10">
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20 px-2 md:px-3 lg:px-4">
@@ -141,32 +141,32 @@ function NewsContent() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20 px-2 md:px-3 lg:px-4">
-            {articles.map((article, i) => (
+            {campaigns.map((campaign, i) => (
               <motion.div
-                key={article.id}
+                key={campaign.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: (i % 4) * 0.05 }}
               >
-                <Link href={`/news-e-rassegna-stampa/${article.slug}`} className="group block">
+                <Link href={`/campaigns/${campaign.slug}`} className="group block">
                   <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "1/1" }}>
                     <Image
-                      src={article.imageUrl}
-                      alt={article.title}
+                      src={campaign.imageUrl}
+                      alt={campaign.name}
                       fill
                       className="object-cover mix-blend-multiply"
                       sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                     />
                   </div>
                   <div className="mt-4">
-                    {article.category && (
+                    {campaign.type && (
                       <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
-                        {article.category}
+                        {campaign.type}
                       </p>
                     )}
                     <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-                      {article.title}
+                      {campaign.name}
                     </h3>
                   </div>
                 </Link>
@@ -175,9 +175,9 @@ function NewsContent() {
           </div>
         )}
 
-        {!loading && articles.length === 0 && (
+        {!loading && campaigns.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-warm-400 text-sm">{t("news.empty")}</p>
+            <p className="text-warm-400 text-sm">{t("campagne-video.empty")}</p>
           </div>
         )}
 
@@ -210,17 +210,17 @@ function NewsContent() {
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
           <Link href="/">{t("common.breadcrumb_home")}</Link>
           <ChevronRight size={12} />
-          <span>{t("news.breadcrumb")}</span>
+          <span>{t("campagne-video.breadcrumb")}</span>
         </div>
       </div>
     </>
   );
 }
 
-export default function NewsRassegnaStampaPage() {
+export default function CampagneVideoPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-warm-400">Caricamento...</div>}>
-      <NewsContent />
+      <CampaignsContent />
     </Suspense>
   );
 }

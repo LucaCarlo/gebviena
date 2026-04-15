@@ -23,8 +23,8 @@ const STATIC_PATHS = new Set<string>([
   "/prodotti",
   "/designers",
   "/progetti",
-  "/campagne-e-video",
-  "/news-e-rassegna-stampa",
+  "/campaigns",
+  "/news",
   "/mondo-gtv",
   "/mondo-gtv/brand-manifesto",
   "/mondo-gtv/heritage",
@@ -49,7 +49,7 @@ const STATIC_PATHS = new Set<string>([
 /**
  * Validates that a given path corresponds to an existing public page.
  * - Static routes: lookup in STATIC_PATHS
- * - Dynamic detail: /prodotti/<slug>, /designers/<slug>, /progetti/<slug>, /news-e-rassegna-stampa/<slug>
+ * - Dynamic detail: /prodotti/<slug>, /designers/<slug>, /progetti/<slug>, /news/<slug>
  *   verified against the DB (also checks translation slugs).
  * - Landing pages: /lp/<permalink> verified against LandingPageConfig.slug
  * - External URLs (http://... or https://...) are allowed without check.
@@ -94,13 +94,13 @@ export async function validateDestinationPath(path: string): Promise<{ ok: boole
           (await prisma.projectTranslation.findFirst({ where: { slug }, select: { id: true } }));
         return ok ? { ok: true } : { ok: false, reason: `Progetto con slug "${slug}" non trovato` };
       }
-      case "news-e-rassegna-stampa": {
+      case "news": {
         const ok =
           (await prisma.newsArticle.findFirst({ where: { slug, isActive: true }, select: { id: true } })) ||
           (await prisma.newsArticleTranslation.findFirst({ where: { slug }, select: { id: true } }));
         return ok ? { ok: true } : { ok: false, reason: `Articolo con slug "${slug}" non trovato` };
       }
-      case "campagne-e-video": {
+      case "campaigns": {
         const ok =
           (await prisma.campaign.findFirst({ where: { slug, isActive: true }, select: { id: true } })) ||
           (await prisma.campaignTranslation.findFirst({ where: { slug }, select: { id: true } }));
