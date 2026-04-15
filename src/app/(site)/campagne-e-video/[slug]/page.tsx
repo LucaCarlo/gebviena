@@ -137,7 +137,7 @@ export default async function CampaignDetailPage({ params }: Params) {
                       </div>
                       <div
                         className={`flex flex-col justify-start ${imgLeft ? "lg:order-2" : "lg:order-1"}`}
-                        style={{ padding: "0 96px 0 150px" }}
+                        style={{ padding: "0 150px" }}
                       >
                         {d.title && (
                           <h2
