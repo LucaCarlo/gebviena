@@ -52,9 +52,9 @@ export default async function CampaignDetailPage({ params }: Params) {
       {/* Hero: categoria + titolo */}
       <section className="gtv-container pt-24 md:pt-32 pb-4 text-center">
         {campaign.type && (
-          <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-4">{campaign.type}</p>
+          <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light mb-4">{campaign.type}</p>
         )}
-        <h1 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto">
+        <h1 className="font-serif text-[34px] md:text-[58px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto">
           {campaign.name}
         </h1>
         {campaign.description && (
@@ -102,7 +102,7 @@ export default async function CampaignDetailPage({ params }: Params) {
               return (
                 <section key={block.id} className="gtv-container">
                   {d.title && (
-                    <h2 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto">
+                    <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto">
                       {d.title}
                     </h2>
                   )}
@@ -118,17 +118,27 @@ export default async function CampaignDetailPage({ params }: Params) {
               const d = block.data as CampaignImageTextData;
               const imgLeft = d.imagePosition === "left";
               return (
-                <section key={block.id} className="gtv-container">
-                  <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-                      <div className={`relative bg-warm-100 overflow-hidden ${imgLeft ? "lg:order-1" : "lg:order-2"}`} style={{ aspectRatio: "3 / 4" }}>
+                <section key={block.id}>
+                  <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+                      <div className={`relative ${imgLeft ? "lg:order-1" : "lg:order-2"}`}>
                         {d.imageUrl && (
-                          <Image src={d.imageUrl} alt={d.title || campaign.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+                          <Image
+                            src={d.imageUrl}
+                            alt={d.title || campaign.name}
+                            width={1000}
+                            height={1250}
+                            className="w-full h-auto object-contain"
+                            sizes="(max-width: 1024px) 100vw, 50vw"
+                          />
                         )}
                       </div>
-                      <div className={`flex flex-col justify-center ${imgLeft ? "lg:order-2" : "lg:order-1"}`}>
+                      <div
+                        className={`flex flex-col justify-center ${imgLeft ? "lg:order-2" : "lg:order-1"}`}
+                        style={{ padding: "96px 150px" }}
+                      >
                         {d.title && (
-                          <h2 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">
+                          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">
                             {d.title}
                           </h2>
                         )}
@@ -138,8 +148,15 @@ export default async function CampaignDetailPage({ params }: Params) {
                           </p>
                         )}
                         {d.secondaryImageUrl && (
-                          <div className="relative bg-warm-100 overflow-hidden mt-8" style={{ aspectRatio: "3 / 4" }}>
-                            <Image src={d.secondaryImageUrl} alt={d.title || campaign.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+                          <div className="relative mt-8 max-w-[70%]">
+                            <Image
+                              src={d.secondaryImageUrl}
+                              alt={d.title || campaign.name}
+                              width={600}
+                              height={750}
+                              className="w-full h-auto object-contain"
+                              sizes="(max-width: 1024px) 70vw, 25vw"
+                            />
                           </div>
                         )}
                       </div>
@@ -161,7 +178,7 @@ export default async function CampaignDetailPage({ params }: Params) {
                           <Image src={img.url} alt={img.caption || ""} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
                         </div>
                         {img.caption && (
-                          <p className="text-xs text-black mt-3 font-light text-center">{img.caption}</p>
+                          <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>
                         )}
                       </div>
                     ))}
@@ -176,12 +193,12 @@ export default async function CampaignDetailPage({ params }: Params) {
 
       {/* Altre campagne e video */}
       {related.length > 0 && (
-        <section className="py-20 md:py-28 bg-warm-50">
-          <div className="gtv-container">
-            <h3 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+        <section className="py-20 md:py-28">
+          <div className="px-2 md:px-3 lg:px-4">
+            <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
               Altre Campagne e Video
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
               {related.map((c) => (
                 <Link key={c.id} href={`/campagne-e-video/${c.slug}`} className="group block">
                   <div className="relative aspect-[1/1] bg-warm-100 overflow-hidden">
