@@ -8,7 +8,7 @@ import ImageUploadField from "./ImageUploadField";
 import SeoPanel from "./SeoPanel";
 import RichTextEditor from "./RichTextEditor";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
-import { TInput, TRichText } from "./TranslatableField";
+import { TInput } from "./TranslatableField";
 import NewsBlockBuilder from "./news/NewsBlockBuilder";
 import { slugify } from "@/lib/utils";
 
