@@ -129,7 +129,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 href={localizePath("/mondo-gtv/gtv-experience", lang)}
                 onClick={onClose}
                 className="relative overflow-hidden block"
-                style={{ width: "calc(100% - 60px)", aspectRatio: "1 / 0.85", margin: "16px 30px 30px 30px" }}
+                style={{ width: "calc(100% - 60px)", aspectRatio: "1 / 0.85", margin: "48px 30px 30px 30px" }}
               >
                 <Image
                   src={featuredImage}

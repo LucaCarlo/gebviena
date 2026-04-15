@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const where: Record<string, unknown> = {};
   if (folder) where.folder = folder;
   if (search) {
-    where.originalName = { contains: search, mode: "insensitive" };
+    where.originalName = { contains: search };
   }
 
   const data = await prisma.mediaFile.findMany({

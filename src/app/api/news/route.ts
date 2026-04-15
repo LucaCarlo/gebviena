@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
   if (category && category !== "TUTTI") where.category = category;
   if (search) {
     where.OR = [
-      { title: { contains: search, mode: "insensitive" } },
-      { subtitle: { contains: search, mode: "insensitive" } },
+      { title: { contains: search } },
+      { subtitle: { contains: search } },
     ];
   }
 

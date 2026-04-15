@@ -102,12 +102,8 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
           style={{ scrollbarWidth: "none", msOverflowStyle: "none", cursor: ARROW_CURSOR }}
         >
           {images.map((url, i) => (
-            <motion.div
+            <div
               key={i}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.08 }}
               className="flex-shrink-0"
             >
               <div
@@ -136,7 +132,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
                   i
                 </button>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
