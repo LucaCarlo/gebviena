@@ -6,6 +6,7 @@ import { slugify } from "@/lib/utils";
 import SeoPanel from "./SeoPanel";
 import ImageUploadField from "./ImageUploadField";
 import CampaignBlockBuilder from "./campaigns/CampaignBlockBuilder";
+import VideoField from "./campaigns/VideoField";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
 import { TInput, TRichText } from "./TranslatableField";
 
@@ -210,15 +211,9 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
           aspectRatio={1}
         />
 
-        <ImageUploadField
-          label="Video (caricamento file o URL YouTube)"
+        <VideoField
           value={form.videoUrl}
           onChange={(url) => updateField("videoUrl", url)}
-          onRemove={() => updateField("videoUrl", "")}
-          purpose="general"
-          folder="campaigns"
-          acceptVideo
-          helpText="Carica un file video oppure incolla un URL YouTube nel campo URL. Apparirà in cima alla pagina, larghezza uguale al paragrafo centrato."
         />
       </div>
 
