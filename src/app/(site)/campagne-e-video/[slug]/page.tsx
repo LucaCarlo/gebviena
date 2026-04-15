@@ -50,10 +50,10 @@ export default async function CampaignDetailPage({ params }: Params) {
   return (
     <>
       {/* Hero: categoria + titolo */}
-      <section className="gtv-container pt-24 md:pt-32 pb-4">
+      <section className="gtv-container pt-24 md:pt-32 pb-0">
         <div className="text-center">
           {campaign.type && (
-            <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light mb-6">{campaign.type}</p>
+            <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light" style={{ marginBottom: "44px" }}>{campaign.type}</p>
           )}
           <h1 className="font-serif text-[34px] md:text-[58px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto">
             {campaign.name}
@@ -61,7 +61,7 @@ export default async function CampaignDetailPage({ params }: Params) {
         </div>
         {campaign.description && (
           <div
-            className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-8 whitespace-pre-line [&_p]:mb-4 [&_p:last-child]:mb-0"
+            className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-14 whitespace-pre-line [&_p]:mb-4 [&_p:last-child]:mb-0"
             dangerouslySetInnerHTML={{ __html: campaign.description }}
           />
         )}
@@ -74,7 +74,7 @@ export default async function CampaignDetailPage({ params }: Params) {
 
       {/* Video */}
       {campaign.videoUrl && (
-        <section className="gtv-container pt-12 md:pt-16">
+        <section className="gtv-container pt-6 md:pt-8">
           <div className="mx-auto max-w-[940px]">
             {embed ? (
               <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
@@ -97,12 +97,12 @@ export default async function CampaignDetailPage({ params }: Params) {
 
       {/* Blocks */}
       {blocks.length > 0 && (
-        <div className="pt-12 md:pt-20 pb-20 md:pb-28 space-y-20 md:space-y-28">
+        <div className="pt-6 md:pt-10 pb-20 md:pb-28 space-y-20 md:space-y-28">
           {blocks.map((block) => {
             if (block.type === "paragraph") {
               const d = block.data as CampaignParagraphData;
               return (
-                <section key={block.id} className="gtv-container -mb-10 md:-mb-14">
+                <section key={block.id} className="gtv-container" style={{ marginBottom: "-60px" }}>
                   {d.title && (
                     <h2
                       className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto"
@@ -144,19 +144,19 @@ export default async function CampaignDetailPage({ params }: Params) {
                         {d.title && (
                           <h2
                             className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4"
-                            style={{ paddingRight: "40px" }}
+                            style={{ paddingRight: "24px" }}
                             dangerouslySetInnerHTML={{ __html: d.title }}
                           />
                         )}
                         {d.text && (
                           <p
                             className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line"
-                            style={{ paddingRight: "40px" }}
+                            style={{ paddingRight: "24px" }}
                             dangerouslySetInnerHTML={{ __html: d.text }}
                           />
                         )}
                         {d.secondaryImageUrl && (
-                          <div className="relative w-full" style={{ marginTop: "65px", paddingRight: "80px" }}>
+                          <div className="relative w-full" style={{ marginTop: "65px", paddingRight: "80px", paddingLeft: "40px" }}>
                             <Image
                               src={d.secondaryImageUrl}
                               alt={d.title || campaign.name}
