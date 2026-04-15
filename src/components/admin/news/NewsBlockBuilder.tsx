@@ -3,14 +3,14 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   GripVertical, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Plus,
-  Type, LayoutTemplate, Grid3x3, Image as ImageIcon, Share2,
+  Type, LayoutTemplate, Grid3x3, Image as ImageIcon, Share2, Package,
 } from "lucide-react";
 import type {
   NewsBlockV2, NewsBlockV2Type,
-  NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
+  NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData, NewsProductData,
 } from "@/types";
 import {
-  ParagraphEditor, ImageTextBgEditor, ThreeImagesEditor, SingleImageEditor, ShareInfo, RelatedInfo,
+  ParagraphEditor, ImageTextBgEditor, ThreeImagesEditor, SingleImageEditor, ProductEditor, ShareInfo, RelatedInfo,
 } from "./NewsBlockEditors";
 
 const MENU: { type: NewsBlockV2Type; icon: React.ElementType; label: string }[] = [
@@ -18,6 +18,7 @@ const MENU: { type: NewsBlockV2Type; icon: React.ElementType; label: string }[] 
   { type: "three_images", icon: Grid3x3, label: "Tre immagini" },
   { type: "single_image", icon: ImageIcon, label: "Immagine singola" },
   { type: "paragraph", icon: Type, label: "Paragrafo" },
+  { type: "product", icon: Package, label: "Prodotto correlato" },
   { type: "share", icon: Share2, label: "Condividi" },
 ];
 const LABELS: Record<NewsBlockV2Type, string> = {
@@ -31,6 +32,7 @@ function defaultData(t: NewsBlockV2Type): NewsBlockV2["data"] {
     case "image_text_bg": return { title: "", text: "", imageUrl: "", imagePosition: "left" } satisfies NewsImageTextBgData;
     case "three_images": return { images: [{ url: "", caption: "" }, { url: "", caption: "" }, { url: "", caption: "" }] } satisfies NewsThreeImagesData;
     case "single_image": return { imageUrl: "", caption: "" } satisfies NewsSingleImageData;
+    case "product": return { productId: "" } satisfies NewsProductData;
     case "share": return {};
     case "related": return {};
   }
@@ -88,6 +90,7 @@ export default function NewsBlockBuilder({ value, onChange }: Props) {
       case "image_text_bg": return <ImageTextBgEditor data={b.data as NewsImageTextBgData} onChange={(d) => upd(b.id, d)} />;
       case "three_images": return <ThreeImagesEditor data={b.data as NewsThreeImagesData} onChange={(d) => upd(b.id, d)} />;
       case "single_image": return <SingleImageEditor data={b.data as NewsSingleImageData} onChange={(d) => upd(b.id, d)} />;
+      case "product": return <ProductEditor data={b.data as NewsProductData} onChange={(d) => upd(b.id, d)} />;
       case "share": return <ShareInfo />;
       case "related": return <RelatedInfo />;
     }

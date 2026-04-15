@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, Play, Facebook, Link as LinkIcon } from "lucide-react";
+import { ChevronRight, Facebook, Link as LinkIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import type {
   NewsArticle, NewsBlockV2,
-  NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
+  NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData, NewsProductData,
 } from "@/types";
 import { useLang } from "@/contexts/I18nContext";
 
@@ -16,65 +16,29 @@ interface ArticleWithRelated extends NewsArticle {
   related?: NewsArticle[];
 }
 
-interface StoriaSection { title: string; text: string; imageUrl: string; }
-interface StoriaBlocks {
-  mediaType: "video" | "image";
-  mediaUrl: string;
-  sections: StoriaSection[];
-  iconUrl: string;
-  iconTitle: string;
-  iconText: string;
-  productId: string;
-}
-
 interface ProductData {
   id: string; name: string; slug: string; imageUrl: string; coverImage: string | null;
 }
 
-function FadeIn({ children, className }: { children: React.ReactNode; className?: string }) {
+function ProductBlock({ productId }: { productId: string }) {
+  const [product, setProduct] = useState<ProductData | null>(null);
+  useEffect(() => {
+    if (!productId) return;
+    fetch(`/api/products/${productId}`).then((r) => r.json()).then((data) => {
+      if (data.success) setProduct(data.data);
+    }).catch(() => {});
+  }, [productId]);
+  if (!product) return null;
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className={className}>
-      {children}
-    </motion.div>
-  );
-}
-
-function ClickToPlayVideo({ src }: { src: string }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [playing, setPlaying] = useState(false);
-  const handlePlay = useCallback(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    if (playing) { v.pause(); setPlaying(false); } else { v.play(); setPlaying(true); }
-  }, [playing]);
-
-  const ytMatch = src.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
-  const vimeoMatch = src.match(/vimeo\.com\/(\d+)/);
-  if (ytMatch) {
-    return (
-      <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
-        <iframe src={`https://www.youtube.com/embed/${ytMatch[1]}?rel=0`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+    <section className="relative w-full" style={{ height: "90vh" }}>
+      <Image src={product.coverImage || product.imageUrl} alt={product.name} fill className="object-cover brightness-[0.45]" sizes="100vw" />
+      <div className="absolute top-12 md:top-16 lg:top-20 left-8 md:left-16 lg:left-20 max-w-lg">
+        <h2 className="font-sans text-2xl md:text-3xl lg:text-[2.5rem] text-white font-light uppercase tracking-wide leading-snug">{product.name}</h2>
+        <Link href={`/prodotti/${product.slug}`} className="inline-flex items-center gap-2 mt-4 md:mt-5 uppercase text-[16px] tracking-[0.03em] font-medium text-white/80 hover:text-white hover:underline transition-colors">
+          Scopri il prodotto<span>&rarr;</span>
+        </Link>
       </div>
-    );
-  }
-  if (vimeoMatch) {
-    return (
-      <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
-        <iframe src={`https://player.vimeo.com/video/${vimeoMatch[1]}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
-      </div>
-    );
-  }
-  return (
-    <div className="relative w-full bg-warm-100 cursor-pointer" style={{ aspectRatio: "16 / 9" }} onClick={handlePlay}>
-      <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover" playsInline onEnded={() => setPlaying(false)}>
-        <source src={src} type="video/mp4" />
-      </video>
-      {!playing && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-          <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center"><Play size={32} className="text-dark ml-1" /></div>
-        </div>
-      )}
-    </div>
+    </section>
   );
 }
 
@@ -211,7 +175,6 @@ export default function NewsDetailPage() {
   const slug = params.slug as string;
   const lang = useLang();
   const [article, setArticle] = useState<ArticleWithRelated | null>(null);
-  const [product, setProduct] = useState<ProductData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -228,28 +191,6 @@ export default function NewsDetailPage() {
       return Array.isArray(p) ? (p as NewsBlockV2[]) : null;
     } catch { return null; }
   })();
-
-  const storia: StoriaBlocks | null = (() => {
-    if (article?.category !== "storia") return null;
-    try {
-      const parsed = JSON.parse(article?.blocks || "{}");
-      if (Array.isArray(parsed)) return null;
-      return {
-        mediaType: parsed.mediaType || "video", mediaUrl: parsed.mediaUrl || "",
-        sections: parsed.sections || [], iconUrl: parsed.iconUrl || "",
-        iconTitle: parsed.iconTitle || "", iconText: parsed.iconText || "",
-        productId: parsed.productId || "",
-      };
-    } catch { return null; }
-  })();
-
-  useEffect(() => {
-    if (!storia?.productId) return;
-    fetch(`/api/products/${storia.productId}`).then((r) => r.json()).then((data) => {
-      if (data.success) setProduct(data.data);
-    }).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [article?.blocks]);
 
   if (loading) {
     return (
@@ -268,8 +209,7 @@ export default function NewsDetailPage() {
     );
   }
 
-  const isStoria = article.category === "storia";
-  const useV2 = !isStoria && blocksV2 && blocksV2.length > 0;
+  const useV2 = blocksV2 && blocksV2.length > 0;
 
   return (
     <>
@@ -304,6 +244,7 @@ export default function NewsDetailPage() {
                   case "image_text_bg": node = <ImageTextBg d={b.data as NewsImageTextBgData} title={article.title} />; break;
                   case "three_images": node = <ThreeImages d={b.data as NewsThreeImagesData} />; break;
                   case "single_image": node = <SingleImage d={b.data as NewsSingleImageData} />; break;
+                  case "product": node = <ProductBlock productId={(b.data as NewsProductData).productId} />; break;
                   case "share": node = <ShareBlock title={article.title} />; break;
                   default: node = null;
                 }
@@ -314,74 +255,9 @@ export default function NewsDetailPage() {
           );
         })()
       ) : (
-        <>
-          {/* spacer */}
-          <div className="h-8 md:h-16" />
-
-          {/* Legacy image + text */}
-          {(article.imageUrl || article.content) && (
-            <section className="w-full bg-warm-50">
-              <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
-                <div className="relative bg-warm-200 w-full h-full min-h-[60vh]">
-                  {article.imageUrl && <Image src={article.imageUrl} alt={article.title} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />}
-                </div>
-                <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
-                  {!isStoria && article.subtitle && (
-                    <h2 className="font-serif text-2xl md:text-3xl lg:text-4xl text-dark leading-[1.15] tracking-tight mb-6">{article.subtitle}</h2>
-                  )}
-                  {article.content && (
-                    <div className="text-lg text-dark leading-[1.8] font-light prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: article.content }} />
-                  )}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {isStoria && storia && (
-            <>
-              {storia.mediaUrl && (
-                <section className="py-16 md:py-24">
-                  <FadeIn className="gtv-container">
-                    {storia.mediaType === "video" ? <ClickToPlayVideo src={storia.mediaUrl} /> : (
-                      <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
-                        <Image src={storia.mediaUrl} alt="" fill className="object-cover" sizes="100vw" />
-                      </div>
-                    )}
-                  </FadeIn>
-                </section>
-              )}
-              {storia.sections.length > 0 && (
-                <div>
-                  {storia.sections[0] && <ImageTextBg d={{ title: storia.sections[0].title, text: storia.sections[0].text, imageUrl: storia.sections[0].imageUrl, imagePosition: "right" }} title={article.title} />}
-                  {storia.sections[1] && <ImageTextBg d={{ title: storia.sections[1].title, text: storia.sections[1].text, imageUrl: storia.sections[1].imageUrl, imagePosition: "left" }} title={article.title} />}
-                  {storia.sections[2] && <ImageTextBg d={{ title: storia.sections[2].title, text: storia.sections[2].text, imageUrl: storia.sections[2].imageUrl, imagePosition: "right" }} title={article.title} />}
-                </div>
-              )}
-              {(storia.iconUrl || storia.iconTitle || storia.iconText) && (
-                <section className="py-24 md:py-32">
-                  <FadeIn className="text-center max-w-2xl mx-auto px-8">
-                    {storia.iconUrl && <div className="relative w-20 h-20 mx-auto mb-8"><Image src={storia.iconUrl} alt="" fill className="object-contain" sizes="80px" /></div>}
-                    {storia.iconTitle && <h2 className="font-serif text-2xl md:text-3xl text-dark leading-[1.2] tracking-tight mb-5">{storia.iconTitle}</h2>}
-                    {storia.iconText && <p className="text-lg text-dark leading-[1.8] font-light">{storia.iconText}</p>}
-                  </FadeIn>
-                </section>
-              )}
-              {product && (
-                <section className="relative w-full" style={{ height: "90vh" }}>
-                  <Image src={product.coverImage || product.imageUrl} alt={product.name} fill className="object-cover brightness-[0.45]" sizes="100vw" />
-                  <div className="absolute top-12 md:top-16 lg:top-20 left-8 md:left-16 lg:left-20 max-w-lg">
-                    <h2 className="font-sans text-2xl md:text-3xl lg:text-[2.5rem] text-white font-light uppercase tracking-wide leading-snug">{product.name}</h2>
-                    <Link href={`/prodotti/${product.slug}`} className="inline-flex items-center gap-2 mt-4 md:mt-5 uppercase text-[16px] tracking-[0.03em] font-medium text-white/80 hover:text-white hover:underline transition-colors">
-                      Scopri il prodotto<span>&rarr;</span>
-                    </Link>
-                  </div>
-                </section>
-              )}
-            </>
-          )}
-
+        <div className="pt-12 md:pt-20 pb-20 md:pb-28">
           {article.related && article.related.length > 0 && <RelatedBlock related={article.related} />}
-        </>
+        </div>
       )}
 
       {/* Breadcrumbs */}

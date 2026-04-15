@@ -193,6 +193,7 @@ export type NewsBlockV2Type =
   | "image_text_bg"
   | "three_images"
   | "single_image"
+  | "product"
   | "share"
   | "related";
 
@@ -222,6 +223,10 @@ export interface NewsSingleImageData {
 export type NewsShareData = Record<string, never>;
 export type NewsRelatedData = Record<string, never>;
 
+export interface NewsProductData {
+  productId: string;
+}
+
 export interface NewsBlockV2 {
   id: string;
   type: NewsBlockV2Type;
@@ -230,6 +235,7 @@ export interface NewsBlockV2 {
     | NewsImageTextBgData
     | NewsThreeImagesData
     | NewsSingleImageData
+    | NewsProductData
     | NewsShareData
     | NewsRelatedData;
 }

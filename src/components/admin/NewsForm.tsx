@@ -3,10 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
-import Image from "next/image";
 import ImageUploadField from "./ImageUploadField";
 import SeoPanel from "./SeoPanel";
-import RichTextEditor from "./RichTextEditor";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
 import { TInput } from "./TranslatableField";
 import NewsBlockBuilder from "./news/NewsBlockBuilder";
@@ -16,50 +14,6 @@ interface NewsFormProps {
   articleId?: string;
   category?: string;
 }
-
-interface ProductItem {
-  id: string;
-  name: string;
-  slug: string;
-  imageUrl: string;
-  coverImage: string | null;
-}
-
-interface StoriaSection {
-  title: string;
-  text: string;
-  imageUrl: string;
-}
-
-interface StoriaBlocks {
-  mediaType: "video" | "image";
-  mediaUrl: string;
-  sections: [StoriaSection, StoriaSection, StoriaSection];
-  iconUrl: string;
-  iconTitle: string;
-  iconText: string;
-  productId: string;
-}
-
-const EMPTY_STORIA: StoriaBlocks = {
-  mediaType: "video",
-  mediaUrl: "",
-  sections: [
-    { title: "", text: "", imageUrl: "" },
-    { title: "", text: "", imageUrl: "" },
-    { title: "", text: "", imageUrl: "" },
-  ],
-  iconUrl: "",
-  iconTitle: "",
-  iconText: "",
-  productId: "",
-};
-
-const SECTION_LABELS = [
-  "Sezione 1 — immagine a destra",
-  "Sezione 2 — immagine a sinistra",
-  "Sezione 3 — immagine a destra",
-];
 
 const CATEGORY_LABELS: Record<string, string> = {
   exhibition: "Exhibition",
@@ -73,7 +27,6 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [products, setProducts] = useState<ProductItem[]>([]);
   const [newTag, setNewTag] = useState("");
   const [form, setForm] = useState({
     title: "",
@@ -93,23 +46,6 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
     seoKeywords: "[]",
     blocksV2: "[]",
   });
-
-  const isStoria = form.category === "storia";
-
-  /* ── Storia-specific state (separate from form to avoid JSON parse/stringify cycles) */
-  const [storia, setStoria] = useState<StoriaBlocks>(() => ({ ...EMPTY_STORIA }));
-
-  const updateStoria = useCallback((patch: Partial<StoriaBlocks>) => {
-    setStoria((prev) => ({ ...prev, ...patch }));
-  }, []);
-
-  const updateStoriaSection = useCallback((index: number, patch: Partial<StoriaSection>) => {
-    setStoria((prev) => {
-      const sections = [...prev.sections] as [StoriaSection, StoriaSection, StoriaSection];
-      sections[index] = { ...sections[index], ...patch };
-      return { ...prev, sections };
-    });
-  }, []);
 
   /* ── Load article ────────────────────────────────────────── */
   const loadArticle = useCallback(async () => {
@@ -142,27 +78,11 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           } catch { return "[]"; }
         })(),
       });
-      // Initialize storia data from blocks (only if legacy object form)
-      if (a.blocks) {
-        try {
-          const parsed = JSON.parse(a.blocks);
-          if (!Array.isArray(parsed)) {
-            setStoria({
-              ...EMPTY_STORIA,
-              ...parsed,
-              sections: parsed.sections || EMPTY_STORIA.sections,
-            });
-          }
-        } catch { /* invalid JSON, keep defaults */ }
-      }
     }
   }, [articleId]);
 
   useEffect(() => {
     loadArticle();
-    fetch("/api/products?limit=500")
-      .then((r) => r.json())
-      .then((data) => setProducts(data.data || []));
   }, [loadArticle]);
 
   /* ── Helpers ─────────────────────────────────────────────── */
@@ -194,8 +114,6 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
     updateField("tags", JSON.stringify(tags.filter((tt) => tt !== tag)));
   };
 
-  const selectedProduct = products.find((p) => p.id === storia.productId);
-
   /* ── Submit ──────────────────────────────────────────────── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,7 +130,7 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
       void _blocksV2;
       const body = {
         ...rest,
-        blocks: isStoria ? JSON.stringify(storia) : (form.blocksV2 || "[]"),
+        blocks: form.blocksV2 || "[]",
         publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
       };
       const url = articleId ? `/api/news/${articleId}` : "/api/news";
@@ -310,159 +228,14 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           <input type="hidden" name="sortOrder" value={form.sortOrder} />
         </div>
 
-        {/* Sezioni dinamiche (per categorie non-storia) */}
-        {!isStoria && (
-          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
-            <div>
-              <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezioni della pagina</h2>
-              <p className="text-[11px] text-warm-400 mt-1">Aggiungi e ordina le sezioni come preferisci.</p>
-            </div>
-            <NewsBlockBuilder value={form.blocksV2} onChange={(json) => updateField("blocksV2", json)} />
+        {/* Sezioni dinamiche — uguali per tutte le categorie */}
+        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezioni della pagina</h2>
+            <p className="text-[11px] text-warm-400 mt-1">Aggiungi e ordina le sezioni come preferisci.</p>
           </div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════
-            STORIA-SPECIFIC SECTIONS
-            ══════════════════════════════════════════════════════ */}
-        {isStoria && (
-          <>
-            {/* Media (video or image) */}
-            <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
-              <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Media</h2>
-              <p className="text-[11px] text-warm-400">Video o immagine a tutta larghezza dopo la prima sezione</p>
-              <div className="flex gap-3">
-                {(["video", "image"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => updateStoria({ mediaType: t })}
-                    className={`px-4 py-2 text-xs rounded border transition-colors ${
-                      storia.mediaType === t
-                        ? "bg-warm-800 text-white border-warm-800"
-                        : "bg-white text-warm-600 border-warm-300 hover:border-warm-400"
-                    }`}
-                  >
-                    {t === "video" ? "Video" : "Immagine"}
-                  </button>
-                ))}
-              </div>
-              {storia.mediaType === "video" ? (
-                <div>
-                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">URL Video</label>
-                  <input
-                    type="text"
-                    value={storia.mediaUrl}
-                    onChange={(e) => updateStoria({ mediaUrl: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-                  />
-                </div>
-              ) : (
-                <ImageUploadField
-                  label="Immagine media"
-                  value={storia.mediaUrl}
-                  onChange={(url) => updateStoria({ mediaUrl: url })}
-                  onRemove={() => updateStoria({ mediaUrl: "" })}
-                  folder="news"
-                  purpose="news"
-                />
-              )}
-            </div>
-
-            {/* 3 alternating sections */}
-            {storia.sections.map((sec, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
-                <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">{SECTION_LABELS[i]}</h2>
-                <div>
-                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo</label>
-                  <input
-                    type="text"
-                    value={sec.title}
-                    onChange={(e) => updateStoriaSection(i, { title: e.target.value })}
-                    className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-                  />
-                </div>
-                <RichTextEditor
-                  label="Testo"
-                  value={sec.text}
-                  onChange={(html) => updateStoriaSection(i, { text: html })}
-                />
-                <ImageUploadField
-                  label="Immagine"
-                  value={sec.imageUrl}
-                  onChange={(url) => updateStoriaSection(i, { imageUrl: url })}
-                  onRemove={() => updateStoriaSection(i, { imageUrl: "" })}
-                  folder="news"
-                  purpose="news"
-                />
-              </div>
-            ))}
-
-            {/* Icon + centered text */}
-            <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
-              <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Icona + Testo centrato</h2>
-              <ImageUploadField
-                label="Icona (immagine piccola)"
-                value={storia.iconUrl}
-                onChange={(url) => updateStoria({ iconUrl: url })}
-                onRemove={() => updateStoria({ iconUrl: "" })}
-                folder="news"
-                purpose="news"
-              />
-              <div>
-                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo</label>
-                <input
-                  type="text"
-                  value={storia.iconTitle}
-                  onChange={(e) => updateStoria({ iconTitle: e.target.value })}
-                  className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Paragrafo</label>
-                <textarea
-                  value={storia.iconText}
-                  onChange={(e) => updateStoria({ iconText: e.target.value })}
-                  rows={4}
-                  className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800 resize-y"
-                />
-              </div>
-            </div>
-
-            {/* Product reference */}
-            <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
-              <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Prodotto correlato</h2>
-              <p className="text-[11px] text-warm-400">Sezione a tutta larghezza con immagine del prodotto e link</p>
-              <select
-                value={storia.productId}
-                onChange={(e) => updateStoria({ productId: e.target.value })}
-                className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-              >
-                <option value="">— Nessun prodotto —</option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              {selectedProduct && (
-                <div className="flex items-center gap-3 p-3 bg-warm-50 rounded">
-                  <div className="relative w-16 h-16 bg-warm-200 rounded overflow-hidden flex-shrink-0">
-                    <Image
-                      src={selectedProduct.coverImage || selectedProduct.imageUrl}
-                      alt={selectedProduct.name}
-                      fill
-                      className="object-cover"
-                      sizes="64px"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-warm-800">{selectedProduct.name}</p>
-                    <p className="text-xs text-warm-400">/prodotti/{selectedProduct.slug}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+          <NewsBlockBuilder value={form.blocksV2} onChange={(json) => updateField("blocksV2", json)} />
+        </div>
 
         {/* Submit */}
         <div className="flex gap-3">

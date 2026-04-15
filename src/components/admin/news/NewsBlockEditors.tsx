@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import ImageUploadField from "../ImageUploadField";
 import RichTextField from "../RichTextField";
 import type {
@@ -7,7 +9,23 @@ import type {
   NewsImageTextBgData,
   NewsThreeImagesData,
   NewsSingleImageData,
+  NewsProductData,
 } from "@/types";
+
+interface ProductOption { id: string; name: string; slug: string; imageUrl: string; coverImage: string | null; }
+
+let productsCache: ProductOption[] | null = null;
+let productsPromise: Promise<ProductOption[]> | null = null;
+function loadProducts(): Promise<ProductOption[]> {
+  if (productsCache) return Promise.resolve(productsCache);
+  if (!productsPromise) {
+    productsPromise = fetch("/api/products?limit=500")
+      .then((r) => r.json())
+      .then((d) => { productsCache = d.data || []; return productsCache!; })
+      .catch(() => []);
+  }
+  return productsPromise;
+}
 
 export function ParagraphEditor({ data, onChange }: { data: NewsParagraphData; onChange: (d: NewsParagraphData) => void }) {
   return (
@@ -96,6 +114,43 @@ export function SingleImageEditor({ data, onChange }: { data: NewsSingleImageDat
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Didascalia (opzionale)</label>
         <input type="text" value={data.caption || ""} onChange={(e) => onChange({ ...data, caption: e.target.value })} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
       </div>
+    </div>
+  );
+}
+
+export function ProductEditor({ data, onChange }: { data: NewsProductData; onChange: (d: NewsProductData) => void }) {
+  const [products, setProducts] = useState<ProductOption[]>(productsCache || []);
+  useEffect(() => { loadProducts().then(setProducts); }, []);
+  const selected = products.find((p) => p.id === data.productId);
+  return (
+    <div className="space-y-4">
+      <p className="text-[11px] text-warm-400">Sezione a tutta larghezza con immagine del prodotto e link.</p>
+      <div>
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Prodotto</label>
+        <select
+          value={data.productId || ""}
+          onChange={(e) => onChange({ productId: e.target.value })}
+          className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+        >
+          <option value="">— Seleziona un prodotto —</option>
+          {products.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+      </div>
+      {selected && (
+        <div className="flex items-center gap-3 p-3 bg-warm-50 rounded">
+          <div className="relative w-16 h-16 bg-warm-200 rounded overflow-hidden flex-shrink-0">
+            {(selected.coverImage || selected.imageUrl) && (
+              <Image src={selected.coverImage || selected.imageUrl} alt={selected.name} fill className="object-cover" sizes="64px" />
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-warm-800">{selected.name}</p>
+            <p className="text-xs text-warm-400">/prodotti/{selected.slug}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
