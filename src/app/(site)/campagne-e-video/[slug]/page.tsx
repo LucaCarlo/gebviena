@@ -55,7 +55,7 @@ export default async function CampaignDetailPage({ params }: Params) {
           {campaign.type && (
             <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light" style={{ marginBottom: "44px" }}>{campaign.type}</p>
           )}
-          <h1 className="font-serif text-[34px] md:text-[58px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto">
+          <h1 className="font-serif text-[34px] md:text-[58px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto" style={{ marginBottom: "10px" }}>
             {campaign.name}
           </h1>
         </div>
