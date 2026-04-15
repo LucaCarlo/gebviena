@@ -132,14 +132,14 @@ function ShareBlock({ title }: { title: string }) {
   return (
     <section className="gtv-container">
       <div className="max-w-[940px] mx-auto flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 py-8 border-t border-b border-warm-200">
-        <a href={fb} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[16px] uppercase tracking-[0.05em] text-black font-light hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-          <Facebook size={18} />Condividi su Facebook
+        <a href={fb} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 text-[16px] uppercase tracking-[0.05em] text-black font-light">
+          <Facebook size={18} /><span className="group-hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>Condividi su Facebook</span>
         </a>
-        <a href={tw} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[16px] uppercase tracking-[0.05em] text-black font-light hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-          <span className="font-serif font-bold text-[18px] leading-none">X</span>Condividi su X
+        <a href={tw} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 text-[16px] uppercase tracking-[0.05em] text-black font-light">
+          <span className="font-serif font-bold text-[18px] leading-none">X</span><span className="group-hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>Condividi su X</span>
         </a>
-        <button type="button" onClick={copy} className="flex items-center gap-2 text-[16px] uppercase tracking-[0.05em] text-black font-light hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-          <LinkIcon size={18} />{copied ? "Link copiato!" : "Copia link"}
+        <button type="button" onClick={copy} className="group flex items-center gap-2 text-[16px] uppercase tracking-[0.05em] text-black font-light">
+          <LinkIcon size={18} /><span className="group-hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>{copied ? "Link copiato!" : "Copia link"}</span>
         </button>
       </div>
     </section>
