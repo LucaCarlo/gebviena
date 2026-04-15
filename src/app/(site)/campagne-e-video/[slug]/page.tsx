@@ -120,7 +120,7 @@ export default async function CampaignDetailPage({ params }: Params) {
               return (
                 <section key={block.id}>
                   <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-stretch">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
                       <div className={`relative ${imgLeft ? "lg:order-1" : "lg:order-2"}`}>
                         {d.imageUrl && (
                           <Image
@@ -134,30 +134,28 @@ export default async function CampaignDetailPage({ params }: Params) {
                         )}
                       </div>
                       <div
-                        className={`flex flex-col justify-between h-full ${imgLeft ? "lg:order-2" : "lg:order-1"}`}
-                        style={{ padding: "96px 150px" }}
+                        className={`flex flex-col justify-start ${imgLeft ? "lg:order-2" : "lg:order-1"}`}
+                        style={{ padding: "96px 150px 96px 150px" }}
                       >
-                        <div>
-                          {d.title && (
-                            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">
-                              {d.title}
-                            </h2>
-                          )}
-                          {d.text && (
-                            <p className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line">
-                              {d.text}
-                            </p>
-                          )}
-                        </div>
+                        {d.title && (
+                          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">
+                            {d.title}
+                          </h2>
+                        )}
+                        {d.text && (
+                          <p className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line">
+                            {d.text}
+                          </p>
+                        )}
                         {d.secondaryImageUrl && (
-                          <div className="relative mt-8 max-w-[85%]">
+                          <div className="relative w-full" style={{ marginTop: "65px" }}>
                             <Image
                               src={d.secondaryImageUrl}
                               alt={d.title || campaign.name}
-                              width={700}
-                              height={875}
+                              width={900}
+                              height={1125}
                               className="w-full h-auto object-contain"
-                              sizes="(max-width: 1024px) 85vw, 30vw"
+                              sizes="(max-width: 1024px) 100vw, 35vw"
                             />
                           </div>
                         )}
