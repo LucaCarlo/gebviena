@@ -49,7 +49,7 @@ export default function Header() {
           left: 'var(--site-margin)',
           right: 'var(--site-margin)',
           transition: "background 0.6s ease",
-          ...(!isScrolled ? { background: "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.18) 60%, transparent 100%)" } : {}),
+          ...(!isScrolled ? { background: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.28) 60%, transparent 100%)" } : {}),
         }}
       >
         <div className="px-4 md:px-6 lg:px-8">
