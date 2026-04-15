@@ -69,13 +69,13 @@ export default function ImageTextBlockEditor({ data, onChange }: Props) {
       </div>
 
       <ImageUploadField
-        label="Immagine sotto il testo (opzionale, orizzontale)"
+        label="Immagine sotto il testo (opzionale, verticale)"
         value={data.secondaryImageUrl || ""}
         onChange={(url) => onChange({ ...data, secondaryImageUrl: url })}
         onRemove={() => onChange({ ...data, secondaryImageUrl: "" })}
         purpose="general"
         folder="campaigns"
-        aspectRatio={16 / 10}
+        aspectRatio={3 / 4}
       />
     </div>
   );

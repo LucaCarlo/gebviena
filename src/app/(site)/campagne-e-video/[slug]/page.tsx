@@ -102,7 +102,7 @@ export default async function CampaignDetailPage({ params }: Params) {
               return (
                 <section key={block.id} className="gtv-container">
                   {d.title && (
-                    <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-12 text-center">
+                    <h2 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto">
                       {d.title}
                     </h2>
                   )}
@@ -138,7 +138,7 @@ export default async function CampaignDetailPage({ params }: Params) {
                           </p>
                         )}
                         {d.secondaryImageUrl && (
-                          <div className="relative bg-warm-100 overflow-hidden mt-8" style={{ aspectRatio: "16 / 10" }}>
+                          <div className="relative bg-warm-100 overflow-hidden mt-8" style={{ aspectRatio: "3 / 4" }}>
                             <Image src={d.secondaryImageUrl} alt={d.title || campaign.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
                           </div>
                         )}
