@@ -50,16 +50,18 @@ export default async function CampaignDetailPage({ params }: Params) {
   return (
     <>
       {/* Hero: categoria + titolo */}
-      <section className="gtv-container pt-24 md:pt-32 pb-4 text-center">
-        {campaign.type && (
-          <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light mb-4">{campaign.type}</p>
-        )}
-        <h1 className="font-serif text-[34px] md:text-[58px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto">
-          {campaign.name}
-        </h1>
+      <section className="gtv-container pt-24 md:pt-32 pb-4">
+        <div className="text-center">
+          {campaign.type && (
+            <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light mb-6">{campaign.type}</p>
+          )}
+          <h1 className="font-serif text-[34px] md:text-[58px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto">
+            {campaign.name}
+          </h1>
+        </div>
         {campaign.description && (
           <div
-            className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-6 [&_p]:mb-4 [&_p:last-child]:mb-0"
+            className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-16 whitespace-pre-line [&_p]:mb-4 [&_p:last-child]:mb-0"
             dangerouslySetInnerHTML={{ __html: campaign.description }}
           />
         )}
@@ -95,7 +97,7 @@ export default async function CampaignDetailPage({ params }: Params) {
 
       {/* Blocks */}
       {blocks.length > 0 && (
-        <div className="pt-12 md:pt-20 pb-20 md:pb-28 space-y-20 md:space-y-28">
+        <div className="pt-12 md:pt-20 pb-20 md:pb-28 space-y-12 md:space-y-16">
           {blocks.map((block) => {
             if (block.type === "paragraph") {
               const d = block.data as CampaignParagraphData;
@@ -137,7 +139,7 @@ export default async function CampaignDetailPage({ params }: Params) {
                       </div>
                       <div
                         className={`flex flex-col justify-start ${imgLeft ? "lg:order-2" : "lg:order-1"}`}
-                        style={{ padding: "0 150px" }}
+                        style={{ padding: "0 80px 0 150px" }}
                       >
                         {d.title && (
                           <h2
