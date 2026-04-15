@@ -54,7 +54,7 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
           </div>
         )}
         {d.title && (
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mt-10" dangerouslySetInnerHTML={{ __html: d.title }} />
+          <h2 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight font-light leading-[1.2] text-center mt-10" dangerouslySetInnerHTML={{ __html: d.title }} />
         )}
         {d.body && (
           <div className="text-[20px] text-black leading-snug font-light tracking-normal text-center mt-6 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.body }} />
@@ -69,10 +69,10 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
   return (
     <section className="relative w-full" style={{ height: "85vh" }}>
       <Image src={d.imageUrl} alt={d.title || ""} fill className="object-cover brightness-[0.6]" sizes="100vw" />
-      <div className="absolute top-14 md:top-18 lg:top-22 left-7 md:left-12 lg:left-16 max-w-[720px]">
+      <div className="absolute top-14 md:top-18 lg:top-22 left-0 right-0 px-7 md:px-12 lg:px-16 text-center">
         {d.title && (
-          <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug whitespace-pre-line">
-            {d.title.replace(/\\n/g, "\n")}
+          <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug">
+            {d.title}
           </h2>
         )}
         {d.ctaLabel && d.ctaHref && (

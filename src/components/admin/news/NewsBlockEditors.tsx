@@ -143,7 +143,6 @@ export function FullwidthBannerEditor({ data, onChange }: { data: NewsFullwidthB
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (sovraimpresso)</label>
         <input type="text" value={data.title || ""} onChange={(e) => onChange({ ...data, title: e.target.value })} placeholder="Sedute che invitano a restare, momenti che prendono forma" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
-        <p className="text-[10px] text-warm-400 mt-1">Usa &laquo;\\n&raquo; per andare a capo.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
