@@ -235,7 +235,7 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
             onChange={(e) => updateField("isFeatured", e.target.checked)}
             className="w-4 h-4"
           />
-          <span className="text-sm text-warm-700">In evidenza (mostrato nella sezione "I nostri designer" del Brand Manifesto)</span>
+          <span className="text-sm text-warm-700">In evidenza (mostrato nella sezione &quot;I nostri designer&quot; del Brand Manifesto)</span>
         </label>
       </div>
 
