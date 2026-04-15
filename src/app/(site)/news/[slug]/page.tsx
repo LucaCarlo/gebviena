@@ -152,11 +152,30 @@ function ThreeImages({ d }: { d: NewsThreeImagesData }) {
 }
 
 function SingleImage({ d }: { d: NewsSingleImageData }) {
-  if (!d.imageUrl) return null;
+  if (!d.imageUrl && !d.videoUrl) return null;
+  const video = d.videoUrl?.trim();
+  const yt = video?.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  const vimeo = video?.match(/vimeo\.com\/(\d+)/);
   return (
     <section className="gtv-container">
       <div className="mx-auto max-w-[940px]">
-        <Image src={d.imageUrl} alt={d.caption || ""} width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 940px) 100vw, 940px" />
+        {video ? (
+          yt ? (
+            <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
+              <iframe src={`https://www.youtube.com/embed/${yt[1]}?rel=0`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+            </div>
+          ) : vimeo ? (
+            <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
+              <iframe src={`https://player.vimeo.com/video/${vimeo[1]}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+            </div>
+          ) : (
+            <video controls playsInline className="w-full h-auto bg-warm-100">
+              <source src={video} />
+            </video>
+          )
+        ) : (
+          <Image src={d.imageUrl} alt={d.caption || ""} width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 940px) 100vw, 940px" />
+        )}
         {d.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{d.caption}</p>}
       </div>
     </section>

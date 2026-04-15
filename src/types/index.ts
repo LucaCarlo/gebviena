@@ -220,6 +220,7 @@ export interface NewsThreeImagesData {
 export interface NewsSingleImageData {
   imageUrl: string;
   caption?: string;
+  videoUrl?: string;
 }
 
 export interface NewsImageWithParagraphData {
