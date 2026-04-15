@@ -75,7 +75,7 @@ export default function MediaPickerModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
           <h2 className="text-lg font-semibold text-warm-800">Scegli dai Media</h2>
-          <button onClick={onClose} className="p-1 hover:bg-warm-100 rounded-lg transition-colors">
+          <button type="button" onClick={onClose} className="p-1 hover:bg-warm-100 rounded-lg transition-colors">
             <X size={20} className="text-warm-500" />
           </button>
         </div>
@@ -94,6 +94,7 @@ export default function MediaPickerModal({
           </div>
           <div className="flex gap-1">
             <button
+              type="button"
               onClick={() => setActiveFolder("")}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 activeFolder === "" ? "bg-warm-800 text-white" : "bg-warm-100 text-warm-600 hover:bg-warm-200"
@@ -104,6 +105,7 @@ export default function MediaPickerModal({
             {MEDIA_FOLDERS.map((f) => (
               <button
                 key={f.value}
+                type="button"
                 onClick={() => setActiveFolder(f.value)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   activeFolder === f.value ? "bg-warm-800 text-white" : "bg-warm-100 text-warm-600 hover:bg-warm-200"
@@ -173,12 +175,14 @@ export default function MediaPickerModal({
             </span>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={onClose}
                 className="px-4 py-2 text-sm text-warm-600 hover:text-warm-800 transition-colors"
               >
                 Annulla
               </button>
               <button
+                type="button"
                 onClick={handleConfirm}
                 disabled={selected.size === 0}
                 className="px-4 py-2 bg-warm-800 text-white text-sm rounded-lg hover:bg-warm-900 transition-colors disabled:opacity-50"
