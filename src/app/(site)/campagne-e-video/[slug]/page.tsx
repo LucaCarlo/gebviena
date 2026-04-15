@@ -120,7 +120,7 @@ export default async function CampaignDetailPage({ params }: Params) {
               return (
                 <section key={block.id}>
                   <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-stretch">
                       <div className={`relative ${imgLeft ? "lg:order-1" : "lg:order-2"}`}>
                         {d.imageUrl && (
                           <Image
