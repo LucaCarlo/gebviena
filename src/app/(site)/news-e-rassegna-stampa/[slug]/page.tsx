@@ -81,17 +81,26 @@ function ClickToPlayVideo({ src }: { src: string }) {
 function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title: string }) {
   const imgLeft = d.imagePosition === "left";
   const imageEl = (
-    <div className="relative bg-warm-200 w-full h-full min-h-[60vh]">
+    <div className="relative bg-warm-200 overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
       {d.imageUrl && <Image src={d.imageUrl} alt={d.title || articleTitle} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />}
     </div>
   );
   const textEl = (
-    <div className="px-10 md:px-16 lg:px-24 xl:px-32 py-16 lg:py-20 flex flex-col justify-center">
+    <div className="flex flex-col justify-center px-8 py-16 md:px-16 md:py-20 lg:px-24 xl:px-[150px] xl:py-[96px]">
       {d.title && (
-        <h2 className="font-serif text-[34px] md:text-[44px] text-dark tracking-tight font-light leading-[1.15] mb-6" dangerouslySetInnerHTML={{ __html: d.title }} />
+        <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]" dangerouslySetInnerHTML={{ __html: d.title }} />
       )}
       {d.text && (
-        <div className="text-[18px] text-dark leading-[1.8] font-light [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.text }} />
+        <div className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.text }} />
+      )}
+      {d.ctaLabel && d.ctaHref && (
+        <Link
+          href={d.ctaHref}
+          className="inline-block self-start mt-8 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
+          style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
+        >
+          {d.ctaLabel}
+        </Link>
       )}
     </div>
   );
@@ -127,8 +136,8 @@ function SingleImage({ d }: { d: NewsSingleImageData }) {
   if (!d.imageUrl) return null;
   return (
     <section className="gtv-container">
-      <div className="mx-auto max-w-[1200px]">
-        <Image src={d.imageUrl} alt={d.caption || ""} width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 1200px) 100vw, 1200px" />
+      <div className="mx-auto max-w-[900px]">
+        <Image src={d.imageUrl} alt={d.caption || ""} width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 900px) 100vw, 900px" />
         {d.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{d.caption}</p>}
       </div>
     </section>
@@ -280,19 +289,30 @@ export default function NewsDetailPage() {
       </section>
 
       {useV2 ? (
-        <div className="pt-12 md:pt-20 pb-20 md:pb-28 space-y-20 md:space-y-28">
-          {blocksV2!.map((b) => {
-            switch (b.type) {
-              case "paragraph": return <ParagraphBlock key={b.id} d={b.data as NewsParagraphData} />;
-              case "image_text_bg": return <ImageTextBg key={b.id} d={b.data as NewsImageTextBgData} title={article.title} />;
-              case "three_images": return <ThreeImages key={b.id} d={b.data as NewsThreeImagesData} />;
-              case "single_image": return <SingleImage key={b.id} d={b.data as NewsSingleImageData} />;
-              case "share": return <ShareBlock key={b.id} title={article.title} />;
-              case "related": return <RelatedBlock key={b.id} related={article.related || []} />;
-              default: return null;
-            }
-          })}
-        </div>
+        (() => {
+          const rendered = blocksV2!.filter((b) => b.type !== "related");
+          const hasRelated = (article.related?.length ?? 0) > 0;
+          return (
+            <div className={`pt-12 md:pt-20${hasRelated ? "" : " pb-20 md:pb-28"}`}>
+              {rendered.map((b, idx) => {
+                const prev = idx > 0 ? rendered[idx - 1] : null;
+                const greyAdjacent = prev?.type === "image_text_bg" && b.type === "image_text_bg";
+                const spacing = idx === 0 ? "" : greyAdjacent ? "" : "mt-20 md:mt-28";
+                let node: React.ReactNode = null;
+                switch (b.type) {
+                  case "paragraph": node = <ParagraphBlock d={b.data as NewsParagraphData} />; break;
+                  case "image_text_bg": node = <ImageTextBg d={b.data as NewsImageTextBgData} title={article.title} />; break;
+                  case "three_images": node = <ThreeImages d={b.data as NewsThreeImagesData} />; break;
+                  case "single_image": node = <SingleImage d={b.data as NewsSingleImageData} />; break;
+                  case "share": node = <ShareBlock title={article.title} />; break;
+                  default: node = null;
+                }
+                return <div key={b.id} className={spacing}>{node}</div>;
+              })}
+              {hasRelated && <RelatedBlock related={article.related!} />}
+            </div>
+          );
+        })()
       ) : (
         <>
           {/* spacer */}

@@ -206,6 +206,8 @@ export interface NewsImageTextBgData {
   text: string;
   imageUrl: string;
   imagePosition: "left" | "right";
+  ctaLabel?: string;
+  ctaHref?: string;
 }
 
 export interface NewsThreeImagesData {

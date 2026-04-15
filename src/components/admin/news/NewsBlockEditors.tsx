@@ -53,6 +53,16 @@ export function ImageTextBgEditor({ data, onChange }: { data: NewsImageTextBgDat
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo</label>
         <RichTextField value={data.text || ""} onChange={(html) => onChange({ ...data, text: html })} multiline minHeight={140} />
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — etichetta (opzionale)</label>
+          <input type="text" value={data.ctaLabel || ""} onChange={(e) => onChange({ ...data, ctaLabel: e.target.value })} placeholder="Scopri di più" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — link</label>
+          <input type="text" value={data.ctaHref || ""} onChange={(e) => onChange({ ...data, ctaHref: e.target.value })} placeholder="/mondo-gtv/heritage" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+        </div>
+      </div>
     </div>
   );
 }

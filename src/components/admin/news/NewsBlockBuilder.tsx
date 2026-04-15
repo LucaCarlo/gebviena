@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   GripVertical, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Plus,
-  Type, LayoutTemplate, Grid3x3, Image as ImageIcon, Share2, BookOpen,
+  Type, LayoutTemplate, Grid3x3, Image as ImageIcon, Share2,
 } from "lucide-react";
 import type {
   NewsBlockV2, NewsBlockV2Type,
@@ -19,9 +19,11 @@ const MENU: { type: NewsBlockV2Type; icon: React.ElementType; label: string }[] 
   { type: "single_image", icon: ImageIcon, label: "Immagine singola" },
   { type: "paragraph", icon: Type, label: "Paragrafo" },
   { type: "share", icon: Share2, label: "Condividi" },
-  { type: "related", icon: BookOpen, label: "Continua a leggere" },
 ];
-const LABELS: Record<NewsBlockV2Type, string> = Object.fromEntries(MENU.map((m) => [m.type, m.label])) as Record<NewsBlockV2Type, string>;
+const LABELS: Record<NewsBlockV2Type, string> = {
+  ...(Object.fromEntries(MENU.map((m) => [m.type, m.label])) as Record<NewsBlockV2Type, string>),
+  related: "Continua a leggere",
+};
 
 function defaultData(t: NewsBlockV2Type): NewsBlockV2["data"] {
   switch (t) {
