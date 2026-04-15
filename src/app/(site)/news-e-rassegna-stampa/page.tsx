@@ -133,7 +133,7 @@ function NewsContent() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20 px-2 md:px-3 lg:px-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="bg-warm-100" style={{ aspectRatio: "4/5" }} />
+                <div className="bg-warm-100" style={{ aspectRatio: "1/1" }} />
                 <div className="h-2 bg-warm-100 mt-4 w-16" />
                 <div className="h-3 bg-warm-100 mt-2 w-28" />
               </div>
@@ -150,7 +150,7 @@ function NewsContent() {
                 transition={{ duration: 0.4, delay: (i % 4) * 0.05 }}
               >
                 <Link href={`/news-e-rassegna-stampa/${article.slug}`} className="group block">
-                  <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "4/5" }}>
+                  <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "1/1" }}>
                     <Image
                       src={article.imageUrl}
                       alt={article.title}

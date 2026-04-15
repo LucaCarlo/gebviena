@@ -624,15 +624,22 @@ export default function ProductDetailPage() {
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-8 lg:p-12">
+                <div className="absolute bottom-0 left-0 right-0 p-8 lg:p-12">
                   {proj.country && (
-                    <p className="uppercase text-[10px] tracking-[0.2em] text-white/70 mb-2">
+                    <p className="uppercase text-[16px] tracking-[0.03em] text-white/70 font-light mb-1.5">
                       {proj.country}
                     </p>
                   )}
-                  <h3 className="font-sans text-lg md:text-xl lg:text-2xl text-white font-light uppercase tracking-wide leading-snug">
+                  <h3 className="font-sans text-[28px] text-white leading-[1.15] font-light uppercase tracking-[inherit]">
                     {proj.name}
                   </h3>
+                  <Link
+                    href={`/progetti/${proj.slug}`}
+                    className="inline-block uppercase text-[16px] tracking-[0.03em] text-white font-medium hover:underline mt-6"
+                    style={{ textUnderlineOffset: "8px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+                  >
+                    Scopri di più →
+                  </Link>
                 </div>
               </motion.div>
 
@@ -649,13 +656,6 @@ export default function ProductDetailPage() {
                   Gli ambienti si vestono di eleganza con {product.name}
                 </h3>
                 <div className="flex flex-col gap-4 mt-8">
-                  <Link
-                    href={`/progetti/${proj.slug}`}
-                    className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
-                    style={{ textUnderlineOffset: "8px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
-                  >
-                    Scopri di più →
-                  </Link>
                   <Link
                     href={`/progetti?productId=${product.id}`}
                     className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"

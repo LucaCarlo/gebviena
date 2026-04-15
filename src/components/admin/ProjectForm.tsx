@@ -68,7 +68,7 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
     const loadProducts = async () => {
       setProductsLoading(true);
       try {
-        const res = await fetch("/api/products?limit=100");
+        const res = await fetch("/api/products?limit=1000");
         const data = await res.json();
         if (data.success) {
           setAllProducts(data.data);

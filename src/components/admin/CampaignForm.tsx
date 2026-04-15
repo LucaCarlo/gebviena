@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Upload } from "lucide-react";
 import { slugify } from "@/lib/utils";
 import SeoPanel from "./SeoPanel";
+import ImageUploadField from "./ImageUploadField";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
 import { TInput, TRichText } from "./TranslatableField";
 
@@ -24,7 +23,6 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
   const tCtx = useTranslationCtx();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
   const [campaignCategories, setCampaignCategories] = useState<CategoryOption[]>([]);
   const [form, setForm] = useState({
     name: "",
@@ -76,25 +74,6 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
       name,
       slug: campaignId ? prev.slug : slugify(name),
     }));
-  };
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (data.success) {
-        setForm((prev) => ({ ...prev, imageUrl: data.data.url }));
-      }
-    } catch {
-      // silent
-    } finally {
-      setUploading(false);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -218,33 +197,15 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
         </div>
 
         {/* Image upload */}
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            Immagine
-          </label>
-          <div className="flex items-start gap-4">
-            {form.imageUrl && (
-              <div className="w-24 h-24 relative rounded overflow-hidden bg-warm-100 flex-shrink-0">
-                <Image src={form.imageUrl} alt="Preview" fill className="object-cover" sizes="96px" />
-              </div>
-            )}
-            <div className="flex-1">
-              <label className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-warm-300 rounded cursor-pointer hover:border-warm-500 transition-colors">
-                <Upload size={16} className="text-warm-400" />
-                <span className="text-sm text-warm-500">{uploading ? "Caricamento..." : "Carica immagine"}</span>
-                <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
-              </label>
-              <p className="text-xs text-warm-400 mt-1">oppure inserisci URL:</p>
-              <input
-                type="text"
-                value={form.imageUrl}
-                onChange={(e) => updateField("imageUrl", e.target.value)}
-                className="w-full mt-1 border border-warm-300 rounded px-3 py-1.5 text-xs focus:border-warm-800 focus:outline-none"
-                placeholder="https://..."
-              />
-            </div>
-          </div>
-        </div>
+        <ImageUploadField
+          label="Immagine"
+          value={form.imageUrl}
+          onChange={(url) => updateField("imageUrl", url)}
+          onRemove={() => updateField("imageUrl", "")}
+          purpose="cover"
+          folder="campaigns"
+          aspectRatio={1}
+        />
 
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">

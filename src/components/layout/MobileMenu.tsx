@@ -14,10 +14,13 @@ interface MobileMenuProps {
   onClose: () => void;
 }
 
+const DEFAULT_FEATURED_IMAGE = "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600&h=600&fit=crop&q=80";
+
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const t = useT();
   const lang = useLang();
   const [activeItem, setActiveItem] = useState<string | null>(null);
+  const [featuredImage, setFeaturedImage] = useState<string>(DEFAULT_FEATURED_IMAGE);
 
   // Reset submenu when menu closes
   useEffect(() => {
@@ -25,6 +28,19 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       setActiveItem(null);
     }
   }, [isOpen]);
+
+  // Load featured image from page-images
+  useEffect(() => {
+    fetch("/api/page-images?page=menu")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          const img = (data.data || []).find((i: { section: string; imageUrl: string }) => i.section === "featured");
+          if (img?.imageUrl) setFeaturedImage(img.imageUrl);
+        }
+      })
+      .catch(() => { /* silent */ });
+  }, []);
 
   const handleItemClick = (label: string, hasChildren: boolean) => {
     if (hasChildren) {
@@ -108,13 +124,18 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 </ul>
               </nav>
 
-              {/* Featured image */}
-              <div className="relative overflow-hidden mb-auto" style={{ width: "calc(100% - 60px)", aspectRatio: "1 / 0.85", margin: "60px 30px 30px 30px" }}>
+              {/* Featured image — links to GTV Experience */}
+              <Link
+                href={localizePath("/mondo-gtv/gtv-experience", lang)}
+                onClick={onClose}
+                className="relative overflow-hidden mb-auto block group"
+                style={{ width: "calc(100% - 60px)", aspectRatio: "1 / 0.85", margin: "60px 30px 30px 30px" }}
+              >
                 <Image
-                  src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600&h=600&fit=crop&q=80"
+                  src={featuredImage}
                   alt="Interno Marche"
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-3 right-3">
@@ -122,7 +143,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                     Interno Marche | Scopri il nostro flagship hotel
                   </p>
                 </div>
-              </div>
+              </Link>
             </div>
 
             {/* Right column — same width as left, slides in from left */}

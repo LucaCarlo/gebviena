@@ -48,7 +48,8 @@ export default function Header() {
         style={{
           left: 'var(--site-margin)',
           right: 'var(--site-margin)',
-          transition: "background 0.6s ease",
+          transition: "background 0.6s ease, box-shadow 0.4s ease",
+          boxShadow: isScrolled ? "0 4px 16px rgba(0, 0, 0, 0.12)" : "0 2px 12px rgba(0, 0, 0, 0.18)",
           ...(!isScrolled ? { background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.08) 60%, transparent 100%)" } : {}),
         }}
       >

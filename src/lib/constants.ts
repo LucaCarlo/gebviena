@@ -157,6 +157,13 @@ export const PAGE_IMAGES_CONFIG: {
   images: { section: string; label: string; defaultUrl: string; acceptVideo?: boolean; aspectRatio?: number }[];
 }[] = [
   {
+    page: "menu",
+    label: "Menu (sidebar)",
+    images: [
+      { section: "featured", label: "Immagine in evidenza nel menu", defaultUrl: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600&h=600&fit=crop&q=80", aspectRatio: 1/0.85 },
+    ],
+  },
+  {
     page: "homepage",
     label: "Homepage",
     images: [

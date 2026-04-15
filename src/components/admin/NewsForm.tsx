@@ -297,7 +297,7 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezione Immagine + Testo</h2>
           <p className="text-[11px] text-warm-400">Sezione a tutta altezza con immagine a sinistra e testo a destra</p>
 
-          <ImageUploadField label="Immagine" value={form.imageUrl} onChange={(url) => updateField("imageUrl", url)} onRemove={() => updateField("imageUrl", "")} purpose="cover" folder="news" />
+          <ImageUploadField label="Immagine" value={form.imageUrl} onChange={(url) => updateField("imageUrl", url)} onRemove={() => updateField("imageUrl", "")} purpose="cover" folder="news" aspectRatio={1} />
 
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo sezione</label>
