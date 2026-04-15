@@ -134,28 +134,30 @@ export default async function CampaignDetailPage({ params }: Params) {
                         )}
                       </div>
                       <div
-                        className={`flex flex-col justify-center ${imgLeft ? "lg:order-2" : "lg:order-1"}`}
+                        className={`flex flex-col justify-between h-full ${imgLeft ? "lg:order-2" : "lg:order-1"}`}
                         style={{ padding: "96px 150px" }}
                       >
-                        {d.title && (
-                          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">
-                            {d.title}
-                          </h2>
-                        )}
-                        {d.text && (
-                          <p className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line">
-                            {d.text}
-                          </p>
-                        )}
+                        <div>
+                          {d.title && (
+                            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">
+                              {d.title}
+                            </h2>
+                          )}
+                          {d.text && (
+                            <p className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line">
+                              {d.text}
+                            </p>
+                          )}
+                        </div>
                         {d.secondaryImageUrl && (
-                          <div className="relative mt-8 max-w-[70%]">
+                          <div className="relative mt-8 max-w-[85%]">
                             <Image
                               src={d.secondaryImageUrl}
                               alt={d.title || campaign.name}
-                              width={600}
-                              height={750}
+                              width={700}
+                              height={875}
                               className="w-full h-auto object-contain"
-                              sizes="(max-width: 1024px) 70vw, 25vw"
+                              sizes="(max-width: 1024px) 85vw, 30vw"
                             />
                           </div>
                         )}
