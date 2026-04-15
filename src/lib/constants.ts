@@ -316,6 +316,10 @@ export const MEDIA_FOLDERS = [
   { value: "hero", label: "Hero" },
   { value: "premi", label: "Premi" },
   { value: "tech-sheets", label: "Schede tecniche e 2D/3D" },
+  { value: "catalogs", label: "Cataloghi" },
+  { value: "typologies", label: "Tipologie" },
+  { value: "landing-page", label: "Landing page" },
+  { value: "email-templates", label: "Template email" },
 ] as const;
 
 export const NAV_ITEMS = [
