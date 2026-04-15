@@ -14,6 +14,42 @@ import type {
   NewsProductData,
 } from "@/types";
 
+function CtaFields({ label, href, onLabel, onHref }: { label: string; href: string; onLabel: (v: string) => void; onHref: (v: string) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const uploadPdf = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "documents");
+      fd.append("skipCompression", "true");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.success && data.url) onHref(data.url);
+    } finally { setUploading(false); }
+  };
+  const isPdf = /\.pdf($|\?)/i.test(href);
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div>
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — etichetta (opzionale)</label>
+        <input type="text" value={label} onChange={(e) => onLabel(e.target.value)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — link o PDF</label>
+        <div className="flex gap-2">
+          <input type="text" value={href} onChange={(e) => onHref(e.target.value)} placeholder="/mondo-gtv/heritage oppure carica un PDF" className="flex-1 border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+          <label className="px-3 py-2 bg-warm-100 hover:bg-warm-200 text-warm-700 text-xs font-medium rounded cursor-pointer whitespace-nowrap flex items-center">
+            {uploading ? "..." : "PDF"}
+            <input type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPdf(f); e.target.value = ""; }} />
+          </label>
+        </div>
+        {isPdf && <p className="text-[10px] text-warm-500 mt-1">Verra scaricato (attributo download).</p>}
+      </div>
+    </div>
+  );
+}
+
 interface ProductOption { id: string; name: string; slug: string; imageUrl: string; coverImage: string | null; }
 
 let productsCache: ProductOption[] | null = null;
@@ -73,16 +109,7 @@ export function ImageTextBgEditor({ data, onChange }: { data: NewsImageTextBgDat
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo</label>
         <RichTextField value={data.text || ""} onChange={(html) => onChange({ ...data, text: html })} multiline minHeight={140} />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — etichetta (opzionale)</label>
-          <input type="text" value={data.ctaLabel || ""} onChange={(e) => onChange({ ...data, ctaLabel: e.target.value })} placeholder="Scopri di più" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — link</label>
-          <input type="text" value={data.ctaHref || ""} onChange={(e) => onChange({ ...data, ctaHref: e.target.value })} placeholder="/mondo-gtv/heritage" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
-        </div>
-      </div>
+      <CtaFields label={data.ctaLabel || ""} href={data.ctaHref || ""} onLabel={(v) => onChange({ ...data, ctaLabel: v })} onHref={(v) => onChange({ ...data, ctaHref: v })} />
     </div>
   );
 }
@@ -144,16 +171,7 @@ export function FullwidthBannerEditor({ data, onChange }: { data: NewsFullwidthB
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (sovraimpresso)</label>
         <input type="text" value={data.title || ""} onChange={(e) => onChange({ ...data, title: e.target.value })} placeholder="Sedute che invitano a restare, momenti che prendono forma" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — etichetta (opzionale)</label>
-          <input type="text" value={data.ctaLabel || ""} onChange={(e) => onChange({ ...data, ctaLabel: e.target.value })} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — link</label>
-          <input type="text" value={data.ctaHref || ""} onChange={(e) => onChange({ ...data, ctaHref: e.target.value })} placeholder="/progetti" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
-        </div>
-      </div>
+      <CtaFields label={data.ctaLabel || ""} href={data.ctaHref || ""} onLabel={(v) => onChange({ ...data, ctaLabel: v })} onHref={(v) => onChange({ ...data, ctaHref: v })} />
     </div>
   );
 }

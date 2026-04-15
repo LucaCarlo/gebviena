@@ -75,15 +75,19 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
             {d.title}
           </h2>
         )}
-        {d.ctaLabel && d.ctaHref && (
-          <Link
-            href={d.ctaHref}
-            className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-medium transition-colors hover:underline"
-            style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
-          >
-            {d.ctaLabel} &rarr;
-          </Link>
-        )}
+        {d.ctaLabel && d.ctaHref && (() => {
+          const isPdf = /\.pdf($|\?)/i.test(d.ctaHref);
+          return (
+            <a
+              href={d.ctaHref}
+              {...(isPdf ? { download: "", target: "_blank", rel: "noopener noreferrer" } : {})}
+              className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-medium transition-colors hover:underline"
+              style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+            >
+              {d.ctaLabel} &rarr;
+            </a>
+          );
+        })()}
       </div>
     </section>
   );
@@ -104,15 +108,19 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
       {d.text && (
         <div className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.text }} />
       )}
-      {d.ctaLabel && d.ctaHref && (
-        <Link
-          href={d.ctaHref}
-          className="inline-block self-start mt-8 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
-          style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
-        >
-          {d.ctaLabel}
-        </Link>
-      )}
+      {d.ctaLabel && d.ctaHref && (() => {
+        const isPdf = /\.pdf($|\?)/i.test(d.ctaHref);
+        return (
+          <a
+            href={d.ctaHref}
+            {...(isPdf ? { download: "", target: "_blank", rel: "noopener noreferrer" } : {})}
+            className="inline-block self-start mt-8 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
+            style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
+          >
+            {d.ctaLabel}
+          </a>
+        );
+      })()}
     </div>
   );
   return (
