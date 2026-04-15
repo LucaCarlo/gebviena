@@ -100,8 +100,8 @@ function SingleImage({ d }: { d: NewsSingleImageData }) {
   if (!d.imageUrl) return null;
   return (
     <section className="gtv-container">
-      <div className="mx-auto max-w-[910px]">
-        <Image src={d.imageUrl} alt={d.caption || ""} width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 910px) 100vw, 910px" />
+      <div className="mx-auto max-w-[940px]">
+        <Image src={d.imageUrl} alt={d.caption || ""} width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 940px) 100vw, 940px" />
         {d.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{d.caption}</p>}
       </div>
     </section>
