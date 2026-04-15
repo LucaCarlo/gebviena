@@ -83,7 +83,7 @@ export default async function CampaignDetailPage({ params }: Params) {
 
         {campaign.description && (
           <div
-            className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-14 whitespace-pre-line [&_p]:mb-4 [&_p:last-child]:mb-0"
+            className={`text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto whitespace-pre-line [&_p]:mb-4 [&_p:last-child]:mb-0 ${campaign.videoUrl ? "mt-14" : "mt-[66px]"}`}
             dangerouslySetInnerHTML={{ __html: campaign.description }}
           />
         )}
