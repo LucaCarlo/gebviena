@@ -274,7 +274,7 @@ export default function NewsDetailPage() {
             {article.title}
           </h1>
           {article.subtitle && (
-            <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-6">{article.subtitle}</p>
+            <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light mt-6">{article.subtitle}</p>
           )}
         </motion.div>
       </section>

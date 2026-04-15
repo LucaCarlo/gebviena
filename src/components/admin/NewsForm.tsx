@@ -253,9 +253,16 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           </div>
 
           <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Sottotitolo</label>
+            <TInput fieldKey="subtitle" defaultValue={form.subtitle} onDefaultChange={(v) => updateField("subtitle", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="Mostrato sotto il titolo in stile categoria" />
+          </div>
+
+          <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Slug</label>
             <TInput fieldKey="slug" defaultValue={form.slug} onDefaultChange={(v) => updateField("slug", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
           </div>
+
+          <ImageUploadField label="Immagine di copertina (usata nelle anteprime)" value={form.imageUrl} onChange={(url) => updateField("imageUrl", url)} onRemove={() => updateField("imageUrl", "")} purpose="cover" folder="news" aspectRatio={1} />
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -299,26 +306,6 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           </div>
 
           <input type="hidden" name="sortOrder" value={form.sortOrder} />
-        </div>
-
-        {/* ══════════════════════════════════════════════════════
-            SECTION 1: Immagine + Testo (common to all categories)
-            ══════════════════════════════════════════════════════ */}
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
-          <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezione Immagine + Testo</h2>
-          <p className="text-[11px] text-warm-400">Sezione a tutta altezza con immagine a sinistra e testo a destra</p>
-
-          <ImageUploadField label="Immagine" value={form.imageUrl} onChange={(url) => updateField("imageUrl", url)} onRemove={() => updateField("imageUrl", "")} purpose="cover" folder="news" aspectRatio={1} />
-
-          <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo sezione</label>
-            <TInput fieldKey="subtitle" defaultValue={form.subtitle} onDefaultChange={(v) => updateField("subtitle", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo</label>
-            <TRichText fieldKey="content" defaultValue={form.content} onDefaultChange={(html) => updateField("content", html)} />
-          </div>
         </div>
 
         {/* Sezioni dinamiche (per categorie non-storia) */}
