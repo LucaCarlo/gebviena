@@ -29,7 +29,7 @@ function parseBlocks(raw: string | null): CampaignBlock[] {
 function isYouTube(url: string) { return /youtu\.?be/.test(url); }
 function youTubeEmbed(url: string): string | null {
   const m = url.match(/(?:v=|vi=|youtu\.be\/|embed\/|shorts\/|\/v\/)([a-zA-Z0-9_-]{11})/);
-  return m ? `https://www.youtube.com/embed/${m[1]}?rel=0` : null;
+  return m ? `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1&playsinline=1` : null;
 }
 
 export default async function CampaignDetailPage({ params }: Params) {
@@ -62,14 +62,16 @@ export default async function CampaignDetailPage({ params }: Params) {
 
         {/* Video */}
         {campaign.videoUrl && (
-          <div className="mt-12 mx-auto" style={{ maxWidth: embed ? "1500px" : "940px" }}>
+          <div className="mt-12 mx-auto" style={{ maxWidth: embed ? "1350px" : "940px" }}>
             {embed ? (
               <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
                 <iframe
                   src={embed}
                   title={campaign.name}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  loading="lazy"
                   className="absolute inset-0 w-full h-full"
                 />
               </div>
