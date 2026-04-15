@@ -58,9 +58,12 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
     const el = scrollRef.current;
     if (!el) return;
     if (isDragging) {
-      e.preventDefault();
       const x = e.pageX - el.offsetLeft;
-      el.scrollLeft = scrollLeft - (x - startX) * 1.5;
+      const delta = x - startX;
+      if (Math.abs(delta) > 4) {
+        e.preventDefault();
+        el.scrollLeft = scrollLeft - delta * 1.5;
+      }
       return;
     }
     const rect = el.getBoundingClientRect();
@@ -69,7 +72,20 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
     else if (cx > (rect.width * 2) / 3) setHoverSide("right");
     else setHoverSide(null);
   };
-  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseUp = (e: React.MouseEvent) => {
+    const el = scrollRef.current;
+    if (el && isDragging) {
+      const moved = Math.abs(e.pageX - el.offsetLeft - startX);
+      if (moved < 5) {
+        const itemWidth = Math.max(el.clientWidth / 3, 260);
+        const rect = el.getBoundingClientRect();
+        const cx = e.clientX - rect.left;
+        if (cx < rect.width / 3) el.scrollBy({ left: -itemWidth, behavior: "smooth" });
+        else if (cx > (rect.width * 2) / 3) el.scrollBy({ left: itemWidth, behavior: "smooth" });
+      }
+    }
+    setIsDragging(false);
+  };
 
   if (images.length === 0) return null;
 
@@ -81,7 +97,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={() => { handleMouseUp(); setHoverSide(null); }}
+          onMouseLeave={(e) => { handleMouseUp(e); setHoverSide(null); }}
           className={`flex gap-4 lg:gap-6 overflow-x-auto px-4 lg:px-6 pb-2 ${isDragging ? "select-none" : ""}`}
           style={{ scrollbarWidth: "none", msOverflowStyle: "none", cursor: ARROW_CURSOR }}
         >
@@ -131,8 +147,8 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
           <div
             className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-150 ease-out"
             style={{
-              width: "33%",
-              transform: `translateX(${scrollProgress * 200}%)`,
+              width: `${100 / Math.max(images.length, 1)}%`,
+              transform: `translateX(${scrollProgress * Math.max(images.length - 1, 0) * 100}%)`,
             }}
           />
         </div>

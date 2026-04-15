@@ -88,7 +88,7 @@ export default function HeroSection() {
     slide.position === "right" ? "items-end text-right pr-8 md:pr-20" :
     "items-center text-center";
 
-  const textAlignV = "bottom-[calc(12.5vh-20px)]";
+  const textAlignV = "bottom-[calc(12.5vh-30px)]";
 
   return (
     <section className="relative w-full overflow-hidden" style={{ height: "min(118vh, 1107px)" }}>

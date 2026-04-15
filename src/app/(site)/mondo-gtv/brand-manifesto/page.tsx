@@ -54,7 +54,7 @@ export default async function BrandManifestoPage() {
     getPageImages("brand-manifesto", DEFAULTS),
     getRelatedCardImages(RELATED_PAGES.map((p) => p.page)),
     prisma.designer.findMany({
-      where: { isActive: true },
+      where: { isActive: true, isFeatured: true },
       orderBy: { sortOrder: "asc" },
       select: { id: true, name: true, slug: true, imageUrl: true },
       take: 9,

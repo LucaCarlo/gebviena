@@ -36,7 +36,7 @@ export default async function DesignerPremiPage() {
   // Fetch all active designers
   const designers = await prisma.designer.findMany({
     where: { isActive: true },
-    orderBy: { sortOrder: "asc" },
+    orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }],
     select: { id: true, name: true, slug: true, imageUrl: true },
   });
 

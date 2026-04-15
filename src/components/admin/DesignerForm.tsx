@@ -26,6 +26,7 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
     bio: "",
     imageUrl: "",
     website: "",
+    isFeatured: false,
     seoTitle: "",
     seoDescription: "",
     seoKeywords: "[]",
@@ -44,6 +45,7 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
         bio: d.bio || "",
         imageUrl: d.imageUrl || "",
         website: d.website || "",
+        isFeatured: !!d.isFeatured,
         seoTitle: d.seoTitle || "",
         seoDescription: d.seoDescription || "",
         seoKeywords: d.seoKeywords || "[]",
@@ -124,7 +126,7 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
     }
   };
 
-  const updateField = (field: string, value: string) => {
+  const updateField = (field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -225,6 +227,16 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
             placeholder="https://..."
           />
         </div>
+
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.isFeatured}
+            onChange={(e) => updateField("isFeatured", e.target.checked)}
+            className="w-4 h-4"
+          />
+          <span className="text-sm text-warm-700">In evidenza (mostrato nella sezione "I nostri designer" del Brand Manifesto)</span>
+        </label>
       </div>
 
       <SeoPanel

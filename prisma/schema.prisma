@@ -81,6 +81,7 @@ model Designer {
   imageUrl       String? @db.Text
   website        String? @db.Text
   isActive       Boolean   @default(true)
+  isFeatured     Boolean   @default(false)
   sortOrder      Int       @default(0)
   seoTitle       String? @db.Text
   seoDescription String? @db.Text

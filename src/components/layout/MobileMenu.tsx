@@ -92,7 +92,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               </div>
 
               {/* Nav items */}
-              <nav className="flex-1 flex items-start justify-center pt-14">
+              <nav className="flex items-start justify-center pt-14">
                 <ul className="space-y-10 md:space-y-12">
                   {NAV_ITEMS.map((item) => {
                     const hasChildren = "children" in item && !!item.children;
@@ -128,14 +128,14 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               <Link
                 href={localizePath("/mondo-gtv/gtv-experience", lang)}
                 onClick={onClose}
-                className="relative overflow-hidden mb-auto block group"
-                style={{ width: "calc(100% - 60px)", aspectRatio: "1 / 0.85", margin: "60px 30px 30px 30px" }}
+                className="relative overflow-hidden block"
+                style={{ width: "calc(100% - 60px)", aspectRatio: "1 / 0.85", margin: "16px 30px 30px 30px" }}
               >
                 <Image
                   src={featuredImage}
                   alt="Interno Marche"
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-3 right-3">
