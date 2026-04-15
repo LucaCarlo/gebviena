@@ -61,7 +61,7 @@ export default async function CampaignDetailPage({ params }: Params) {
         </div>
         {campaign.description && (
           <div
-            className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-16 whitespace-pre-line [&_p]:mb-4 [&_p:last-child]:mb-0"
+            className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-8 whitespace-pre-line [&_p]:mb-4 [&_p:last-child]:mb-0"
             dangerouslySetInnerHTML={{ __html: campaign.description }}
           />
         )}
@@ -97,12 +97,12 @@ export default async function CampaignDetailPage({ params }: Params) {
 
       {/* Blocks */}
       {blocks.length > 0 && (
-        <div className="pt-12 md:pt-20 pb-20 md:pb-28 space-y-12 md:space-y-16">
+        <div className="pt-12 md:pt-20 pb-20 md:pb-28 space-y-20 md:space-y-28">
           {blocks.map((block) => {
             if (block.type === "paragraph") {
               const d = block.data as CampaignParagraphData;
               return (
-                <section key={block.id} className="gtv-container">
+                <section key={block.id} className="gtv-container -mb-10 md:-mb-14">
                   {d.title && (
                     <h2
                       className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto"
@@ -139,22 +139,24 @@ export default async function CampaignDetailPage({ params }: Params) {
                       </div>
                       <div
                         className={`flex flex-col justify-start ${imgLeft ? "lg:order-2" : "lg:order-1"}`}
-                        style={{ padding: "0 80px 0 150px" }}
+                        style={{ padding: "0 0 0 150px" }}
                       >
                         {d.title && (
                           <h2
                             className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4"
+                            style={{ paddingRight: "40px" }}
                             dangerouslySetInnerHTML={{ __html: d.title }}
                           />
                         )}
                         {d.text && (
                           <p
                             className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line"
+                            style={{ paddingRight: "40px" }}
                             dangerouslySetInnerHTML={{ __html: d.text }}
                           />
                         )}
                         {d.secondaryImageUrl && (
-                          <div className="relative w-full" style={{ marginTop: "65px" }}>
+                          <div className="relative w-full" style={{ marginTop: "65px", paddingRight: "80px" }}>
                             <Image
                               src={d.secondaryImageUrl}
                               alt={d.title || campaign.name}
