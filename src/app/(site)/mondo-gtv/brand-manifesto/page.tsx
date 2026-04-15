@@ -166,7 +166,7 @@ export default async function BrandManifestoPage() {
 
           {/* Right: full image — admin configurable, cropped 25px top+bottom */}
           <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
-            <div className="absolute left-0 right-0" style={{ top: "-25px", bottom: "-25px" }}>
+            <div className="absolute left-0 right-0" style={{ top: "-50px", bottom: "-50px" }}>
               <Image
                 src={imgs["designers-image"]}
                 alt={T["brand-manifesto.designers.title"]}
