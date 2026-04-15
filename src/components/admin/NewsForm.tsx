@@ -208,8 +208,10 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
       return;
     }
     try {
+      const { blocksV2: _blocksV2, ...rest } = form;
+      void _blocksV2;
       const body = {
-        ...form,
+        ...rest,
         blocks: isStoria ? JSON.stringify(storia) : (form.blocksV2 || "[]"),
         publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
       };
