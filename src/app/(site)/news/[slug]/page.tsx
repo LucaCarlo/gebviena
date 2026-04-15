@@ -47,9 +47,11 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
   if (!d.imageUrl && !d.body) return null;
   return (
     <section className="gtv-container">
-      <div className="mx-auto max-w-[940px]">
+      <div className="mx-auto max-w-[940px] px-6 md:px-16 lg:px-24">
         {d.imageUrl && (
-          <Image src={d.imageUrl} alt="" width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 940px) 100vw, 940px" />
+          <div className="mx-auto max-w-[520px]">
+            <Image src={d.imageUrl} alt="" width={1200} height={800} className="w-full h-auto" sizes="(max-width: 520px) 100vw, 520px" />
+          </div>
         )}
         {d.title && (
           <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mt-10" dangerouslySetInnerHTML={{ __html: d.title }} />
