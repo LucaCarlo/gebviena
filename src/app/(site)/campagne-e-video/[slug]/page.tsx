@@ -28,8 +28,8 @@ function parseBlocks(raw: string | null): CampaignBlock[] {
 
 function isYouTube(url: string) { return /youtu\.?be/.test(url); }
 function youTubeEmbed(url: string): string | null {
-  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
-  return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+  const m = url.match(/(?:v=|vi=|youtu\.be\/|embed\/|shorts\/|\/v\/)([a-zA-Z0-9_-]{11})/);
+  return m ? `https://www.youtube-nocookie.com/embed/${m[1]}?rel=0&modestbranding=1` : null;
 }
 
 export default async function CampaignDetailPage({ params }: Params) {
@@ -50,7 +50,7 @@ export default async function CampaignDetailPage({ params }: Params) {
   return (
     <>
       {/* Hero: categoria + titolo */}
-      <section className="gtv-container pt-24 md:pt-32 pb-0">
+      <section className="gtv-container pb-0 pt-[76px] md:pt-[108px]">
         <div className="text-center">
           {campaign.type && (
             <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light" style={{ marginBottom: "44px" }}>{campaign.type}</p>
@@ -59,23 +59,10 @@ export default async function CampaignDetailPage({ params }: Params) {
             {campaign.name}
           </h1>
         </div>
-        {campaign.description && (
-          <div
-            className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-14 whitespace-pre-line [&_p]:mb-4 [&_p:last-child]:mb-0"
-            dangerouslySetInnerHTML={{ __html: campaign.description }}
-          />
-        )}
-        {campaign.subtitle && (
-          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-6">
-            {campaign.subtitle}
-          </p>
-        )}
-      </section>
 
-      {/* Video */}
-      {campaign.videoUrl && (
-        <section className="gtv-container pt-6 md:pt-8">
-          <div className="mx-auto max-w-[940px]">
+        {/* Video */}
+        {campaign.videoUrl && (
+          <div className="mt-12 mx-auto" style={{ maxWidth: embed ? "1200px" : "940px" }}>
             {embed ? (
               <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
                 <iframe
@@ -92,8 +79,20 @@ export default async function CampaignDetailPage({ params }: Params) {
               </video>
             )}
           </div>
-        </section>
-      )}
+        )}
+
+        {campaign.description && (
+          <div
+            className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-14 whitespace-pre-line [&_p]:mb-4 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: campaign.description }}
+          />
+        )}
+        {campaign.subtitle && (
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-6">
+            {campaign.subtitle}
+          </p>
+        )}
+      </section>
 
       {/* Blocks */}
       {blocks.length > 0 && (
@@ -102,7 +101,7 @@ export default async function CampaignDetailPage({ params }: Params) {
             if (block.type === "paragraph") {
               const d = block.data as CampaignParagraphData;
               return (
-                <section key={block.id} className="gtv-container" style={{ marginBottom: "-60px" }}>
+                <section key={block.id} className="gtv-container" style={{ marginBottom: "-100px" }}>
                   {d.title && (
                     <h2
                       className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto"
@@ -139,24 +138,22 @@ export default async function CampaignDetailPage({ params }: Params) {
                       </div>
                       <div
                         className={`flex flex-col justify-start ${imgLeft ? "lg:order-2" : "lg:order-1"}`}
-                        style={{ padding: "0 0 0 150px" }}
+                        style={{ paddingLeft: imgLeft ? "150px" : "24px", paddingRight: imgLeft ? "24px" : "150px" }}
                       >
                         {d.title && (
                           <h2
                             className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4"
-                            style={{ paddingRight: "24px" }}
                             dangerouslySetInnerHTML={{ __html: d.title }}
                           />
                         )}
                         {d.text && (
                           <p
                             className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line"
-                            style={{ paddingRight: "24px" }}
                             dangerouslySetInnerHTML={{ __html: d.text }}
                           />
                         )}
                         {d.secondaryImageUrl && (
-                          <div className="relative w-full" style={{ marginTop: "65px", paddingRight: "80px", paddingLeft: "40px" }}>
+                          <div className="relative w-full" style={{ marginTop: "65px", paddingRight: "80px" }}>
                             <Image
                               src={d.secondaryImageUrl}
                               alt={d.title || campaign.name}
