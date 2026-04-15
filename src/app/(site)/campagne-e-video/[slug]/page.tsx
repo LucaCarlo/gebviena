@@ -29,7 +29,7 @@ function parseBlocks(raw: string | null): CampaignBlock[] {
 function isYouTube(url: string) { return /youtu\.?be/.test(url); }
 function youTubeEmbed(url: string): string | null {
   const m = url.match(/(?:v=|vi=|youtu\.be\/|embed\/|shorts\/|\/v\/)([a-zA-Z0-9_-]{11})/);
-  return m ? `https://www.youtube-nocookie.com/embed/${m[1]}?rel=0&modestbranding=1` : null;
+  return m ? `https://www.youtube.com/embed/${m[1]}?rel=0` : null;
 }
 
 export default async function CampaignDetailPage({ params }: Params) {
@@ -62,7 +62,7 @@ export default async function CampaignDetailPage({ params }: Params) {
 
         {/* Video */}
         {campaign.videoUrl && (
-          <div className="mt-12 mx-auto" style={{ maxWidth: embed ? "1200px" : "940px" }}>
+          <div className="mt-12 mx-auto" style={{ maxWidth: embed ? "1500px" : "940px" }}>
             {embed ? (
               <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
                 <iframe
@@ -138,7 +138,7 @@ export default async function CampaignDetailPage({ params }: Params) {
                       </div>
                       <div
                         className={`flex flex-col justify-start ${imgLeft ? "lg:order-2" : "lg:order-1"}`}
-                        style={{ paddingLeft: imgLeft ? "150px" : "24px", paddingRight: imgLeft ? "24px" : "150px" }}
+                        style={{ paddingLeft: imgLeft ? "150px" : "0px", paddingRight: imgLeft ? "24px" : "150px" }}
                       >
                         {d.title && (
                           <h2
