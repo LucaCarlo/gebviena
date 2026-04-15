@@ -115,7 +115,7 @@ export default function HeroSection() {
 
 
       {/* Slight baseline darkening for legibility */}
-      <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: 0.18 }} />
+      <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: 0.10 }} />
       {slide.darkOverlay && (
         <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
       )}
