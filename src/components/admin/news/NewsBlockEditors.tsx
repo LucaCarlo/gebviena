@@ -25,7 +25,9 @@ function CtaFields({ label, href, onLabel, onHref }: { label: string; href: stri
       fd.append("skipCompression", "true");
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
-      if (data.success && data.url) onHref(data.url);
+      const url = data?.data?.url || data?.url;
+      if (data.success && url) onHref(url);
+      else alert(data?.error || "Upload PDF fallito");
     } finally { setUploading(false); }
   };
   const isPdf = /\.pdf($|\?)/i.test(href);
