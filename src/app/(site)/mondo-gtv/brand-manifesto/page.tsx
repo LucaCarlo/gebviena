@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
 import { getPageImages, getRelatedCardImages } from "@/lib/page-images";
 import { tBatch } from "@/lib/i18n";
 import type { Metadata } from "next";
@@ -27,6 +26,7 @@ const RELATED_PAGES = [
 
 const DEFAULTS: Record<string, string> = {
   "born-in-vienna": "/images/michael-thonet-1853.jpg",
+  "designers-image": "/images/michael-thonet-1853.jpg",
 };
 
 export default async function BrandManifestoPage() {
@@ -50,15 +50,9 @@ export default async function BrandManifestoPage() {
     "common.breadcrumb_home",
     "nav.world",
   ]);
-  const [imgs, cardImages, designers] = await Promise.all([
+  const [imgs, cardImages] = await Promise.all([
     getPageImages("brand-manifesto", DEFAULTS),
     getRelatedCardImages(RELATED_PAGES.map((p) => p.page)),
-    prisma.designer.findMany({
-      where: { isActive: true, isFeatured: true },
-      orderBy: { sortOrder: "asc" },
-      select: { id: true, name: true, slug: true, imageUrl: true },
-      take: 9,
-    }),
   ]);
 
   return (
@@ -170,33 +164,15 @@ export default async function BrandManifestoPage() {
             </p>
           </div>
 
-          {/* Right: 3x3 designer grid — gaps between, top/bottom cropped */}
-          <div className="overflow-hidden relative">
-            <div className="grid grid-cols-3 gap-3 md:gap-4 -my-[8%] relative z-10">
-              {designers.map((designer) => (
-                <Link
-                  key={designer.id}
-                  href={`/designers/${designer.slug}`}
-                  className="group relative aspect-[3/4] bg-warm-200 overflow-hidden"
-                >
-                  {designer.imageUrl ? (
-                    <Image
-                      src={designer.imageUrl}
-                      alt={designer.name}
-                      fill
-                      className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-                      sizes="(max-width: 768px) 33vw, 17vw"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="font-serif text-4xl text-warm-300">
-                        {designer.name.charAt(0)}
-                      </span>
-                    </div>
-                  )}
-                </Link>
-              ))}
-            </div>
+          {/* Right: full image — admin configurable */}
+          <div className="relative overflow-hidden">
+            <Image
+              src={imgs["designers-image"]}
+              alt={T["brand-manifesto.designers.title"]}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
           </div>
         </div>
       </section>

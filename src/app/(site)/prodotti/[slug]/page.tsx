@@ -24,6 +24,19 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
   const [scrollLeft, setScrollLeft] = useState(0);
   const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
+  const [altMap, setAltMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (images.length === 0) return;
+    fetch("/api/media/alt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: images }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setAltMap(d.data || {}); })
+      .catch(() => { /* silent */ });
+  }, [images]);
 
   const ARROW_CURSOR = hoverSide === "left"
     ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='21' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M28 22 L16 22 M21 17 L16 22 L21 27' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 22 22, pointer"
@@ -112,7 +125,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
               >
                 <Image
                   src={url}
-                  alt={`${productName} ispirazione ${i + 1}`}
+                  alt={altMap[url] || `${productName} ispirazione ${i + 1}`}
                   fill
                   className="object-cover"
                   draggable={false}
@@ -121,7 +134,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
                 {/* Tooltip bubble */}
                 {activeTooltip === i && (
                   <div className="absolute bottom-14 left-4 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug">
-                    {`${productName} ispirazione ${i + 1}`}
+                    {altMap[url] || `${productName} ispirazione ${i + 1}`}
                     <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
                   </div>
                 )}

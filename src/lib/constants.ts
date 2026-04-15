@@ -227,6 +227,7 @@ export const PAGE_IMAGES_CONFIG: {
     images: [
       { section: "card", label: "Card — Potrebbe interessarti", defaultUrl: "", aspectRatio: 3/4 },
       { section: "born-in-vienna", label: "Born in Vienna — Michael Thonet 1853", defaultUrl: "/images/michael-thonet-1853.jpg" },
+      { section: "designers-image", label: "Sezione 'I nostri designer' — immagine a destra", defaultUrl: "/images/michael-thonet-1853.jpg" },
     ],
   },
   {

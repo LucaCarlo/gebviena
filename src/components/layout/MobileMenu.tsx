@@ -57,13 +57,14 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — slight darken + blur */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[60]"
+            className="fixed inset-0 z-[60] bg-black/25"
+            style={{ backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
             onClick={onClose}
           />
 
@@ -129,7 +130,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 href={localizePath("/mondo-gtv/gtv-experience", lang)}
                 onClick={onClose}
                 className="relative overflow-hidden block"
-                style={{ width: "calc(100% - 60px)", aspectRatio: "1 / 0.85", margin: "48px 30px 30px 30px" }}
+                style={{ width: "calc(100% - 60px)", aspectRatio: "1.15 / 1", margin: "96px 30px 30px 30px" }}
               >
                 <Image
                   src={featuredImage}
