@@ -9,6 +9,7 @@ import SeoPanel from "./SeoPanel";
 import RichTextEditor from "./RichTextEditor";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
 import { TInput, TRichText } from "./TranslatableField";
+import NewsBlockBuilder from "./news/NewsBlockBuilder";
 import { slugify } from "@/lib/utils";
 
 interface NewsFormProps {
@@ -90,6 +91,7 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
     seoTitle: "",
     seoDescription: "",
     seoKeywords: "[]",
+    blocksV2: "[]",
   });
 
   const isStoria = form.category === "storia";
@@ -132,16 +134,25 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
         seoTitle: a.seoTitle || "",
         seoDescription: a.seoDescription || "",
         seoKeywords: a.seoKeywords || "[]",
+        blocksV2: (() => {
+          if (!a.blocks) return "[]";
+          try {
+            const p = JSON.parse(a.blocks);
+            return Array.isArray(p) ? JSON.stringify(p) : "[]";
+          } catch { return "[]"; }
+        })(),
       });
-      // Initialize storia data from blocks
+      // Initialize storia data from blocks (only if legacy object form)
       if (a.blocks) {
         try {
           const parsed = JSON.parse(a.blocks);
-          setStoria({
-            ...EMPTY_STORIA,
-            ...parsed,
-            sections: parsed.sections || EMPTY_STORIA.sections,
-          });
+          if (!Array.isArray(parsed)) {
+            setStoria({
+              ...EMPTY_STORIA,
+              ...parsed,
+              sections: parsed.sections || EMPTY_STORIA.sections,
+            });
+          }
         } catch { /* invalid JSON, keep defaults */ }
       }
     }
@@ -199,7 +210,7 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
     try {
       const body = {
         ...form,
-        blocks: isStoria ? JSON.stringify(storia) : "{}",
+        blocks: isStoria ? JSON.stringify(storia) : (form.blocksV2 || "[]"),
         publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
       };
       const url = articleId ? `/api/news/${articleId}` : "/api/news";
@@ -309,6 +320,17 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
             <TRichText fieldKey="content" defaultValue={form.content} onDefaultChange={(html) => updateField("content", html)} />
           </div>
         </div>
+
+        {/* Sezioni dinamiche (per categorie non-storia) */}
+        {!isStoria && (
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
+            <div>
+              <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezioni della pagina</h2>
+              <p className="text-[11px] text-warm-400 mt-1">Aggiungi e ordina le sezioni come preferisci.</p>
+            </div>
+            <NewsBlockBuilder value={form.blocksV2} onChange={(json) => updateField("blocksV2", json)} />
+          </div>
+        )}
 
         {/* ══════════════════════════════════════════════════════
             STORIA-SPECIFIC SECTIONS

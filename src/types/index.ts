@@ -187,6 +187,51 @@ export interface NewsBlock {
   data: TextBlockData | ImageBlockData | ImageTextBlockData | GalleryBlockData | SlideshowBlockData | QuoteBlockData | VideoBlockData | SeparatorBlockData;
 }
 
+// v2 block system (like campaigns)
+export type NewsBlockV2Type =
+  | "paragraph"
+  | "image_text_bg"
+  | "three_images"
+  | "single_image"
+  | "share"
+  | "related";
+
+export interface NewsParagraphData {
+  title?: string;
+  body: string;
+}
+
+export interface NewsImageTextBgData {
+  title?: string;
+  text: string;
+  imageUrl: string;
+  imagePosition: "left" | "right";
+}
+
+export interface NewsThreeImagesData {
+  images: { url: string; caption: string }[];
+}
+
+export interface NewsSingleImageData {
+  imageUrl: string;
+  caption?: string;
+}
+
+export type NewsShareData = Record<string, never>;
+export type NewsRelatedData = Record<string, never>;
+
+export interface NewsBlockV2 {
+  id: string;
+  type: NewsBlockV2Type;
+  data:
+    | NewsParagraphData
+    | NewsImageTextBgData
+    | NewsThreeImagesData
+    | NewsSingleImageData
+    | NewsShareData
+    | NewsRelatedData;
+}
+
 export interface TextBlockData {
   title?: string;
   body: string;
