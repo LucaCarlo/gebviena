@@ -67,6 +67,16 @@ export default function ImageTextBlockEditor({ data, onChange }: Props) {
           className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
         />
       </div>
+
+      <ImageUploadField
+        label="Immagine sotto il testo (opzionale, orizzontale)"
+        value={data.secondaryImageUrl || ""}
+        onChange={(url) => onChange({ ...data, secondaryImageUrl: url })}
+        onRemove={() => onChange({ ...data, secondaryImageUrl: "" })}
+        purpose="general"
+        folder="campaigns"
+        aspectRatio={16 / 10}
+      />
     </div>
   );
 }

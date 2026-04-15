@@ -57,6 +57,12 @@ export default async function CampaignDetailPage({ params }: Params) {
         <h1 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto">
           {campaign.name}
         </h1>
+        {campaign.description && (
+          <div
+            className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-6 [&_p]:mb-4 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: campaign.description }}
+          />
+        )}
         {campaign.subtitle && (
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-6">
             {campaign.subtitle}
@@ -95,18 +101,16 @@ export default async function CampaignDetailPage({ params }: Params) {
               const d = block.data as CampaignParagraphData;
               return (
                 <section key={block.id} className="gtv-container">
-                  <div className="mx-auto max-w-[940px] text-center">
-                    {d.title && (
-                      <h2 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-6">
-                        {d.title}
-                      </h2>
-                    )}
-                    {d.body && (
-                      <p className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line">
-                        {d.body}
-                      </p>
-                    )}
-                  </div>
+                  {d.title && (
+                    <h2 className="font-serif text-[32px] md:text-[44px] text-black leading-[1.15] mb-12 text-center">
+                      {d.title}
+                    </h2>
+                  )}
+                  {d.body && (
+                    <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto whitespace-pre-line">
+                      {d.body}
+                    </p>
+                  )}
                 </section>
               );
             }
@@ -132,6 +136,11 @@ export default async function CampaignDetailPage({ params }: Params) {
                           <p className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line">
                             {d.text}
                           </p>
+                        )}
+                        {d.secondaryImageUrl && (
+                          <div className="relative bg-warm-100 overflow-hidden mt-8" style={{ aspectRatio: "16 / 10" }}>
+                            <Image src={d.secondaryImageUrl} alt={d.title || campaign.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+                          </div>
                         )}
                       </div>
                     </div>

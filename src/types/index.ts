@@ -134,6 +134,7 @@ export interface CampaignImageTextData {
   text: string;
   imageUrl: string;
   imagePosition: "left" | "right";
+  secondaryImageUrl?: string;
 }
 
 export interface CampaignThreeImagesData {

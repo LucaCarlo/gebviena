@@ -210,19 +210,16 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
           aspectRatio={1}
         />
 
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            URL Video
-          </label>
-          <input
-            type="text"
-            value={form.videoUrl}
-            onChange={(e) => updateField("videoUrl", e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder="https://youtube.com/... oppure https://.../video.mp4"
-          />
-          <p className="text-[11px] text-warm-400 mt-1">Il video appare in cima alla pagina dettaglio, largo quanto il paragrafo centrato.</p>
-        </div>
+        <ImageUploadField
+          label="Video (caricamento file o URL YouTube)"
+          value={form.videoUrl}
+          onChange={(url) => updateField("videoUrl", url)}
+          onRemove={() => updateField("videoUrl", "")}
+          purpose="general"
+          folder="campaigns"
+          acceptVideo
+          helpText="Carica un file video oppure incolla un URL YouTube nel campo URL. Apparirà in cima alla pagina, larghezza uguale al paragrafo centrato."
+        />
       </div>
 
       {/* Sezioni dinamiche */}
