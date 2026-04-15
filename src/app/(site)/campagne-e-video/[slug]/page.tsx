@@ -215,9 +215,9 @@ export default async function CampaignDetailPage({ params }: Params) {
                   </div>
                   <div className="mt-4">
                     {c.type && (
-                      <p className="uppercase text-[14px] tracking-[0.01em] text-black font-light">{c.type}</p>
+                      <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">{c.type}</p>
                     )}
-                    <h4 className="font-sans text-[20px] md:text-[22px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                    <h4 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                       {c.name}
                     </h4>
                   </div>
