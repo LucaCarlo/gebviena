@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { slugify } from "@/lib/utils";
 import SeoPanel from "./SeoPanel";
 import ImageUploadField from "./ImageUploadField";
+import CampaignBlockBuilder from "./campaigns/CampaignBlockBuilder";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
 import { TInput, TRichText } from "./TranslatableField";
 
@@ -33,6 +34,7 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
     description: "",
     imageUrl: "",
     videoUrl: "",
+    blocks: "[]",
     seoTitle: "",
     seoDescription: "",
     seoKeywords: "[]",
@@ -59,6 +61,7 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
         description: c.description || "",
         imageUrl: c.imageUrl || "",
         videoUrl: c.videoUrl || "",
+        blocks: c.blocks || "[]",
         seoTitle: c.seoTitle || "",
         seoDescription: c.seoDescription || "",
         seoKeywords: c.seoKeywords || "[]",
@@ -114,7 +117,7 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">
           {error}
@@ -216,9 +219,19 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
             value={form.videoUrl}
             onChange={(e) => updateField("videoUrl", e.target.value)}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder="https://youtube.com/..."
+            placeholder="https://youtube.com/... oppure https://.../video.mp4"
           />
+          <p className="text-[11px] text-warm-400 mt-1">Il video appare in cima alla pagina dettaglio, largo quanto il paragrafo centrato.</p>
         </div>
+      </div>
+
+      {/* Sezioni dinamiche */}
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezioni della pagina</h2>
+          <p className="text-[11px] text-warm-400 mt-1">Aggiungi e ordina le sezioni come preferisci. Per i video basta un paragrafo sotto.</p>
+        </div>
+        <CampaignBlockBuilder value={form.blocks} onChange={(json) => updateField("blocks", json)} />
       </div>
 
       <SeoPanel

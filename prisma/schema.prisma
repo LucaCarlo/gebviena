@@ -194,6 +194,7 @@ model Campaign {
   imageUrl       String @db.Text
   galleryUrls    String? @db.Text
   videoUrl       String? @db.Text
+  blocks         String? @db.Text
   year           Int?
   isActive       Boolean  @default(true)
   sortOrder      Int      @default(0)

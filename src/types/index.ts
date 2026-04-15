@@ -113,11 +113,37 @@ export interface Campaign {
   imageUrl: string;
   galleryUrls: string | null;
   videoUrl: string | null;
+  blocks: string | null;
   year: number | null;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+}
+
+// ── Campaign page blocks ───────────────────────────────────────────
+export type CampaignBlockType = "paragraph" | "image_text" | "three_images";
+
+export interface CampaignParagraphData {
+  title?: string;
+  body: string;
+}
+
+export interface CampaignImageTextData {
+  title?: string;
+  text: string;
+  imageUrl: string;
+  imagePosition: "left" | "right";
+}
+
+export interface CampaignThreeImagesData {
+  images: { url: string; caption: string }[];
+}
+
+export interface CampaignBlock {
+  id: string;
+  type: CampaignBlockType;
+  data: CampaignParagraphData | CampaignImageTextData | CampaignThreeImagesData;
 }
 
 export interface NewsArticle {

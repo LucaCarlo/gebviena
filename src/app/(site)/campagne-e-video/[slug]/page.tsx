@@ -1,0 +1,210 @@
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import type { CampaignBlock, CampaignParagraphData, CampaignImageTextData, CampaignThreeImagesData } from "@/types";
+import type { Metadata } from "next";
+
+interface Params {
+  params: { slug: string };
+}
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const campaign = await prisma.campaign.findUnique({ where: { slug: params.slug } });
+  if (!campaign) return { title: "Non trovato" };
+  return {
+    title: campaign.seoTitle || `${campaign.name} | Gebrüder Thonet Vienna`,
+    description: campaign.seoDescription || campaign.subtitle || undefined,
+  };
+}
+
+function parseBlocks(raw: string | null): CampaignBlock[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+
+function isYouTube(url: string) { return /youtu\.?be/.test(url); }
+function youTubeEmbed(url: string): string | null {
+  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+}
+
+export default async function CampaignDetailPage({ params }: Params) {
+  const campaign = await prisma.campaign.findUnique({ where: { slug: params.slug } });
+  if (!campaign || !campaign.isActive) notFound();
+
+  const blocks = parseBlocks(campaign.blocks);
+
+  const related = await prisma.campaign.findMany({
+    where: { isActive: true, slug: { not: campaign.slug } },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    take: 4,
+    select: { id: true, slug: true, name: true, type: true, imageUrl: true },
+  });
+
+  const embed = campaign.videoUrl && isYouTube(campaign.videoUrl) ? youTubeEmbed(campaign.videoUrl) : null;
+
+  return (
+    <>
+      {/* Hero: categoria + titolo */}
+      <section className="gtv-container pt-24 md:pt-32 pb-4 text-center">
+        {campaign.type && (
+          <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-4">{campaign.type}</p>
+        )}
+        <h1 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto">
+          {campaign.name}
+        </h1>
+        {campaign.subtitle && (
+          <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto mt-6">
+            {campaign.subtitle}
+          </p>
+        )}
+      </section>
+
+      {/* Video */}
+      {campaign.videoUrl && (
+        <section className="gtv-container pt-12 md:pt-16">
+          <div className="mx-auto max-w-[940px]">
+            {embed ? (
+              <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
+                <iframe
+                  src={embed}
+                  title={campaign.name}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
+            ) : (
+              <video controls className="w-full" style={{ aspectRatio: "16 / 9" }}>
+                <source src={campaign.videoUrl} />
+              </video>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Blocks */}
+      {blocks.length > 0 && (
+        <div className="pt-12 md:pt-20 pb-20 md:pb-28 space-y-20 md:space-y-28">
+          {blocks.map((block) => {
+            if (block.type === "paragraph") {
+              const d = block.data as CampaignParagraphData;
+              return (
+                <section key={block.id} className="gtv-container">
+                  <div className="mx-auto max-w-[940px] text-center">
+                    {d.title && (
+                      <h2 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-6">
+                        {d.title}
+                      </h2>
+                    )}
+                    {d.body && (
+                      <p className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line">
+                        {d.body}
+                      </p>
+                    )}
+                  </div>
+                </section>
+              );
+            }
+            if (block.type === "image_text") {
+              const d = block.data as CampaignImageTextData;
+              const imgLeft = d.imagePosition === "left";
+              return (
+                <section key={block.id} className="gtv-container">
+                  <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                      <div className={`relative bg-warm-100 overflow-hidden ${imgLeft ? "lg:order-1" : "lg:order-2"}`} style={{ aspectRatio: "3 / 4" }}>
+                        {d.imageUrl && (
+                          <Image src={d.imageUrl} alt={d.title || campaign.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+                        )}
+                      </div>
+                      <div className={`flex flex-col justify-center ${imgLeft ? "lg:order-2" : "lg:order-1"}`}>
+                        {d.title && (
+                          <h2 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">
+                            {d.title}
+                          </h2>
+                        )}
+                        {d.text && (
+                          <p className="text-[20px] text-black leading-snug font-light tracking-normal whitespace-pre-line">
+                            {d.text}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              );
+            }
+            if (block.type === "three_images") {
+              const d = block.data as CampaignThreeImagesData;
+              const imgs = (d.images || []).filter((i) => i.url);
+              if (imgs.length === 0) return null;
+              return (
+                <section key={block.id} className="px-2 md:px-3 lg:px-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-x-3 md:gap-x-4 gap-y-8">
+                    {imgs.map((img, i) => (
+                      <div key={i}>
+                        <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
+                          <Image src={img.url} alt={img.caption || ""} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                        </div>
+                        {img.caption && (
+                          <p className="text-xs text-black mt-3 font-light text-center">{img.caption}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            }
+            return null;
+          })}
+        </div>
+      )}
+
+      {/* Altre campagne e video */}
+      {related.length > 0 && (
+        <section className="py-20 md:py-28 bg-warm-50">
+          <div className="gtv-container">
+            <h3 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+              Altre Campagne e Video
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {related.map((c) => (
+                <Link key={c.id} href={`/campagne-e-video/${c.slug}`} className="group block">
+                  <div className="relative aspect-[1/1] bg-warm-100 overflow-hidden">
+                    {c.imageUrl && (
+                      <Image src={c.imageUrl} alt={c.name} fill className="object-cover mix-blend-multiply" sizes="(max-width: 768px) 50vw, 25vw" />
+                    )}
+                  </div>
+                  <div className="mt-4">
+                    {c.type && (
+                      <p className="uppercase text-[14px] tracking-[0.01em] text-black font-light">{c.type}</p>
+                    )}
+                    <h4 className="font-sans text-[20px] md:text-[22px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                      {c.name}
+                    </h4>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Breadcrumbs */}
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">Home</Link>
+          <span>&gt;</span>
+          <Link href="/campagne-e-video">Campagne e Video</Link>
+          <span>&gt;</span>
+          <span>{campaign.name}</span>
+        </div>
+      </div>
+    </>
+  );
+}
