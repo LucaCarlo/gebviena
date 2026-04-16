@@ -186,6 +186,21 @@ export async function upsertTranslation(
   if (typeof data.status === "string") clean.status = data.status;
   if (typeof data.isPublished === "boolean") clean.isPublished = data.isPublished;
 
+  // For CREATE, the translation row may have NOT NULL columns (es. title, name, slug)
+  // that aren't in `clean` because the admin only translated some fields (es. only blocks).
+  // Fallback: copy missing translatable fields from the IT source so the row can be created.
+  const sourceDelegate = (prisma as unknown as Record<string, AnyDelegate>)[def.sourceDelegate];
+  const source = await sourceDelegate.findUnique({ where: { id: entityId } });
+  const createData: Record<string, unknown> = { ...clean, [def.parentField]: entityId, languageCode };
+  if (source) {
+    for (const f of def.fields) {
+      if (createData[f.key] === undefined) {
+        const srcVal = (source as Record<string, unknown>)[f.key];
+        if (srcVal !== undefined && srcVal !== null) createData[f.key] = srcVal;
+      }
+    }
+  }
+
   const uniqueWhere = {
     [`${def.parentField}_languageCode`]: { [def.parentField]: entityId, languageCode },
   } as Prisma.JsonObject;
@@ -193,7 +208,7 @@ export async function upsertTranslation(
   return delegate.upsert({
     where: uniqueWhere,
     update: clean,
-    create: { ...clean, [def.parentField]: entityId, languageCode },
+    create: createData,
   });
 }
 

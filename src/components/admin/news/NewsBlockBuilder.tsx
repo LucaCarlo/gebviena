@@ -44,9 +44,17 @@ function defaultData(t: NewsBlockV2Type): NewsBlockV2["data"] {
   }
 }
 
-interface Props { value: string; onChange: (json: string) => void; }
+interface Props { value: string; onChange: (json: string) => void; sourceValue?: string }
 
-export default function NewsBlockBuilder({ value, onChange }: Props) {
+export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props) {
+  const sourceBlocks: NewsBlockV2[] = (() => {
+    if (!sourceValue) return [];
+    try {
+      const p = JSON.parse(sourceValue);
+      return Array.isArray(p) ? (p as NewsBlockV2[]) : [];
+    } catch { return []; }
+  })();
+  const sourceById = new Map(sourceBlocks.map((b) => [b.id, b]));
   const [blocks, setBlocks] = useState<NewsBlockV2[]>(() => {
     try {
       const parsed = value ? JSON.parse(value) : [];
@@ -91,13 +99,14 @@ export default function NewsBlockBuilder({ value, onChange }: Props) {
   const toggle = (id: string) => setCollapsed((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   const render = (b: NewsBlockV2) => {
+    const src = sourceById.get(b.id);
     switch (b.type) {
-      case "paragraph": return <ParagraphEditor data={b.data as NewsParagraphData} onChange={(d) => upd(b.id, d)} />;
-      case "image_text_bg": return <ImageTextBgEditor data={b.data as NewsImageTextBgData} onChange={(d) => upd(b.id, d)} />;
-      case "three_images": return <ThreeImagesEditor data={b.data as NewsThreeImagesData} onChange={(d) => upd(b.id, d)} />;
-      case "single_image": return <SingleImageEditor data={b.data as NewsSingleImageData} onChange={(d) => upd(b.id, d)} />;
-      case "image_with_paragraph": return <ImageWithParagraphEditor data={b.data as NewsImageWithParagraphData} onChange={(d) => upd(b.id, d)} />;
-      case "fullwidth_banner": return <FullwidthBannerEditor data={b.data as NewsFullwidthBannerData} onChange={(d) => upd(b.id, d)} />;
+      case "paragraph": return <ParagraphEditor data={b.data as NewsParagraphData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsParagraphData> | undefined} />;
+      case "image_text_bg": return <ImageTextBgEditor data={b.data as NewsImageTextBgData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsImageTextBgData> | undefined} />;
+      case "three_images": return <ThreeImagesEditor data={b.data as NewsThreeImagesData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsThreeImagesData> | undefined} />;
+      case "single_image": return <SingleImageEditor data={b.data as NewsSingleImageData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsSingleImageData> | undefined} />;
+      case "image_with_paragraph": return <ImageWithParagraphEditor data={b.data as NewsImageWithParagraphData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsImageWithParagraphData> | undefined} />;
+      case "fullwidth_banner": return <FullwidthBannerEditor data={b.data as NewsFullwidthBannerData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsFullwidthBannerData> | undefined} />;
       case "product": return <ProductEditor data={b.data as NewsProductData} onChange={(d) => upd(b.id, d)} />;
       case "share": return <ShareInfo />;
       case "related": return <RelatedInfo />;

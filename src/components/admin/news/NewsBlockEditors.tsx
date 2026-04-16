@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import ImageUploadField from "../ImageUploadField";
-import RichTextField from "../RichTextField";
+import { BlockTextInput, BlockRichText } from "./BlockAIField";
 import type {
   NewsParagraphData,
   NewsImageTextBgData,
@@ -14,7 +14,7 @@ import type {
   NewsProductData,
 } from "@/types";
 
-function CtaFields({ label, href, onLabel, onHref }: { label: string; href: string; onLabel: (v: string) => void; onHref: (v: string) => void }) {
+function CtaFields({ label, href, sourceLabel, onLabel, onHref }: { label: string; href: string; sourceLabel?: string; onLabel: (v: string) => void; onHref: (v: string) => void }) {
   const [uploading, setUploading] = useState(false);
   const uploadPdf = async (file: File) => {
     setUploading(true);
@@ -35,7 +35,7 @@ function CtaFields({ label, href, onLabel, onHref }: { label: string; href: stri
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — etichetta (opzionale)</label>
-        <input type="text" value={label} onChange={(e) => onLabel(e.target.value)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+        <BlockTextInput value={label} onChange={onLabel} sourceText={sourceLabel} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
       </div>
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">CTA — link o PDF</label>
@@ -67,22 +67,22 @@ function loadProducts(): Promise<ProductOption[]> {
   return productsPromise;
 }
 
-export function ParagraphEditor({ data, onChange }: { data: NewsParagraphData; onChange: (d: NewsParagraphData) => void }) {
+export function ParagraphEditor({ data, onChange, sourceData }: { data: NewsParagraphData; onChange: (d: NewsParagraphData) => void; sourceData?: Partial<NewsParagraphData> }) {
   return (
     <div className="space-y-4">
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (opzionale)</label>
-        <RichTextField value={data.title || ""} onChange={(html) => onChange({ ...data, title: html })} placeholder="Titolo paragrafo" />
+        <BlockRichText value={data.title || ""} onChange={(html) => onChange({ ...data, title: html })} sourceText={sourceData?.title || ""} placeholder="Titolo paragrafo" />
       </div>
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo</label>
-        <RichTextField value={data.body || ""} onChange={(html) => onChange({ ...data, body: html })} multiline minHeight={140} />
+        <BlockRichText value={data.body || ""} onChange={(html) => onChange({ ...data, body: html })} sourceText={sourceData?.body || ""} multiline minHeight={140} />
       </div>
     </div>
   );
 }
 
-export function ImageTextBgEditor({ data, onChange }: { data: NewsImageTextBgData; onChange: (d: NewsImageTextBgData) => void }) {
+export function ImageTextBgEditor({ data, onChange, sourceData }: { data: NewsImageTextBgData; onChange: (d: NewsImageTextBgData) => void; sourceData?: Partial<NewsImageTextBgData> }) {
   return (
     <div className="space-y-4">
       <div>
@@ -105,18 +105,18 @@ export function ImageTextBgEditor({ data, onChange }: { data: NewsImageTextBgDat
       <ImageUploadField label="Immagine" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" />
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (opzionale)</label>
-        <RichTextField value={data.title || ""} onChange={(html) => onChange({ ...data, title: html })} placeholder="Titolo sezione" />
+        <BlockRichText value={data.title || ""} onChange={(html) => onChange({ ...data, title: html })} sourceText={sourceData?.title || ""} placeholder="Titolo sezione" />
       </div>
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo</label>
-        <RichTextField value={data.text || ""} onChange={(html) => onChange({ ...data, text: html })} multiline minHeight={140} />
+        <BlockRichText value={data.text || ""} onChange={(html) => onChange({ ...data, text: html })} sourceText={sourceData?.text || ""} multiline minHeight={140} />
       </div>
-      <CtaFields label={data.ctaLabel || ""} href={data.ctaHref || ""} onLabel={(v) => onChange({ ...data, ctaLabel: v })} onHref={(v) => onChange({ ...data, ctaHref: v })} />
+      <CtaFields label={data.ctaLabel || ""} href={data.ctaHref || ""} sourceLabel={sourceData?.ctaLabel || ""} onLabel={(v) => onChange({ ...data, ctaLabel: v })} onHref={(v) => onChange({ ...data, ctaHref: v })} />
     </div>
   );
 }
 
-export function ThreeImagesEditor({ data, onChange }: { data: NewsThreeImagesData; onChange: (d: NewsThreeImagesData) => void }) {
+export function ThreeImagesEditor({ data, onChange, sourceData }: { data: NewsThreeImagesData; onChange: (d: NewsThreeImagesData) => void; sourceData?: Partial<NewsThreeImagesData> }) {
   const imgs = data.images || [{ url: "", caption: "" }, { url: "", caption: "" }, { url: "", caption: "" }];
   const update = (i: number, patch: Partial<{ url: string; caption: string }>) => {
     const next = imgs.map((im, idx) => (idx === i ? { ...im, ...patch } : im));
@@ -129,7 +129,7 @@ export function ThreeImagesEditor({ data, onChange }: { data: NewsThreeImagesDat
           <ImageUploadField label={`Immagine ${i + 1}`} value={im.url} onChange={(url) => update(i, { url })} onRemove={() => update(i, { url: "" })} purpose="general" folder="news" aspectRatio={2 / 3} />
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Didascalia</label>
-            <input type="text" value={im.caption} onChange={(e) => update(i, { caption: e.target.value })} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+            <BlockTextInput value={im.caption} onChange={(v) => update(i, { caption: v })} sourceText={sourceData?.images?.[i]?.caption || ""} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
           </div>
         </div>
       ))}
@@ -137,7 +137,7 @@ export function ThreeImagesEditor({ data, onChange }: { data: NewsThreeImagesDat
   );
 }
 
-export function SingleImageEditor({ data, onChange }: { data: NewsSingleImageData; onChange: (d: NewsSingleImageData) => void }) {
+export function SingleImageEditor({ data, onChange, sourceData }: { data: NewsSingleImageData; onChange: (d: NewsSingleImageData) => void; sourceData?: Partial<NewsSingleImageData> }) {
   return (
     <div className="space-y-4">
       <ImageUploadField label="Immagine" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" />
@@ -148,13 +148,13 @@ export function SingleImageEditor({ data, onChange }: { data: NewsSingleImageDat
       </div>
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Didascalia (opzionale)</label>
-        <input type="text" value={data.caption || ""} onChange={(e) => onChange({ ...data, caption: e.target.value })} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+        <BlockTextInput value={data.caption || ""} onChange={(v) => onChange({ ...data, caption: v })} sourceText={sourceData?.caption || ""} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
       </div>
     </div>
   );
 }
 
-export function ImageWithParagraphEditor({ data, onChange }: { data: NewsImageWithParagraphData; onChange: (d: NewsImageWithParagraphData) => void }) {
+export function ImageWithParagraphEditor({ data, onChange, sourceData }: { data: NewsImageWithParagraphData; onChange: (d: NewsImageWithParagraphData) => void; sourceData?: Partial<NewsImageWithParagraphData> }) {
   return (
     <div className="space-y-4">
       <ImageUploadField label="Immagine" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" />
@@ -165,25 +165,25 @@ export function ImageWithParagraphEditor({ data, onChange }: { data: NewsImageWi
       </div>
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (opzionale)</label>
-        <RichTextField value={data.title || ""} onChange={(html) => onChange({ ...data, title: html })} placeholder="Titolo" />
+        <BlockRichText value={data.title || ""} onChange={(html) => onChange({ ...data, title: html })} sourceText={sourceData?.title || ""} placeholder="Titolo" />
       </div>
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Paragrafo (centrato sotto l&apos;immagine/video)</label>
-        <RichTextField value={data.body || ""} onChange={(html) => onChange({ ...data, body: html })} multiline minHeight={140} />
+        <BlockRichText value={data.body || ""} onChange={(html) => onChange({ ...data, body: html })} sourceText={sourceData?.body || ""} multiline minHeight={140} />
       </div>
     </div>
   );
 }
 
-export function FullwidthBannerEditor({ data, onChange }: { data: NewsFullwidthBannerData; onChange: (d: NewsFullwidthBannerData) => void }) {
+export function FullwidthBannerEditor({ data, onChange, sourceData }: { data: NewsFullwidthBannerData; onChange: (d: NewsFullwidthBannerData) => void; sourceData?: Partial<NewsFullwidthBannerData> }) {
   return (
     <div className="space-y-4">
       <ImageUploadField label="Immagine (full-width, scura)" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="hero" folder="news" aspectRatio={1600 / 900} />
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (sovraimpresso)</label>
-        <input type="text" value={data.title || ""} onChange={(e) => onChange({ ...data, title: e.target.value })} placeholder="Sedute che invitano a restare, momenti che prendono forma" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+        <BlockTextInput value={data.title || ""} onChange={(v) => onChange({ ...data, title: v })} sourceText={sourceData?.title || ""} placeholder="Sedute che invitano a restare, momenti che prendono forma" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
       </div>
-      <CtaFields label={data.ctaLabel || ""} href={data.ctaHref || ""} onLabel={(v) => onChange({ ...data, ctaLabel: v })} onHref={(v) => onChange({ ...data, ctaHref: v })} />
+      <CtaFields label={data.ctaLabel || ""} href={data.ctaHref || ""} sourceLabel={sourceData?.ctaLabel || ""} onLabel={(v) => onChange({ ...data, ctaLabel: v })} onHref={(v) => onChange({ ...data, ctaHref: v })} />
     </div>
   );
 }

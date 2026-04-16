@@ -367,6 +367,7 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           </div>
           <NewsBlockBuilder
             value={tCtx?.isTranslating ? (tCtx.getValue("blocks", "") || form.blocksV2) : form.blocksV2}
+            sourceValue={tCtx?.isTranslating ? form.blocksV2 : undefined}
             onChange={(json) => {
               if (tCtx?.isTranslating) {
                 tCtx.setValue("blocks", json);
