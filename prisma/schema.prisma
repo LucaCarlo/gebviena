@@ -686,7 +686,7 @@ model PageView {
 model Setting {
   id    String @id @default(cuid())
   key   String @unique
-  value String
+  value String @db.Text
   group String @default("general")
 
   @@index([group])
