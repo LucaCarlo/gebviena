@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -53,6 +53,12 @@ function NewsContent() {
   useEffect(() => {
     fetchArticles();
   }, [fetchArticles]);
+
+  const categoryLabelMap = useMemo(() => {
+    const m = new Map<string, string>();
+    categories.forEach((c) => m.set(c.value, c.label));
+    return m;
+  }, [categories]);
 
   const setCategory = (cat: string) => {
     const params = new URLSearchParams();
@@ -162,7 +168,7 @@ function NewsContent() {
                   <div className="mt-4">
                     {article.category && (
                       <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
-                        {article.category}
+                        {categoryLabelMap.get(article.category) || article.category}
                       </p>
                     )}
                     <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">

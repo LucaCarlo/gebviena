@@ -250,7 +250,9 @@ const EN = {
 
   // progetti
   "progetti.title": "Projects",
-  "progetti.description": "A look at our projects around the world. From the most refined bistrots to cutting-edge hotels, from cultural spaces to residential contexts, our furnishings help define unmistakable atmospheres. In this section we collect a selection of projects that tell how our aesthetic and our history intertwine with the visions of contemporary architects and interior designers.",
+  "progetti.description.line1": "A look at our projects around the world.",
+  "progetti.description.line2": "From the most refined bistrots to cutting-edge hotels, from cultural spaces to residential contexts, our furnishings help define unmistakable atmospheres.",
+  "progetti.description.line3": "In this section we collect a selection of projects that tell how our aesthetic and our history intertwine with the visions of contemporary architects and interior designers.",
   "progetti.filter.all": "All",
   "progetti.filter.country": "Filter by Country",
   "progetti.filter.product": "Filter by product",

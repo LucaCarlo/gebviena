@@ -56,13 +56,13 @@ export default function Footer() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/form-configs/public?type=newsletter")
+    fetch(`/api/form-configs/public?type=newsletter&lang=${lang}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.data.length > 0) setFieldConfig(data.data);
       })
       .catch(() => {});
-  }, []);
+  }, [lang]);
 
   const activeConfig = (fieldConfig || DEFAULT_NEWSLETTER_FIELDS)
     .filter((f) => f.enabled)

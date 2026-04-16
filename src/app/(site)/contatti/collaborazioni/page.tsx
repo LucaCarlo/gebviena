@@ -83,7 +83,7 @@ export default function CollaborazioniPage() {
   const { executeRecaptcha } = useRecaptcha();
 
   useEffect(() => {
-    fetch("/api/form-configs/public?type=collaboration")
+    fetch(`/api/form-configs/public?type=collaboration&lang=${lang}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.data.length > 0) setFieldConfig(data.data);
@@ -95,7 +95,7 @@ export default function CollaborazioniPage() {
         if (data.success) setContactReasons(data.data);
       })
       .catch(() => {});
-  }, []);
+  }, [lang]);
 
   const activeConfig = (fieldConfig || DEFAULT_COLLABORATION_FIELDS)
     .filter((f) => f.enabled)

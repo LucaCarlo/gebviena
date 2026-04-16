@@ -329,7 +329,9 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
     label: "Pagina Progetti",
     strings: [
       { key: "progetti.title", defaultValue: "Progetti" },
-      { key: "progetti.description", defaultValue: "Uno sguardo sulle nostre realizzazioni nel mondo. Dai bistrot più ricercati agli hotel d'avanguardia, dagli spazi culturali ai contesti residenziali, i nostri arredi contribuiscono a definire atmosfere inconfondibili. In questa sezione raccogliamo una selezione di progetti che raccontano come la nostra estetica e la nostra storia si intrecciano con le visioni di architetti e interior designer contemporanei." },
+      { key: "progetti.description.line1", defaultValue: "Uno sguardo sulle nostre realizzazioni nel mondo." },
+      { key: "progetti.description.line2", defaultValue: "Dai bistrot più ricercati agli hotel d'avanguardia, dagli spazi culturali ai contesti residenziali, i nostri arredi contribuiscono a definire atmosfere inconfondibili." },
+      { key: "progetti.description.line3", defaultValue: "In questa sezione raccogliamo una selezione di progetti che raccontano come la nostra estetica e la nostra storia si intrecciano con le visioni di architetti e interior designer contemporanei." },
       { key: "progetti.filter.all", defaultValue: "Tutti" },
       { key: "progetti.filter.country", defaultValue: "Filtra per Paese" },
       { key: "progetti.filter.product", defaultValue: "Filtra per prodotto" },

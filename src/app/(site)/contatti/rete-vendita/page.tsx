@@ -5,7 +5,7 @@ import Script from "next/script";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
-import { useT } from "@/contexts/I18nContext";
+import { useT, useLang } from "@/contexts/I18nContext";
 import type { PointOfSale } from "@/types";
 
 interface FieldConfig {
@@ -36,6 +36,7 @@ const DEFAULT_HERO_BG = "/foto-gebvienna/rete-di-vendita.png";
 
 export default function ReteVenditaPage() {
   const t = useT();
+  const lang = useLang();
   const [activeTab, setActiveTab] = useState<"STORE" | "AGENT">("STORE");
   const [stores, setStores] = useState<PointOfSale[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,7 +62,7 @@ export default function ReteVenditaPage() {
   const { executeRecaptcha } = useRecaptcha();
 
   useEffect(() => {
-    fetch("/api/form-configs/public?type=store_contact")
+    fetch(`/api/form-configs/public?type=store_contact&lang=${lang}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.data.length > 0) setStoreFields(data.data);
@@ -80,7 +81,7 @@ export default function ReteVenditaPage() {
         if (slides.length > 0 && slides[0].imageUrl) setHeroBg(slides[0].imageUrl);
       })
       .catch(() => {});
-  }, []);
+  }, [lang]);
 
   const fetchStores = useCallback(async () => {
     setLoading(true);

@@ -398,9 +398,9 @@ function ProjectsContent() {
           transition={{ duration: 0.6 }}
           className="text-[20px] text-black leading-snug max-w-[940px] mx-auto font-light tracking-normal"
         >
-          Uno sguardo sulle nostre realizzazioni nel mondo.<br />
-          Dai bistrot più ricercati agli hotel d&apos;avanguardia, dagli spazi culturali ai contesti residenziali, i nostri arredi contribuiscono a definire atmosfere inconfondibili.<br />
-          In questa sezione raccogliamo una selezione di progetti che raccontano come la nostra estetica e la nostra storia si intrecciano con le visioni di architetti e interior designer contemporanei.
+          {t("progetti.description.line1")}<br />
+          {t("progetti.description.line2")}<br />
+          {t("progetti.description.line3")}
         </motion.p>
       </section>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -174,11 +174,18 @@ interface TypologyItem {
   id: string;
 }
 
+interface SubcategoryItem {
+  value: string;
+  label: string;
+  id: string;
+}
+
 interface CategoryItem {
   value: string;
   label: string;
   id: string;
   typologies: { typology: { id: string; value: string } }[];
+  subcategories?: SubcategoryItem[];
 }
 
 function ProductsContent() {
@@ -279,6 +286,28 @@ function ProductsContent() {
   const filteredCategories = currentCategory === "TUTTI"
     ? allCategories
     : allCategories.filter((c) => c.typologies.some((t) => t.typology.value === currentCategory));
+
+  /* Lookup maps slug → translated label for product card */
+  const categoryLabelMap = useMemo(() => {
+    const m = new Map<string, string>();
+    allCategories.forEach((c) => m.set(c.value, c.label));
+    return m;
+  }, [allCategories]);
+
+  const subcategoryLabelMap = useMemo(() => {
+    const m = new Map<string, string>();
+    allCategories.forEach((c) => (c.subcategories || []).forEach((s) => m.set(s.value, s.label)));
+    return m;
+  }, [allCategories]);
+
+  const getCardLabel = (product: Product): string => {
+    if (product.subcategory) {
+      return subcategoryLabelMap.get(product.subcategory) || product.subcategory;
+    }
+    const first = (product.category || "").split(",")[0];
+    if (!first) return "";
+    return categoryLabelMap.get(first) || (first === "CLASSICI" ? "Classici" : first.charAt(0) + first.slice(1).toLowerCase());
+  };
 
   /* Pagination with ellipsis */
   const getPaginationItems = () => {
@@ -428,7 +457,7 @@ function ProductsContent() {
                   </div>
                   <div className="mt-4">
                     <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
-                      {product.subcategory || (() => { const t = (product.category || "").split(",")[0]; return t === "CLASSICI" ? "Classici" : t?.charAt(0) + t?.slice(1).toLowerCase(); })()}
+                      {getCardLabel(product)}
                     </p>
                     <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                       {product.name}
