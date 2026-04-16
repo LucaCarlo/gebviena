@@ -5,6 +5,7 @@ import { X, Loader2, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { useT } from "@/contexts/I18nContext";
 
 interface SearchResult {
   type: string;
@@ -21,6 +22,7 @@ interface SearchPanelProps {
 }
 
 export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -92,11 +94,11 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
 
   const groupOrder = ["product", "project", "designer", "campaign", "award"];
   const groupLabels: Record<string, string> = {
-    product: "Prodotti",
-    project: "Progetti",
-    designer: "Designer",
-    campaign: "Campagne",
-    award: "Premi",
+    product: t("search.group.products"),
+    project: t("search.group.projects"),
+    designer: t("search.group.designers"),
+    campaign: t("search.group.campaigns"),
+    award: t("search.group.awards"),
   };
 
   return (
@@ -136,7 +138,7 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
             {/* Search input */}
             <div className="px-8 md:px-10 pt-16 pb-6 flex-shrink-0">
               <p className="text-sm font-light mb-2 text-black">
-                Che cosa stai cercando?
+                {t("search.title")}
               </p>
 
               <form onSubmit={handleSubmit}>
@@ -146,7 +148,7 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Scrivi qui la tua chiave di ricerca"
+                    placeholder={t("search.placeholder")}
                     className="w-full border border-neutral-300 bg-transparent px-4 py-4 pr-10 text-sm placeholder:text-neutral-400 focus:border-black focus:outline-none transition-colors"
                     style={{ color: "#000" }}
                     autoFocus
@@ -171,7 +173,7 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
                   className="mt-8 text-sm font-medium tracking-[0.1em] text-black hover:underline transition-colors"
                   style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
                 >
-                  Avvia la ricerca
+                  {t("search.button")}
                 </button>
               </form>
             </div>
@@ -180,7 +182,7 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
             <div className="flex-1 overflow-y-auto px-8 md:px-10 pb-8">
               {searched && results.length === 0 && !loading && (
                 <div className="text-center py-12">
-                  <p className="text-sm text-neutral-500">Nessun risultato trovato per</p>
+                  <p className="text-sm text-neutral-500">{t("search.empty")}</p>
                   <p className="text-sm font-medium text-black mt-1">&ldquo;{query}&rdquo;</p>
                 </div>
               )}

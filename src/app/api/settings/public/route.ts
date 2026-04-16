@@ -7,7 +7,10 @@ export async function GET() {
   try {
     const settings = await prisma.setting.findMany({
       where: {
-        key: { in: ["recaptcha_enabled", "recaptcha_site_key"] },
+        OR: [
+          { key: { in: ["recaptcha_enabled", "recaptcha_site_key"] } },
+          { group: "social" },
+        ],
       },
     });
 

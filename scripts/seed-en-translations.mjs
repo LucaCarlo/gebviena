@@ -72,6 +72,17 @@ const EN = {
   "footer.bottom.copyright": "Copyright 2025 © GEBRUDER THONET VIENNA GMBH",
   "footer.bottom.disclaimer": "Please note that the use of the trademark and the company name \"Gebrüder Thonet Vienna\" in the United States, and the use of the \"Gebrüder Thonet Vienna\" trademark in Germany, are subject to restrictions due to agreements with other companies. For further information please contact info@gebruederthonetvienna.it.",
 
+  // search panel
+  "search.title": "What are you looking for?",
+  "search.placeholder": "Type your search term here",
+  "search.button": "Start the search",
+  "search.empty": "No results found for",
+  "search.group.products": "Products",
+  "search.group.projects": "Projects",
+  "search.group.designers": "Designers",
+  "search.group.campaigns": "Campaigns",
+  "search.group.awards": "Awards",
+
   // common
   "common.discover": "Discover more",
   "common.discover_product": "Discover the product",

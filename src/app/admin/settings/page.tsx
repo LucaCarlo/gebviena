@@ -14,6 +14,7 @@ import {
   Upload,
   Loader2,
   Languages,
+  Share2,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ interface BackupPreview {
   [key: string]: number;
 }
 
-type TabKey = "smtp" | "recaptcha" | "languages" | "translations" | "stats" | "backup" | "storage";
+type TabKey = "smtp" | "recaptcha" | "languages" | "translations" | "social" | "stats" | "backup" | "storage";
 
 interface TabDef {
   key: TabKey;
@@ -65,6 +66,7 @@ const TABS: TabDef[] = [
   { key: "recaptcha", label: "reCAPTCHA", icon: Shield },
   { key: "languages", label: "Lingue", icon: Globe },
   { key: "translations", label: "Traduzioni AI", icon: Languages },
+  { key: "social", label: "Social", icon: Share2 },
   { key: "stats", label: "Statistiche", icon: BarChart3 },
   { key: "backup", label: "Backup", icon: Database },
   { key: "storage", label: "Storage Cloud", icon: Cloud },
@@ -927,6 +929,98 @@ function BackupTab({ showToast }: { showToast: (m: string, t: "success" | "error
   );
 }
 
+// ─── Social Tab ──────────────────────────────────────────────────────────────
+
+function SocialTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
+  const [form, setForm] = useState({
+    social_facebook_url: "",
+    social_instagram_url: "",
+    social_pinterest_url: "",
+    social_linkedin_url: "",
+    social_youtube_url: "",
+    social_twitter_url: "",
+    social_tiktok_url: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings?group=social")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          const next = { ...form };
+          for (const s of data.data) {
+            if (s.key in next) (next as Record<string, string>)[s.key] = s.value;
+          }
+          setForm(next);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const settings = Object.entries(form).map(([key, value]) => ({ key, value, group: "social" }));
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (data.success) showToast("Social salvati. Aggiorna il frontend (Ctrl+F5) per vederli.", "success");
+      else showToast(data.error || "Errore nel salvataggio", "error");
+    } catch {
+      showToast("Errore di connessione", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const update = (key: keyof typeof form, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const SOCIALS: Array<{ key: keyof typeof form; label: string; placeholder: string }> = [
+    { key: "social_facebook_url", label: "Facebook", placeholder: "https://www.facebook.com/..." },
+    { key: "social_instagram_url", label: "Instagram", placeholder: "https://www.instagram.com/..." },
+    { key: "social_pinterest_url", label: "Pinterest", placeholder: "https://www.pinterest.com/..." },
+    { key: "social_linkedin_url", label: "LinkedIn", placeholder: "https://www.linkedin.com/company/..." },
+    { key: "social_youtube_url", label: "YouTube", placeholder: "https://www.youtube.com/@..." },
+    { key: "social_twitter_url", label: "X / Twitter", placeholder: "https://x.com/..." },
+    { key: "social_tiktok_url", label: "TikTok", placeholder: "https://www.tiktok.com/@..." },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-warm-800">Link Social</h2>
+        <p className="text-sm text-warm-500 mt-1">Gli URL vengono usati nella colonna &ldquo;Seguici&rdquo; del footer. Lascia vuoto per nascondere il social.</p>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
+        {SOCIALS.map(({ key, label, placeholder }) => (
+          <div key={key}>
+            <label className={labelClass}>{label}</label>
+            <input
+              type="url"
+              value={form[key]}
+              onChange={(e) => update(key, e.target.value)}
+              className={inputClass}
+              placeholder={placeholder}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="flex gap-3">
+        <button onClick={handleSave} disabled={saving} className={btnPrimary}>
+          {saving && <Loader2 size={16} className="animate-spin" />}
+          Salva
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Storage Tab ─────────────────────────────────────────────────────────────
 
 function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
@@ -1291,6 +1385,8 @@ export default function AdminSettingsPage() {
         return <BackupTab showToast={showToast} />;
       case "storage":
         return <StorageTab showToast={showToast} />;
+      case "social":
+        return <SocialTab showToast={showToast} />;
     }
   };
 

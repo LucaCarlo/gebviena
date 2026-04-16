@@ -100,6 +100,21 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
     ],
   },
   {
+    id: "search",
+    label: "Pannello ricerca",
+    strings: [
+      { key: "search.title", defaultValue: "Che cosa stai cercando?" },
+      { key: "search.placeholder", defaultValue: "Scrivi qui la tua chiave di ricerca" },
+      { key: "search.button", defaultValue: "Avvia la ricerca" },
+      { key: "search.empty", defaultValue: "Nessun risultato trovato per" },
+      { key: "search.group.products", defaultValue: "Prodotti" },
+      { key: "search.group.projects", defaultValue: "Progetti" },
+      { key: "search.group.designers", defaultValue: "Designer" },
+      { key: "search.group.campaigns", defaultValue: "Campagne" },
+      { key: "search.group.awards", defaultValue: "Premi" },
+    ],
+  },
+  {
     id: "common",
     label: "Pulsanti / etichette comuni",
     strings: [

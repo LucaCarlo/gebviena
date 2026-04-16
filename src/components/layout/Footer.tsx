@@ -27,13 +27,33 @@ const DEFAULT_NEWSLETTER_FIELDS: FieldConfig[] = [
   { key: "acceptsUpdates", label: "Desidero ricevere aggiornamenti e novità", type: "checkbox", required: false, enabled: true, order: 6 },
 ];
 
+const DEFAULT_SOCIAL: Record<string, string> = {
+  social_facebook_url: "https://www.facebook.com/GebruderThonetVienna",
+  social_instagram_url: "https://www.instagram.com/gebruder_thonet_vienna/",
+  social_pinterest_url: "https://it.pinterest.com/gebruder_thonet_vienna/_created/",
+  social_linkedin_url: "https://www.linkedin.com/company/gebruder-thonet-vienna/",
+  social_youtube_url: "https://www.youtube.com/@Gebr%C3%BCderThonetVienna",
+};
+
 export default function Footer() {
   const t = useT();
   const lang = useLang();
   const [fieldConfig, setFieldConfig] = useState<FieldConfig[] | null>(null);
   const [formData, setFormData] = useState<Record<string, string | boolean>>({});
   const [subscribed, setSubscribed] = useState(false);
+  const [social, setSocial] = useState<Record<string, string>>(DEFAULT_SOCIAL);
   const { executeRecaptcha } = useRecaptcha();
+
+  useEffect(() => {
+    fetch("/api/settings/public")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          setSocial((prev) => ({ ...prev, ...data.data }));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/form-configs/public?type=newsletter")
@@ -326,31 +346,19 @@ export default function Footer() {
               {t("footer.col.follow")}
             </h4>
             <ul className="space-y-6">
-              <li>
-                <Link href="https://www.facebook.com/GebruderThonetVienna" target="_blank" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  Facebook
-                </Link>
-              </li>
-              <li>
-                <Link href="https://www.instagram.com/gebruder_thonet_vienna/" target="_blank" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  Instagram
-                </Link>
-              </li>
-              <li>
-                <Link href="https://it.pinterest.com/gebruder_thonet_vienna/_created/" target="_blank" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  Pinterest
-                </Link>
-              </li>
-              <li>
-                <Link href="https://www.linkedin.com/company/gebruder-thonet-vienna/" target="_blank" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  LinkedIn
-                </Link>
-              </li>
-              <li>
-                <Link href="https://www.youtube.com/@Gebr%C3%BCderThonetVienna" target="_blank" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  YouTube
-                </Link>
-              </li>
+              {[
+                { key: "social_facebook_url", label: "Facebook" },
+                { key: "social_instagram_url", label: "Instagram" },
+                { key: "social_pinterest_url", label: "Pinterest" },
+                { key: "social_linkedin_url", label: "LinkedIn" },
+                { key: "social_youtube_url", label: "YouTube" },
+              ].filter(({ key }) => social[key] && social[key].trim()).map(({ key, label }) => (
+                <li key={key}>
+                  <Link href={social[key]} target="_blank" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           </div>
