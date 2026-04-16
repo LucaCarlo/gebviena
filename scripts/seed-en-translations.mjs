@@ -259,6 +259,17 @@ const EN = {
   "progetti.filter.product": "Filter by product",
   "progetti.empty": "No projects found for this selection.",
   "progetti.breadcrumb": "Projects",
+  "progetti.detail.not_found": "Project not found",
+  "progetti.detail.back": "Back to projects",
+  "progetti.detail.show_more": "Read more",
+  "progetti.detail.show_less": "Show less",
+  "progetti.detail.label.project": "Project",
+  "progetti.detail.label.photo_by": "Photo by",
+  "progetti.detail.label.location": "Location",
+  "progetti.detail.products_used": "Products featured in this project",
+  "campagne-video.detail.related": "Other Campaigns and Videos",
+  "news.detail.continue": "Continue reading",
+  "designer-premi.load_more": "Load more designers",
 
   // campagne-video
   "campagne-video.title": "Campaigns & Videos",

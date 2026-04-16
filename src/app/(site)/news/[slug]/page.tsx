@@ -11,8 +11,9 @@ import type {
   NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
 } from "@/types";
-import { useLang } from "@/contexts/I18nContext";
+import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
+import { localizePath } from "@/lib/path-segments";
 
 interface ArticleWithRelated extends NewsArticle {
   related?: NewsArticle[];
@@ -240,12 +241,12 @@ function ShareBlock({ title }: { title: string }) {
   );
 }
 
-function RelatedBlock({ related, categoryLabelMap }: { related: NewsArticle[]; categoryLabelMap: Map<string, string> }) {
+function RelatedBlock({ related, categoryLabelMap, title }: { related: NewsArticle[]; categoryLabelMap: Map<string, string>; title: string }) {
   if (!related.length) return null;
   return (
     <section className="py-20 md:py-28">
       <div className="px-2 md:px-3 lg:px-4">
-        <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">Continua a leggere</h3>
+        <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">{title}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
           {related.slice(0, 4).map((rel) => (
             <Link key={rel.id} href={`/news/${rel.slug}`} className="group block">
@@ -268,6 +269,7 @@ export default function NewsDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
   const lang = useLang();
+  const t = useT();
   const [article, setArticle] = useState<ArticleWithRelated | null>(null);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
@@ -355,22 +357,22 @@ export default function NewsDetailPage() {
                 }
                 return <div key={b.id} className={spacing}>{node}</div>;
               })}
-              {hasRelated && <RelatedBlock related={article.related!} categoryLabelMap={categoryLabelMap} />}
+              {hasRelated && <RelatedBlock related={article.related!} categoryLabelMap={categoryLabelMap} title={t("news.detail.continue")} />}
             </div>
           );
         })()
       ) : (
         <div className="pt-12 md:pt-20 pb-20 md:pb-28">
-          {article.related && article.related.length > 0 && <RelatedBlock related={article.related} categoryLabelMap={categoryLabelMap} />}
+          {article.related && article.related.length > 0 && <RelatedBlock related={article.related} categoryLabelMap={categoryLabelMap} title={t("news.detail.continue")} />}
         </div>
       )}
 
       {/* Breadcrumbs */}
       <div className="gtv-container pt-8 pb-12">
         <nav className="flex items-center gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href={localizePath("/", lang)}>{t("common.breadcrumb_home")}</Link>
           <ChevronRight size={12} />
-          <Link href="/news">News & Rassegna Stampa</Link>
+          <Link href={localizePath("/news", lang)}>{t("news.breadcrumb")}</Link>
           <ChevronRight size={12} />
           <span>{article.title}</span>
         </nav>

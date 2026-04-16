@@ -6,8 +6,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import type { Project, Product, Designer } from "@/types";
-import { useLang } from "@/contexts/I18nContext";
+import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
+import { localizePath } from "@/lib/path-segments";
 
 interface ProjectDetail extends Omit<Project, "products"> {
   products: { product: Product & { designer?: Designer } }[];
@@ -17,12 +18,14 @@ export default function ProjectDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
   const lang = useLang();
+  const t = useT();
 
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [descExpanded, setDescExpanded] = useState(false);
   const [imageOrientations, setImageOrientations] = useState<Record<string, "h" | "v">>({});
   const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
+  const [productCategories, setProductCategories] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -39,9 +42,21 @@ export default function ProjectDetailPage() {
     fetch(`/api/categories?contentType=projects&lang=${lang}`)
       .then((r) => r.json())
       .then((d) => setCategories(d.data || []));
+    fetch(`/api/categories?contentType=products&lang=${lang}`)
+      .then((r) => r.json())
+      .then((d) => setProductCategories(d.data || []));
   }, [lang]);
 
   const categoryLabelMap = useMemo(() => buildLabelLookup(categories), [categories]);
+  const productLabelMap = useMemo(() => {
+    const items: { value: string; label: string }[] = [];
+    productCategories.forEach((c) => {
+      items.push(c);
+      const subs = (c as { subcategories?: { value: string; label: string }[] }).subcategories || [];
+      subs.forEach((s) => items.push(s));
+    });
+    return buildLabelLookup(items);
+  }, [productCategories]);
 
   // Measure image orientations for gallery split (horizontal vs vertical)
   useEffect(() => {
@@ -73,8 +88,8 @@ export default function ProjectDetailPage() {
   if (!project) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-warm-500">Progetto non trovato</p>
-        <Link href="/progetti" className="gtv-link">Torna ai progetti</Link>
+        <p className="text-warm-500">{t("progetti.detail.not_found")}</p>
+        <Link href={localizePath("/progetti", lang)} className="gtv-link">{t("progetti.detail.back")}</Link>
       </div>
     );
   }
@@ -170,7 +185,7 @@ export default function ProjectDetailPage() {
                   className="inline-block mt-[20px] uppercase text-xs tracking-[0.08em] text-warm-900 font-light border-b border-warm-900 pb-1"
                   onClick={() => setDescExpanded(!descExpanded)}
                 >
-                  {descExpanded ? "Mostra meno" : "Continua a leggere"}
+                  {descExpanded ? t("progetti.detail.show_less") : t("progetti.detail.show_more")}
                 </button>
               </motion.div>
             )}
@@ -185,7 +200,7 @@ export default function ProjectDetailPage() {
                 {/* Progetto */}
                 <div>
                   <p className="uppercase text-[16px] tracking-[0.03em] text-black font-bold mb-4">
-                    Progetto
+                    {t("progetti.detail.label.project")}
                   </p>
                   {project.description ? (
                     project.description.includes("<") ? (
@@ -206,7 +221,7 @@ export default function ProjectDetailPage() {
                 {/* Foto da (Architetto) */}
                 <div>
                   <p className="uppercase text-[16px] tracking-[0.03em] text-black font-bold mb-4">
-                    Foto da
+                    {t("progetti.detail.label.photo_by")}
                   </p>
                   {project.architect ? (
                     <p className="text-[20px] font-light text-black">{project.architect}</p>
@@ -218,7 +233,7 @@ export default function ProjectDetailPage() {
                 {/* Location */}
                 <div>
                   <p className="uppercase text-[16px] tracking-[0.03em] text-black font-bold mb-4">
-                    Location
+                    {t("progetti.detail.label.location")}
                   </p>
                   <p className="text-[20px] font-light text-black">
                     {[project.city, project.country].filter(Boolean).join(", ") || "—"}
@@ -254,7 +269,7 @@ export default function ProjectDetailPage() {
             className="text-center mb-12"
           >
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              Prodotti utilizzati nel progetto
+              {t("progetti.detail.products_used")}
             </h2>
           </motion.div>
 
@@ -267,7 +282,7 @@ export default function ProjectDetailPage() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: (i % 4) * 0.05 }}
                 >
-                  <Link href={`/prodotti/${product.slug}`} className="group block">
+                  <Link href={localizePath(`/prodotti/${product.slug}`, lang)} className="group block">
                     <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "4/5", isolation: "isolate" }}>
                       <Image
                         src={product.coverImage || product.imageUrl}
@@ -279,7 +294,7 @@ export default function ProjectDetailPage() {
                     </div>
                     <div className="mt-4">
                       <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
-                        {product.subcategory || (() => { const t = (product.category || "").split(",")[0]; return t === "CLASSICI" ? "Classici" : t?.charAt(0) + t?.slice(1).toLowerCase(); })()}
+                        {lookupLabel(productLabelMap, product.subcategory || (product.category || "").split(",")[0])}
                       </p>
                       <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                         {product.name}
@@ -295,9 +310,9 @@ export default function ProjectDetailPage() {
       {/* ===== 5. BREADCRUMBS — same style as product page ===== */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href={localizePath("/", lang)}>{t("common.breadcrumb_home")}</Link>
           <span>&gt;</span>
-          <Link href="/progetti">Progetti</Link>
+          <Link href={localizePath("/progetti", lang)}>{t("progetti.breadcrumb")}</Link>
           <span>&gt;</span>
           <span>{project.name}</span>
         </div>

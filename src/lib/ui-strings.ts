@@ -267,6 +267,7 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "designer-premi.designers.title", defaultValue: "Designer" },
       { key: "designer-premi.awards.title", defaultValue: "Premi" },
       { key: "designer-premi.breadcrumb", defaultValue: "Designer e premi" },
+      { key: "designer-premi.load_more", defaultValue: "Carica altri designer" },
     ],
   },
   {
@@ -338,6 +339,14 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "progetti.filter.product", defaultValue: "Filtra per prodotto" },
       { key: "progetti.empty", defaultValue: "Nessun progetto trovato per questa selezione." },
       { key: "progetti.breadcrumb", defaultValue: "Progetti" },
+      { key: "progetti.detail.not_found", defaultValue: "Progetto non trovato" },
+      { key: "progetti.detail.back", defaultValue: "Torna ai progetti" },
+      { key: "progetti.detail.show_more", defaultValue: "Continua a leggere" },
+      { key: "progetti.detail.show_less", defaultValue: "Mostra meno" },
+      { key: "progetti.detail.label.project", defaultValue: "Progetto" },
+      { key: "progetti.detail.label.photo_by", defaultValue: "Foto da" },
+      { key: "progetti.detail.label.location", defaultValue: "Location" },
+      { key: "progetti.detail.products_used", defaultValue: "Prodotti utilizzati nel progetto" },
     ],
   },
   {
@@ -348,6 +357,7 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "campagne-video.filter.all", defaultValue: "Tutti" },
       { key: "campagne-video.empty", defaultValue: "Nessuna campagna trovata per questa selezione." },
       { key: "campagne-video.breadcrumb", defaultValue: "Campagne & Video" },
+      { key: "campagne-video.detail.related", defaultValue: "Altre Campagne e Video" },
     ],
   },
   {
@@ -355,6 +365,7 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
     label: "Pagina News & Rassegna Stampa",
     strings: [
       { key: "news.title", defaultValue: "News & Rassegna Stampa" },
+      { key: "news.detail.continue", defaultValue: "Continua a leggere" },
       { key: "news.filter.all", defaultValue: "Tutti" },
       { key: "news.empty", defaultValue: "Nessun articolo trovato per questa selezione." },
       { key: "news.breadcrumb", defaultValue: "News & Rassegna Stampa" },

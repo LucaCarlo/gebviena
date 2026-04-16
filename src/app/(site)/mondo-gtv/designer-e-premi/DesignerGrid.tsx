@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useT, useLang } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 
 interface Designer {
   id: string;
@@ -14,6 +16,8 @@ interface Designer {
 const BATCH = 8;
 
 export default function DesignerGrid({ designers }: { designers: Designer[] }) {
+  const t = useT();
+  const lang = useLang();
   const [count, setCount] = useState(BATCH);
   const visible = designers.slice(0, count);
   const hasMore = count < designers.length;
@@ -24,7 +28,7 @@ export default function DesignerGrid({ designers }: { designers: Designer[] }) {
         {visible.map((designer) => (
           <Link
             key={designer.id}
-            href={`/designers/${designer.slug}`}
+            href={localizePath(`/designers/${designer.slug}`, lang)}
             className="group block"
           >
             <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "4/5" }}>
@@ -60,7 +64,7 @@ export default function DesignerGrid({ designers }: { designers: Designer[] }) {
             className="inline-block whitespace-nowrap uppercase text-[16px] tracking-[0.03em] !text-black font-medium transition-colors hover:text-accent hover:underline"
             style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
           >
-            + Carica altri designer
+            + {t("designer-premi.load_more")}
           </button>
         </div>
       )}

@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCategoryLabelMap } from "@/lib/server-categories";
 import { lookupLabel } from "@/lib/category-lookup";
+import { tBatch } from "@/lib/i18n";
 import { mergeFirstTranslation, TRANSLATABLE_FIELDS } from "@/lib/translate-payload";
 import { DEFAULT_LANG } from "@/lib/i18n";
 import type {
@@ -75,7 +76,7 @@ export default async function CampaignDetailPage({ params }: Params) {
 
   const blocks = parseBlocks(campaign.blocks);
 
-  const [related, categoryLabelMap] = await Promise.all([
+  const [related, categoryLabelMap, T] = await Promise.all([
     prisma.campaign.findMany({
       where: { isActive: true, slug: { not: rawCampaign.slug } },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
@@ -83,6 +84,11 @@ export default async function CampaignDetailPage({ params }: Params) {
       select: { id: true, slug: true, name: true, type: true, imageUrl: true },
     }),
     getCategoryLabelMap("campaigns"),
+    tBatch([
+      "campagne-video.detail.related",
+      "campagne-video.breadcrumb",
+      "common.breadcrumb_home",
+    ]),
   ]);
 
   const embed = campaign.videoUrl && isYouTube(campaign.videoUrl) ? youTubeEmbed(campaign.videoUrl) : null;
@@ -347,7 +353,7 @@ export default async function CampaignDetailPage({ params }: Params) {
         <section className="py-20 md:py-28">
           <div className="px-2 md:px-3 lg:px-4">
             <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
-              Altre Campagne e Video
+              {T["campagne-video.detail.related"]}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
               {related.map((c) => (
@@ -375,9 +381,9 @@ export default async function CampaignDetailPage({ params }: Params) {
       {/* Breadcrumbs */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <Link href="/campaigns">Campagne e Video</Link>
+          <Link href="/campaigns">{T["campagne-video.breadcrumb"]}</Link>
           <span>&gt;</span>
           <span>{campaign.name}</span>
         </div>
