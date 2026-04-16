@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import Logo from "./Logo";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -38,6 +39,18 @@ const DEFAULT_SOCIAL: Record<string, string> = {
 export default function Footer() {
   const t = useT();
   const lang = useLang();
+  const [builtByLogo, setBuiltByLogo] = useState<string>("");
+
+  useEffect(() => {
+    fetch("/api/page-images?page=footer")
+      .then((r) => r.json())
+      .then((d) => {
+        const items = d?.data || [];
+        const logo = items.find((i: { section: string }) => i.section === "built-by-logo");
+        if (logo?.imageUrl) setBuiltByLogo(logo.imageUrl);
+      })
+      .catch(() => {});
+  }, []);
   const [fieldConfig, setFieldConfig] = useState<FieldConfig[] | null>(null);
   const [formData, setFormData] = useState<Record<string, string | boolean>>({});
   const [subscribed, setSubscribed] = useState(false);
@@ -367,12 +380,29 @@ export default function Footer() {
 
       {/* Copyright */}
       <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-[9.9rem] pt-16 md:pt-24">
-        <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
-          {t("footer.bottom.copyright")}
-        </p>
-        <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#000" }}>
-          {t("footer.bottom.disclaimer")}
-        </p>
+        <div className="flex items-end justify-between gap-6 flex-wrap">
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
+              {t("footer.bottom.copyright")}
+            </p>
+            <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#000" }}>
+              {t("footer.bottom.disclaimer")}
+            </p>
+          </div>
+          {builtByLogo && (
+            <div className="flex items-center gap-2 flex-shrink-0" style={{ color: "#000" }}>
+              <span className="text-[13px] font-normal">Built by</span>
+              <Image
+                src={builtByLogo}
+                alt="Built by"
+                width={120}
+                height={36}
+                className="object-contain h-9 w-auto"
+                unoptimized
+              />
+            </div>
+          )}
+        </div>
       </div>
     </footer>
   );

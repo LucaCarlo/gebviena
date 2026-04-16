@@ -1028,9 +1028,11 @@ function SocialTab({ showToast }: { showToast: (m: string, t: "success" | "error
 // ─── Iubenda Tab ─────────────────────────────────────────────────────────────
 
 function IubendaTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
+  // Default values shown immediately so the admin sees the IDs the site is
+  // currently using, even before the first save in DB.
   const [form, setForm] = useState({
-    iubenda_site_id: "",
-    iubenda_cookie_policy_id: "",
+    iubenda_site_id: "4004725",
+    iubenda_cookie_policy_id: "24997138",
   });
   const [saving, setSaving] = useState(false);
 
@@ -1039,14 +1041,16 @@ function IubendaTab({ showToast }: { showToast: (m: string, t: "success" | "erro
       .then((r) => r.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
-          const next = { ...form };
-          for (const s of data.data) {
-            if (s.key in next) (next as Record<string, string>)[s.key] = s.value;
-          }
-          setForm(next);
+          setForm((prev) => {
+            const next = { ...prev };
+            for (const s of data.data) {
+              // Only overwrite the default if the saved value is non-empty.
+              if (s.key in next && s.value) (next as Record<string, string>)[s.key] = s.value;
+            }
+            return next;
+          });
         }
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSave = async () => {
@@ -1103,9 +1107,6 @@ function IubendaTab({ showToast }: { showToast: (m: string, t: "success" | "erro
           <p className="text-xs text-warm-500 mt-1">È l&apos;ID nella URL https://www.iubenda.com/privacy-policy/<strong>XXXXXXXX</strong>. Usato dalle pagine /privacy-policy e /cookie-policy.</p>
         </div>
 
-        <div className="text-xs px-3 py-2 rounded bg-blue-50 border border-blue-200 text-blue-800">
-          ℹ Se lasci i campi vuoti il sito userà i valori di default attualmente hardcoded nel codice (Site ID 4004725, Cookie Policy ID 24997138).
-        </div>
       </div>
 
       <div className="flex justify-end">

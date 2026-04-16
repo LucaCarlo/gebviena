@@ -164,6 +164,13 @@ export const PAGE_IMAGES_CONFIG: {
     ],
   },
   {
+    page: "footer",
+    label: "Footer",
+    images: [
+      { section: "built-by-logo", label: "Logo 'Built by' (mostrato in basso a destra del footer)", defaultUrl: "" },
+    ],
+  },
+  {
     page: "homepage",
     label: "Homepage",
     images: [
