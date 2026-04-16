@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,6 +21,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [descExpanded, setDescExpanded] = useState(false);
   const [imageOrientations, setImageOrientations] = useState<Record<string, "h" | "v">>({});
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -32,6 +33,18 @@ export default function ProjectDetailPage() {
     }
     load();
   }, [slug, lang]);
+
+  useEffect(() => {
+    fetch(`/api/categories?contentType=projects&lang=${lang}`)
+      .then((r) => r.json())
+      .then((d) => setCategories(d.data || []));
+  }, [lang]);
+
+  const categoryLabelMap = useMemo(() => {
+    const m = new Map<string, string>();
+    categories.forEach((c) => m.set(c.value, c.label));
+    return m;
+  }, [categories]);
 
   // Measure image orientations for gallery split (horizontal vs vertical)
   useEffect(() => {
@@ -109,7 +122,7 @@ export default function ProjectDetailPage() {
           </h1>
           {project.type && (
             <p className="uppercase text-[20px] tracking-[0.08em] text-white mt-2 font-light">
-              {project.type}
+              {categoryLabelMap.get(project.type) || project.type}
             </p>
           )}
         </motion.div>

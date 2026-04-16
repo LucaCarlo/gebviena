@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getRelatedCardImages } from "@/lib/page-images";
 import { tBatch } from "@/lib/i18n";
+import { getCategoryLabelMap, getSubcategoryLabelMap } from "@/lib/server-categories";
 import type { Metadata } from "next";
 import DesignerGrid from "./DesignerGrid";
 
@@ -65,6 +66,16 @@ export default async function DesignerPremiPage() {
 
   // Related page covers
   const cardImages = await getRelatedCardImages(RELATED_PAGES.map((p) => p.page));
+  const [categoryLabelMap, subcategoryLabelMap] = await Promise.all([
+    getCategoryLabelMap("products"),
+    getSubcategoryLabelMap("products"),
+  ]);
+  const productLabel = (cat: string | null, sub: string | null): string => {
+    if (sub) return subcategoryLabelMap.get(sub) || sub;
+    if (!cat) return "";
+    const first = cat.split(",")[0];
+    return categoryLabelMap.get(first) || first;
+  };
   const T = await tBatch([
     "designer-premi.title",
     "designer-premi.intro",
@@ -195,7 +206,7 @@ export default async function DesignerPremiPage() {
                               <div className="mt-4">
                                 {(prod.subcategory || prod.category) && (
                                   <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
-                                    {prod.subcategory || prod.category}
+                                    {productLabel(prod.category, prod.subcategory)}
                                   </p>
                                 )}
                                 <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">

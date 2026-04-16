@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -239,7 +239,7 @@ function ShareBlock({ title }: { title: string }) {
   );
 }
 
-function RelatedBlock({ related }: { related: NewsArticle[] }) {
+function RelatedBlock({ related, categoryLabelMap }: { related: NewsArticle[]; categoryLabelMap: Map<string, string> }) {
   if (!related.length) return null;
   return (
     <section className="py-20 md:py-28">
@@ -252,7 +252,7 @@ function RelatedBlock({ related }: { related: NewsArticle[] }) {
                 {rel.imageUrl && <Image src={rel.imageUrl} alt={rel.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 50vw, 25vw" />}
               </div>
               <div className="mt-4">
-                {rel.category && <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">{rel.category}</p>}
+                {rel.category && <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">{categoryLabelMap.get(rel.category) || rel.category}</p>}
                 <h4 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">{rel.title}</h4>
               </div>
             </Link>
@@ -269,6 +269,7 @@ export default function NewsDetailPage() {
   const lang = useLang();
   const [article, setArticle] = useState<ArticleWithRelated | null>(null);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
     if (!slug) return;
@@ -276,6 +277,18 @@ export default function NewsDetailPage() {
       if (data.success) setArticle(data.data); setLoading(false);
     }).catch(() => setLoading(false));
   }, [slug, lang]);
+
+  useEffect(() => {
+    fetch(`/api/categories?contentType=news&lang=${lang}`)
+      .then((r) => r.json())
+      .then((d) => setCategories(d.data || []));
+  }, [lang]);
+
+  const categoryLabelMap = useMemo(() => {
+    const m = new Map<string, string>();
+    categories.forEach((c) => m.set(c.value, c.label));
+    return m;
+  }, [categories]);
 
   const blocksV2: NewsBlockV2[] | null = (() => {
     if (!article?.blocks) return null;
@@ -310,7 +323,7 @@ export default function NewsDetailPage() {
       <section className="gtv-container pb-0 pt-[76px] md:pt-[108px]">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-center">
           {article.category && (
-            <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light" style={{ marginBottom: "44px" }}>{article.category}</p>
+            <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light" style={{ marginBottom: "44px" }}>{categoryLabelMap.get(article.category) || article.category}</p>
           )}
           <h1 className="font-serif text-[34px] md:text-[58px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto" style={{ marginBottom: "10px" }}>
             {article.title}
@@ -345,13 +358,13 @@ export default function NewsDetailPage() {
                 }
                 return <div key={b.id} className={spacing}>{node}</div>;
               })}
-              {hasRelated && <RelatedBlock related={article.related!} />}
+              {hasRelated && <RelatedBlock related={article.related!} categoryLabelMap={categoryLabelMap} />}
             </div>
           );
         })()
       ) : (
         <div className="pt-12 md:pt-20 pb-20 md:pb-28">
-          {article.related && article.related.length > 0 && <RelatedBlock related={article.related} />}
+          {article.related && article.related.length > 0 && <RelatedBlock related={article.related} categoryLabelMap={categoryLabelMap} />}
         </div>
       )}
 
