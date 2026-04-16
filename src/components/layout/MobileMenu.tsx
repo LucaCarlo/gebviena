@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -22,14 +22,12 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [featuredImage, setFeaturedImage] = useState<string>(DEFAULT_FEATURED_IMAGE);
 
-  // Reset submenu when menu closes
   useEffect(() => {
     if (!isOpen) {
       setActiveItem(null);
     }
   }, [isOpen]);
 
-  // Load featured image from page-images
   useEffect(() => {
     fetch("/api/page-images?page=menu")
       .then((r) => r.json())
@@ -57,7 +55,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop — slight darken + blur */}
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -68,18 +66,18 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             onClick={onClose}
           />
 
-          {/* Wrapper — contains both columns, slides in as one unit */}
+          {/* Wrapper */}
           <motion.div
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "tween", duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
             className="fixed top-0 left-0 bottom-0 z-[70] flex"
+            style={{ width: "min(100vw, 970px)", maxWidth: "100vw" }}
           >
-            {/* Left column — FIXED width, never changes */}
+            {/* Main column */}
             <div
-              className="bg-white flex flex-col shrink-0 relative z-10"
-              style={{ width: "32vw", minWidth: "310px", maxWidth: "485px" }}
+              className="bg-white flex flex-col shrink-0 relative z-10 w-[86vw] max-w-[485px] md:w-[32vw] md:min-w-[310px]"
             >
               {/* Close */}
               <div className="px-8 pt-6 pb-2">
@@ -93,8 +91,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               </div>
 
               {/* Nav items */}
-              <nav className="flex items-start justify-center pt-14">
-                <ul className="space-y-10 md:space-y-12">
+              <nav className="flex items-start justify-center pt-10 md:pt-14 flex-1 overflow-y-auto">
+                <ul className="space-y-8 md:space-y-12">
                   {NAV_ITEMS.map((item) => {
                     const hasChildren = "children" in item && !!item.children;
                     const isActive = activeItem === item.label;
@@ -125,29 +123,30 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 </ul>
               </nav>
 
-              {/* Featured image — links to GTV Experience */}
+              {/* Featured image — hidden on very small screens */}
               <Link
                 href={localizePath("/mondo-gtv/gtv-experience", lang)}
                 onClick={onClose}
-                className="relative overflow-hidden block"
-                style={{ width: "calc(100% - 60px)", aspectRatio: "1.3 / 1", margin: "76px 30px 30px 30px" }}
+                className="relative overflow-hidden hidden sm:block"
+                style={{ width: "calc(100% - 60px)", aspectRatio: "1.3 / 1", margin: "40px 30px 30px 30px" }}
               >
                 <Image
                   src={featuredImage}
                   alt="Interno Marche"
                   fill
                   className="object-cover"
+                  sizes="485px"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-3 right-3">
-                  <p className="text-white text-[20px] font-light uppercase tracking-[0.03em] leading-snug">
+                  <p className="text-white text-[18px] md:text-[20px] font-light uppercase tracking-[0.03em] leading-snug">
                     Interno Marche | Scopri il nostro flagship hotel
                   </p>
                 </div>
               </Link>
             </div>
 
-            {/* Right column — same width as left, slides in from left */}
+            {/* Submenu column — mobile: absolute overlay; desktop: inline to the right */}
             <AnimatePresence>
               {hasSubOpen && activeNav && "children" in activeNav && activeNav.children && (
                 <motion.div
@@ -155,9 +154,20 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   animate={{ x: 0 }}
                   exit={{ x: "-100%" }}
                   transition={{ type: "tween", duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-                  className="bg-white flex items-start pt-32 shrink-0 overflow-hidden"
-                  style={{ borderLeft: "1px solid #000", paddingLeft: "15%", width: "32vw", minWidth: "310px", maxWidth: "485px" }}
+                  className="bg-white shrink-0 overflow-hidden absolute inset-0 z-20 md:static md:z-auto w-[86vw] max-w-[485px] md:w-[32vw] md:min-w-[310px] md:border-l md:border-black flex flex-col"
                 >
+                  {/* Back button — mobile only */}
+                  <div className="md:hidden px-8 pt-6 pb-2">
+                    <button
+                      onClick={() => setActiveItem(null)}
+                      className="p-1 text-dark hover:opacity-60 transition-opacity inline-flex items-center gap-2"
+                      aria-label="Indietro"
+                    >
+                      <ArrowLeft size={22} strokeWidth={2} />
+                      <span className="uppercase text-[14px] tracking-wider font-light">{t("common.back")}</span>
+                    </button>
+                  </div>
+
                   <AnimatePresence mode="wait">
                     <motion.ul
                       key={activeItem}
@@ -165,7 +175,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ type: "tween", duration: 0.25, delay: 0.15 }}
-                      className="space-y-6 md:space-y-7"
+                      className="space-y-6 md:space-y-7 px-8 md:px-0 pt-10 md:pt-32 md:pl-[15%]"
                     >
                       {activeNav.children.map((child) => (
                         <li key={child.label}>

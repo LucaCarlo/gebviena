@@ -242,7 +242,7 @@ export default async function CampaignDetailPage({ params }: Params) {
                 <section key={block.id} className="gtv-container">
                   <div className="mx-auto max-w-[940px] px-6 md:px-16 lg:px-24">
                     {(d.imageUrl || v) && (
-                      <div className="mx-auto max-w-[420px]">
+                      <div className="mx-auto max-w-[140px]">
                         {v ? (
                           ytM ? (
                             <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
@@ -258,7 +258,7 @@ export default async function CampaignDetailPage({ params }: Params) {
                             </video>
                           )
                         ) : (
-                          <Image src={d.imageUrl} alt="" width={1200} height={800} className="w-full h-auto" sizes="(max-width: 420px) 100vw, 420px" />
+                          <Image src={d.imageUrl} alt="" width={400} height={400} className="w-full h-auto" sizes="140px" />
                         )}
                       </div>
                     )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useLang } from "@/contexts/I18nContext";
 import { translateSegmentsBackward, translateSegmentsForward, DEFAULT_LANG } from "@/lib/path-segments";
 
@@ -15,7 +15,6 @@ interface Language {
 }
 
 export default function LanguageSwitcher() {
-  const router = useRouter();
   const pathname = usePathname();
   const currentLang = useLang();
   const [languages, setLanguages] = useState<Language[]>([]);
@@ -53,11 +52,8 @@ export default function LanguageSwitcher() {
     const target = lang.isDefault ? DEFAULT_LANG : (lang.urlPrefix || lang.code);
     const translated = translateSegmentsForward(segments, target);
     const path = translated.length ? "/" + translated.join("/") : "/";
-    if (lang.isDefault) {
-      router.push(path);
-    } else {
-      router.push(`/${target}${path === "/" ? "" : path}`);
-    }
+    const destination = lang.isDefault ? path : `/${target}${path === "/" ? "" : path}`;
+    window.location.href = destination;
   };
 
   const current = languages.find((l) => l.code === currentLang);

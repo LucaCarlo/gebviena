@@ -52,7 +52,7 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
     <section className="gtv-container">
       <div className="mx-auto max-w-[940px] px-6 md:px-16 lg:px-24">
         {(d.imageUrl || video) && (
-          <div className="mx-auto max-w-[420px]">
+          <div className="mx-auto max-w-[140px]">
             {video ? (
               yt ? (
                 <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
@@ -68,7 +68,7 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
                 </video>
               )
             ) : (
-              <Image src={d.imageUrl} alt="" width={1200} height={800} className="w-full h-auto" sizes="(max-width: 420px) 100vw, 420px" />
+              <Image src={d.imageUrl} alt="" width={400} height={400} className="w-full h-auto" sizes="140px" />
             )}
           </div>
         )}
