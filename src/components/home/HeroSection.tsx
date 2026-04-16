@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLang } from "@/contexts/I18nContext";
 import type { HeroSlide } from "@/types";
 
 const AUTOPLAY_INTERVAL = 6000;
@@ -32,12 +33,13 @@ const FALLBACK_SLIDE: HeroSlide = {
 };
 
 export default function HeroSection() {
+  const lang = useLang();
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/hero-slides?page=homepage")
+    fetch(`/api/hero-slides?page=homepage&lang=${lang}`)
       .then((r) => r.json())
       .then((data) => {
         const fetched = data.data || [];
@@ -48,7 +50,7 @@ export default function HeroSection() {
         setSlides([FALLBACK_SLIDE]);
         setLoading(false);
       });
-  }, []);
+  }, [lang]);
 
   // Autoplay
   useEffect(() => {

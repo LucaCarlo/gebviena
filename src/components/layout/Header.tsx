@@ -10,7 +10,8 @@ import HeaderLanguageSwitcher from "./HeaderLanguageSwitcher";
 
 export default function Header() {
   const pathname = usePathname();
-  const isHomepage = pathname === "/";
+  const canonicalPath = pathname.replace(/^\/(en|de|fr)(?=\/|$)/, "") || "/";
+  const isHomepage = canonicalPath === "/";
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
