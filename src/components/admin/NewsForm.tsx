@@ -232,9 +232,22 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
           <div>
             <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezioni della pagina</h2>
-            <p className="text-[11px] text-warm-400 mt-1">Aggiungi e ordina le sezioni come preferisci.</p>
+            <p className="text-[11px] text-warm-400 mt-1">
+              {tCtx?.isTranslating
+                ? `Stai modificando le sezioni in ${tCtx.lang.toUpperCase()}. Traduci i testi delle sezioni e premi Aggiorna per salvare.`
+                : "Aggiungi e ordina le sezioni come preferisci."}
+            </p>
           </div>
-          <NewsBlockBuilder value={form.blocksV2} onChange={(json) => updateField("blocksV2", json)} />
+          <NewsBlockBuilder
+            value={tCtx?.isTranslating ? (tCtx.getValue("blocks", "") || form.blocksV2) : form.blocksV2}
+            onChange={(json) => {
+              if (tCtx?.isTranslating) {
+                tCtx.setValue("blocks", json);
+              } else {
+                updateField("blocksV2", json);
+              }
+            }}
+          />
         </div>
 
         {/* Submit */}
