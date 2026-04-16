@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// Force dynamic execution: settings change in admin and the public site must
+// see the new values immediately, no Next.js route-handler cache.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // Public endpoint — no auth required
 // Returns only non-sensitive settings for the frontend
 export async function GET() {
