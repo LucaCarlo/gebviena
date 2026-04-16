@@ -387,7 +387,7 @@ export default function Footer() {
           {t("footer.bottom.disclaimer")}
         </p>
         {builtByLogo && (
-          <div className="flex items-center justify-end gap-1.5 mt-10" style={{ color: "#000" }}>
+          <div className="flex items-center gap-1.5 mt-10" style={{ color: "#000" }}>
             <span className="text-[13px] font-normal">Built by</span>
             <Image
               src={builtByLogo}
