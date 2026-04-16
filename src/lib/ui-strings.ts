@@ -274,7 +274,7 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
     label: "Mondo GTV — GTV Experience",
     strings: [
       { key: "gtv-experience.hero.title", defaultValue: "GTV Experience\nInterno Marche Design Hotel" },
-      { key: "gtv-experience.intro.title", defaultValue: "GTV arreda gli spazi prestigiosi di Interno Marche" },
+      { key: "gtv-experience.intro.title", defaultValue: "GTV arreda gli spazi\nprestigiosi di Interno Marche" },
       { key: "gtv-experience.intro.p1", defaultValue: "Gebrüder Thonet Vienna GmbH (GTV) arreda gli spazi prestigiosi di Interno Marche, il primo Design Experience Hotel che racconta la storia di 100 anni di storia del design. Nel centro delle Marche, in un bellissimo scenario di piccoli borghi e dolci colline, nasce l'hotel dei sogni di Franco Moschini, patron e attuale presidente di Gebrüder Thonet Vienna. Michele De Lucchi, GamFratesi, Vico Magistretti, Front e Nendo sono alcuni dei nomi celebri di architetti e designer che hanno collaborato con GTV e a cui si ispirano alcune delle stanze del design hotel, arricchite dalle loro opere più iconiche." },
       { key: "gtv-experience.intro.p2", defaultValue: "Protagonisti degli spazi raffinati come la lobby, il lounge bar e il patio, alcune delle creazioni più famose e contemporanee del brand, come la lounge Loie di Chiara Andreatti e il divano Targa di GamFratesi insieme al tavolino Arch Coffee Table di Front. La sedia Ample e i tavoli da bistrot, disegnati da Nichetto Studio, ricreano l'inconfondibile atmosfera raffinata del bistrot viennese storico, arredando il ristorante e il patio con la nuova versione outdoor della famiglia Ample. Con questa prestigiosa fornitura, Gebrüder Thonet Vienna si riconferma partner ideale per progetti contract sofisticati in tutto il mondo, grazie all'eleganza raffinata delle linee e all'alta qualità del design delle sue creazioni." },
       { key: "gtv-experience.stories.title", defaultValue: "Storie, visioni, ispirazioni" },
@@ -312,6 +312,7 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "prodotti.detail.nav.designer", defaultValue: "Designer" },
       { key: "prodotti.detail.nav.specs", defaultValue: "Specifiche Tecniche" },
       { key: "prodotti.detail.nav.projects", defaultValue: "Progetti" },
+      { key: "prodotti.detail.pcon.title", defaultValue: "Prodotto" },
       { key: "prodotti.detail.show_more", defaultValue: "Continua a leggere" },
       { key: "prodotti.detail.show_less", defaultValue: "Mostra meno" },
       { key: "prodotti.detail.variants", defaultValue: "Varianti" },

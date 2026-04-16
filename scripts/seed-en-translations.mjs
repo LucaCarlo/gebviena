@@ -203,7 +203,7 @@ const EN = {
 
   // gtv-experience
   "gtv-experience.hero.title": "GTV Experience\nInterno Marche Design Hotel",
-  "gtv-experience.intro.title": "GTV furnishes the prestigious spaces of Interno Marche",
+  "gtv-experience.intro.title": "GTV furnishes the prestigious spaces\nof Interno Marche",
   "gtv-experience.intro.p1": "Gebrüder Thonet Vienna GmbH (GTV) furnishes the prestigious spaces of Interno Marche, the first Design Experience Hotel that tells the story of 100 years of design history. In the heart of the Marche region, in a beautiful setting of small villages and gentle hills, the dream hotel of Franco Moschini — patron and current president of Gebrüder Thonet Vienna — was born. Michele De Lucchi, GamFratesi, Vico Magistretti, Front and Nendo are some of the celebrated names of architects and designers who have collaborated with GTV and who inspire some of the rooms of the design hotel, enriched by their most iconic works.",
   "gtv-experience.intro.p2": "The refined spaces such as the lobby, the lounge bar and the patio feature some of the most famous and contemporary creations of the brand, such as the Loie lounge chair by Chiara Andreatti and the Targa sofa by GamFratesi, together with the Arch Coffee Table by Front. The Ample chair and the bistrot tables, designed by Nichetto Studio, recreate the unmistakable refined atmosphere of the historic Viennese bistrot, furnishing the restaurant and patio with the new outdoor version of the Ample family. With this prestigious supply, Gebrüder Thonet Vienna reconfirms itself as the ideal partner for sophisticated contract projects around the world, thanks to the refined elegance of the lines and the high design quality of its creations.",
   "gtv-experience.stories.title": "Stories, visions, inspirations",
@@ -237,6 +237,7 @@ const EN = {
   "prodotti.detail.nav.designer": "Designer",
   "prodotti.detail.nav.specs": "Technical Specifications",
   "prodotti.detail.nav.projects": "Projects",
+  "prodotti.detail.pcon.title": "Product",
   "prodotti.detail.show_more": "Read more",
   "prodotti.detail.show_less": "Show less",
   "prodotti.detail.variants": "Variants",

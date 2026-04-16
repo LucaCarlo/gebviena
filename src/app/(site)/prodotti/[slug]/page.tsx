@@ -446,57 +446,6 @@ export default function ProductDetailPage() {
             {/* Accordion rows */}
             <div className="divide-y divide-black border-t border-b border-black">
 
-              {/* --- PRODOTTO (pCon 3D viewer, solo se presente) --- */}
-              {(() => {
-                const pconSrc = product.pconBan
-                  ? buildPconUrl({
-                      moc: product.pconMoc,
-                      ban: product.pconBan,
-                      sid: product.pconSid,
-                      ovc: product.pconOvc,
-                    })
-                  : product.pconUrl || null;
-                if (!pconSrc) return null;
-                return (
-                  <div>
-                    <button
-                      onClick={() => setOpenAccordion(openAccordion === "prodotto" ? null : "prodotto")}
-                      className="w-full flex items-center justify-between py-5 px-2 group"
-                    >
-                      <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
-                        Prodotto
-                      </span>
-                      <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
-                        {openAccordion === "prodotto" ? <Minus size={18} /> : <Plus size={18} />}
-                      </span>
-                    </button>
-                    <AnimatePresence>
-                      {openAccordion === "prodotto" && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="px-2 pb-8">
-                            <iframe
-                              src={pconSrc}
-                              className="w-full border-0 rounded"
-                              style={{ height: "560px" }}
-                              allowFullScreen
-                              allow="xr-spatial-tracking"
-                              title={`Visualizzatore 3D ${product.name}`}
-                            />
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                );
-              })()}
-
-
               {/* --- DIMENSIONI --- */}
               <div>
                 <button
@@ -628,6 +577,39 @@ export default function ProductDetailPage() {
           </motion.div>
         </div>
       </section>
+
+      {/* ===== 6b. PCON 3D VIEWER — eager-loaded full-width section ===== */}
+      {(() => {
+        const pconSrc = product.pconBan
+          ? buildPconUrl({
+              moc: product.pconMoc,
+              ban: product.pconBan,
+              sid: product.pconSid,
+              ovc: product.pconOvc,
+            })
+          : product.pconUrl || null;
+        if (!pconSrc) return null;
+        return (
+          <section id="pcon" className="bg-white py-16 lg:py-24">
+            <div className="gtv-container">
+              <div className="text-center mb-12">
+                <h2 className="font-sans text-[38px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                  {t("prodotti.detail.pcon.title")}
+                </h2>
+              </div>
+              <iframe
+                src={pconSrc}
+                className="w-full border-0 rounded"
+                style={{ height: "640px" }}
+                allowFullScreen
+                allow="xr-spatial-tracking"
+                loading="eager"
+                title={`Visualizzatore 3D ${product.name}`}
+              />
+            </div>
+          </section>
+        );
+      })()}
 
       {/* ===== 7. PROJECT REFERENCE — first project where this product is used ===== */}
       <section id="progetti" className="mt-16 lg:mt-24">

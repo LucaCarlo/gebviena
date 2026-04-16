@@ -94,10 +94,8 @@ export default async function GtvExperiencePage() {
         />
         <div className="absolute inset-0 bg-black/40" />
         <div className="absolute inset-0 flex items-center justify-center text-center px-8">
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight">
-            GTV Experience
-            <br />
-            Interno Marche Design Hotel
+          <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight whitespace-pre-line">
+            {T["gtv-experience.hero.title"]}
           </h1>
         </div>
       </section>
@@ -105,10 +103,8 @@ export default async function GtvExperiencePage() {
       {/* ── Intro — titolo + testo ───────────────────────────────── */}
       <section className="pt-20 md:pt-28 pb-20 md:pb-28">
         <div className="gtv-container">
-          <h2 className="font-serif text-[44px] text-black leading-[1.15] text-center max-w-[940px] mx-auto" style={{ marginBottom: "63px" }}>
-            GTV arreda gli spazi
-            <br />
-            prestigiosi di Interno Marche
+          <h2 className="font-serif text-[44px] text-black leading-[1.15] text-center max-w-[940px] mx-auto whitespace-pre-line" style={{ marginBottom: "63px" }}>
+            {T["gtv-experience.intro.title"]}
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal mb-6 text-left max-w-[940px] mx-auto">
             {T["gtv-experience.intro.p1"]}
@@ -288,7 +284,7 @@ export default async function GtvExperiencePage() {
       </section>
 
       {/* ── 30 camere iconiche — titolo grande ───────────────────── */}
-      <section className="pb-16 md:pb-20">
+      <section className="pb-8 md:pb-10">
         <div className="mx-auto max-w-5xl px-10 md:px-16 lg:px-20">
           <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl text-black leading-[1.15] text-center">
             {T["gtv-experience.rooms.title"]}
