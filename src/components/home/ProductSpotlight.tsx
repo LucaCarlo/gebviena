@@ -3,6 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useT, useLang } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 
 interface ProductSpotlightProps {
   ambianceImage: string;
@@ -10,6 +12,8 @@ interface ProductSpotlightProps {
 }
 
 export default function ProductSpotlight({ ambianceImage, productImage }: ProductSpotlightProps) {
+  const t = useT();
+  const lang = useLang();
   return (
     <section className="w-full">
       <div className="grid grid-cols-1 lg:grid-cols-2 items-start">
@@ -59,19 +63,17 @@ export default function ProductSpotlight({ ambianceImage, productImage }: Produc
             <p
               className="uppercase text-[16px] tracking-[0.03em] !text-black mb-[8px] mt-[6px] font-light"
             >
-              Icona del design
+              {t("home.spotlight.label")}
             </p>
-            <h2 className="font-sans text-[28px] !text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              L&apos;eleganza<br />
-              senza tempo<br />
-              del legno curvato
+            <h2 className="font-sans text-[28px] !text-black leading-[1.15] font-light uppercase tracking-[inherit] whitespace-pre-line">
+              {t("home.spotlight.title")}
             </h2>
             <Link
-              href="/prodotti"
+              href={localizePath("/prodotti", lang)}
               className="inline-block mt-[20px] uppercase text-[16px] tracking-[0.03em] !text-black font-medium transition-colors hover:text-accent hover:underline"
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
-              Scopri il prodotto &rarr;
+              {t("common.discover_product")} &rarr;
             </Link>
           </motion.div>
         </div>

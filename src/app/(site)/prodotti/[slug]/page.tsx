@@ -8,7 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import type { Product, Designer, Project } from "@/types";
 import { buildPconUrl } from "@/lib/pcon";
-import { useLang } from "@/contexts/I18nContext";
+import { useLang, useT } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 
 interface ProductDetail extends Omit<Product, "projects"> {
   related: (Product & { designer?: Designer })[];
@@ -170,6 +171,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
   const lang = useLang();
+  const t = useT();
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -205,8 +207,8 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-warm-500">Prodotto non trovato</p>
-        <Link href="/prodotti" className="gtv-link">Torna ai prodotti</Link>
+        <p className="text-warm-500">{lang === "en" ? "Product not found" : lang === "de" ? "Produkt nicht gefunden" : lang === "fr" ? "Produit introuvable" : "Prodotto non trovato"}</p>
+        <Link href={localizePath("/prodotti", lang)} className="gtv-link">{t("common.back")}</Link>
       </div>
     );
   }
@@ -221,10 +223,10 @@ export default function ProductDetailPage() {
   const sideImg = product.sideImage || product.coverImage || product.imageUrl;
 
   const sectionNav = [
-    { label: "Ispirazione", id: "ispirazione" },
-    { label: "Designer", id: "designer" },
-    { label: "Specifiche Tecniche", id: "specifiche" },
-    { label: "Progetti", id: "progetti" },
+    { label: t("prodotti.detail.nav.inspiration"), id: "ispirazione" },
+    { label: t("prodotti.detail.nav.designer"), id: "designer" },
+    { label: t("prodotti.detail.nav.specs"), id: "specifiche" },
+    { label: t("prodotti.detail.nav.projects"), id: "progetti" },
   ];
 
   return (
@@ -296,7 +298,7 @@ export default function ProductDetailPage() {
                 className="inline-block mt-[20px] uppercase text-xs tracking-[0.08em] text-warm-900 font-light border-b border-warm-900 pb-1"
                 onClick={() => setDescExpanded(!descExpanded)}
               >
-                {descExpanded ? "Mostra meno" : "Continua a leggere"}
+                {descExpanded ? t("prodotti.detail.show_less") : t("prodotti.detail.show_more")}
               </button>
 
               {/* Dimensioni / Varianti buttons */}
@@ -310,7 +312,7 @@ export default function ProductDetailPage() {
                     <path d="M3 7l4-4 14 14-4 4L3 7z" />
                     <path d="M7 3l2 2M10 6l1.5 1.5M13 9l2 2M16 12l1.5 1.5" />
                   </svg>
-                  Dimensioni
+                  {t("prodotti.detail.dimensions")}
                 </button>
                 <button
                   onClick={() => document.getElementById("ispirazione")?.scrollIntoView({ behavior: "smooth" })}
@@ -321,25 +323,25 @@ export default function ProductDetailPage() {
                     <rect x="2" y="4" width="13" height="16" rx="0.5" />
                     <rect x="9" y="4" width="13" height="16" rx="0.5" />
                   </svg>
-                  Varianti
+                  {t("prodotti.detail.variants")}
                 </button>
               </div>
 
               {/* CTA links */}
               <div className="mt-12 flex flex-col gap-6">
                 <Link
-                  href="/contatti/rete-vendita"
+                  href={localizePath("/contatti/rete-vendita", lang)}
                   className="inline-block uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"
                   style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
-                  Cerca un punto vendita →
+                  {t("prodotti.detail.find_store")} →
                 </Link>
                 <Link
-                  href="/contatti/richiesta-info"
+                  href={localizePath("/contatti/richiesta-info", lang)}
                   className="inline-block uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"
                   style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
-                  Richiedi informazioni →
+                  {t("prodotti.detail.request_info")} →
                 </Link>
               </div>
             </motion.div>
@@ -502,7 +504,7 @@ export default function ProductDetailPage() {
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
                   <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
-                    Dimensioni
+                    {t("prodotti.detail.dimensions")}
                   </span>
                   <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
                     {openAccordion === "dimensioni" ? <Minus size={18} /> : <Plus size={18} />}
@@ -553,7 +555,7 @@ export default function ProductDetailPage() {
                                 ))}
                               </div>
                             ) : !product.dimensionImage && (
-                              <p className="text-sm text-warm-400 font-light">Dimensioni non disponibili.</p>
+                              <p className="text-sm text-warm-400 font-light">{t("prodotti.detail.dims_unavailable")}</p>
                             )}
                           </div>
                         </div>
@@ -570,7 +572,7 @@ export default function ProductDetailPage() {
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
                   <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
-                    Scheda tecnica, 2D, 3D, istruzioni d&apos;uso, manutenzione
+                    {t("prodotti.detail.tech_section_title")}
                   </span>
                   <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
                     {openAccordion === "scheda" ? <Minus size={18} /> : <Plus size={18} />}

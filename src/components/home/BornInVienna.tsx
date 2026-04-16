@@ -3,12 +3,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useT, useLang } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 
 interface BornInViennaProps {
   historicalImage: string;
 }
 
 export default function BornInVienna({ historicalImage }: BornInViennaProps) {
+  const t = useT();
+  const lang = useLang();
   return (
     <section className="w-full py-20 md:py-28 lg:py-36">
       <div className="grid grid-cols-1 lg:grid-cols-12 items-start gap-0">
@@ -27,11 +31,11 @@ export default function BornInVienna({ historicalImage }: BornInViennaProps) {
             the world.
           </h2>
           <Link
-            href="/mondo-gtv"
+            href={localizePath("/mondo-gtv", lang)}
             className="inline-block mt-[20px] uppercase text-[16px] tracking-[0.03em] !text-black font-medium transition-colors hover:text-accent hover:underline"
             style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
           >
-            Scopri il mondo GTV &rarr;
+            {t("common.discover_world")} &rarr;
           </Link>
         </motion.div>
 

@@ -101,15 +101,15 @@ export default function Footer() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
             <div>
               <h3 className="font-sans text-[28px] font-light uppercase tracking-[inherit] leading-[1.15] text-black">
-                Per gli amanti del design
+                {t("footer.newsletter.title")}
               </h3>
               <p className="font-sans text-[16px] font-light mt-0.5 text-black">
-                Ricevi novità e ispirazioni in esclusiva.
+                {t("footer.newsletter.subtitle")}
               </p>
             </div>
             <div>
               {subscribed ? (
-                <p className="text-sm" style={{ color: "#eb5b27" }}>Grazie per l&apos;iscrizione!</p>
+                <p className="text-sm" style={{ color: "#eb5b27" }}>{t("footer.newsletter.success")}</p>
               ) : (
                 <form onSubmit={handleSubscribe} className="space-y-3">
                   {/* Text/email fields in rows of 2 */}
@@ -178,8 +178,8 @@ export default function Footer() {
                                 required={field.required}
                               />
                               <span className="text-xs" style={{ color: "#757f80" }}>
-                                Accetto la{" "}
-                                <Link href="/privacy-policy" className="underline" style={{ color: "#000" }}>privacy policy</Link> *
+                                {t("footer.newsletter.consent")}{" "}
+                                <Link href="/privacy-policy" className="underline" style={{ color: "#000" }}>{t("footer.privacy")}</Link> *
                               </span>
                             </label>
                           );
@@ -203,7 +203,7 @@ export default function Footer() {
                     className="w-full border border-black py-2.5 text-sm uppercase tracking-[0.03em]"
                     style={{ color: "#000" }}
                   >
-                    Iscriviti
+                    {t("footer.newsletter.button")}
                   </button>
                 </form>
               )}
@@ -228,7 +228,7 @@ export default function Footer() {
             <div className="space-y-5 text-[14px] font-normal leading-snug" style={{ color: "#000" }}>
               <div>
                 <p className="font-bold text-[16px]" style={{ color: "#000" }}>
-                  Headquarters Gebrüder Thonet Vienna GmbH
+                  {t("footer.company.headquarters")}
                 </p>
                 <p>Via Foggia 23H – 10125 Torino (Italy)</p>
                 <p>T. +39 0110133330</p>
@@ -239,14 +239,14 @@ export default function Footer() {
 
               <div>
                 <p className="font-bold text-[16px]" style={{ color: "#000" }}>
-                  Registered Office Gebrüder Thonet Vienna GmbH
+                  {t("footer.company.registered")}
                 </p>
                 <p>Prinz Eugen Strasse 42 1040 Wien Österreich</p>
               </div>
 
               <div>
                 <p className="font-bold text-[16px]" style={{ color: "#000" }}>
-                  Offices of the trademarks licencee
+                  {t("footer.company.licencee")}
                 </p>
                 <p>Production Furniture International S.p.A</p>
                 <p>Via Vincenzo Vela 35/B – 10128 Torino (Italy)</p>
@@ -265,7 +265,7 @@ export default function Footer() {
           {/* Esplora */}
           <div>
             <h4 className="text-[16px] font-bold uppercase tracking-[0.05em] mb-8" style={{ color: "#000" }}>
-              Esplora
+              {t("footer.col.explore")}
             </h4>
             <ul className="space-y-6">
               <li>
@@ -299,22 +299,22 @@ export default function Footer() {
           {/* Informati */}
           <div>
             <h4 className="text-[16px] font-bold uppercase tracking-[0.05em] mb-8" style={{ color: "#000" }}>
-              Informati
+              {t("footer.col.info")}
             </h4>
             <ul className="space-y-6">
               <li>
                 <Link href="/privacy-policy" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  Privacy Policy
+                  {t("footer.privacy")}
                 </Link>
               </li>
               <li>
                 <Link href="/cookie-policy" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all" style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}>
-                  Cookie Policy
+                  {t("footer.cookies")}
                 </Link>
               </li>
               <li>
                 <Link href="/condizioni-vendita" className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all leading-snug" style={{ color: "#000" }}>
-                  Condizioni Generali<br />di Vendita
+                  {t("footer.terms")}
                 </Link>
               </li>
             </ul>
@@ -323,7 +323,7 @@ export default function Footer() {
           {/* Seguici */}
           <div>
             <h4 className="text-[16px] font-bold uppercase tracking-[0.05em] mb-8" style={{ color: "#000" }}>
-              Seguici
+              {t("footer.col.follow")}
             </h4>
             <ul className="space-y-6">
               <li>
@@ -360,12 +360,10 @@ export default function Footer() {
       {/* Copyright */}
       <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-[9.9rem] pt-16 md:pt-24">
         <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
-          Copyright 2025 © GEBRUDER THONET VIENNA GMBH
+          {t("footer.bottom.copyright")}
         </p>
         <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#000" }}>
-          Si prega di osservare che l&apos;utilizzo del marchio e il nome della società &ldquo;Gebrüder Thonet Vienna&rdquo; negli
-          Stati Uniti e l&apos;uso del marchio di fabbrica &ldquo;Gebrüder Thonet Vienna&rdquo; in Germania comporta restrizioni,
-          a causa di accordi stipulati con altre imprese. Per ulteriori informazioni si prega di contattare info@gebruederthonetvienna.it.
+          {t("footer.bottom.disclaimer")}
         </p>
       </div>
     </footer>

@@ -3,12 +3,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useT, useLang } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 
 interface FullWidthBannerProps {
   bannerImage: string;
 }
 
 export default function FullWidthBanner({ bannerImage }: FullWidthBannerProps) {
+  const t = useT();
+  const lang = useLang();
   return (
     <section className="relative w-full" style={{ height: "85vh" }}>
       {/* Background image — dark scene */}
@@ -27,16 +31,15 @@ export default function FullWidthBanner({ bannerImage }: FullWidthBannerProps) {
         transition={{ duration: 0.8 }}
         className="absolute top-14 md:top-18 lg:top-22 left-7 md:left-12 lg:left-16"
       >
-        <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug">
-          Sedute che invitano a restare,<br />
-          momenti che prendono forma
+        <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug whitespace-pre-line">
+          {t("home.banner.title")}
         </h2>
         <Link
-          href="/progetti"
+          href={localizePath("/progetti", lang)}
           className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-medium transition-colors hover:underline"
           style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
         >
-          I migliori progetti &rarr;
+          {t("home.banner.cta")} &rarr;
         </Link>
       </motion.div>
     </section>

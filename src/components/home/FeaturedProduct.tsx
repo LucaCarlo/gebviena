@@ -3,6 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useT, useLang } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 
 interface FeaturedProductProps {
   ambianceImage: string;
@@ -10,6 +12,8 @@ interface FeaturedProductProps {
 }
 
 export default function FeaturedProduct({ ambianceImage, productImage }: FeaturedProductProps) {
+  const t = useT();
+  const lang = useLang();
   return (
     <section className="w-full">
       <div className="grid grid-cols-1 lg:grid-cols-2 items-start">
@@ -60,19 +64,17 @@ export default function FeaturedProduct({ ambianceImage, productImage }: Feature
             <p
               className="uppercase text-[16px] tracking-[0.03em] !text-black mb-[8px] mt-[6px] font-light"
             >
-              Nuovo prodotto
+              {t("home.featured.label")}
             </p>
-            <h2 className="font-sans text-[28px] !text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              Una silhouette<br />
-              morbida<br />
-              e accogliente
+            <h2 className="font-sans text-[28px] !text-black leading-[1.15] font-light uppercase tracking-[inherit] whitespace-pre-line">
+              {t("home.featured.title")}
             </h2>
             <Link
-              href="/prodotti"
+              href={localizePath("/prodotti", lang)}
               className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] !text-black font-medium hover:underline"
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
-              Scopri il prodotto &rarr;
+              {t("common.discover_product")} &rarr;
             </Link>
           </motion.div>
         </div>
