@@ -402,7 +402,7 @@ export default function ProductDetailPage() {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="flex flex-col justify-center px-10 md:px-16 lg:px-[150px] py-16 lg:py-24"
               >
-                <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">Designer</p>
+                <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">{t("prodotti.detail.designer.label")}</p>
                 <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                   {product.designer.name}
                 </h2>
@@ -413,11 +413,11 @@ export default function ProductDetailPage() {
                   />
                 )}
                 <Link
-                  href={`/designer/${product.designer.slug || product.designer.id}`}
+                  href={localizePath(`/designers/${product.designer.slug || product.designer.id}`, lang)}
                   className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"
                   style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
                 >
-                  Vai alla scheda →
+                  {t("prodotti.detail.designer.cta")}
                 </Link>
               </motion.div>
             </div>
@@ -439,7 +439,7 @@ export default function ProductDetailPage() {
           >
             <div className="text-center mb-12">
               <h2 className="font-sans text-[38px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-                Specifiche Tecniche
+                {t("prodotti.detail.nav.specs")}
               </h2>
             </div>
 
@@ -563,7 +563,7 @@ export default function ProductDetailPage() {
                         {!product.techSheetUrl && !product.model2dUrl && !product.model3dUrl && (
                           <div className="pt-4">
                             <p className="text-sm text-warm-400 font-light">
-                              Documentazione non ancora disponibile.
+                              {t("prodotti.detail.docs.unavailable")}
                             </p>
                           </div>
                         )}
@@ -643,11 +643,11 @@ export default function ProductDetailPage() {
                     {proj.name}
                   </h3>
                   <Link
-                    href={`/progetti/${proj.slug}`}
+                    href={localizePath(`/progetti/${proj.slug}`, lang)}
                     className="inline-block uppercase text-[16px] tracking-[0.03em] text-white font-medium hover:underline mt-6"
                     style={{ textUnderlineOffset: "8px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
                   >
-                    Scopri di più →
+                    {t("prodotti.detail.discover_more")}
                   </Link>
                 </div>
               </motion.div>
@@ -660,17 +660,17 @@ export default function ProductDetailPage() {
                 className="flex flex-col justify-center bg-white"
                 style={{ padding: "72px 80px" }}
               >
-                <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">Progetti</p>
+                <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{t("prodotti.detail.projects.label")}</p>
                 <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-                  Gli ambienti si vestono di eleganza con {product.name}
+                  {t("prodotti.detail.projects.title").replace("{name}", product.name)}
                 </h3>
                 <div className="flex flex-col gap-4 mt-8">
                   <Link
-                    href={`/progetti?productId=${product.id}`}
+                    href={localizePath(`/progetti?productId=${product.id}`, lang)}
                     className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
                     style={{ textUnderlineOffset: "8px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
                   >
-                    Esplora le realizzazioni →
+                    {t("prodotti.detail.projects.cta")}
                   </Link>
                 </div>
               </motion.div>
@@ -690,12 +690,12 @@ export default function ProductDetailPage() {
             transition={{ duration: 0.6 }}
             className="flex flex-col justify-center px-10 md:px-16 lg:pl-[135px] lg:pr-20 py-16 lg:py-24 bg-white"
           >
-            <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">Supporto ai professionisti</p>
-            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-              Hai un progetto contract<br />da realizzare?
+            <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">{t("prodotti.detail.support.label")}</p>
+            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] whitespace-pre-line">
+              {t("prodotti.detail.support.title")}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-6">
-              Collabora con il nostro team per sviluppare progetti unici che soddisfino le esigenze del tuo cliente.
+              {t("prodotti.detail.support.description")}
             </p>
 
             {/* 3 feature icons */}
@@ -706,7 +706,7 @@ export default function ProductDetailPage() {
                   <path d="M3 9h18M9 3v18" />
                   <path d="M7 13l2 2 4-4" />
                 </svg>
-                <p className="text-[14px] text-black font-light leading-tight">Dimensioni personalizzate dei prodotti</p>
+                <p className="text-[14px] text-black font-light leading-tight">{t("prodotti.detail.support.feature1")}</p>
               </div>
               <div className="flex flex-col items-start text-left max-w-[100px]">
                 <svg className="w-7 h-7 text-black mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
@@ -714,7 +714,7 @@ export default function ProductDetailPage() {
                   <rect x="14" y="6" width="8" height="12" rx="1" />
                   <path d="M6 10h0M6 14h0M18 10h0M18 14h0" strokeWidth={2} strokeLinecap="round" />
                 </svg>
-                <p className="text-[14px] text-black font-light leading-tight">Finiture differenti dallo standard</p>
+                <p className="text-[14px] text-black font-light leading-tight">{t("prodotti.detail.support.feature2")}</p>
               </div>
               <div className="flex flex-col items-start text-left max-w-[100px]">
                 <svg className="w-7 h-7 text-black mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
@@ -722,16 +722,16 @@ export default function ProductDetailPage() {
                   <path d="M2 17l10 5 10-5" />
                   <path d="M2 12l10 5 10-5" />
                 </svg>
-                <p className="text-[14px] text-black font-light leading-tight">Realizzazione modelli non a catalogo</p>
+                <p className="text-[14px] text-black font-light leading-tight">{t("prodotti.detail.support.feature3")}</p>
               </div>
             </div>
 
             <Link
-              href="/contatti/richiesta-info"
+              href={localizePath("/contatti/richiesta-info", lang)}
               className="inline-block mt-10 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"
               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
             >
-              Contattaci per il tuo progetto →
+              {t("prodotti.detail.support.cta")}
             </Link>
           </motion.div>
 
