@@ -16,6 +16,7 @@ import {
   Languages,
   Share2,
   MapPin,
+  Cookie,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -54,7 +55,7 @@ interface BackupPreview {
   [key: string]: number;
 }
 
-type TabKey = "smtp" | "recaptcha" | "languages" | "translations" | "social" | "maps" | "stats" | "backup" | "storage";
+type TabKey = "smtp" | "recaptcha" | "iubenda" | "languages" | "translations" | "social" | "maps" | "stats" | "backup" | "storage";
 
 interface TabDef {
   key: TabKey;
@@ -65,6 +66,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { key: "smtp", label: "Email / SMTP", icon: Mail },
   { key: "recaptcha", label: "reCAPTCHA", icon: Shield },
+  { key: "iubenda", label: "Iubenda", icon: Cookie },
   { key: "languages", label: "Lingue", icon: Globe },
   { key: "translations", label: "Traduzioni AI", icon: Languages },
   { key: "social", label: "Social", icon: Share2 },
@@ -1023,6 +1025,103 @@ function SocialTab({ showToast }: { showToast: (m: string, t: "success" | "error
   );
 }
 
+// ─── Iubenda Tab ─────────────────────────────────────────────────────────────
+
+function IubendaTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
+  const [form, setForm] = useState({
+    iubenda_site_id: "",
+    iubenda_cookie_policy_id: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings?group=iubenda")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          const next = { ...form };
+          for (const s of data.data) {
+            if (s.key in next) (next as Record<string, string>)[s.key] = s.value;
+          }
+          setForm(next);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const settings = Object.entries(form).map(([key, value]) => ({ key, value, group: "iubenda" }));
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (data.success) showToast("Impostazioni Iubenda salvate", "success");
+      else showToast(data.error || "Errore", "error");
+    } catch {
+      showToast("Errore di connessione", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-light text-warm-900">Iubenda — Cookie & Privacy</h2>
+        <p className="text-sm text-warm-500 mt-1">
+          Configura gli ID Iubenda usati per il banner cookie globale e per le pagine Privacy/Cookie Policy.
+          Trovi entrambi nel pannello iubenda.com (Site ID nel codice di integrazione del banner, Cookie Policy ID nell&apos;URL della tua privacy policy).
+        </p>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
+        <div>
+          <label className="block text-sm font-medium text-warm-800 mb-1.5">Site ID</label>
+          <input
+            type="text"
+            value={form.iubenda_site_id}
+            onChange={(e) => setForm({ ...form, iubenda_site_id: e.target.value.replace(/[^0-9]/g, "") })}
+            placeholder="es. 4004725"
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm font-mono focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          />
+          <p className="text-xs text-warm-500 mt-1">Identifica il sito sul tuo account Iubenda. Usato dal banner cookie e dallo script di autoblocking.</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-warm-800 mb-1.5">Cookie Policy ID</label>
+          <input
+            type="text"
+            value={form.iubenda_cookie_policy_id}
+            onChange={(e) => setForm({ ...form, iubenda_cookie_policy_id: e.target.value.replace(/[^0-9]/g, "") })}
+            placeholder="es. 24997138"
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm font-mono focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          />
+          <p className="text-xs text-warm-500 mt-1">È l&apos;ID nella URL https://www.iubenda.com/privacy-policy/<strong>XXXXXXXX</strong>. Usato dalle pagine /privacy-policy e /cookie-policy.</p>
+        </div>
+
+        <div className="text-xs px-3 py-2 rounded bg-blue-50 border border-blue-200 text-blue-800">
+          ℹ Se lasci i campi vuoti il sito userà i valori di default attualmente hardcoded nel codice (Site ID 4004725, Cookie Policy ID 24997138).
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="inline-flex items-center gap-2 bg-warm-800 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50"
+        >
+          {saving && <Loader2 size={16} className="animate-spin" />}
+          Salva
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Google Maps Tab ─────────────────────────────────────────────────────────
 
 function MapsTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
@@ -1518,6 +1617,8 @@ export default function AdminSettingsPage() {
         return <SocialTab showToast={showToast} />;
       case "maps":
         return <MapsTab showToast={showToast} />;
+      case "iubenda":
+        return <IubendaTab showToast={showToast} />;
     }
   };
 

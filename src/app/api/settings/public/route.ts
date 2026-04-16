@@ -16,6 +16,7 @@ export async function GET() {
           { key: { in: ["recaptcha_enabled", "recaptcha_site_key"] } },
           { group: "social" },
           { group: "maps" },
+          { group: "iubenda" },
         ],
       },
     });

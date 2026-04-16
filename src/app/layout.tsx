@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Work_Sans } from "next/font/google";
 import Script from "next/script";
+import { prisma } from "@/lib/prisma";
 import "./globals.css";
 
 const workSans = Work_Sans({
@@ -15,11 +16,28 @@ export const metadata: Metadata = {
     "Born in Vienna. Made in Italy. Designed around the world. Scopri la collezione di arredi di design Gebrüder Thonet Vienna.",
 };
 
-export default function RootLayout({
+const DEFAULT_IUBENDA_SITE_ID = "4004725";
+const DEFAULT_IUBENDA_COOKIE_POLICY_ID = "24997138";
+
+async function loadIubendaConfig() {
+  try {
+    const rows = await prisma.setting.findMany({ where: { group: "iubenda" } });
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+    return {
+      siteId: (map.get("iubenda_site_id") || DEFAULT_IUBENDA_SITE_ID).trim(),
+      cookiePolicyId: (map.get("iubenda_cookie_policy_id") || DEFAULT_IUBENDA_COOKIE_POLICY_ID).trim(),
+    };
+  } catch {
+    return { siteId: DEFAULT_IUBENDA_SITE_ID, cookiePolicyId: DEFAULT_IUBENDA_COOKIE_POLICY_ID };
+  }
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const iub = await loadIubendaConfig();
   return (
     <html lang="it">
       <head>
@@ -33,13 +51,13 @@ export default function RootLayout({
         <Script id="iubenda-config" strategy="afterInteractive">{`
             var _iub = _iub || [];
             _iub.csConfiguration = {
-              "siteId": 4004725,
-              "cookiePolicyId": 24997138,
+              "siteId": ${Number(iub.siteId) || 0},
+              "cookiePolicyId": ${Number(iub.cookiePolicyId) || 0},
               "lang": "it",
               "storage": { "useSiteId": true }
             };
           `}</Script>
-        <Script src="https://cs.iubenda.com/autoblocking/4004725.js" strategy="afterInteractive" />
+        <Script src={`https://cs.iubenda.com/autoblocking/${iub.siteId}.js`} strategy="afterInteractive" />
         <Script src="https://cdn.iubenda.com/cs/iubenda_cs.js" strategy="afterInteractive" charSet="UTF-8" />
       </body>
     </html>
