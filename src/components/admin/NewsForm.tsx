@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { X, Sparkles, Loader2 } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
 import SeoPanel from "./SeoPanel";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
 import { TInput } from "./TranslatableField";
 import NewsBlockBuilder from "./news/NewsBlockBuilder";
 import { slugify } from "@/lib/utils";
+import type { NewsBlockV2 } from "@/types";
 
 interface NewsFormProps {
   articleId?: string;
@@ -112,6 +113,118 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
 
   const removeTag = (tag: string) => {
     updateField("tags", JSON.stringify(tags.filter((tt) => tt !== tag)));
+  };
+
+  /* ── Translate all block texts with AI ──────────────────── */
+  const [translatingBlocks, setTranslatingBlocks] = useState(false);
+
+  const collectBlockTexts = (blocks: NewsBlockV2[]): Record<string, string> => {
+    const out: Record<string, string> = {};
+    blocks.forEach((b, i) => {
+      const d = b.data as Record<string, unknown>;
+      const put = (sub: string, v: unknown) => {
+        if (typeof v === "string" && v.trim()) out[`${i}.${sub}`] = v;
+      };
+      switch (b.type) {
+        case "paragraph":
+          put("title", d.title); put("body", d.body); break;
+        case "image_text_bg":
+          put("title", d.title); put("text", d.text); put("ctaLabel", d.ctaLabel); break;
+        case "single_image":
+          put("caption", d.caption); break;
+        case "image_with_paragraph":
+          put("title", d.title); put("body", d.body); break;
+        case "fullwidth_banner":
+          put("title", d.title); put("ctaLabel", d.ctaLabel); break;
+        case "three_images": {
+          const imgs = (d.images as { caption?: string }[]) || [];
+          imgs.forEach((img, j) => {
+            if (img.caption && img.caption.trim()) out[`${i}.images.${j}.caption`] = img.caption;
+          });
+          break;
+        }
+      }
+    });
+    return out;
+  };
+
+  const applyBlockTexts = (blocks: NewsBlockV2[], translations: Record<string, string>): NewsBlockV2[] => {
+    return blocks.map((b, i) => {
+      const data = { ...(b.data as Record<string, unknown>) };
+      const get = (sub: string) => translations[`${i}.${sub}`];
+      switch (b.type) {
+        case "paragraph":
+          if (get("title") !== undefined) data.title = get("title");
+          if (get("body") !== undefined) data.body = get("body");
+          break;
+        case "image_text_bg":
+          if (get("title") !== undefined) data.title = get("title");
+          if (get("text") !== undefined) data.text = get("text");
+          if (get("ctaLabel") !== undefined) data.ctaLabel = get("ctaLabel");
+          break;
+        case "single_image":
+          if (get("caption") !== undefined) data.caption = get("caption");
+          break;
+        case "image_with_paragraph":
+          if (get("title") !== undefined) data.title = get("title");
+          if (get("body") !== undefined) data.body = get("body");
+          break;
+        case "fullwidth_banner":
+          if (get("title") !== undefined) data.title = get("title");
+          if (get("ctaLabel") !== undefined) data.ctaLabel = get("ctaLabel");
+          break;
+        case "three_images": {
+          const imgs = ((data.images as { url: string; caption: string }[]) || []).map((img, j) => {
+            const tr = translations[`${i}.images.${j}.caption`];
+            return tr !== undefined ? { ...img, caption: tr } : img;
+          });
+          data.images = imgs;
+          break;
+        }
+      }
+      return { ...b, data: data as NewsBlockV2["data"] };
+    });
+  };
+
+  const handleTranslateBlocks = async () => {
+    if (!tCtx?.isTranslating) return;
+    let sourceBlocks: NewsBlockV2[];
+    try {
+      const parsed = JSON.parse(form.blocksV2 || "[]");
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        setError("Nessun blocco da tradurre nella lingua di default");
+        return;
+      }
+      sourceBlocks = parsed as NewsBlockV2[];
+    } catch {
+      setError("JSON dei blocchi non valido");
+      return;
+    }
+    const fields = collectBlockTexts(sourceBlocks);
+    if (Object.keys(fields).length === 0) {
+      setError("Nessun testo da tradurre nei blocchi");
+      return;
+    }
+    setTranslatingBlocks(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fields, fromLang: tCtx.defaultLang, toLang: tCtx.lang, htmlMode: true }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || "Errore traduzione");
+        return;
+      }
+      const translatedBlocks = applyBlockTexts(sourceBlocks, data.translations || {});
+      tCtx.setValue("blocks", JSON.stringify(translatedBlocks));
+    } catch {
+      setError("Errore di connessione");
+    } finally {
+      setTranslatingBlocks(false);
+    }
   };
 
   /* ── Submit ──────────────────────────────────────────────── */
@@ -230,13 +343,27 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
 
         {/* Sezioni dinamiche — uguali per tutte le categorie */}
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
-          <div>
-            <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezioni della pagina</h2>
-            <p className="text-[11px] text-warm-400 mt-1">
-              {tCtx?.isTranslating
-                ? `Stai modificando le sezioni in ${tCtx.lang.toUpperCase()}. Traduci i testi delle sezioni e premi Aggiorna per salvare.`
-                : "Aggiungi e ordina le sezioni come preferisci."}
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezioni della pagina</h2>
+              <p className="text-[11px] text-warm-400 mt-1">
+                {tCtx?.isTranslating
+                  ? `Stai modificando le sezioni in ${tCtx.lang.toUpperCase()}. Usa "Traduci sezioni con AI" per tradurre tutti i testi automaticamente, poi premi Aggiorna per salvare.`
+                  : "Aggiungi e ordina le sezioni come preferisci."}
+              </p>
+            </div>
+            {tCtx?.isTranslating && (
+              <button
+                type="button"
+                onClick={handleTranslateBlocks}
+                disabled={translatingBlocks}
+                title="Traduce con AI tutti i testi (titoli, paragrafi, didascalie, CTA) di tutti i blocchi dalla lingua di default"
+                className="flex-shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 hover:text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded disabled:opacity-50"
+              >
+                {translatingBlocks ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                {translatingBlocks ? "Traduzione in corso..." : "Traduci sezioni con AI"}
+              </button>
+            )}
           </div>
           <NewsBlockBuilder
             value={tCtx?.isTranslating ? (tCtx.getValue("blocks", "") || form.blocksV2) : form.blocksV2}
