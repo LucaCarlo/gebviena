@@ -758,9 +758,9 @@ export default function ProductDetailPage() {
       {/* ===== 9. BREADCRUMBS ===== */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href={localizePath("/", lang)}>{t("common.breadcrumb_home")}</Link>
           <span>&gt;</span>
-          <Link href="/prodotti">Prodotti</Link>
+          <Link href={localizePath("/prodotti", lang)}>{t("prodotti.breadcrumb")}</Link>
           <span>&gt;</span>
           <span>{product.name}</span>
         </div>
