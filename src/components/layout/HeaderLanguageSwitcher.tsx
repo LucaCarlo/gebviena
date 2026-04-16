@@ -59,34 +59,42 @@ export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
 
   if (languages.length <= 1) return null;
 
-  const label = (currentLang || "it").toUpperCase();
-  const color = isScrolled ? "text-neutral-700" : "text-white";
+  const current = languages.find((l) => l.code === currentLang);
+  const label = current?.name || (currentLang === "it" ? "Italiano" : currentLang.toUpperCase());
+  const colorClass = isScrolled ? "!text-black" : "text-white";
 
   return (
     <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-1 text-[14px] font-light uppercase tracking-[0.05em] transition-colors hover:opacity-70 ${color}`}
+        className={`inline-flex items-center gap-1.5 uppercase text-[16px] tracking-[0.03em] font-medium transition-colors hover:underline ${colorClass}`}
+        style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
         aria-label="Cambia lingua"
       >
         <span>{label}</span>
-        <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        >
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-2 bg-white border border-black/10 shadow-lg min-w-[140px] z-[80]">
+        <div className="absolute top-full right-0 mt-3 bg-white border border-black/10 shadow-lg min-w-[180px] z-[80]">
           {languages.map((l) => {
             const isCurrent = l.code === currentLang;
             return (
               <button
                 key={l.code}
                 onClick={() => switchTo(l)}
-                className={`w-full text-left px-4 py-2.5 text-[14px] uppercase tracking-[0.05em] transition-colors text-dark ${isCurrent ? "font-semibold bg-warm-50" : "font-light hover:bg-warm-50"}`}
+                className={`block w-full text-left px-5 py-3 text-[16px] uppercase tracking-[0.03em] transition-all hover:underline ${isCurrent ? "font-semibold" : "font-normal"}`}
+                style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}
               >
-                {l.flag && <span className="mr-2">{l.flag}</span>}
-                {l.code.toUpperCase()} — {l.name}
+                {l.name}
               </button>
             );
           })}
