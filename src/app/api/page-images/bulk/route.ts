@@ -8,7 +8,7 @@ export async function PUT(req: Request) {
 
   try {
     const { images } = await req.json() as {
-      images: { page: string; section: string; label: string; imageUrl: string; altText?: string; sortOrder?: number }[];
+      images: { page: string; section: string; label: string; imageUrl: string; altText?: string; linkUrl?: string; sortOrder?: number }[];
     };
 
     const results = await Promise.all(
@@ -21,11 +21,13 @@ export async function PUT(req: Request) {
             label: img.label,
             imageUrl: img.imageUrl,
             altText: img.altText || null,
+            linkUrl: img.linkUrl || null,
             sortOrder: img.sortOrder ?? 0,
           },
           update: {
             imageUrl: img.imageUrl,
             altText: img.altText || null,
+            linkUrl: img.linkUrl ?? null,
             label: img.label,
           },
         })

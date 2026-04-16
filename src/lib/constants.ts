@@ -154,7 +154,7 @@ export function buildPermissions(value: boolean): Record<string, boolean> {
 export const PAGE_IMAGES_CONFIG: {
   page: string;
   label: string;
-  images: { section: string; label: string; defaultUrl: string; acceptVideo?: boolean; aspectRatio?: number }[];
+  images: { section: string; label: string; defaultUrl: string; acceptVideo?: boolean; aspectRatio?: number; acceptLink?: boolean }[];
 }[] = [
   {
     page: "menu",
@@ -167,7 +167,7 @@ export const PAGE_IMAGES_CONFIG: {
     page: "footer",
     label: "Footer",
     images: [
-      { section: "built-by-logo", label: "Logo 'Built by' (mostrato in basso a destra del footer)", defaultUrl: "" },
+      { section: "built-by-logo", label: "Logo 'Built by' (mostrato in basso al footer)", defaultUrl: "", acceptLink: true },
     ],
   },
   {

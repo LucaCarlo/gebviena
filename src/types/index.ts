@@ -470,6 +470,7 @@ export interface PageImage {
   label: string;
   imageUrl: string;
   altText: string | null;
+  linkUrl: string | null;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;

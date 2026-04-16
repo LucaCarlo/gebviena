@@ -87,6 +87,8 @@ export default function GestioneImmaginiPage() {
     fetchSlides();
   };
 
+  const [linkEdits, setLinkEdits] = useState<Record<string, string>>({});
+
   /* ── Page images helpers ── */
   const getImageUrl = (page: string, section: string, defaultUrl: string) => {
     const key = `${page}:${section}`;
@@ -95,8 +97,21 @@ export default function GestioneImmaginiPage() {
     return existing?.imageUrl || defaultUrl;
   };
 
+  const getLinkUrl = (page: string, section: string) => {
+    const key = `${page}:${section}`;
+    if (key in linkEdits) return linkEdits[key];
+    const existing = images.find((i) => i.page === page && i.section === section);
+    return existing?.linkUrl || "";
+  };
+
   const handleImageChange = (page: string, section: string, url: string) => {
     setEdits((prev) => ({ ...prev, [`${page}:${section}`]: url }));
+    setDirty(true);
+    setSaved(false);
+  };
+
+  const handleLinkChange = (page: string, section: string, url: string) => {
+    setLinkEdits((prev) => ({ ...prev, [`${page}:${section}`]: url }));
     setDirty(true);
     setSaved(false);
   };
@@ -109,16 +124,18 @@ export default function GestioneImmaginiPage() {
     setSaving(true);
     setSaved(false);
 
-    const imagesToSave: { page: string; section: string; label: string; imageUrl: string; sortOrder: number }[] = [];
+    const imagesToSave: { page: string; section: string; label: string; imageUrl: string; linkUrl?: string | null; sortOrder: number }[] = [];
     for (const pageConfig of PAGE_IMAGES_CONFIG) {
       for (let idx = 0; idx < pageConfig.images.length; idx++) {
         const imgConfig = pageConfig.images[idx];
         const url = getImageUrl(pageConfig.page, imgConfig.section, imgConfig.defaultUrl);
+        const link = imgConfig.acceptLink ? getLinkUrl(pageConfig.page, imgConfig.section) : null;
         imagesToSave.push({
           page: pageConfig.page,
           section: imgConfig.section,
           label: imgConfig.label,
           imageUrl: url,
+          linkUrl: link || null,
           sortOrder: idx,
         });
       }
@@ -135,6 +152,7 @@ export default function GestioneImmaginiPage() {
         setSaved(true);
         setDirty(false);
         setEdits({});
+        setLinkEdits({});
         await fetchImages();
         setTimeout(() => setSaved(false), 3000);
       } else {
@@ -397,7 +415,7 @@ export default function GestioneImmaginiPage() {
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {pageConfig.images.map((imgConfig) => (
-                          <div key={imgConfig.section}>
+                          <div key={imgConfig.section} className="space-y-2">
                             <ImageUploadField
                               label={imgConfig.label}
                               value={getImageUrl(
@@ -421,6 +439,21 @@ export default function GestioneImmaginiPage() {
                               acceptVideo={imgConfig.acceptVideo}
                               aspectRatio={imgConfig.aspectRatio}
                             />
+                            {imgConfig.acceptLink && (
+                              <div>
+                                <label className="block text-[11px] font-semibold text-warm-600 uppercase tracking-wider mb-1">
+                                  Link URL (opzionale)
+                                </label>
+                                <input
+                                  type="url"
+                                  value={getLinkUrl(pageConfig.page, imgConfig.section)}
+                                  onChange={(e) => handleLinkChange(pageConfig.page, imgConfig.section, e.target.value)}
+                                  placeholder="https://..."
+                                  className="w-full border border-warm-300 rounded px-3 py-1.5 text-xs focus:border-warm-800 focus:outline-none"
+                                />
+                                <p className="text-[10px] text-warm-400 mt-1">Se compilato, l&apos;immagine sarà cliccabile e porterà a questo URL.</p>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

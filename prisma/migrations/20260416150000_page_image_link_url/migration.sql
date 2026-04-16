@@ -1,0 +1,1 @@
+ALTER TABLE `PageImage` ADD COLUMN `linkUrl` TEXT NULL;

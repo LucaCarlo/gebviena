@@ -40,6 +40,7 @@ export default function Footer() {
   const t = useT();
   const lang = useLang();
   const [builtByLogo, setBuiltByLogo] = useState<string>("");
+  const [builtByLink, setBuiltByLink] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/page-images?page=footer")
@@ -48,6 +49,7 @@ export default function Footer() {
         const items = d?.data || [];
         const logo = items.find((i: { section: string }) => i.section === "built-by-logo");
         if (logo?.imageUrl) setBuiltByLogo(logo.imageUrl);
+        if (logo?.linkUrl) setBuiltByLink(logo.linkUrl);
       })
       .catch(() => {});
   }, []);
@@ -389,14 +391,33 @@ export default function Footer() {
         {builtByLogo && (
           <div className="flex items-center gap-1.5 mt-10" style={{ color: "#000" }}>
             <span className="text-[13px] font-normal">Built by</span>
-            <Image
-              src={builtByLogo}
-              alt="Built by"
-              width={80}
-              height={18}
-              className="object-contain h-[18px] w-auto"
-              unoptimized
-            />
+            {builtByLink ? (
+              <a
+                href={builtByLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block transition-opacity hover:opacity-70"
+                aria-label="Built by"
+              >
+                <Image
+                  src={builtByLogo}
+                  alt="Built by"
+                  width={80}
+                  height={18}
+                  className="object-contain h-[18px] w-auto"
+                  unoptimized
+                />
+              </a>
+            ) : (
+              <Image
+                src={builtByLogo}
+                alt="Built by"
+                width={80}
+                height={18}
+                className="object-contain h-[18px] w-auto"
+                unoptimized
+              />
+            )}
           </div>
         )}
       </div>
