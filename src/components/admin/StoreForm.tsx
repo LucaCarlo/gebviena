@@ -86,6 +86,37 @@ export default function StoreForm({ storeId, defaultType = "STORE", backUrl }: S
   const [geocoding, setGeocoding] = useState(false);
   const [geocodeMsg, setGeocodeMsg] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
 
+  /** Try Nominatim (OSM) first — best coverage for specific street addresses worldwide,
+   *  then fall back to Photon for POI-style queries. */
+  const tryNominatim = async (q: string): Promise<{ lat: number; lng: number; label: string } | null> => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&addressdetails=1`;
+      const res = await fetch(url, { headers: { "Accept-Language": "it,en" } });
+      const arr = await res.json();
+      const r = Array.isArray(arr) ? arr[0] : null;
+      if (r?.lat && r?.lon) {
+        return { lat: parseFloat(r.lat), lng: parseFloat(r.lon), label: r.display_name || q };
+      }
+    } catch { /* ignore */ }
+    return null;
+  };
+
+  const tryPhoton = async (q: string): Promise<{ lat: number; lng: number; label: string } | null> => {
+    try {
+      const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const feat = data?.features?.[0];
+      if (feat?.geometry?.coordinates) {
+        const [lng, lat] = feat.geometry.coordinates as [number, number];
+        const props = feat.properties || {};
+        const label = [props.name, props.street, props.city, props.country].filter(Boolean).join(", ");
+        return { lat, lng, label: label || q };
+      }
+    } catch { /* ignore */ }
+    return null;
+  };
+
   const geocode = async () => {
     const query = [form.address, form.city, form.country].filter(Boolean).join(", ").trim();
     if (!query) {
@@ -94,25 +125,20 @@ export default function StoreForm({ storeId, defaultType = "STORE", backUrl }: S
     }
     setGeocoding(true);
     setGeocodeMsg(null);
-    try {
-      const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const feat = data?.features?.[0];
-      if (!feat?.geometry?.coordinates) {
-        setGeocodeMsg({ type: "error", text: "Indirizzo non trovato. Verifica i dati e riprova, oppure inserisci le coordinate manualmente." });
-        return;
-      }
-      const [lng, lat] = feat.geometry.coordinates as [number, number];
-      setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }));
-      const props = feat.properties || {};
-      const found = [props.name, props.street, props.city, props.country].filter(Boolean).join(", ");
-      setGeocodeMsg({ type: "success", text: `Coordinate aggiornate per: ${found}` });
-    } catch {
-      setGeocodeMsg({ type: "error", text: "Errore di connessione al servizio di geocoding." });
-    } finally {
+    // Strip Italian-only country names that English-language OSM data may not match.
+    const queryEn = query.replace(/Paesi Bassi/gi, "Netherlands").replace(/Inghilterra/gi, "United Kingdom").replace(/Germania/gi, "Germany");
+    const result = (await tryNominatim(query))
+      || (queryEn !== query ? await tryNominatim(queryEn) : null)
+      || (await tryPhoton(query))
+      || (queryEn !== query ? await tryPhoton(queryEn) : null);
+    if (!result) {
+      setGeocodeMsg({ type: "error", text: "Indirizzo non trovato. Prova a semplificare la query (es. solo via, civico, città) o inserisci le coordinate manualmente." });
       setGeocoding(false);
+      return;
     }
+    setForm((prev) => ({ ...prev, latitude: result.lat, longitude: result.lng }));
+    setGeocodeMsg({ type: "success", text: `Coordinate aggiornate: ${result.label}` });
+    setGeocoding(false);
   };
 
   return (

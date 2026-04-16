@@ -28,7 +28,9 @@ const MapView = forwardRef<MapApi, Props>(function MapView({ stores, searchInput
   const innerRef = useRef<MapApi | null>(null);
 
   useEffect(() => {
-    fetch("/api/settings/public", { cache: "no-store" })
+    // Cache buster bypasses any stale browser cache from previous responses
+    // that had a long Cache-Control max-age set.
+    fetch(`/api/settings/public?_=${Date.now()}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         const d = data?.data || {};
