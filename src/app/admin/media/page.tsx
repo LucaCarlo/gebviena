@@ -65,6 +65,10 @@ export default function AdminMediaPage() {
   const [sortBy, setSortBy] = useState<"createdAt" | "size" | "originalName">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+  // Folder counts (total across all pages)
+  const [allCount, setAllCount] = useState(0);
+  const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
+
   // Wasabi / sync
   const [wasabi, setWasabi] = useState<WasabiStatus | null>(null);
   const [wasabiLoading, setWasabiLoading] = useState(true);
@@ -119,6 +123,18 @@ export default function AdminMediaPage() {
       .catch(() => setWasabiLoading(false));
   }, []);
 
+  const fetchCounts = useCallback(() => {
+    fetch("/api/media/counts")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setAllCount(data.data.total || 0);
+          setFolderCounts(data.data.byFolder || {});
+        }
+      })
+      .catch(() => { /* silent */ });
+  }, []);
+
   useEffect(() => {
     setPage(1);
   }, [activeFolder, sortBy, sortOrder, pageSize]);
@@ -130,7 +146,8 @@ export default function AdminMediaPage() {
 
   useEffect(() => {
     fetchWasabiStatus();
-  }, [fetchWasabiStatus]);
+    fetchCounts();
+  }, [fetchWasabiStatus, fetchCounts]);
 
   /* --- upload ------------------------------------------------------- */
   const uploadFiles = async (fileList: FileList) => {
@@ -150,6 +167,7 @@ export default function AdminMediaPage() {
     setUploadProgress({ done: 0, total: 0 });
     fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
     fetchWasabiStatus();
+    fetchCounts();
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -191,6 +209,7 @@ export default function AdminMediaPage() {
     if (detailFile?.id === id) setDetailFile(null);
     fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
     fetchWasabiStatus();
+    fetchCounts();
   };
 
   /* --- bulk delete --------------------------------------------------- */
@@ -205,6 +224,7 @@ export default function AdminMediaPage() {
     if (detailFile && ids.includes(detailFile.id)) setDetailFile(null);
     fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
     fetchWasabiStatus();
+    fetchCounts();
   };
 
   /* --- sync --------------------------------------------------------- */
@@ -239,6 +259,7 @@ export default function AdminMediaPage() {
     setSyncing(false);
     fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
     fetchWasabiStatus();
+    fetchCounts();
     setTimeout(() => setSyncResult(null), 5000);
   };
 
@@ -337,7 +358,6 @@ export default function AdminMediaPage() {
 
   const isImage = (mimeType: string) => mimeType.startsWith("image/");
 
-  const totalSize = files.reduce((acc, f) => acc + f.size, 0);
   const unsyncedSelected = Array.from(selected).filter(
     (id) => !files.find((f) => f.id === id)?.isSynced
   );
@@ -347,10 +367,6 @@ export default function AdminMediaPage() {
     return Math.round(((original - processed) / original) * 100);
   };
 
-  const folderCounts = files.reduce<Record<string, number>>((acc, f) => {
-    acc[f.folder] = (acc[f.folder] || 0) + 1;
-    return acc;
-  }, {});
 
   /* --- render ------------------------------------------------------- */
   return (
@@ -360,7 +376,7 @@ export default function AdminMediaPage() {
         <div>
           <h1 className="text-2xl font-semibold text-warm-800">Media Gallery</h1>
           <p className="text-sm text-warm-500 mt-1">
-            {totalCount} file totali &middot; pagina {page} di {Math.max(1, Math.ceil(totalCount / pageSize))} &middot; {files.length} visualizzati ({formatSize(totalSize)})
+            {totalCount} file {activeFolder === "__all__" ? "totali" : `nella cartella "${activeFolder}"`} &middot; pagina {page} di {Math.max(1, Math.ceil(totalCount / pageSize))} &middot; {files.length} visualizzati
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -520,28 +536,30 @@ export default function AdminMediaPage() {
           <FolderOpen size={14} />
           Tutti
           <span className={`text-xs ml-1 ${activeFolder === "__all__" ? "text-warm-300" : "text-warm-400"}`}>
-            ({files.length})
+            ({allCount})
           </span>
         </button>
-        {MEDIA_FOLDERS.map((folder) => (
-          <button
-            key={folder.value}
-            onClick={() => setActiveFolder(folder.value)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeFolder === folder.value
-                ? "bg-warm-800 text-white"
-                : "bg-warm-100 text-warm-600 hover:bg-warm-200"
-            }`}
-          >
-            <FolderOpen size={14} />
-            {folder.label}
-            {activeFolder === "__all__" && folderCounts[folder.value] ? (
-              <span className="text-xs ml-1 text-warm-400">
-                ({folderCounts[folder.value]})
+        {MEDIA_FOLDERS.map((folder) => {
+          const count = folderCounts[folder.value] || 0;
+          const isActive = activeFolder === folder.value;
+          return (
+            <button
+              key={folder.value}
+              onClick={() => setActiveFolder(folder.value)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-warm-800 text-white"
+                  : "bg-warm-100 text-warm-600 hover:bg-warm-200"
+              }`}
+            >
+              <FolderOpen size={14} />
+              {folder.label}
+              <span className={`text-xs ml-1 ${isActive ? "text-warm-300" : "text-warm-400"}`}>
+                ({count})
               </span>
-            ) : null}
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
       {/* Select all + sort + bulk actions bar */}

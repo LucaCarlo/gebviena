@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(bytes);
     const isImage = file.type.startsWith("image/");
     const timestamp = Date.now();
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "-").replace(/-+/g, "-");
 
     let url: string;
     let wasabiUrl: string | null = null;
