@@ -887,6 +887,17 @@ function BackupTab({ showToast }: { showToast: (m: string, t: "success" | "error
         </button>
       </div>
 
+      {/* Migration warning */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900">
+        <p className="font-semibold mb-1">⚠ Importante per la migrazione del sito</p>
+        <p>Il backup include <strong>tutto il database</strong> (prodotti, news, traduzioni, settings, utenti, immagini metadata, ecc.) ma <strong>non</strong> i file binari fisici. Per migrare l&apos;intero sito su un nuovo server:</p>
+        <ol className="list-decimal list-inside mt-2 space-y-0.5 text-xs">
+          <li>Esporta il backup da qui (file .json).</li>
+          <li>Copia la cartella <code className="bg-amber-100 px-1 rounded">public/uploads/</code> dal vecchio server al nuovo (rsync/scp/tar).</li>
+          <li>Sul nuovo server: stesso schema Prisma (deploy del repo), poi Importa il backup qui sopra.</li>
+        </ol>
+      </div>
+
       {/* Import */}
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
         <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Importa Database</h3>

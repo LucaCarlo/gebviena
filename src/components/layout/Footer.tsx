@@ -380,29 +380,25 @@ export default function Footer() {
 
       {/* Copyright */}
       <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-[9.9rem] pt-16 md:pt-24">
-        <div className="flex items-end justify-between gap-6 flex-wrap">
-          <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
-              {t("footer.bottom.copyright")}
-            </p>
-            <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#000" }}>
-              {t("footer.bottom.disclaimer")}
-            </p>
+        <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
+          {t("footer.bottom.copyright")}
+        </p>
+        <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#000" }}>
+          {t("footer.bottom.disclaimer")}
+        </p>
+        {builtByLogo && (
+          <div className="flex items-center justify-end gap-1.5 mt-10" style={{ color: "#000" }}>
+            <span className="text-[13px] font-normal">Built by</span>
+            <Image
+              src={builtByLogo}
+              alt="Built by"
+              width={80}
+              height={18}
+              className="object-contain h-[18px] w-auto"
+              unoptimized
+            />
           </div>
-          {builtByLogo && (
-            <div className="flex items-center gap-2 flex-shrink-0" style={{ color: "#000" }}>
-              <span className="text-[13px] font-normal">Built by</span>
-              <Image
-                src={builtByLogo}
-                alt="Built by"
-                width={120}
-                height={36}
-                className="object-contain h-9 w-auto"
-                unoptimized
-              />
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </footer>
   );
