@@ -33,13 +33,16 @@ interface StatsData {
     unsynced: number;
   };
   disk: {
+    grandTotal: number;
+    cwdTotal: number;
     uploadsTotal: number;
     uploadsCount: number;
     uploadsByType: Record<string, { count: number; size: number }>;
-    uploadsByFolder: Record<string, { count: number; size: number }>;
     largestFiles: Array<{ name: string; size: number; path: string }>;
     publicTotal: number;
     nextTotal: number;
+    nodeModulesTotal: number;
+    sourceOther: number;
     dbSize: number;
     dbTables: number;
   };
@@ -678,99 +681,97 @@ function StatsTab() {
       </div>
 
       {/* Disk usage overview */}
-      {stats.disk && (
-        <>
-          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-            <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">Spazio disco sul server</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-warm-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-warm-800">{formatBytes(stats.disk.uploadsTotal)}</div>
-                <div className="text-xs text-warm-500 mt-1">Uploads totali ({stats.disk.uploadsCount} file)</div>
+      {stats.disk && (() => {
+        const components = [
+          { key: "public", label: "public/ (assets)", size: stats.disk.publicTotal, color: "bg-blue-500" },
+          { key: "next", label: ".next/ (build)", size: stats.disk.nextTotal, color: "bg-purple-500" },
+          { key: "node_modules", label: "node_modules/", size: stats.disk.nodeModulesTotal, color: "bg-amber-500" },
+          { key: "source", label: "codice + config", size: stats.disk.sourceOther, color: "bg-emerald-500" },
+          { key: "db", label: "database MySQL", size: stats.disk.dbSize, color: "bg-rose-500" },
+        ];
+        const gb = (bytes: number) => (bytes / (1024 ** 3)).toFixed(2);
+        return (
+          <>
+            {/* Totale sito */}
+            <div className="bg-gradient-to-br from-warm-800 to-warm-900 text-white rounded-xl shadow-sm p-6">
+              <div className="text-xs uppercase tracking-wider opacity-70 mb-2">Totale sito sul server</div>
+              <div className="flex items-baseline gap-3">
+                <div className="text-5xl font-bold">{gb(stats.disk.grandTotal)}</div>
+                <div className="text-2xl opacity-80">GB</div>
+                <div className="text-sm opacity-60 ml-auto">({formatBytes(stats.disk.grandTotal)})</div>
               </div>
-              <div className="bg-warm-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-warm-800">{formatBytes(stats.disk.publicTotal)}</div>
-                <div className="text-xs text-warm-500 mt-1">Cartella public/ totale</div>
+              <div className="mt-5 flex h-2.5 rounded-full overflow-hidden bg-white/10">
+                {components.map((c) => {
+                  const pct = stats.disk.grandTotal > 0 ? (c.size / stats.disk.grandTotal) * 100 : 0;
+                  return <div key={c.key} className={c.color} style={{ width: `${pct}%` }} title={`${c.label}: ${formatBytes(c.size)}`} />;
+                })}
               </div>
-              <div className="bg-warm-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-warm-800">{formatBytes(stats.disk.nextTotal)}</div>
-                <div className="text-xs text-warm-500 mt-1">Build Next.js (.next/)</div>
-              </div>
-              <div className="bg-warm-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-warm-800">{formatBytes(stats.disk.dbSize)}</div>
-                <div className="text-xs text-warm-500 mt-1">Database MySQL ({stats.disk.dbTables} tabelle)</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Uploads by type */}
-          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-            <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">Uploads per tipo file</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {(["images", "videos", "pdf", "archives", "other"] as const).map((key) => {
-                const labels: Record<string, string> = {
-                  images: "Immagini",
-                  videos: "Video",
-                  pdf: "PDF",
-                  archives: "ZIP/Archivi",
-                  other: "Altro",
-                };
-                const bucket = stats.disk.uploadsByType[key] || { count: 0, size: 0 };
-                const pct = stats.disk.uploadsTotal > 0 ? Math.round((bucket.size / stats.disk.uploadsTotal) * 100) : 0;
-                return (
-                  <div key={key} className="bg-warm-50 rounded-lg p-4">
-                    <div className="text-xs text-warm-500 uppercase tracking-wider mb-2">{labels[key]}</div>
-                    <div className="text-xl font-bold text-warm-800">{formatBytes(bucket.size)}</div>
-                    <div className="text-[11px] text-warm-500 mt-1">{bucket.count} file · {pct}%</div>
-                    <div className="mt-2 h-1.5 bg-white rounded overflow-hidden">
-                      <div className="h-full bg-warm-600" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Uploads by folder */}
-          {Object.keys(stats.disk.uploadsByFolder).length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-              <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">Uploads per cartella</h3>
-              <div className="space-y-2">
-                {Object.entries(stats.disk.uploadsByFolder)
-                  .sort(([, a], [, b]) => b.size - a.size)
-                  .map(([folder, bucket]) => {
-                    const pct = stats.disk.uploadsTotal > 0 ? Math.round((bucket.size / stats.disk.uploadsTotal) * 100) : 0;
-                    return (
-                      <div key={folder} className="flex items-center gap-4 text-sm">
-                        <div className="w-40 font-mono text-warm-600 truncate">{folder}</div>
-                        <div className="flex-1 relative h-5 bg-warm-100 rounded overflow-hidden">
-                          <div className="h-full bg-warm-500" style={{ width: `${pct}%` }} />
-                        </div>
-                        <div className="w-28 text-right font-mono text-warm-800">{formatBytes(bucket.size)}</div>
-                        <div className="w-16 text-right text-warm-400 text-xs">{bucket.count} file</div>
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
+                {components.map((c) => {
+                  const pct = stats.disk.grandTotal > 0 ? Math.round((c.size / stats.disk.grandTotal) * 100) : 0;
+                  return (
+                    <div key={c.key} className="bg-white/10 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`inline-block w-2 h-2 rounded-full ${c.color}`} />
+                        <span className="text-[10px] uppercase tracking-wider opacity-70">{c.label}</span>
                       </div>
-                    );
-                  })}
+                      <div className="text-lg font-bold">{formatBytes(c.size)}</div>
+                      <div className="text-[10px] opacity-60">{pct}% del totale</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          )}
 
-          {/* Largest files */}
-          {stats.disk.largestFiles.length > 0 && (
+            {/* Uploads dettaglio */}
             <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-              <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">Top 10 file più grandi</h3>
-              <div className="space-y-1.5">
-                {stats.disk.largestFiles.map((f, i) => (
-                  <div key={i} className="flex items-center gap-3 text-sm py-1.5 border-b border-warm-100 last:border-0">
-                    <div className="w-6 text-warm-400 text-xs font-mono">#{i + 1}</div>
-                    <div className="flex-1 font-mono text-warm-700 truncate text-xs" title={f.path}>{f.path}</div>
-                    <div className="w-24 text-right font-mono text-warm-800 font-semibold">{formatBytes(f.size)}</div>
-                  </div>
-                ))}
+              <div className="flex items-baseline justify-between mb-4">
+                <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Uploads caricati dall&apos;utente</h3>
+                <span className="text-xs text-warm-500">{stats.disk.uploadsCount} file · {formatBytes(stats.disk.uploadsTotal)}</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {(["images", "videos", "pdf", "archives", "other"] as const).map((key) => {
+                  const labels: Record<string, string> = {
+                    images: "Immagini",
+                    videos: "Video",
+                    pdf: "PDF",
+                    archives: "ZIP/Archivi",
+                    other: "Altro",
+                  };
+                  const bucket = stats.disk.uploadsByType[key] || { count: 0, size: 0 };
+                  const pct = stats.disk.uploadsTotal > 0 ? Math.round((bucket.size / stats.disk.uploadsTotal) * 100) : 0;
+                  return (
+                    <div key={key} className="bg-warm-50 rounded-lg p-4">
+                      <div className="text-xs text-warm-500 uppercase tracking-wider mb-2">{labels[key]}</div>
+                      <div className="text-xl font-bold text-warm-800">{formatBytes(bucket.size)}</div>
+                      <div className="text-[11px] text-warm-500 mt-1">{bucket.count} file · {pct}%</div>
+                      <div className="mt-2 h-1.5 bg-white rounded overflow-hidden">
+                        <div className="h-full bg-warm-600" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          )}
-        </>
-      )}
+
+            {/* Top 10 */}
+            {stats.disk.largestFiles.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+                <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">Top 10 file più grandi</h3>
+                <div className="space-y-1.5">
+                  {stats.disk.largestFiles.map((f, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm py-1.5 border-b border-warm-100 last:border-0">
+                      <div className="w-6 text-warm-400 text-xs font-mono">#{i + 1}</div>
+                      <div className="flex-1 font-mono text-warm-700 truncate text-xs" title={f.path}>{f.path}</div>
+                      <div className="w-24 text-right font-mono text-warm-800 font-semibold">{formatBytes(f.size)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }

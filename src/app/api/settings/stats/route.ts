@@ -2,7 +2,21 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 import { readdir, stat } from "fs/promises";
+import { exec } from "child_process";
+import { promisify } from "util";
 import path from "path";
+
+const execP = promisify(exec);
+
+async function duSize(dir: string): Promise<number> {
+  try {
+    const { stdout } = await execP(`du -sb ${JSON.stringify(dir)}`, { maxBuffer: 2 * 1024 * 1024 });
+    const n = parseInt(stdout.split("\t")[0], 10);
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
 
 interface TypeBucket {
   count: number;
@@ -22,7 +36,6 @@ async function walkUploads(dir: string) {
     archives: { count: 0, size: 0 },
     other: { count: 0, size: 0 },
   };
-  const byFolder: Record<string, TypeBucket> = {};
   const largest: Array<{ name: string; size: number; path: string }> = [];
   let totalSize = 0;
   let totalCount = 0;
@@ -58,11 +71,6 @@ async function walkUploads(dir: string) {
         totalSize += st.size;
         totalCount++;
 
-        const topFolder = rel.split("/")[0] || "(root)";
-        if (!byFolder[topFolder]) byFolder[topFolder] = { count: 0, size: 0 };
-        byFolder[topFolder].count++;
-        byFolder[topFolder].size += st.size;
-
         largest.push({ name: entry.name, size: st.size, path: rel });
       }
     }
@@ -75,31 +83,8 @@ async function walkUploads(dir: string) {
     totalSize,
     totalCount,
     byType,
-    byFolder,
     largest: largest.slice(0, 10),
   };
-}
-
-async function getDirSize(dir: string): Promise<number> {
-  let total = 0;
-  let entries;
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return 0;
-  }
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      total += await getDirSize(full);
-    } else if (entry.isFile()) {
-      try {
-        const st = await stat(full);
-        total += st.size;
-      } catch { /* skip */ }
-    }
-  }
-  return total;
 }
 
 async function getDbSize(): Promise<{ sizeBytes: number; tableCount: number }> {
@@ -124,9 +109,11 @@ export async function GET() {
   }
 
   try {
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    const nextDir = path.join(process.cwd(), ".next");
-    const publicDir = path.join(process.cwd(), "public");
+    const cwd = process.cwd();
+    const uploadsDir = path.join(cwd, "public", "uploads");
+    const publicDir = path.join(cwd, "public");
+    const nextDir = path.join(cwd, ".next");
+    const nodeModulesDir = path.join(cwd, "node_modules");
 
     const [
       productsCount,
@@ -150,6 +137,8 @@ export async function GET() {
       uploads,
       publicTotal,
       nextTotal,
+      nodeModulesTotal,
+      cwdTotal,
       db,
     ] = await Promise.all([
       prisma.product.count(),
@@ -173,10 +162,15 @@ export async function GET() {
       prisma.mediaFile.count({ where: { isSynced: true } }),
       prisma.mediaFile.count({ where: { isSynced: false } }),
       walkUploads(uploadsDir),
-      getDirSize(publicDir),
-      getDirSize(nextDir),
+      duSize(publicDir),
+      duSize(nextDir),
+      duSize(nodeModulesDir),
+      duSize(cwd),
       getDbSize(),
     ]);
+
+    const sourceOther = Math.max(0, cwdTotal - publicTotal - nextTotal - nodeModulesTotal);
+    const grandTotal = cwdTotal + db.sizeBytes;
 
     const totalSize = mediaAggregations._sum.size || 0;
     const totalOriginalSize = mediaAggregations._sum.originalSize || 0;
@@ -217,13 +211,16 @@ export async function GET() {
           unsynced: unsyncedCount,
         },
         disk: {
+          grandTotal,
+          cwdTotal,
           uploadsTotal: uploads.totalSize,
           uploadsCount: uploads.totalCount,
           uploadsByType: uploads.byType,
-          uploadsByFolder: uploads.byFolder,
           largestFiles: uploads.largest,
           publicTotal,
           nextTotal,
+          nodeModulesTotal,
+          sourceOther,
           dbSize: db.sizeBytes,
           dbTables: db.tableCount,
         },

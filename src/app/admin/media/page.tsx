@@ -58,6 +58,13 @@ export default function AdminMediaPage() {
   const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Pagination + sorting
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [totalCount, setTotalCount] = useState(0);
+  const [sortBy, setSortBy] = useState<"createdAt" | "size" | "originalName">("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   // Wasabi / sync
   const [wasabi, setWasabi] = useState<WasabiStatus | null>(null);
   const [wasabiLoading, setWasabiLoading] = useState(true);
@@ -83,13 +90,19 @@ export default function AdminMediaPage() {
   const dropRef = useRef<HTMLDivElement>(null);
 
   /* --- data fetching ------------------------------------------------ */
-  const fetchMedia = useCallback((folder: string) => {
+  const fetchMedia = useCallback((folder: string, p: number, ps: number, sb: string, so: string) => {
     setLoading(true);
-    const url = folder === "__all__" ? "/api/media" : `/api/media?folder=${folder}`;
-    fetch(url)
+    const params = new URLSearchParams();
+    if (folder !== "__all__") params.set("folder", folder);
+    params.set("page", String(p));
+    params.set("pageSize", String(ps));
+    params.set("sortBy", sb);
+    params.set("sortOrder", so);
+    fetch(`/api/media?${params.toString()}`)
       .then((r) => r.json())
       .then((data) => {
         setFiles(data.data || []);
+        setTotalCount(data.total ?? (data.data?.length || 0));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -107,9 +120,13 @@ export default function AdminMediaPage() {
   }, []);
 
   useEffect(() => {
-    fetchMedia(activeFolder);
+    setPage(1);
+  }, [activeFolder, sortBy, sortOrder, pageSize]);
+
+  useEffect(() => {
+    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
     setSelected(new Set());
-  }, [activeFolder, fetchMedia]);
+  }, [activeFolder, page, pageSize, sortBy, sortOrder, fetchMedia]);
 
   useEffect(() => {
     fetchWasabiStatus();
@@ -131,7 +148,7 @@ export default function AdminMediaPage() {
 
     setUploading(false);
     setUploadProgress({ done: 0, total: 0 });
-    fetchMedia(activeFolder);
+    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
     fetchWasabiStatus();
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -172,7 +189,7 @@ export default function AdminMediaPage() {
       return next;
     });
     if (detailFile?.id === id) setDetailFile(null);
-    fetchMedia(activeFolder);
+    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
     fetchWasabiStatus();
   };
 
@@ -186,7 +203,7 @@ export default function AdminMediaPage() {
     }
     setSelected(new Set());
     if (detailFile && ids.includes(detailFile.id)) setDetailFile(null);
-    fetchMedia(activeFolder);
+    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
     fetchWasabiStatus();
   };
 
@@ -220,7 +237,7 @@ export default function AdminMediaPage() {
 
     setSyncResult({ synced: totalSynced, failed: totalFailed, total: ids.length });
     setSyncing(false);
-    fetchMedia(activeFolder);
+    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
     fetchWasabiStatus();
     setTimeout(() => setSyncResult(null), 5000);
   };
@@ -343,7 +360,7 @@ export default function AdminMediaPage() {
         <div>
           <h1 className="text-2xl font-semibold text-warm-800">Media Gallery</h1>
           <p className="text-sm text-warm-500 mt-1">
-            {files.length} file &middot; {formatSize(totalSize)} totali
+            {totalCount} file totali &middot; pagina {page} di {Math.max(1, Math.ceil(totalCount / pageSize))} &middot; {files.length} visualizzati ({formatSize(totalSize)})
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -527,9 +544,9 @@ export default function AdminMediaPage() {
         ))}
       </div>
 
-      {/* Select all + bulk actions bar */}
+      {/* Select all + sort + bulk actions bar */}
       {!loading && files.length > 0 && (
-        <div className="flex items-center justify-between mb-4 bg-white rounded-lg shadow-sm border border-warm-200 px-4 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 bg-white rounded-lg shadow-sm border border-warm-200 px-4 py-2.5">
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <button
               onClick={toggleSelectAll}
@@ -544,22 +561,55 @@ export default function AdminMediaPage() {
               )}
             </button>
             <span className="text-sm text-warm-600">
-              Seleziona tutto
+              Seleziona pagina
               {selected.size > 0 && (
                 <span className="ml-1 text-warm-400">({selected.size} selezionati)</span>
               )}
             </span>
           </label>
-          {selected.size > 0 && (
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-xs text-warm-500">
+              <span>Ordina:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="border border-warm-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-warm-500"
+              >
+                <option value="createdAt">Data upload</option>
+                <option value="size">Dimensione</option>
+                <option value="originalName">Nome</option>
+              </select>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as typeof sortOrder)}
+                className="border border-warm-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-warm-500"
+              >
+                <option value="desc">Decrescente</option>
+                <option value="asc">Crescente</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-warm-500">
+              <span>Per pagina:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
+                className="border border-warm-200 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-warm-500"
+              >
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+              </select>
+            </div>
+            {selected.size > 0 && (
               <button
                 onClick={() => setSelected(new Set())}
                 className="text-xs text-warm-400 hover:text-warm-600 transition-colors"
               >
                 Deseleziona
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
@@ -756,6 +806,65 @@ export default function AdminMediaPage() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {!loading && totalCount > pageSize && (() => {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        const windowSize = 5;
+        const start = Math.max(1, Math.min(page - Math.floor(windowSize / 2), totalPages - windowSize + 1));
+        const end = Math.min(totalPages, start + windowSize - 1);
+        const pages: number[] = [];
+        for (let i = start; i <= end; i++) pages.push(i);
+        const btnBase = "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border";
+        return (
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-6 bg-white rounded-lg shadow-sm border border-warm-200 px-4 py-3">
+            <div className="text-xs text-warm-500">
+              {((page - 1) * pageSize) + 1}&ndash;{Math.min(page * pageSize, totalCount)} di {totalCount}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+                className={`${btnBase} border-warm-200 text-warm-600 hover:bg-warm-50 disabled:opacity-30 disabled:cursor-not-allowed`}
+              >
+                &laquo;
+              </button>
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className={`${btnBase} border-warm-200 text-warm-600 hover:bg-warm-50 disabled:opacity-30 disabled:cursor-not-allowed`}
+              >
+                &lsaquo; Precedente
+              </button>
+              {start > 1 && <span className="px-2 text-warm-400">&hellip;</span>}
+              {pages.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`${btnBase} ${p === page ? "bg-warm-800 border-warm-800 text-white" : "border-warm-200 text-warm-600 hover:bg-warm-50"}`}
+                >
+                  {p}
+                </button>
+              ))}
+              {end < totalPages && <span className="px-2 text-warm-400">&hellip;</span>}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className={`${btnBase} border-warm-200 text-warm-600 hover:bg-warm-50 disabled:opacity-30 disabled:cursor-not-allowed`}
+              >
+                Successiva &rsaquo;
+              </button>
+              <button
+                onClick={() => setPage(totalPages)}
+                disabled={page === totalPages}
+                className={`${btnBase} border-warm-200 text-warm-600 hover:bg-warm-50 disabled:opacity-30 disabled:cursor-not-allowed`}
+              >
+                &raquo;
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ============================================================= */}
       {/*  DETAIL PANEL (replaces the old lightbox)                      */}

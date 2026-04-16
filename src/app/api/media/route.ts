@@ -13,6 +13,10 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const folder = searchParams.get("folder");
   const search = searchParams.get("search");
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+  const pageSize = Math.min(200, Math.max(1, parseInt(searchParams.get("pageSize") || "50", 10)));
+  const sortBy = searchParams.get("sortBy") || "createdAt";
+  const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 
   const where: Record<string, unknown> = {};
   if (folder) where.folder = folder;
@@ -20,12 +24,24 @@ export async function GET(req: NextRequest) {
     where.originalName = { contains: search };
   }
 
-  const data = await prisma.mediaFile.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-  });
+  const allowedSort: Record<string, string> = {
+    createdAt: "createdAt",
+    size: "size",
+    originalName: "originalName",
+  };
+  const sortField = allowedSort[sortBy] || "createdAt";
 
-  return NextResponse.json({ success: true, data });
+  const [data, total] = await Promise.all([
+    prisma.mediaFile.findMany({
+      where,
+      orderBy: { [sortField]: sortOrder },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.mediaFile.count({ where }),
+  ]);
+
+  return NextResponse.json({ success: true, data, total, page, pageSize });
 }
 
 export async function POST(req: Request) {
