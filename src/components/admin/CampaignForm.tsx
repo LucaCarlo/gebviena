@@ -185,7 +185,7 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
           break;
         }
       }
-      return { ...b, data: data as CampaignBlock["data"] };
+      return { ...b, data: data as unknown as CampaignBlock["data"] };
     });
   };
 
