@@ -1084,6 +1084,12 @@ function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "erro
 
 interface LanguageOption { code: string; name: string; isDefault: boolean }
 
+const DEFAULT_TRANSLATION_PROMPT_UI = `You are a professional translator for a furniture/design company website (Gebrüder Thonet Vienna).
+Translate from {fromLang} to {toLang}.
+Preserve brand names, designer names, product model names and proper nouns unchanged.
+Keep the same tone (elegant, refined, design-oriented).
+Output ONLY the translated text — no explanations, no quotes, no extra formatting.{htmlNote}`;
+
 function TranslationsAITab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
   const [form, setForm] = useState({
     ai_provider: "anthropic",
@@ -1092,6 +1098,7 @@ function TranslationsAITab({ showToast }: { showToast: (m: string, t: "success" 
     ai_openai_api_key: "",
     ai_openai_model: "gpt-4o-mini",
     ai_fallback_language: "it",
+    ai_system_prompt: DEFAULT_TRANSLATION_PROMPT_UI,
   });
   const [languages, setLanguages] = useState<LanguageOption[]>([]);
   const [saving, setSaving] = useState(false);
@@ -1206,6 +1213,42 @@ function TranslationsAITab({ showToast }: { showToast: (m: string, t: "success" 
           <label className={labelClass}>Modello OpenAI</label>
           <input type="text" value={form.ai_openai_model} onChange={(e) => update("ai_openai_model", e.target.value)} className={inputClass} placeholder="gpt-4o-mini" />
         </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold text-warm-800">Prompt di sistema</h3>
+            <p className="text-xs text-warm-500 mt-1">
+              Istruzioni che l&apos;AI riceve prima di tradurre. Usa i placeholder
+              <code className="mx-1 px-1 bg-warm-100 rounded text-[11px]">{"{fromLang}"}</code>,
+              <code className="mx-1 px-1 bg-warm-100 rounded text-[11px]">{"{toLang}"}</code>,
+              <code className="mx-1 px-1 bg-warm-100 rounded text-[11px]">{"{htmlNote}"}</code>.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (confirm("Ripristinare il prompt di default? Le modifiche correnti verranno perse.")) {
+                update("ai_system_prompt", DEFAULT_TRANSLATION_PROMPT_UI);
+                showToast("Prompt ripristinato — ricordati di salvare", "success");
+              }
+            }}
+            className="text-xs text-warm-500 hover:text-warm-800 underline shrink-0"
+          >
+            Ripristina default
+          </button>
+        </div>
+        <textarea
+          value={form.ai_system_prompt}
+          onChange={(e) => update("ai_system_prompt", e.target.value)}
+          className={`${inputClass} font-mono text-xs leading-relaxed min-h-[220px]`}
+          rows={10}
+          spellCheck={false}
+        />
+        {form.ai_system_prompt !== DEFAULT_TRANSLATION_PROMPT_UI && (
+          <p className="text-xs text-amber-700">Prompt personalizzato attivo (diverso dal default).</p>
+        )}
       </div>
 
       <div className="flex gap-3">

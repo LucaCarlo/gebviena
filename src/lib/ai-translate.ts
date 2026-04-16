@@ -12,7 +12,22 @@ interface AISettings {
   anthropicModel: string;
   openaiApiKey: string;
   openaiModel: string;
+  systemPromptTemplate: string;
 }
+
+/**
+ * Default system prompt template. Supports placeholders:
+ *   {fromLang}  — source language name (e.g. "Italian")
+ *   {toLang}    — target language name (e.g. "English")
+ *   {htmlNote}  — extra instruction appended in htmlMode (empty otherwise)
+ */
+export const DEFAULT_TRANSLATION_PROMPT = `You are a professional translator for a furniture/design company website (Gebrüder Thonet Vienna).
+Translate from {fromLang} to {toLang}.
+Preserve brand names, designer names, product model names and proper nouns unchanged.
+Keep the same tone (elegant, refined, design-oriented).
+Output ONLY the translated text — no explanations, no quotes, no extra formatting.{htmlNote}`;
+
+const HTML_NOTE = " The text may contain HTML tags: preserve all tags, attributes, and structure exactly as in the source.";
 
 async function loadAISettings(): Promise<AISettings> {
   const rows = await prisma.setting.findMany({ where: { group: "translations" } });
@@ -23,6 +38,7 @@ async function loadAISettings(): Promise<AISettings> {
     anthropicModel: map.get("ai_anthropic_model") || "claude-sonnet-4-6",
     openaiApiKey: map.get("ai_openai_api_key") || "",
     openaiModel: map.get("ai_openai_model") || "gpt-4o-mini",
+    systemPromptTemplate: map.get("ai_system_prompt") || DEFAULT_TRANSLATION_PROMPT,
   };
 }
 
@@ -35,15 +51,12 @@ function langName(code: string): string {
   return LANG_NAMES[code] || code;
 }
 
-function buildSystemPrompt(opts: TranslateOptions): string {
-  const html = opts.htmlMode
-    ? " The text may contain HTML tags: preserve all tags, attributes, and structure exactly as in the source."
-    : "";
-  return `You are a professional translator for a furniture/design company website (Gebrüder Thonet Vienna).
-Translate from ${langName(opts.fromLang)} to ${langName(opts.toLang)}.
-Preserve brand names, designer names, product model names and proper nouns unchanged.
-Keep the same tone (elegant, refined, design-oriented).
-Output ONLY the translated text — no explanations, no quotes, no extra formatting.${html}`;
+function renderPrompt(template: string, opts: TranslateOptions): string {
+  const htmlNote = opts.htmlMode ? HTML_NOTE : "";
+  return template
+    .replace(/\{fromLang\}/g, langName(opts.fromLang))
+    .replace(/\{toLang\}/g, langName(opts.toLang))
+    .replace(/\{htmlNote\}/g, htmlNote);
 }
 
 async function callAnthropic(system: string, user: string, settings: AISettings): Promise<string> {
@@ -102,7 +115,7 @@ async function callOpenAI(system: string, user: string, settings: AISettings): P
 export async function translateText(text: string, opts: TranslateOptions): Promise<string> {
   if (!text || !text.trim()) return "";
   const settings = await loadAISettings();
-  const system = buildSystemPrompt(opts);
+  const system = renderPrompt(settings.systemPromptTemplate, opts);
   if (settings.provider === "openai") return callOpenAI(system, text, settings);
   return callAnthropic(system, text, settings);
 }
@@ -115,7 +128,7 @@ export async function translateFields(
   if (entries.length === 0) return {};
 
   const settings = await loadAISettings();
-  const system = `${buildSystemPrompt(opts)}
+  const system = `${renderPrompt(settings.systemPromptTemplate, opts)}
 You will receive a JSON object with fields to translate. Return ONLY a JSON object with the same keys and translated values. No prose, no markdown fences.`;
   const user = JSON.stringify(Object.fromEntries(entries));
 
