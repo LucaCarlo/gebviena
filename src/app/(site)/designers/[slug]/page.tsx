@@ -142,18 +142,19 @@ export default async function DesignerDetailPage({ params }: PageProps) {
         <section className="pb-20">
           <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
-              <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 10", marginRight: "10px" }}>
+              <div style={{ marginRight: "10px" }}>
                 {designer.imageUrl ? (
-                  <Image
+                  /* Use plain <img> so the image keeps its native aspect ratio
+                     instead of being cropped/letterboxed into a fixed 16/10 box. */
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
                     src={designer.imageUrl}
                     alt={designer.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                    priority
+                    className="block w-full h-auto bg-warm-100"
+                    loading="eager"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-warm-100 aspect-square flex items-center justify-center">
                     <span className="font-serif text-8xl text-warm-300">
                       {designer.name.charAt(0)}
                     </span>
