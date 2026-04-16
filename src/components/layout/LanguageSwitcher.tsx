@@ -5,6 +5,16 @@ import { usePathname } from "next/navigation";
 import { useLang } from "@/contexts/I18nContext";
 import { translateSegmentsBackward, translateSegmentsForward, DEFAULT_LANG } from "@/lib/path-segments";
 
+const LANG_NAMES: Record<string, Record<string, string>> = {
+  it: { it: "Italiano", en: "Inglese", de: "Tedesco", fr: "Francese" },
+  en: { it: "Italian", en: "English", de: "German", fr: "French" },
+  de: { it: "Italienisch", en: "Englisch", de: "Deutsch", fr: "Französisch" },
+  fr: { it: "Italien", en: "Anglais", de: "Allemand", fr: "Français" },
+};
+function localizedName(code: string, uiLang: string, fallback: string): string {
+  return LANG_NAMES[uiLang]?.[code] || fallback;
+}
+
 interface Language {
   code: string;
   name: string;
@@ -58,7 +68,7 @@ export default function LanguageSwitcher() {
   };
 
   const current = languages.find((l) => l.code === currentLang);
-  const currentName = current?.name || (currentLang === "it" ? "Italiano" : currentLang.toUpperCase());
+  const currentName = localizedName(currentLang, currentLang, current?.name || currentLang.toUpperCase());
 
   return (
     <div ref={ref} className="relative inline-block">
@@ -82,7 +92,7 @@ export default function LanguageSwitcher() {
               className={`w-full text-left px-5 py-3 text-[16px] hover:underline transition-all ${l.code === currentLang ? "font-semibold" : ""}`}
               style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}
             >
-              {l.name}
+              {localizedName(l.code, currentLang, l.name)}
             </button>
           ))}
         </div>

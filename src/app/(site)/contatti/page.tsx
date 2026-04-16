@@ -4,11 +4,11 @@ import { getRelatedCardImages } from "@/lib/page-images";
 import { tBatch } from "@/lib/i18n";
 
 const PAGES = [
-  { page: "rete-vendita", label: "Rete di Vendita", href: "/contatti/rete-vendita" },
-  { page: "collaborazioni", label: "Collaborazione Nuovi Designer", href: "/contatti/collaborazioni" },
-  { page: "ufficio-stampa", label: "Ufficio Stampa", href: "/contatti/ufficio-stampa" },
-  { page: "richiesta-info", label: "Richiesta Informazioni", href: "/contatti/richiesta-info" },
-  { page: "landing-page", label: "Landing Page", href: "/contatti/landing-page" },
+  { page: "rete-vendita", labelKey: "menu.contact.sales", href: "/contatti/rete-vendita" },
+  { page: "collaborazioni", labelKey: "menu.contact.collab", href: "/contatti/collaborazioni" },
+  { page: "ufficio-stampa", labelKey: "menu.contact.press", href: "/contatti/ufficio-stampa" },
+  { page: "richiesta-info", labelKey: "menu.contact.info", href: "/contatti/richiesta-info" },
+  { page: "landing-page", labelKey: "menu.contact.landing", href: "/contatti/landing-page" },
 ];
 
 export default async function ContattiPage() {
@@ -18,6 +18,7 @@ export default async function ContattiPage() {
     "contatti.description",
     "contatti.breadcrumb",
     "common.breadcrumb_home",
+    ...PAGES.map((p) => p.labelKey),
   ]);
 
   return (
@@ -47,13 +48,14 @@ export default async function ContattiPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-12">
               {PAGES.map((p) => {
                 const coverSrc = cardImages[p.page] || null;
+                const label = T[p.labelKey];
                 return (
                   <Link key={p.page} href={p.href} className="group block">
                     <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
                       {coverSrc ? (
                         <Image
                           src={coverSrc}
-                          alt={p.label}
+                          alt={label}
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 100vw, 33vw"
@@ -63,7 +65,7 @@ export default async function ContattiPage() {
                       )}
                     </div>
                     <h4 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
-                      {p.label}
+                      {label}
                     </h4>
                   </Link>
                 );

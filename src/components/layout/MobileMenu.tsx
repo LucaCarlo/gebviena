@@ -140,7 +140,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-3 right-3">
                   <p className="text-white text-[18px] md:text-[20px] font-light uppercase tracking-[0.03em] leading-snug">
-                    Interno Marche | Scopri il nostro flagship hotel
+                    {t("common.menu_featured")}
                   </p>
                 </div>
               </Link>

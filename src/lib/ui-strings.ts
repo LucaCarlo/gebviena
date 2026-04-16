@@ -119,6 +119,7 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "common.discover_world", defaultValue: "Scopri il mondo GTV" },
       { key: "common.best_projects", defaultValue: "I migliori progetti" },
       { key: "common.discover_more", defaultValue: "Scopri di più" },
+      { key: "common.menu_featured", defaultValue: "Interno Marche | Scopri il nostro flagship hotel" },
     ],
   },
   {

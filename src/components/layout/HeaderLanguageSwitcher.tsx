@@ -5,6 +5,18 @@ import { usePathname } from "next/navigation";
 import { useLang } from "@/contexts/I18nContext";
 import { translateSegmentsBackward, translateSegmentsForward, DEFAULT_LANG } from "@/lib/path-segments";
 
+// Language names displayed in a given UI language
+const LANG_NAMES: Record<string, Record<string, string>> = {
+  it: { it: "Italiano", en: "Inglese", de: "Tedesco", fr: "Francese" },
+  en: { it: "Italian", en: "English", de: "German", fr: "French" },
+  de: { it: "Italienisch", en: "Englisch", de: "Deutsch", fr: "Französisch" },
+  fr: { it: "Italien", en: "Anglais", de: "Allemand", fr: "Français" },
+};
+
+function localizedName(code: string, uiLang: string, fallback: string): string {
+  return LANG_NAMES[uiLang]?.[code] || fallback;
+}
+
 interface Language {
   code: string;
   name: string;
@@ -95,7 +107,7 @@ export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
                 className={`block w-full text-left px-5 py-3 text-[16px] uppercase tracking-[0.03em] transition-all hover:underline ${isCurrent ? "font-semibold" : "font-normal"}`}
                 style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}
               >
-                {l.name}
+                {localizedName(l.code, currentLang, l.name)}
               </button>
             );
           })}

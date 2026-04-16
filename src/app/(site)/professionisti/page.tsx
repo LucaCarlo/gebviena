@@ -4,9 +4,9 @@ import { getRelatedCardImages } from "@/lib/page-images";
 import { tBatch } from "@/lib/i18n";
 
 const PAGES = [
-  { page: "cataloghi", label: "Cataloghi", href: "/professionisti/cataloghi" },
-  { page: "materiale-tecnico", label: "Materiale Tecnico", href: "/professionisti/materiale-tecnico" },
-  { page: "realizzazioni-custom", label: "Realizzazioni Custom", href: "/professionisti/realizzazioni-custom" },
+  { page: "cataloghi", labelKey: "menu.professionals.catalogs", href: "/professionisti/cataloghi" },
+  { page: "materiale-tecnico", labelKey: "menu.professionals.tech", href: "/professionisti/materiale-tecnico" },
+  { page: "realizzazioni-custom", labelKey: "menu.professionals.custom", href: "/professionisti/realizzazioni-custom" },
 ];
 
 export default async function ProfessionistiPage() {
@@ -16,6 +16,7 @@ export default async function ProfessionistiPage() {
     "professionisti.description",
     "professionisti.breadcrumb",
     "common.breadcrumb_home",
+    ...PAGES.map((p) => p.labelKey),
   ]);
 
   return (
@@ -45,13 +46,14 @@ export default async function ProfessionistiPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-12">
               {PAGES.map((p) => {
                 const coverSrc = cardImages[p.page] || null;
+                const label = T[p.labelKey];
                 return (
                   <Link key={p.page} href={p.href} className="group block">
                     <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
                       {coverSrc ? (
                         <Image
                           src={coverSrc}
-                          alt={p.label}
+                          alt={label}
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 100vw, 33vw"
@@ -61,7 +63,7 @@ export default async function ProfessionistiPage() {
                       )}
                     </div>
                     <h4 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
-                      {p.label}
+                      {label}
                     </h4>
                   </Link>
                 );

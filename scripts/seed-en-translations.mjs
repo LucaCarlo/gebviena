@@ -89,6 +89,7 @@ const EN = {
   "common.discover_world": "Discover the GTV world",
   "common.best_projects": "Our finest projects",
   "common.discover_more": "Discover more",
+  "common.menu_featured": "Interno Marche | Discover our flagship hotel",
 
   // home sections
   "home.featured.label": "New product",
