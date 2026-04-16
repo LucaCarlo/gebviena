@@ -1,14 +1,16 @@
 "use client";
 
 import ImageUploadField from "../ImageUploadField";
+import { BlockTextInput } from "../news/BlockAIField";
 import type { CampaignSingleImageData } from "@/types";
 
 interface Props {
   data: CampaignSingleImageData;
   onChange: (data: CampaignSingleImageData) => void;
+  sourceData?: Partial<CampaignSingleImageData>;
 }
 
-export default function SingleImageBlockEditor({ data, onChange }: Props) {
+export default function SingleImageBlockEditor({ data, onChange, sourceData }: Props) {
   return (
     <div className="space-y-4">
       <ImageUploadField
@@ -36,10 +38,10 @@ export default function SingleImageBlockEditor({ data, onChange }: Props) {
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
           Didascalia (opzionale)
         </label>
-        <input
-          type="text"
+        <BlockTextInput
           value={data.caption || ""}
-          onChange={(e) => onChange({ ...data, caption: e.target.value })}
+          onChange={(v) => onChange({ ...data, caption: v })}
+          sourceText={sourceData?.caption || ""}
           className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
         />
       </div>

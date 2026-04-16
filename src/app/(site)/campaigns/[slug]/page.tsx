@@ -1,9 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCategoryLabelMap } from "@/lib/server-categories";
 import { lookupLabel } from "@/lib/category-lookup";
+import { mergeFirstTranslation, TRANSLATABLE_FIELDS } from "@/lib/translate-payload";
+import { DEFAULT_LANG } from "@/lib/i18n";
 import type {
   CampaignBlock,
   CampaignParagraphData,
@@ -43,14 +46,38 @@ function youTubeEmbed(url: string): string | null {
 }
 
 export default async function CampaignDetailPage({ params }: Params) {
-  const campaign = await prisma.campaign.findUnique({ where: { slug: params.slug } });
-  if (!campaign || !campaign.isActive) notFound();
+  const lang = headers().get("x-gtv-lang") || DEFAULT_LANG;
+  const includeTranslations = lang !== DEFAULT_LANG;
+
+  // Slug may be translated per-language; if so, look up the parent campaignId.
+  let campaignId: string | null = null;
+  if (includeTranslations) {
+    const tr = await prisma.campaignTranslation.findFirst({
+      where: { languageCode: lang, slug: params.slug },
+      select: { campaignId: true },
+    });
+    campaignId = tr?.campaignId ?? null;
+  }
+  const rawCampaign = campaignId
+    ? await prisma.campaign.findUnique({
+        where: { id: campaignId },
+        ...(includeTranslations ? { include: { translations: { where: { languageCode: lang } } } } : {}),
+      })
+    : await prisma.campaign.findUnique({
+        where: { slug: params.slug },
+        ...(includeTranslations ? { include: { translations: { where: { languageCode: lang } } } } : {}),
+      });
+  if (!rawCampaign || !rawCampaign.isActive) notFound();
+
+  const campaign = includeTranslations
+    ? mergeFirstTranslation(rawCampaign as Record<string, unknown> & { translations?: Record<string, unknown>[] }, TRANSLATABLE_FIELDS.campaign) as typeof rawCampaign
+    : rawCampaign;
 
   const blocks = parseBlocks(campaign.blocks);
 
   const [related, categoryLabelMap] = await Promise.all([
     prisma.campaign.findMany({
-      where: { isActive: true, slug: { not: campaign.slug } },
+      where: { isActive: true, slug: { not: rawCampaign.slug } },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
       take: 4,
       select: { id: true, slug: true, name: true, type: true, imageUrl: true },

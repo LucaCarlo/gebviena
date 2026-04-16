@@ -451,6 +451,7 @@ model CampaignTranslation {
   slug           String   @db.VarChar(191)
   subtitle       String?  @db.Text
   description    String?  @db.Text
+  blocks         String?  @db.Text
   seoTitle       String?  @db.Text
   seoDescription String?  @db.Text
   seoKeywords    String?  @db.Text

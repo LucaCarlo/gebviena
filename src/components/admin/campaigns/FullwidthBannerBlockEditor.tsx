@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import ImageUploadField from "../ImageUploadField";
+import { BlockTextInput } from "../news/BlockAIField";
 import type { CampaignFullwidthBannerData } from "@/types";
 
 interface Props {
   data: CampaignFullwidthBannerData;
   onChange: (data: CampaignFullwidthBannerData) => void;
+  sourceData?: Partial<CampaignFullwidthBannerData>;
 }
 
-export default function FullwidthBannerBlockEditor({ data, onChange }: Props) {
+export default function FullwidthBannerBlockEditor({ data, onChange, sourceData }: Props) {
   const [uploading, setUploading] = useState(false);
   const uploadPdf = async (file: File) => {
     setUploading(true);
@@ -43,10 +45,10 @@ export default function FullwidthBannerBlockEditor({ data, onChange }: Props) {
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
           Titolo (sovraimpresso, allineato a sinistra)
         </label>
-        <input
-          type="text"
+        <BlockTextInput
           value={data.title || ""}
-          onChange={(e) => onChange({ ...data, title: e.target.value })}
+          onChange={(v) => onChange({ ...data, title: v })}
+          sourceText={sourceData?.title || ""}
           placeholder="Scrivi il titolo"
           className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
         />
@@ -56,10 +58,10 @@ export default function FullwidthBannerBlockEditor({ data, onChange }: Props) {
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
             CTA — etichetta (opzionale)
           </label>
-          <input
-            type="text"
+          <BlockTextInput
             value={data.ctaLabel || ""}
-            onChange={(e) => onChange({ ...data, ctaLabel: e.target.value })}
+            onChange={(v) => onChange({ ...data, ctaLabel: v })}
+            sourceText={sourceData?.ctaLabel || ""}
             className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
           />
         </div>

@@ -72,6 +72,7 @@ export const TRANSLATION_ENTITIES: Record<string, TranslationEntityDef> = {
       { key: "slug", label: "Slug URL", type: "slug" },
       { key: "subtitle", label: "Sottotitolo", type: "short" },
       { key: "description", label: "Descrizione", type: "html" },
+      { key: "blocks", label: "Blocchi (JSON)", type: "long" },
       { key: "seoTitle", label: "SEO Title", type: "short" },
       { key: "seoDescription", label: "SEO Description", type: "long" },
       { key: "seoKeywords", label: "SEO Keywords", type: "long" },

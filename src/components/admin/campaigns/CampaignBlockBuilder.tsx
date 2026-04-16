@@ -71,9 +71,18 @@ function getDefaultData(type: CampaignBlockType): CampaignBlock["data"] {
 interface Props {
   value: string;
   onChange: (json: string) => void;
+  sourceValue?: string;
 }
 
-export default function CampaignBlockBuilder({ value, onChange }: Props) {
+export default function CampaignBlockBuilder({ value, onChange, sourceValue }: Props) {
+  const sourceBlocks: CampaignBlock[] = (() => {
+    if (!sourceValue) return [];
+    try {
+      const p = JSON.parse(sourceValue);
+      return Array.isArray(p) ? (p as CampaignBlock[]) : [];
+    } catch { return []; }
+  })();
+  const sourceById = new Map(sourceBlocks.map((b) => [b.id, b]));
   const [blocks, setBlocks] = useState<CampaignBlock[]>(() => {
     try {
       const parsed = value ? JSON.parse(value) : [];
@@ -132,19 +141,20 @@ export default function CampaignBlockBuilder({ value, onChange }: Props) {
   };
 
   const renderEditor = (block: CampaignBlock) => {
+    const src = sourceById.get(block.id);
     switch (block.type) {
       case "paragraph":
-        return <ParagraphBlockEditor data={block.data as CampaignParagraphData} onChange={(d) => updateBlock(block.id, d)} />;
+        return <ParagraphBlockEditor data={block.data as CampaignParagraphData} onChange={(d) => updateBlock(block.id, d)} sourceData={src?.data as Partial<CampaignParagraphData> | undefined} />;
       case "image_text":
-        return <ImageTextBlockEditor data={block.data as CampaignImageTextData} onChange={(d) => updateBlock(block.id, d)} />;
+        return <ImageTextBlockEditor data={block.data as CampaignImageTextData} onChange={(d) => updateBlock(block.id, d)} sourceData={src?.data as Partial<CampaignImageTextData> | undefined} />;
       case "three_images":
-        return <ThreeImagesBlockEditor data={block.data as CampaignThreeImagesData} onChange={(d) => updateBlock(block.id, d)} />;
+        return <ThreeImagesBlockEditor data={block.data as CampaignThreeImagesData} onChange={(d) => updateBlock(block.id, d)} sourceData={src?.data as Partial<CampaignThreeImagesData> | undefined} />;
       case "single_image":
-        return <SingleImageBlockEditor data={block.data as CampaignSingleImageData} onChange={(d) => updateBlock(block.id, d)} />;
+        return <SingleImageBlockEditor data={block.data as CampaignSingleImageData} onChange={(d) => updateBlock(block.id, d)} sourceData={src?.data as Partial<CampaignSingleImageData> | undefined} />;
       case "image_with_paragraph":
-        return <ImageWithParagraphBlockEditor data={block.data as CampaignImageWithParagraphData} onChange={(d) => updateBlock(block.id, d)} />;
+        return <ImageWithParagraphBlockEditor data={block.data as CampaignImageWithParagraphData} onChange={(d) => updateBlock(block.id, d)} sourceData={src?.data as Partial<CampaignImageWithParagraphData> | undefined} />;
       case "fullwidth_banner":
-        return <FullwidthBannerBlockEditor data={block.data as CampaignFullwidthBannerData} onChange={(d) => updateBlock(block.id, d)} />;
+        return <FullwidthBannerBlockEditor data={block.data as CampaignFullwidthBannerData} onChange={(d) => updateBlock(block.id, d)} sourceData={src?.data as Partial<CampaignFullwidthBannerData> | undefined} />;
     }
   };
 

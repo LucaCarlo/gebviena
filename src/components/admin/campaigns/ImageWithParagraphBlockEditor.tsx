@@ -1,15 +1,16 @@
 "use client";
 
 import ImageUploadField from "../ImageUploadField";
-import RichTextField from "../RichTextField";
+import { BlockRichText } from "../news/BlockAIField";
 import type { CampaignImageWithParagraphData } from "@/types";
 
 interface Props {
   data: CampaignImageWithParagraphData;
   onChange: (data: CampaignImageWithParagraphData) => void;
+  sourceData?: Partial<CampaignImageWithParagraphData>;
 }
 
-export default function ImageWithParagraphBlockEditor({ data, onChange }: Props) {
+export default function ImageWithParagraphBlockEditor({ data, onChange, sourceData }: Props) {
   return (
     <div className="space-y-4">
       <ImageUploadField
@@ -37,9 +38,10 @@ export default function ImageWithParagraphBlockEditor({ data, onChange }: Props)
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
           Titolo (opzionale)
         </label>
-        <RichTextField
+        <BlockRichText
           value={data.title || ""}
           onChange={(html) => onChange({ ...data, title: html })}
+          sourceText={sourceData?.title || ""}
           placeholder="Titolo"
         />
       </div>
@@ -47,9 +49,10 @@ export default function ImageWithParagraphBlockEditor({ data, onChange }: Props)
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
           Paragrafo (centrato sotto l&apos;immagine/video)
         </label>
-        <RichTextField
+        <BlockRichText
           value={data.body || ""}
           onChange={(html) => onChange({ ...data, body: html })}
+          sourceText={sourceData?.body || ""}
           multiline
           minHeight={140}
         />

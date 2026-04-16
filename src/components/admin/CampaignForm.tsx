@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Sparkles, Loader2 } from "lucide-react";
 import { slugify } from "@/lib/utils";
 import SeoPanel from "./SeoPanel";
 import ImageUploadField from "./ImageUploadField";
@@ -9,6 +10,7 @@ import CampaignBlockBuilder from "./campaigns/CampaignBlockBuilder";
 import VideoField from "./campaigns/VideoField";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
 import { TInput, TRichText } from "./TranslatableField";
+import type { CampaignBlock } from "@/types";
 
 interface CampaignFormProps {
   campaignId?: string;
@@ -117,6 +119,117 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  /* ── Translate all block texts with AI (campaigns) ──────── */
+  const [translatingBlocks, setTranslatingBlocks] = useState(false);
+
+  const collectBlockTexts = (blocks: CampaignBlock[]): Record<string, string> => {
+    const out: Record<string, string> = {};
+    blocks.forEach((b, i) => {
+      const d = b.data as Record<string, unknown>;
+      const put = (sub: string, v: unknown) => {
+        if (typeof v === "string" && v.trim()) out[`${i}.${sub}`] = v;
+      };
+      switch (b.type) {
+        case "paragraph":
+          put("title", d.title); put("body", d.body); break;
+        case "image_text":
+          put("title", d.title); put("text", d.text); break;
+        case "single_image":
+          put("caption", d.caption); break;
+        case "image_with_paragraph":
+          put("title", d.title); put("body", d.body); break;
+        case "fullwidth_banner":
+          put("title", d.title); put("ctaLabel", d.ctaLabel); break;
+        case "three_images": {
+          const imgs = (d.images as { caption?: string }[]) || [];
+          imgs.forEach((img, j) => {
+            if (img.caption && img.caption.trim()) out[`${i}.images.${j}.caption`] = img.caption;
+          });
+          break;
+        }
+      }
+    });
+    return out;
+  };
+
+  const applyBlockTexts = (blocks: CampaignBlock[], translations: Record<string, string>): CampaignBlock[] => {
+    return blocks.map((b, i) => {
+      const data = { ...(b.data as Record<string, unknown>) };
+      const get = (sub: string) => translations[`${i}.${sub}`];
+      switch (b.type) {
+        case "paragraph":
+          if (get("title") !== undefined) data.title = get("title");
+          if (get("body") !== undefined) data.body = get("body");
+          break;
+        case "image_text":
+          if (get("title") !== undefined) data.title = get("title");
+          if (get("text") !== undefined) data.text = get("text");
+          break;
+        case "single_image":
+          if (get("caption") !== undefined) data.caption = get("caption");
+          break;
+        case "image_with_paragraph":
+          if (get("title") !== undefined) data.title = get("title");
+          if (get("body") !== undefined) data.body = get("body");
+          break;
+        case "fullwidth_banner":
+          if (get("title") !== undefined) data.title = get("title");
+          if (get("ctaLabel") !== undefined) data.ctaLabel = get("ctaLabel");
+          break;
+        case "three_images": {
+          const imgs = ((data.images as { url: string; caption: string }[]) || []).map((img, j) => {
+            const tr = translations[`${i}.images.${j}.caption`];
+            return tr !== undefined ? { ...img, caption: tr } : img;
+          });
+          data.images = imgs;
+          break;
+        }
+      }
+      return { ...b, data: data as CampaignBlock["data"] };
+    });
+  };
+
+  const handleTranslateBlocks = async () => {
+    if (!tCtx?.isTranslating) return;
+    let sourceBlocks: CampaignBlock[];
+    try {
+      const parsed = JSON.parse(form.blocks || "[]");
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        setError("Nessun blocco da tradurre nella lingua di default");
+        return;
+      }
+      sourceBlocks = parsed as CampaignBlock[];
+    } catch {
+      setError("JSON dei blocchi non valido");
+      return;
+    }
+    const fields = collectBlockTexts(sourceBlocks);
+    if (Object.keys(fields).length === 0) {
+      setError("Nessun testo da tradurre nei blocchi");
+      return;
+    }
+    setTranslatingBlocks(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fields, fromLang: tCtx.defaultLang, toLang: tCtx.lang, htmlMode: true }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || "Errore traduzione");
+        return;
+      }
+      const translatedBlocks = applyBlockTexts(sourceBlocks, data.translations || {});
+      tCtx.setValue("blocks", JSON.stringify(translatedBlocks));
+    } catch {
+      setError("Errore di connessione");
+    } finally {
+      setTranslatingBlocks(false);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl space-y-6">
       {error && (
@@ -219,11 +332,39 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
 
       {/* Sezioni dinamiche */}
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezioni della pagina</h2>
-          <p className="text-[11px] text-warm-400 mt-1">Aggiungi e ordina le sezioni come preferisci. Per i video basta un paragrafo sotto.</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezioni della pagina</h2>
+            <p className="text-[11px] text-warm-400 mt-1">
+              {tCtx?.isTranslating
+                ? `Stai modificando le sezioni in ${tCtx.lang.toUpperCase()}. Usa "Traduci sezioni con AI" per tradurre tutti i testi automaticamente, poi premi Aggiorna per salvare.`
+                : "Aggiungi e ordina le sezioni come preferisci. Per i video basta un paragrafo sotto."}
+            </p>
+          </div>
+          {tCtx?.isTranslating && (
+            <button
+              type="button"
+              onClick={handleTranslateBlocks}
+              disabled={translatingBlocks}
+              title="Traduce con AI tutti i testi (titoli, paragrafi, didascalie, CTA) di tutti i blocchi dalla lingua di default"
+              className="flex-shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 hover:text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded disabled:opacity-50"
+            >
+              {translatingBlocks ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              {translatingBlocks ? "Traduzione in corso..." : "Traduci sezioni con AI"}
+            </button>
+          )}
         </div>
-        <CampaignBlockBuilder value={form.blocks} onChange={(json) => updateField("blocks", json)} />
+        <CampaignBlockBuilder
+          value={tCtx?.isTranslating ? (tCtx.getValue("blocks", "") || form.blocks) : form.blocks}
+          sourceValue={tCtx?.isTranslating ? form.blocks : undefined}
+          onChange={(json) => {
+            if (tCtx?.isTranslating) {
+              tCtx.setValue("blocks", json);
+            } else {
+              updateField("blocks", json);
+            }
+          }}
+        />
       </div>
 
       <SeoPanel

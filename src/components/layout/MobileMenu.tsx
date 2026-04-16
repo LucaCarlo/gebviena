@@ -175,7 +175,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ type: "tween", duration: 0.25, delay: 0.15 }}
-                      className="space-y-6 md:space-y-7 px-8 md:px-0 pt-10 md:pt-32 md:pl-[15%]"
+                      className="space-y-6 md:space-y-7 pl-16 pr-8 md:px-0 pt-10 md:pt-32 md:pl-[30%]"
                     >
                       {activeNav.children.map((child) => (
                         <li key={child.label}>

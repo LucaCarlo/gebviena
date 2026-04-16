@@ -1,14 +1,16 @@
 "use client";
 
 import ImageUploadField from "../ImageUploadField";
+import { BlockTextInput } from "../news/BlockAIField";
 import type { CampaignThreeImagesData } from "@/types";
 
 interface Props {
   data: CampaignThreeImagesData;
   onChange: (data: CampaignThreeImagesData) => void;
+  sourceData?: Partial<CampaignThreeImagesData>;
 }
 
-export default function ThreeImagesBlockEditor({ data, onChange }: Props) {
+export default function ThreeImagesBlockEditor({ data, onChange, sourceData }: Props) {
   const items = [0, 1, 2].map((i) => data.images[i] || { url: "", caption: "" });
 
   const update = (i: number, patch: Partial<{ url: string; caption: string }>) => {
@@ -35,10 +37,10 @@ export default function ThreeImagesBlockEditor({ data, onChange }: Props) {
             <label className="block text-[11px] font-semibold text-warm-600 uppercase tracking-wider mb-1">
               Caption / Alt text
             </label>
-            <input
-              type="text"
+            <BlockTextInput
               value={img.caption}
-              onChange={(e) => update(i, { caption: e.target.value })}
+              onChange={(v) => update(i, { caption: v })}
+              sourceText={sourceData?.images?.[i]?.caption || ""}
               className="w-full border border-warm-300 rounded px-3 py-1.5 text-xs focus:border-warm-800 focus:outline-none"
               placeholder="es. Czech by Hermann Czech"
             />

@@ -1,15 +1,16 @@
 "use client";
 
 import ImageUploadField from "../ImageUploadField";
-import RichTextField from "../RichTextField";
+import { BlockRichText } from "../news/BlockAIField";
 import type { CampaignImageTextData } from "@/types";
 
 interface Props {
   data: CampaignImageTextData;
   onChange: (data: CampaignImageTextData) => void;
+  sourceData?: Partial<CampaignImageTextData>;
 }
 
-export default function ImageTextBlockEditor({ data, onChange }: Props) {
+export default function ImageTextBlockEditor({ data, onChange, sourceData }: Props) {
   return (
     <div className="space-y-4">
       <div>
@@ -48,9 +49,10 @@ export default function ImageTextBlockEditor({ data, onChange }: Props) {
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
           Titolo (opzionale)
         </label>
-        <RichTextField
+        <BlockRichText
           value={data.title || ""}
           onChange={(html) => onChange({ ...data, title: html })}
+          sourceText={sourceData?.title || ""}
           placeholder="es. IL GESTO CREA SPAZIO..."
         />
       </div>
@@ -59,9 +61,10 @@ export default function ImageTextBlockEditor({ data, onChange }: Props) {
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
           Testo
         </label>
-        <RichTextField
+        <BlockRichText
           value={data.text || ""}
           onChange={(html) => onChange({ ...data, text: html })}
+          sourceText={sourceData?.text || ""}
           multiline
           minHeight={140}
         />

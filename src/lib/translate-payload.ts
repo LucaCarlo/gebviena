@@ -44,7 +44,7 @@ export const TRANSLATABLE_FIELDS = {
   product: ["name", "slug", "description", "materials", "dimensions", "variants", "seoTitle", "seoDescription", "seoKeywords"] as const,
   designer: ["name", "slug", "bio", "country", "seoTitle", "seoDescription", "seoKeywords"] as const,
   project: ["name", "slug", "city", "architect", "description", "shortDescription", "seoTitle", "seoDescription", "seoKeywords"] as const,
-  campaign: ["name", "slug", "subtitle", "description", "seoTitle", "seoDescription", "seoKeywords"] as const,
+  campaign: ["name", "slug", "subtitle", "description", "blocks", "seoTitle", "seoDescription", "seoKeywords"] as const,
   news: ["title", "slug", "subtitle", "excerpt", "content", "blocks", "seoTitle", "seoDescription", "seoKeywords"] as const,
   catalog: ["name", "slug", "pretitle", "title", "description", "linkText"] as const,
   hero: ["title", "subtitle", "ctaText", "ctaLink"] as const,
