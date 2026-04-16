@@ -252,6 +252,8 @@ const EN = {
   "prodotti.detail.support.feature2": "Finishes other than standard",
   "prodotti.detail.support.feature3": "Off-catalogue model production",
   "prodotti.detail.support.cta": "Contact us for your project →",
+  "prodotti.detail.model_2d": "2D model",
+  "prodotti.detail.model_3d": "3D model",
   "prodotti.detail.show_more": "Read more",
   "prodotti.detail.show_less": "Show less",
   "prodotti.detail.variants": "Variants",

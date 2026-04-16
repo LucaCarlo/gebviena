@@ -338,6 +338,8 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "prodotti.detail.support.feature2", defaultValue: "Finiture differenti dallo standard" },
       { key: "prodotti.detail.support.feature3", defaultValue: "Realizzazione modelli non a catalogo" },
       { key: "prodotti.detail.support.cta", defaultValue: "Contattaci per il tuo progetto →" },
+      { key: "prodotti.detail.model_2d", defaultValue: "Modello 2D" },
+      { key: "prodotti.detail.model_3d", defaultValue: "Modello 3D" },
       { key: "prodotti.detail.show_more", defaultValue: "Continua a leggere" },
       { key: "prodotti.detail.show_less", defaultValue: "Mostra meno" },
       { key: "prodotti.detail.variants", defaultValue: "Varianti" },

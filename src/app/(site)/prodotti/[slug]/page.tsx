@@ -542,21 +542,21 @@ export default function ProductDetailPage() {
                             <a href={product.techSheetUrl} target="_blank" rel="noopener noreferrer"
                               className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
                               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-                              Scheda tecnica ↓
+                              {t("prodotti.detail.tech_sheet_download")} ↓
                             </a>
                           )}
                           {product.model2dUrl && (
                             <a href={product.model2dUrl} download
                               className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
                               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-                              Modello 2D ↓
+                              {t("prodotti.detail.model_2d")} ↓
                             </a>
                           )}
                           {product.model3dUrl && (
                             <a href={product.model3dUrl} download
                               className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
                               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-                              Modello 3D ↓
+                              {t("prodotti.detail.model_3d")} ↓
                             </a>
                           )}
                         </div>
