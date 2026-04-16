@@ -23,20 +23,33 @@ export default function Header() {
       return;
     }
 
-    // Find the hero section height to know when to switch
-    const heroSection = document.querySelector("main > section:first-child");
-    if (heroSection) {
-      heroEndRef.current = heroSection.getBoundingClientRect().height;
-    }
+    const measure = () => {
+      const heroSection = document.querySelector("main > section:first-child");
+      const h = heroSection?.getBoundingClientRect().height || 0;
+      // Fallback while the hero image/video is still loading: assume the hero
+      // covers most of the viewport. Otherwise the threshold becomes 0 and the
+      // header turns white as soon as scrollY > 0.
+      heroEndRef.current = h > 0 ? h : window.innerHeight * 0.9;
+    };
 
-    // Reset state based on current scroll position (fixes back-navigation bug)
-    setIsScrolled(window.scrollY > heroEndRef.current * 0.7);
-
-    const handleScroll = () => {
+    const update = () => {
+      measure();
       setIsScrolled(window.scrollY > heroEndRef.current * 0.7);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    update();
+    // Re-measure once the hero (and its async image) has had a chance to layout.
+    const raf = requestAnimationFrame(update);
+    const onLoad = () => update();
+    window.addEventListener("load", onLoad);
+    window.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("load", onLoad);
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
   }, [isHomepage]);
 
   return (

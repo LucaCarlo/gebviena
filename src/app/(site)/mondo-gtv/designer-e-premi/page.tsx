@@ -3,7 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getRelatedCardImages } from "@/lib/page-images";
 import { tBatch } from "@/lib/i18n";
-import { getCategoryLabelMap, getSubcategoryLabelMap } from "@/lib/server-categories";
+import { getCategoryLabelMap } from "@/lib/server-categories";
+import { lookupLabel } from "@/lib/category-lookup";
 import type { Metadata } from "next";
 import DesignerGrid from "./DesignerGrid";
 
@@ -66,15 +67,11 @@ export default async function DesignerPremiPage() {
 
   // Related page covers
   const cardImages = await getRelatedCardImages(RELATED_PAGES.map((p) => p.page));
-  const [categoryLabelMap, subcategoryLabelMap] = await Promise.all([
-    getCategoryLabelMap("products"),
-    getSubcategoryLabelMap("products"),
-  ]);
+  const productLabelMap = await getCategoryLabelMap("products");
   const productLabel = (cat: string | null, sub: string | null): string => {
-    if (sub) return subcategoryLabelMap.get(sub) || sub;
+    if (sub) return lookupLabel(productLabelMap, sub);
     if (!cat) return "";
-    const first = cat.split(",")[0];
-    return categoryLabelMap.get(first) || first;
+    return lookupLabel(productLabelMap, cat.split(",")[0]);
   };
   const T = await tBatch([
     "designer-premi.title",

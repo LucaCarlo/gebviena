@@ -12,6 +12,7 @@ import type {
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
 } from "@/types";
 import { useLang } from "@/contexts/I18nContext";
+import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
 
 interface ArticleWithRelated extends NewsArticle {
   related?: NewsArticle[];
@@ -252,7 +253,7 @@ function RelatedBlock({ related, categoryLabelMap }: { related: NewsArticle[]; c
                 {rel.imageUrl && <Image src={rel.imageUrl} alt={rel.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 50vw, 25vw" />}
               </div>
               <div className="mt-4">
-                {rel.category && <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">{categoryLabelMap.get(rel.category) || rel.category}</p>}
+                {rel.category && <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">{lookupLabel(categoryLabelMap, rel.category)}</p>}
                 <h4 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">{rel.title}</h4>
               </div>
             </Link>
@@ -284,11 +285,7 @@ export default function NewsDetailPage() {
       .then((d) => setCategories(d.data || []));
   }, [lang]);
 
-  const categoryLabelMap = useMemo(() => {
-    const m = new Map<string, string>();
-    categories.forEach((c) => m.set(c.value, c.label));
-    return m;
-  }, [categories]);
+  const categoryLabelMap = useMemo(() => buildLabelLookup(categories), [categories]);
 
   const blocksV2: NewsBlockV2[] | null = (() => {
     if (!article?.blocks) return null;
@@ -323,7 +320,7 @@ export default function NewsDetailPage() {
       <section className="gtv-container pb-0 pt-[76px] md:pt-[108px]">
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-center">
           {article.category && (
-            <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light" style={{ marginBottom: "44px" }}>{categoryLabelMap.get(article.category) || article.category}</p>
+            <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light" style={{ marginBottom: "44px" }}>{lookupLabel(categoryLabelMap, article.category)}</p>
           )}
           <h1 className="font-serif text-[34px] md:text-[58px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto" style={{ marginBottom: "10px" }}>
             {article.title}

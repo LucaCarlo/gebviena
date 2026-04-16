@@ -7,6 +7,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import type { Project, Product, Designer } from "@/types";
 import { useLang } from "@/contexts/I18nContext";
+import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
 
 interface ProjectDetail extends Omit<Project, "products"> {
   products: { product: Product & { designer?: Designer } }[];
@@ -40,11 +41,7 @@ export default function ProjectDetailPage() {
       .then((d) => setCategories(d.data || []));
   }, [lang]);
 
-  const categoryLabelMap = useMemo(() => {
-    const m = new Map<string, string>();
-    categories.forEach((c) => m.set(c.value, c.label));
-    return m;
-  }, [categories]);
+  const categoryLabelMap = useMemo(() => buildLabelLookup(categories), [categories]);
 
   // Measure image orientations for gallery split (horizontal vs vertical)
   useEffect(() => {
@@ -122,7 +119,7 @@ export default function ProjectDetailPage() {
           </h1>
           {project.type && (
             <p className="uppercase text-[20px] tracking-[0.08em] text-white mt-2 font-light">
-              {categoryLabelMap.get(project.type) || project.type}
+              {lookupLabel(categoryLabelMap, project.type)}
             </p>
           )}
         </motion.div>

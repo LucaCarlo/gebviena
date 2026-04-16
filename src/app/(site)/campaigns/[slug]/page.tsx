@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCategoryLabelMap } from "@/lib/server-categories";
+import { lookupLabel } from "@/lib/category-lookup";
 import type {
   CampaignBlock,
   CampaignParagraphData,
@@ -65,7 +66,7 @@ export default async function CampaignDetailPage({ params }: Params) {
       <section className="gtv-container pb-0 pt-[76px] md:pt-[108px]">
         <div className="text-center">
           {campaign.type && (
-            <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light" style={{ marginBottom: "44px" }}>{categoryLabelMap.get(campaign.type) || campaign.type}</p>
+            <p className="uppercase text-[20px] tracking-[0.03em] text-black font-light" style={{ marginBottom: "44px" }}>{lookupLabel(categoryLabelMap, campaign.type)}</p>
           )}
           <h1 className="font-serif text-[34px] md:text-[58px] text-black tracking-tight font-light leading-[1.2] max-w-[940px] mx-auto" style={{ marginBottom: "10px" }}>
             {campaign.name}
@@ -331,7 +332,7 @@ export default async function CampaignDetailPage({ params }: Params) {
                   </div>
                   <div className="mt-4">
                     {c.type && (
-                      <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">{categoryLabelMap.get(c.type) || c.type}</p>
+                      <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">{lookupLabel(categoryLabelMap, c.type)}</p>
                     )}
                     <h4 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                       {c.name}

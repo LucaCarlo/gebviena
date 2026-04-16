@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useT, useLang } from "@/contexts/I18nContext";
+import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
 import type { Project, HeroSlide } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -365,8 +366,7 @@ function ProjectsContent() {
     setTimeout(() => document.querySelector("section.pt-2")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
-  const typeLabels: Record<string, string> = {};
-  projectCategories.forEach((c) => { typeLabels[c.value] = c.label; });
+  const typeLabelMap = buildLabelLookup(projectCategories);
 
   /* Pagination with ellipsis */
   const getPaginationItems = () => {
@@ -510,7 +510,7 @@ function ProjectsContent() {
                   </div>
                   <div className="mt-4">
                     <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
-                      {typeLabels[project.type] || project.type}
+                      {lookupLabel(typeLabelMap, project.type)}
                     </p>
                     <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                       {project.name}

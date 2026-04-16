@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useT, useLang } from "@/contexts/I18nContext";
+import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
 import type { NewsArticle } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -54,11 +55,7 @@ function NewsContent() {
     fetchArticles();
   }, [fetchArticles]);
 
-  const categoryLabelMap = useMemo(() => {
-    const m = new Map<string, string>();
-    categories.forEach((c) => m.set(c.value, c.label));
-    return m;
-  }, [categories]);
+  const categoryLabelMap = useMemo(() => buildLabelLookup(categories), [categories]);
 
   const setCategory = (cat: string) => {
     const params = new URLSearchParams();
@@ -168,7 +165,7 @@ function NewsContent() {
                   <div className="mt-4">
                     {article.category && (
                       <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
-                        {categoryLabelMap.get(article.category) || article.category}
+                        {lookupLabel(categoryLabelMap, article.category)}
                       </p>
                     )}
                     <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useT, useLang } from "@/contexts/I18nContext";
+import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
 import type { Product, HeroSlide } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -287,26 +288,24 @@ function ProductsContent() {
     ? allCategories
     : allCategories.filter((c) => c.typologies.some((t) => t.typology.value === currentCategory));
 
-  /* Lookup maps slug → translated label for product card */
-  const categoryLabelMap = useMemo(() => {
-    const m = new Map<string, string>();
-    allCategories.forEach((c) => m.set(c.value, c.label));
-    return m;
-  }, [allCategories]);
-
-  const subcategoryLabelMap = useMemo(() => {
-    const m = new Map<string, string>();
-    allCategories.forEach((c) => (c.subcategories || []).forEach((s) => m.set(s.value, s.label)));
-    return m;
-  }, [allCategories]);
+  /* Robust slug→translated-label lookup. Combines categories, their nested
+     subcategories and typologies into a single map: Product.category and
+     Product.subcategory in DB are inconsistent (sometimes typology slug like
+     "CLASSICI", sometimes category label like "Sedie"). */
+  const labelMap = useMemo(() => {
+    const items: { value: string; label: string }[] = [];
+    allCategories.forEach((c) => {
+      items.push({ value: c.value, label: c.label });
+      (c.subcategories || []).forEach((s) => items.push({ value: s.value, label: s.label }));
+    });
+    typologies.forEach((tp) => items.push({ value: tp.value, label: tp.label }));
+    return buildLabelLookup(items);
+  }, [allCategories, typologies]);
 
   const getCardLabel = (product: Product): string => {
-    if (product.subcategory) {
-      return subcategoryLabelMap.get(product.subcategory) || product.subcategory;
-    }
+    if (product.subcategory) return lookupLabel(labelMap, product.subcategory);
     const first = (product.category || "").split(",")[0];
-    if (!first) return "";
-    return categoryLabelMap.get(first) || (first === "CLASSICI" ? "Classici" : first.charAt(0) + first.slice(1).toLowerCase());
+    return lookupLabel(labelMap, first);
   };
 
   /* Pagination with ellipsis */
