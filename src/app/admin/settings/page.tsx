@@ -15,6 +15,7 @@ import {
   Loader2,
   Languages,
   Share2,
+  MapPin,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -53,7 +54,7 @@ interface BackupPreview {
   [key: string]: number;
 }
 
-type TabKey = "smtp" | "recaptcha" | "languages" | "translations" | "social" | "stats" | "backup" | "storage";
+type TabKey = "smtp" | "recaptcha" | "languages" | "translations" | "social" | "maps" | "stats" | "backup" | "storage";
 
 interface TabDef {
   key: TabKey;
@@ -67,6 +68,7 @@ const TABS: TabDef[] = [
   { key: "languages", label: "Lingue", icon: Globe },
   { key: "translations", label: "Traduzioni AI", icon: Languages },
   { key: "social", label: "Social", icon: Share2 },
+  { key: "maps", label: "Google Maps", icon: MapPin },
   { key: "stats", label: "Statistiche", icon: BarChart3 },
   { key: "backup", label: "Backup", icon: Database },
   { key: "storage", label: "Storage Cloud", icon: Cloud },
@@ -1021,6 +1023,128 @@ function SocialTab({ showToast }: { showToast: (m: string, t: "success" | "error
   );
 }
 
+// ─── Google Maps Tab ─────────────────────────────────────────────────────────
+
+function MapsTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
+  const [form, setForm] = useState({
+    maps_provider: "leaflet",
+    maps_google_api_key: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings?group=maps")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          const next = { ...form };
+          for (const s of data.data) {
+            if (s.key in next) (next as Record<string, string>)[s.key] = s.value;
+          }
+          setForm(next);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const settings = Object.entries(form).map(([key, value]) => ({ key, value, group: "maps" }));
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (data.success) showToast("Impostazioni mappa salvate", "success");
+      else showToast(data.error || "Errore", "error");
+    } catch {
+      showToast("Errore di connessione", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-light text-warm-900">Mappa Rete di Vendita</h2>
+        <p className="text-sm text-warm-500 mt-1">
+          Scegli quale provider usare sulla pagina Rete di Vendita per visualizzare i punti vendita e gli agenti.
+        </p>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
+        <div>
+          <label className="block text-sm font-medium text-warm-800 mb-3">Provider mappa</label>
+          <div className="space-y-2">
+            <label className="flex items-start gap-3 p-3 border border-warm-200 rounded-lg cursor-pointer hover:bg-warm-50">
+              <input
+                type="radio"
+                name="maps_provider"
+                value="leaflet"
+                checked={form.maps_provider === "leaflet"}
+                onChange={() => setForm({ ...form, maps_provider: "leaflet" })}
+                className="mt-1"
+              />
+              <div>
+                <div className="text-sm font-medium text-warm-900">Leaflet + OpenStreetMap (consigliato)</div>
+                <div className="text-xs text-warm-500 mt-0.5">
+                  Gratuito, nessuna chiave API o carta di credito richiesta. Funziona subito, supporta cluster di marker e ricerca città.
+                </div>
+              </div>
+            </label>
+            <label className="flex items-start gap-3 p-3 border border-warm-200 rounded-lg cursor-pointer hover:bg-warm-50">
+              <input
+                type="radio"
+                name="maps_provider"
+                value="google"
+                checked={form.maps_provider === "google"}
+                onChange={() => setForm({ ...form, maps_provider: "google" })}
+                className="mt-1"
+              />
+              <div>
+                <div className="text-sm font-medium text-warm-900">Google Maps</div>
+                <div className="text-xs text-warm-500 mt-0.5">
+                  Richiede una API key Google Cloud (con fatturazione abilitata). Senza chiave valida la mappa mostrerà il watermark &quot;for development purposes only&quot;.
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {form.maps_provider === "google" && (
+          <div>
+            <label className="block text-sm font-medium text-warm-800 mb-1.5">API Key Google Maps</label>
+            <input
+              type="text"
+              value={form.maps_google_api_key}
+              onChange={(e) => setForm({ ...form, maps_google_api_key: e.target.value })}
+              placeholder="AIzaSy..."
+              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm font-mono focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+            />
+            <p className="text-xs text-warm-500 mt-2">
+              Crea la chiave su <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console</a>. Abilita: Maps JavaScript API, Places API, Geocoding API. Restringi la chiave al dominio del sito.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="inline-flex items-center gap-2 bg-warm-800 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50"
+        >
+          {saving && <Loader2 size={16} className="animate-spin" />}
+          Salva
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Storage Tab ─────────────────────────────────────────────────────────────
 
 function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
@@ -1387,6 +1511,8 @@ export default function AdminSettingsPage() {
         return <StorageTab showToast={showToast} />;
       case "social":
         return <SocialTab showToast={showToast} />;
+      case "maps":
+        return <MapsTab showToast={showToast} />;
     }
   };
 

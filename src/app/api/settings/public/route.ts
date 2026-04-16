@@ -10,6 +10,7 @@ export async function GET() {
         OR: [
           { key: { in: ["recaptcha_enabled", "recaptcha_site_key"] } },
           { group: "social" },
+          { group: "maps" },
         ],
       },
     });

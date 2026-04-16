@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import Script from "next/script";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
 import { useT, useLang } from "@/contexts/I18nContext";
+import MapView, { type MapApi } from "@/components/site/MapView";
 import type { PointOfSale } from "@/types";
 
 interface FieldConfig {
@@ -29,9 +29,6 @@ const DEFAULT_STORE_FIELDS: FieldConfig[] = [
   { key: "subscribeNewsletter", label: "Desidero ricevere aggiornamenti e novità", type: "checkbox", required: false, enabled: false, order: 8 },
 ];
 
-const MAP_CENTER = { lat: 41.9028, lng: 12.4964 };
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-
 const DEFAULT_HERO_BG = "/foto-gebvienna/rete-di-vendita.png";
 
 export default function ReteVenditaPage() {
@@ -44,12 +41,9 @@ export default function ReteVenditaPage() {
   const [resultCount, setResultCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [heroBg, setHeroBg] = useState(DEFAULT_HERO_BG);
-  const [mapReady, setMapReady] = useState(false);
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
-  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const mapApiRef = useRef<MapApi | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchInputEl, setSearchInputEl] = useState<HTMLInputElement | null>(null);
 
   // Contact modal state
   const [contactStore, setContactStore] = useState<PointOfSale | null>(null);
@@ -97,105 +91,18 @@ export default function ReteVenditaPage() {
     fetchStores();
   }, [fetchStores]);
 
-  const initMap = useCallback(() => {
-    if (!mapRef.current || !window.google) return;
-
-    const map = new google.maps.Map(mapRef.current, {
-      center: MAP_CENTER,
-      zoom: 6,
-      styles: [
-        { featureType: "poi", stylers: [{ visibility: "off" }] },
-        { featureType: "transit", stylers: [{ visibility: "off" }] },
-      ],
-      mapTypeControl: true,
-      streetViewControl: false,
-      fullscreenControl: true,
-    });
-
-    mapInstanceRef.current = map;
-    infoWindowRef.current = new google.maps.InfoWindow();
-
-    if (searchInputRef.current) {
-      const autocomplete = new google.maps.places.Autocomplete(
-        searchInputRef.current,
-        { types: ["geocode"] }
-      );
-      autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-        if (place.geometry?.location) {
-          map.setCenter(place.geometry.location);
-          map.setZoom(12);
-          setSearchLocation(place.formatted_address || "");
-        }
-      });
-    }
-
-    setMapReady(true);
+  // Capture the search input element so the Google provider can attach Places autocomplete to it.
+  useEffect(() => {
+    setSearchInputEl(searchInputRef.current);
   }, []);
 
-  useEffect(() => {
-    if (!mapInstanceRef.current || !mapReady) return;
-
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
-
-    const bounds = new google.maps.LatLngBounds();
-
-    stores.forEach((store) => {
-      const marker = new google.maps.Marker({
-        position: { lat: store.latitude, lng: store.longitude },
-        map: mapInstanceRef.current,
-        title: store.name,
-      });
-
-      marker.addListener("click", () => {
-        if (infoWindowRef.current) {
-          infoWindowRef.current.setContent(`
-            <div style="padding: 8px; max-width: 250px; font-family: sans-serif;">
-              <h3 style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">${store.name}</h3>
-              <p style="font-size: 12px; color: #666; margin-bottom: 2px;">${store.address}</p>
-              ${store.phone ? `<p style="font-size: 12px; color: #666;">${store.phone}</p>` : ""}
-              ${store.email ? `<p style="font-size: 12px; color: #666;">${store.email}</p>` : ""}
-            </div>
-          `);
-          infoWindowRef.current.open(mapInstanceRef.current, marker);
-        }
-      });
-
-      markersRef.current.push(marker);
-      bounds.extend({ lat: store.latitude, lng: store.longitude });
-    });
-
-    if (stores.length > 0) {
-      mapInstanceRef.current.fitBounds(bounds);
-      if (stores.length === 1) {
-        mapInstanceRef.current.setZoom(14);
-      }
-    }
-  }, [stores, mapReady]);
-
   const handleStoreClick = (store: PointOfSale) => {
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.setCenter({ lat: store.latitude, lng: store.longitude });
-      mapInstanceRef.current.setZoom(15);
-    }
-    const markerIndex = stores.findIndex((s) => s.id === store.id);
-    if (markerIndex >= 0 && markersRef.current[markerIndex] && infoWindowRef.current) {
-      google.maps.event.trigger(markersRef.current[markerIndex], "click");
-    }
+    mapApiRef.current?.panToStore(store);
   };
 
   const handleSearch = useCallback(() => {
-    if (!searchQuery.trim() || !window.google || !mapInstanceRef.current) return;
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: searchQuery }, (results, status) => {
-      if (status === "OK" && results && results[0]) {
-        const loc = results[0].geometry.location;
-        mapInstanceRef.current?.setCenter(loc);
-        mapInstanceRef.current?.setZoom(12);
-        setSearchLocation(results[0].formatted_address || searchQuery);
-      }
-    });
+    if (!searchQuery.trim()) return;
+    mapApiRef.current?.searchAddress(searchQuery);
   }, [searchQuery]);
 
   const openContactModal = (store: PointOfSale) => {
@@ -254,12 +161,6 @@ export default function ReteVenditaPage() {
 
   return (
     <>
-      <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`}
-        strategy="afterInteractive"
-        onLoad={initMap}
-      />
-
       {/* ===== HERO — immagine sfondo + titolo + tab + search ===== */}
       <section
         className="relative w-full flex flex-col items-center justify-center py-24 md:py-32 lg:py-40"
@@ -428,7 +329,14 @@ export default function ReteVenditaPage() {
           </div>
 
           {/* Map — 60% */}
-          <div ref={mapRef} className="lg:col-span-3 min-h-[500px] lg:min-h-full" style={{ backgroundColor: "#f5f4f2" }} />
+          <div className="lg:col-span-3 min-h-[500px] lg:min-h-full">
+            <MapView
+              ref={mapApiRef}
+              stores={stores}
+              searchInput={searchInputEl}
+              onLocationFound={(addr) => setSearchLocation(addr)}
+            />
+          </div>
         </div>
       </section>
 
