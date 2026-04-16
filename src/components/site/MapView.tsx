@@ -50,7 +50,7 @@ const MapView = forwardRef<MapApi, Props>(function MapView({ stores, searchInput
     </div>;
   }
 
-  if (settings.provider === "google" && settings.apiKey) {
+  if (settings.provider === "google") {
     return <GoogleMapView ref={innerRef} stores={stores} apiKey={settings.apiKey} searchInput={searchInput} onLocationFound={onLocationFound} />;
   }
 

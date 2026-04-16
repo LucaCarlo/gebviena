@@ -1129,7 +1129,7 @@ function MapsTab({ showToast }: { showToast: (m: string, t: "success" | "error")
             </p>
             {!form.maps_google_api_key.trim() && (
               <div className="mt-3 text-xs px-3 py-2 rounded bg-amber-50 border border-amber-200 text-amber-800">
-                ⚠ Senza una API Key valida il sito userà comunque Leaflet come fallback (per non lasciare la mappa rotta). Inserisci la chiave per attivare Google Maps sul frontend.
+                ⚠ Senza una API Key valida la mappa verrà mostrata con il watermark &quot;for development purposes only&quot; di Google. Inserisci la chiave per rimuoverlo.
               </div>
             )}
           </div>
