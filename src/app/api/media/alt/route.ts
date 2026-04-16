@@ -7,14 +7,25 @@ export async function POST(req: NextRequest) {
     const urls: string[] = Array.isArray(body?.urls) ? body.urls : [];
     if (urls.length === 0) return NextResponse.json({ success: true, data: {} });
 
+    const lang = req.headers.get("x-gtv-lang") || body?.lang || "it";
+
     const files = await prisma.mediaFile.findMany({
       where: { url: { in: urls } },
-      select: { url: true, altText: true },
+      select: {
+        id: true,
+        url: true,
+        altText: true,
+        ...(lang !== "it"
+          ? { translations: { where: { languageCode: lang }, select: { altText: true } } }
+          : {}),
+      },
     });
 
     const map: Record<string, string> = {};
     for (const f of files) {
-      if (f.altText) map[f.url] = f.altText;
+      const tr = (f as { translations?: { altText: string | null }[] }).translations?.[0];
+      const alt = (lang !== "it" && tr?.altText) ? tr.altText : f.altText;
+      if (alt) map[f.url] = alt;
     }
     return NextResponse.json({ success: true, data: map });
   } catch (e) {

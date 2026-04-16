@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { GripVertical, Check, Plus, X, Trash2 } from "lucide-react";
+import { GripVertical, Check, Plus, X, Trash2, Globe } from "lucide-react";
+
+interface LanguageRow {
+  code: string;
+  name: string;
+  isDefault: boolean;
+  isActive: boolean;
+}
 
 interface FieldConfig {
   key: string;
@@ -34,12 +41,19 @@ const FORM_TYPE_LABELS: Record<string, string> = {
 const TABS_WITH_REASONS = ["info_request", "store_contact", "collaboration"];
 
 export default function AdminFormsPage() {
-  const [configs, setConfigs] = useState<{ formType: string; fields: FieldConfig[] }[]>([]);
+  const [configs, setConfigs] = useState<{ formType: string; id?: string; fields: FieldConfig[] }[]>([]);
   const [activeTab, setActiveTab] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+  // i18n
+  const [languages, setLanguages] = useState<LanguageRow[]>([]);
+  const [defaultLang, setDefaultLang] = useState("it");
+  const [activeLang, setActiveLang] = useState("it");
+  const [translatedFields, setTranslatedFields] = useState<FieldConfig[] | null>(null);
+  const isTranslating = activeLang !== defaultLang;
 
   // Contact reasons state
   const [reasons, setReasons] = useState<string[]>([]);
@@ -54,7 +68,8 @@ export default function AdminFormsPage() {
       const res = await fetch("/api/form-configs");
       const data = await res.json();
       if (data.success) {
-        const parsed = data.data.map((c: { formType: string; fields: string }) => ({
+        const parsed = data.data.map((c: { id: string; formType: string; fields: string }) => ({
+          id: c.id,
           formType: c.formType,
           fields: JSON.parse(c.fields) as FieldConfig[],
         }));
@@ -66,6 +81,22 @@ export default function AdminFormsPage() {
     } catch { /* silent */ }
     setLoading(false);
   }, [activeTab]);
+
+  const fetchLanguages = useCallback(async () => {
+    try {
+      const res = await fetch("/api/languages");
+      const data = await res.json();
+      if (data.success) {
+        const langs = (data.data as LanguageRow[]).filter((l) => l.isActive);
+        setLanguages(langs);
+        const def = langs.find((l) => l.isDefault);
+        if (def) {
+          setDefaultLang(def.code);
+          setActiveLang(def.code);
+        }
+      }
+    } catch { /* silent */ }
+  }, []);
 
   const fetchReasons = useCallback(async () => {
     try {
@@ -80,11 +111,58 @@ export default function AdminFormsPage() {
   useEffect(() => {
     fetchConfigs();
     fetchReasons();
-  }, [fetchConfigs, fetchReasons]);
+    fetchLanguages();
+  }, [fetchConfigs, fetchReasons, fetchLanguages]);
+
+  // Load translation when lang changes (and not default)
+  useEffect(() => {
+    if (!activeTab || !isTranslating) {
+      setTranslatedFields(null);
+      return;
+    }
+    const c = configs.find((x) => x.formType === activeTab);
+    if (!c?.id) return;
+    fetch(`/api/form-configs/${c.id}/translations/${activeLang}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && d.data?.fields) {
+          try {
+            const tr = JSON.parse(d.data.fields) as FieldConfig[];
+            const byKey = new Map(tr.map((f) => [f.key, f]));
+            setTranslatedFields(
+              c.fields.map((f) => {
+                const t = byKey.get(f.key);
+                return t ? { ...f, label: t.label ?? f.label, placeholder: t.placeholder ?? f.placeholder } : { ...f };
+              })
+            );
+          } catch {
+            setTranslatedFields(c.fields.map((f) => ({ ...f })));
+          }
+        } else {
+          // Start from IT structure so user has everything to translate
+          setTranslatedFields(c.fields.map((f) => ({ ...f })));
+        }
+      })
+      .catch(() => setTranslatedFields(c.fields.map((f) => ({ ...f }))));
+  }, [activeTab, activeLang, isTranslating, configs]);
 
   const activeConfig = configs.find((c) => c.formType === activeTab);
+  const displayedFields = isTranslating && translatedFields ? translatedFields : activeConfig?.fields;
 
   const updateField = (index: number, updates: Partial<FieldConfig>) => {
+    if (isTranslating) {
+      // In translation mode, only allow label/placeholder updates; write to translatedFields
+      const allowed: Partial<FieldConfig> = {};
+      if (typeof updates.label === "string") allowed.label = updates.label;
+      if (typeof updates.placeholder === "string") allowed.placeholder = updates.placeholder;
+      if (Object.keys(allowed).length === 0) return;
+      setTranslatedFields((prev) => {
+        if (!prev) return prev;
+        return prev.map((f, i) => (i === index ? { ...f, ...allowed } : f));
+      });
+      setSaved(false);
+      return;
+    }
     setConfigs((prev) =>
       prev.map((c) =>
         c.formType === activeTab
@@ -161,18 +239,32 @@ export default function AdminFormsPage() {
     if (!activeConfig) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/form-configs", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          formType: activeTab,
-          fields: activeConfig.fields.map((f, i) => ({ ...f, order: i })),
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+      if (isTranslating && activeConfig.id && translatedFields) {
+        const fieldsJson = JSON.stringify(translatedFields.map((f, i) => ({ ...f, order: i })));
+        const res = await fetch(`/api/form-configs/${activeConfig.id}/translations/${activeLang}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: fieldsJson }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+        }
+      } else {
+        const res = await fetch("/api/form-configs", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            formType: activeTab,
+            fields: activeConfig.fields.map((f, i) => ({ ...f, order: i })),
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+        }
       }
     } catch { /* silent */ }
     setSaving(false);
@@ -272,23 +364,48 @@ export default function AdminFormsPage() {
         ))}
       </div>
 
+      {/* Language bar */}
+      {languages.length > 1 && (
+        <div className="bg-white rounded-xl border border-warm-200 p-3 mb-4 flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 text-xs font-semibold text-warm-600 uppercase tracking-wider">
+            <Globe size={14} /> Lingua
+          </div>
+          <select
+            value={activeLang}
+            onChange={(e) => setActiveLang(e.target.value)}
+            className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none"
+          >
+            {languages.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.name}{l.isDefault ? " (principale)" : ""}
+              </option>
+            ))}
+          </select>
+          {isTranslating && (
+            <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded">
+              Stai traducendo in <strong>{activeLang.toUpperCase()}</strong>. Puoi modificare solo etichette e placeholder; struttura e chiavi sono bloccate.
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Fields */}
-      {activeConfig && (
+      {activeConfig && displayedFields && (
         <div className="bg-white rounded-xl shadow-sm border border-warm-200">
           <div className="divide-y divide-warm-100">
-            {activeConfig.fields.map((field, index) => (
+            {displayedFields.map((field, index) => (
               <div
                 key={`${field.key}-${index}`}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragEnd={handleDragEnd}
+                draggable={!isTranslating}
+                onDragStart={() => !isTranslating && handleDragStart(index)}
+                onDragOver={(e) => !isTranslating && handleDragOver(e, index)}
+                onDragEnd={!isTranslating ? handleDragEnd : undefined}
                 className={`px-4 py-4 transition-colors ${
                   dragIndex === index ? "bg-warm-50" : "hover:bg-warm-50/50"
                 } ${!field.enabled ? "opacity-60" : ""}`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="pt-2 cursor-grab active:cursor-grabbing">
+                  <div className={`pt-2 ${isTranslating ? "opacity-30" : "cursor-grab active:cursor-grabbing"}`}>
                     <GripVertical size={16} className="text-warm-300" />
                   </div>
 
@@ -310,8 +427,9 @@ export default function AdminFormsPage() {
                       <input
                         type="text"
                         value={field.key}
+                        disabled={isTranslating}
                         onChange={(e) => updateField(index, { key: e.target.value.replace(/[^a-zA-Z0-9_]/g, "") })}
-                        className="w-full text-sm border border-warm-300 rounded px-2 py-1.5 focus:border-warm-800 focus:outline-none font-mono"
+                        className="w-full text-sm border border-warm-300 rounded px-2 py-1.5 focus:border-warm-800 focus:outline-none font-mono disabled:bg-warm-100 disabled:text-warm-400"
                       />
                     </div>
 
@@ -320,8 +438,9 @@ export default function AdminFormsPage() {
                       <label className="block text-[10px] font-semibold text-warm-500 uppercase mb-1">Tipo</label>
                       <select
                         value={field.type}
+                        disabled={isTranslating}
                         onChange={(e) => updateField(index, { type: e.target.value })}
-                        className="w-full text-sm border border-warm-300 rounded px-2 py-1.5 focus:border-warm-800 focus:outline-none bg-white"
+                        className="w-full text-sm border border-warm-300 rounded px-2 py-1.5 focus:border-warm-800 focus:outline-none bg-white disabled:bg-warm-100 disabled:text-warm-400"
                       >
                         {FIELD_TYPES.map((t) => (
                           <option key={t.value} value={t.value}>{t.label}</option>
@@ -333,9 +452,10 @@ export default function AdminFormsPage() {
                     <div className="md:col-span-2 flex items-end gap-2 pb-1">
                       <button
                         type="button"
-                        onClick={() => updateField(index, { required: !field.required })}
+                        disabled={isTranslating}
+                        onClick={() => !isTranslating && updateField(index, { required: !field.required })}
                         title={field.required ? "Obbligatorio" : "Opzionale"}
-                        className={`flex-1 text-[10px] uppercase tracking-wider px-2 py-1.5 rounded border transition-colors ${
+                        className={`flex-1 text-[10px] uppercase tracking-wider px-2 py-1.5 rounded border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                           field.required
                             ? "bg-warm-800 border-warm-800 text-white"
                             : "border-warm-300 text-warm-500 hover:border-warm-500"
@@ -345,8 +465,9 @@ export default function AdminFormsPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => updateField(index, { enabled: !field.enabled })}
-                        className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
+                        disabled={isTranslating}
+                        onClick={() => !isTranslating && updateField(index, { enabled: !field.enabled })}
+                        className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${
                           field.enabled ? "bg-green-500" : "bg-warm-300"
                         }`}
                         title={field.enabled ? "Attivo" : "Disattivato"}
@@ -374,29 +495,33 @@ export default function AdminFormsPage() {
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => deleteField(index)}
-                    className="text-warm-400 hover:text-red-600 transition-colors p-1"
-                    title="Elimina campo"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {!isTranslating && (
+                    <button
+                      type="button"
+                      onClick={() => deleteField(index)}
+                      className="text-warm-400 hover:text-red-600 transition-colors p-1"
+                      title="Elimina campo"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Add field */}
-          <div className="p-4 border-t border-warm-100">
-            <button
-              type="button"
-              onClick={addField}
-              className="bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors flex items-center gap-1"
-            >
-              <Plus size={14} /> Aggiungi campo
-            </button>
-          </div>
+          {/* Add field (disabled when translating) */}
+          {!isTranslating && (
+            <div className="p-4 border-t border-warm-100">
+              <button
+                type="button"
+                onClick={addField}
+                className="bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors flex items-center gap-1"
+              >
+                <Plus size={14} /> Aggiungi campo
+              </button>
+            </div>
+          )}
 
           {/* Save button */}
           <div className="p-4 border-t border-warm-200 flex items-center justify-end gap-3">

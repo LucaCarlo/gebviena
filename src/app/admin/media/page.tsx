@@ -81,9 +81,6 @@ export default function AdminMediaPage() {
 
   // Detail panel
   const [detailFile, setDetailFile] = useState<MediaFile | null>(null);
-  const [editingAlt, setEditingAlt] = useState(false);
-  const [altText, setAltText] = useState("");
-  const [savingAlt, setSavingAlt] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
   // Generate variants
@@ -266,27 +263,6 @@ export default function AdminMediaPage() {
   const handleSyncSingle = (id: string) => syncItems([id]);
   const handleSyncSelected = () => syncItems(Array.from(selected));
 
-  /* --- alt text ------------------------------------------------------ */
-  const handleSaveAlt = async () => {
-    if (!detailFile) return;
-    setSavingAlt(true);
-    try {
-      const res = await fetch(`/api/media/${detailFile.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ altText }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setDetailFile(data.data);
-        // Update in files list too
-        setFiles((prev) => prev.map((f) => f.id === data.data.id ? data.data : f));
-        setEditingAlt(false);
-      }
-    } catch { /* silent */ }
-    setSavingAlt(false);
-  };
-
   /* --- generate variants --------------------------------------------- */
   const handleGenerateVariants = async () => {
     if (!detailFile) return;
@@ -338,8 +314,6 @@ export default function AdminMediaPage() {
   /* --- open detail -------------------------------------------------- */
   const openDetail = (file: MediaFile) => {
     setDetailFile(file);
-    setAltText(file.altText || "");
-    setEditingAlt(false);
   };
 
   /* --- helpers ------------------------------------------------------ */
@@ -933,48 +907,11 @@ export default function AdminMediaPage() {
               )}
 
               <div className="p-6 space-y-6">
-                {/* Alt Text */}
-                <div>
-                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-2">
-                    Alt Text
-                  </label>
-                  {editingAlt ? (
-                    <div className="space-y-2">
-                      <input
-                        type="text"
-                        value={altText}
-                        onChange={(e) => setAltText(e.target.value)}
-                        placeholder="Descrizione dell'immagine per accessibilita e SEO..."
-                        className="w-full px-3 py-2 border border-warm-300 rounded-lg text-sm focus:outline-none focus:border-warm-500"
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleSaveAlt}
-                          disabled={savingAlt}
-                          className="px-3 py-1.5 bg-warm-800 text-white text-xs rounded-lg hover:bg-warm-900 transition-colors disabled:opacity-50"
-                        >
-                          {savingAlt ? "Salvataggio..." : "Salva"}
-                        </button>
-                        <button
-                          onClick={() => { setEditingAlt(false); setAltText(detailFile.altText || ""); }}
-                          className="px-3 py-1.5 text-xs text-warm-600 hover:text-warm-800 transition-colors"
-                        >
-                          Annulla
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => setEditingAlt(true)}
-                      className="px-3 py-2 border border-warm-200 rounded-lg text-sm text-warm-600 cursor-pointer hover:border-warm-400 transition-colors min-h-[38px] flex items-center"
-                    >
-                      {detailFile.altText || (
-                        <span className="text-warm-400 italic">Clicca per aggiungere alt text...</span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                {/* Alt Text — multi-lingua */}
+                <AltTextEditor file={detailFile} onFileChange={(f) => {
+                  setDetailFile(f);
+                  setFiles((prev) => prev.map((x) => x.id === f.id ? f : x));
+                }} />
 
                 {/* URL */}
                 <div>
@@ -1221,6 +1158,141 @@ export default function AdminMediaPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* =============================================================== */
+/*  AltTextEditor: multi-language alt text editor                   */
+/* =============================================================== */
+
+interface AltLanguage {
+  code: string;
+  name: string;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+function AltTextEditor({ file, onFileChange }: { file: MediaFile; onFileChange: (f: MediaFile) => void }) {
+  const [languages, setLanguages] = useState<AltLanguage[]>([]);
+  const [defaultLang, setDefaultLang] = useState("it");
+  const [activeLang, setActiveLang] = useState("it");
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [draft, setDraft] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/languages")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          const langs = (d.data as AltLanguage[]).filter((l) => l.isActive);
+          setLanguages(langs);
+          const def = langs.find((l) => l.isDefault);
+          if (def) {
+            setDefaultLang(def.code);
+            setActiveLang(def.code);
+          }
+        }
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch(`/api/media/${file.id}/alt-translations`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          const m: Record<string, string> = {};
+          for (const tr of d.data as Array<{ languageCode: string; altText: string | null }>) {
+            m[tr.languageCode] = tr.altText || "";
+          }
+          setTranslations(m);
+        }
+      });
+  }, [file.id]);
+
+  useEffect(() => {
+    if (activeLang === defaultLang) {
+      setDraft(file.altText || "");
+    } else {
+      setDraft(translations[activeLang] || "");
+    }
+  }, [activeLang, defaultLang, file.altText, translations]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      if (activeLang === defaultLang) {
+        const res = await fetch(`/api/media/${file.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ altText: draft }),
+        });
+        const d = await res.json();
+        if (d.success) {
+          onFileChange(d.data);
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+        }
+      } else {
+        const res = await fetch(`/api/media/${file.id}/alt-translations`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ languageCode: activeLang, altText: draft }),
+        });
+        const d = await res.json();
+        if (d.success) {
+          setTranslations((prev) => ({ ...prev, [activeLang]: draft }));
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+        }
+      }
+    } catch { /* silent */ }
+    setSaving(false);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-xs font-semibold text-warm-600 uppercase tracking-wider">
+          Alt Text
+        </label>
+        {languages.length > 1 && (
+          <select
+            value={activeLang}
+            onChange={(e) => setActiveLang(e.target.value)}
+            className="text-xs border border-warm-300 rounded px-2 py-1 focus:border-warm-800 focus:outline-none"
+          >
+            {languages.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.name}{l.isDefault ? " (default)" : ""}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+      <div className="space-y-2">
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={activeLang === defaultLang
+            ? "Descrizione dell'immagine per accessibilità e SEO..."
+            : `Traduzione in ${activeLang.toUpperCase()} (lascia vuoto per usare la versione ${defaultLang.toUpperCase()})`}
+          className="w-full px-3 py-2 border border-warm-300 rounded-lg text-sm focus:outline-none focus:border-warm-500"
+        />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-3 py-1.5 bg-warm-800 text-white text-xs rounded-lg hover:bg-warm-900 transition-colors disabled:opacity-50"
+          >
+            {saving ? "Salvataggio..." : "Salva"}
+          </button>
+          {saved && <span className="text-xs text-green-600 font-medium">Salvato ✓</span>}
+        </div>
+      </div>
     </div>
   );
 }

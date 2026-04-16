@@ -609,8 +609,24 @@ model MediaFile {
 
   createdAt DateTime @default(now())
 
+  translations MediaFileTranslation[]
+
   @@index([folder])
   @@index([isSynced])
+}
+
+model MediaFileTranslation {
+  id           String   @id @default(cuid())
+  mediaFileId  String
+  languageCode String
+  altText      String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  mediaFile MediaFile @relation(fields: [mediaFileId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaFileId, languageCode])
+  @@index([languageCode])
 }
 
 model PointOfSale {
@@ -803,7 +819,23 @@ model FormConfig {
   fields    String   @db.Text
   updatedAt DateTime @updatedAt
 
+  translations FormConfigTranslation[]
+
   @@index([formType])
+}
+
+model FormConfigTranslation {
+  id           String   @id @default(cuid())
+  formConfigId String
+  languageCode String
+  fields       String   @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  formConfig FormConfig @relation(fields: [formConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([formConfigId, languageCode])
+  @@index([languageCode])
 }
 
 model LandingPageConfig {
