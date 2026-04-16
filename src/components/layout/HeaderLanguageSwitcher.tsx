@@ -54,6 +54,8 @@ export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
     const translated = translateSegmentsForward(segments, target);
     const path = translated.length ? "/" + translated.join("/") : "/";
     const destination = lang.isDefault ? path : `/${target}${path === "/" ? "" : path}`;
+    // Persist preference so hardcoded Italian links keep redirecting to EN
+    document.cookie = `gtv_lang=${target}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
     window.location.href = destination;
   };
 

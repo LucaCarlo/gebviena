@@ -53,6 +53,7 @@ export default function LanguageSwitcher() {
     const translated = translateSegmentsForward(segments, target);
     const path = translated.length ? "/" + translated.join("/") : "/";
     const destination = lang.isDefault ? path : `/${target}${path === "/" ? "" : path}`;
+    document.cookie = `gtv_lang=${target}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
     window.location.href = destination;
   };
 
