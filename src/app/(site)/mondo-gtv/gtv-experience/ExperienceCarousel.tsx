@@ -43,7 +43,7 @@ export default function ExperienceCarousel({ images }: ExperienceCarouselProps) 
   const cursorStyle = hoverSide === "left" ? ARROW_LEFT : hoverSide === "right" ? ARROW_RIGHT : "pointer";
 
   return (
-    <section className="py-16 md:py-24">
+    <section className="pt-8 md:pt-12 pb-16 md:pb-24">
       <div className="w-full">
         <div
           ref={containerRef}

@@ -597,16 +597,16 @@ export default function ProductDetailPage() {
                   {t("prodotti.detail.pcon.title")}
                 </h2>
               </div>
-              <iframe
-                src={pconSrc}
-                className="w-full border-0 rounded"
-                style={{ height: "640px" }}
-                allowFullScreen
-                allow="xr-spatial-tracking"
-                loading="eager"
-                title={`Visualizzatore 3D ${product.name}`}
-              />
             </div>
+            <iframe
+              src={pconSrc}
+              className="block w-full border-0"
+              style={{ height: "640px" }}
+              allowFullScreen
+              allow="xr-spatial-tracking"
+              loading="eager"
+              title={`Visualizzatore 3D ${product.name}`}
+            />
           </section>
         );
       })()}

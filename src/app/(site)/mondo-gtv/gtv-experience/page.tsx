@@ -56,6 +56,8 @@ export default async function GtvExperiencePage() {
     getPageImages("gtv-experience", DEFAULTS),
     getRelatedCardImages(RELATED_PAGES.map((p) => p.page)),
     tBatch([
+      "gtv-experience.hero.title",
+      "gtv-experience.intro.title",
       "gtv-experience.intro.p1",
       "gtv-experience.stories.title",
       "gtv-experience.stories.description",
