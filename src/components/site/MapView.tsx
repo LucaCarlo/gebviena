@@ -28,7 +28,7 @@ const MapView = forwardRef<MapApi, Props>(function MapView({ stores, searchInput
   const innerRef = useRef<MapApi | null>(null);
 
   useEffect(() => {
-    fetch("/api/settings/public")
+    fetch("/api/settings/public", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         const d = data?.data || {};

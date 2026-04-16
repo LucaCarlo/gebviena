@@ -1127,6 +1127,11 @@ function MapsTab({ showToast }: { showToast: (m: string, t: "success" | "error")
             <p className="text-xs text-warm-500 mt-2">
               Crea la chiave su <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console</a>. Abilita: Maps JavaScript API, Places API, Geocoding API. Restringi la chiave al dominio del sito.
             </p>
+            {!form.maps_google_api_key.trim() && (
+              <div className="mt-3 text-xs px-3 py-2 rounded bg-amber-50 border border-amber-200 text-amber-800">
+                ⚠ Senza una API Key valida il sito userà comunque Leaflet come fallback (per non lasciare la mappa rotta). Inserisci la chiave per attivare Google Maps sul frontend.
+              </div>
+            )}
           </div>
         )}
       </div>

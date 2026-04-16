@@ -25,7 +25,9 @@ export async function GET() {
       data: result,
     }, {
       headers: {
-        "Cache-Control": "public, max-age=300, s-maxage=300",
+        // Settings change rarely but when they do (admin toggle Maps provider,
+        // social URLs, recaptcha key) the change must be visible immediately.
+        "Cache-Control": "no-store",
       },
     });
   } catch (e) {
