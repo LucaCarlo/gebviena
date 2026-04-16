@@ -270,6 +270,10 @@ const EN = {
   "campagne-video.detail.related": "Other Campaigns and Videos",
   "news.detail.continue": "Continue reading",
   "designer-premi.load_more": "Load more designers",
+  "designers.detail.products": "Products",
+  "designers.detail.visit_website": "Visit the website →",
+  "designers.detail.not_found": "Designer not found",
+  "designers.detail.back": "Back to designers",
 
   // campagne-video
   "campagne-video.title": "Campaigns & Videos",

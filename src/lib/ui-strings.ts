@@ -271,6 +271,16 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
     ],
   },
   {
+    id: "designers-detail",
+    label: "Pagina Designer (singolo)",
+    strings: [
+      { key: "designers.detail.products", defaultValue: "Prodotti" },
+      { key: "designers.detail.visit_website", defaultValue: "Visita il sito →" },
+      { key: "designers.detail.not_found", defaultValue: "Designer non trovato" },
+      { key: "designers.detail.back", defaultValue: "Torna ai designer" },
+    ],
+  },
+  {
     id: "gtv-experience",
     label: "Mondo GTV — GTV Experience",
     strings: [

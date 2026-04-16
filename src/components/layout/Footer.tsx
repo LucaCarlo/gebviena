@@ -396,7 +396,7 @@ export default function Footer() {
                 href={builtByLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block transition-opacity hover:opacity-70"
+                className="inline-block"
                 aria-label="Built by"
               >
                 <Image

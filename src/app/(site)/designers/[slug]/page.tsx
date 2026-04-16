@@ -3,9 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
-import { getCurrentLang, DEFAULT_LANG } from "@/lib/i18n";
+import { getCurrentLang, DEFAULT_LANG, tBatch } from "@/lib/i18n";
 import { mergeFirstTranslation, TRANSLATABLE_FIELDS } from "@/lib/translate-payload";
 import { buildAlternates } from "@/lib/seo-alternates";
+import { getCategoryLabelMap } from "@/lib/server-categories";
+import { lookupLabel } from "@/lib/category-lookup";
+import { localizePath } from "@/lib/path-segments";
 
 interface PageProps {
   params: { slug: string };
@@ -53,7 +56,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? mergeFirstTranslation(raw as Record<string, unknown>, ["name", "seoTitle", "seoDescription"])
     : raw;
 
-  // Build slug map for alternates
   const allTr = await prisma.designerTranslation.findMany({
     where: { designerId },
     select: { languageCode: true, slug: true },
@@ -75,12 +77,22 @@ export default async function DesignerDetailPage({ params }: PageProps) {
   const designerId = await resolveDesignerId(params.slug, lang);
   if (!designerId) notFound();
 
-  const rawDesigner = await prisma.designer.findUnique({
-    where: { id: designerId },
-    ...(includeTranslations
-      ? { include: { translations: { where: { languageCode: lang } } } }
-      : {}),
-  });
+  const [rawDesigner, T, productLabelMap] = await Promise.all([
+    prisma.designer.findUnique({
+      where: { id: designerId! },
+      ...(includeTranslations
+        ? { include: { translations: { where: { languageCode: lang } } } }
+        : {}),
+    }),
+    tBatch([
+      "designers.detail.products",
+      "designers.detail.visit_website",
+      "common.breadcrumb_home",
+      "nav.world",
+      "designer-premi.breadcrumb",
+    ]),
+    getCategoryLabelMap("products"),
+  ]);
 
   if (!rawDesigner || !rawDesigner.isActive) notFound();
 
@@ -97,6 +109,7 @@ export default async function DesignerDetailPage({ params }: PageProps) {
       name: true,
       slug: true,
       category: true,
+      subcategory: true,
       coverImage: true,
       imageUrl: true,
       ...(includeTranslations
@@ -117,29 +130,26 @@ export default async function DesignerDetailPage({ params }: PageProps) {
 
   return (
     <>
-      {/* ── Titolo Designer ────────────────────────────────────────── */}
-      <section className="pt-16 md:pt-24 lg:pt-32 pb-12 md:pb-16">
-        <div className="mx-auto w-[90%] max-w-[75%] text-center">
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-dark leading-[1.2] tracking-tight">
-            {designer.name}
-          </h1>
-        </div>
+      {/* ── Title — heritage-style ────────────────────────────────── */}
+      <section className="gtv-container pt-16 pb-16">
+        <h1 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight text-center font-light">
+          {designer.name}
+        </h1>
       </section>
 
-      {/* ── Bio: immagine sx + testo dx ────────────────────────────── */}
+      {/* ── Bio: foto + testo — heritage "Foto famiglia" style ────── */}
       {(designer.imageUrl || designer.bio) && (
-        <section className="pb-20 md:pb-28">
-          <div className="mx-auto w-[90%] max-w-[75%]">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
-              {/* Left: foto designer */}
-              <div className="relative aspect-square bg-warm-100 overflow-hidden">
+        <section className="pb-20">
+          <div className="mx-auto" style={{ width: "calc(90% - 100px)", maxWidth: "calc(90% - 100px)" }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
+              <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "16 / 10", marginRight: "10px" }}>
                 {designer.imageUrl ? (
                   <Image
                     src={designer.imageUrl}
                     alt={designer.name}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 1024px) 100vw, 35vw"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                     priority
                   />
                 ) : (
@@ -150,12 +160,10 @@ export default async function DesignerDetailPage({ params }: PageProps) {
                   </div>
                 )}
               </div>
-
-              {/* Right: biografia */}
-              <div>
+              <div className="flex flex-col justify-start" style={{ paddingTop: "10px", paddingLeft: "151px", paddingRight: "0" }}>
                 {designer.bio && (
                   <div
-                    className="text-lg text-dark leading-[1.8] font-light prose prose-sm max-w-none"
+                    className="text-[20px] text-black leading-snug font-light tracking-normal [&_p]:mb-4 [&_p:last-child]:mb-0"
                     dangerouslySetInnerHTML={{ __html: designer.bio }}
                   />
                 )}
@@ -164,9 +172,10 @@ export default async function DesignerDetailPage({ params }: PageProps) {
                     href={designer.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block mt-6 text-[16px] uppercase tracking-[0.03em] font-medium text-dark hover:text-warm-600 hover:underline transition-colors"
+                    className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
+                    style={{ textUnderlineOffset: "6px", textDecorationThickness: "0.5px" }}
                   >
-                    Visita il sito →
+                    {T["designers.detail.visit_website"]}
                   </a>
                 )}
               </div>
@@ -175,76 +184,69 @@ export default async function DesignerDetailPage({ params }: PageProps) {
         </section>
       )}
 
-      {/* ── Prodotti ───────────────────────────────────────────────── */}
+      {/* ── Prodotti — same card style as /prodotti listing ────────── */}
       {products.length > 0 && (
-        <section className="pb-20 md:pb-28">
-          <div className="mx-auto w-[90%] max-w-[75%]">
-            <p className="label-text mb-10 text-center">Prodotti</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {products.map((product) => {
-                const imgSrc =
-                  product!.coverImage || product!.imageUrl || null;
-                return (
-                  <Link
-                    key={product!.id}
-                    href={`/prodotti/${product!.slug}`}
-                    className="group block"
-                  >
-                    <div className="relative aspect-square bg-warm-50 overflow-hidden mb-4">
-                      {imgSrc ? (
-                        <Image
-                          src={imgSrc}
-                          alt={product!.name}
-                          fill
-                          className="object-contain p-6 group-hover:scale-105 transition-transform duration-500"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="font-serif text-4xl text-warm-300">
-                            {product!.name.charAt(0)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-warm-500 mb-1">
-                      {(product!.category || "").split(",")[0]}
-                    </p>
-                    <p className="font-sans text-sm md:text-base uppercase tracking-[0.1em] text-dark font-medium">
+        <section className="py-16 lg:py-24">
+          <div className="text-center mb-12">
+            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+              {T["designers.detail.products"]}
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20 px-2 md:px-3 lg:px-4">
+            {products.map((product) => {
+              const imgSrc = product!.coverImage || product!.imageUrl;
+              const cardLabel = lookupLabel(productLabelMap, product!.subcategory || (product!.category || "").split(",")[0]);
+              return (
+                <Link
+                  key={product!.id}
+                  href={localizePath(`/prodotti/${product!.slug}`, lang)}
+                  className="group block"
+                >
+                  <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "4/5", isolation: "isolate" }}>
+                    {imgSrc ? (
+                      <Image
+                        src={imgSrc}
+                        alt={product!.name}
+                        fill
+                        className="object-contain mix-blend-multiply p-4"
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="font-serif text-4xl text-warm-300">
+                          {product!.name.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4">
+                    {cardLabel && (
+                      <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
+                        {cardLabel}
+                      </p>
+                    )}
+                    <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                       {product!.name}
-                    </p>
-                  </Link>
-                );
-              })}
-            </div>
+                    </h3>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}
 
-      {/* ── Breadcrumbs ───────────────────────────────────────────── */}
-      <div className="gtv-container pb-12">
-        <nav className="flex items-center gap-2 text-xs text-warm-400">
-          <Link href="/" className="hover:text-warm-800 transition-colors">
-            Home
-          </Link>
+      {/* ── Breadcrumbs — heritage style ──────────────────────────── */}
+      <div className="gtv-container pt-8 pb-[27px]">
+        <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
+          <Link href="/">{T["common.breadcrumb_home"]}</Link>
           <span>&gt;</span>
-          <Link
-            href="/mondo-gtv"
-            className="hover:text-warm-800 transition-colors"
-          >
-            Mondo GTV
-          </Link>
+          <Link href="/mondo-gtv">{T["nav.world"]}</Link>
           <span>&gt;</span>
-          <Link
-            href="/mondo-gtv/designer-e-premi"
-            className="hover:text-warm-800 transition-colors"
-          >
-            Designer e premi
-          </Link>
+          <Link href="/mondo-gtv/designer-e-premi">{T["designer-premi.breadcrumb"]}</Link>
           <span>&gt;</span>
-          <span className="text-warm-600">{designer.name}</span>
-        </nav>
+          <span>{designer.name}</span>
+        </div>
       </div>
     </>
   );
