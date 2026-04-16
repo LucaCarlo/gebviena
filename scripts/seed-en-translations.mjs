@@ -47,7 +47,7 @@ const EN = {
   "nav.projects": "Projects",
   "nav.campaigns": "Campaigns and Videos",
   "nav.news": "News and Press",
-  "nav.world": "GTV World",
+  "nav.world": "The GTV World",
   "nav.professionals": "Professionals",
   "nav.contact": "Contact",
 

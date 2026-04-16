@@ -21,7 +21,7 @@ export const SEGMENT_TRANSLATIONS: SegmentMap = {
     progetti: "projects",
     "campaigns": "campaigns-and-videos",
     "news": "news-and-press",
-    "mondo-gtv": "world-gtv",
+    "mondo-gtv": "the-gtv-world",
     "brand-manifesto": "brand-manifesto",
     heritage: "heritage",
     "curvatura-legno": "wood-bending",
