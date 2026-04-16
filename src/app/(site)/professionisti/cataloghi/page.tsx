@@ -4,9 +4,13 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useT, useLang } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 import type { Catalog } from "@/types";
 
 export default function CataloghiPage() {
+  const t = useT();
+  const lang = useLang();
   const [catalogs, setCatalogs] = useState<Catalog[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +38,7 @@ export default function CataloghiPage() {
       <section className="pt-16 md:pt-20 pb-12 md:pb-16">
         <div className="gtv-container">
           <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
-            Cataloghi
+            {t("cataloghi.title")}
           </h1>
         </div>
       </section>
@@ -56,7 +60,7 @@ export default function CataloghiPage() {
               className="text-center px-8 max-w-4xl mx-auto"
             >
               <h2 className="font-serif text-[58px] text-black tracking-normal">
-                Slow Living Magazine
+                {t("cataloghi.magazine.title")}
               </h2>
             </motion.div>
           </section>
@@ -70,11 +74,11 @@ export default function CataloghiPage() {
       {/* ── Breadcrumbs — stile mondo-gtv ────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href={localizePath("/", lang)}>{t("common.breadcrumb_home")}</Link>
           <span>&gt;</span>
-          <Link href="/professionisti">Professionisti</Link>
+          <Link href={localizePath("/professionisti", lang)}>{t("nav.professionals")}</Link>
           <span>&gt;</span>
-          <span>Cataloghi</span>
+          <span>{t("cataloghi.breadcrumb")}</span>
         </div>
       </div>
     </>
@@ -82,6 +86,7 @@ export default function CataloghiPage() {
 }
 
 function CatalogSection({ item, textLeft }: { item: Catalog; textLeft: boolean }) {
+  const t = useT();
   const imageEl = (
     <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
       {item.imageUrl && (
@@ -120,7 +125,7 @@ function CatalogSection({ item, textLeft }: { item: Catalog; textLeft: boolean }
         className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline w-fit"
         style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
       >
-        {item.linkText || "Scarica"} &rarr;
+        {item.linkText || t("common.download")} &rarr;
       </a>
     </div>
   );

@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
+import { useT, useLang } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 import type { HeroSlide } from "@/types";
 
 interface FieldConfig {
@@ -30,6 +32,7 @@ const DEFAULT_COLLABORATION_FIELDS: FieldConfig[] = [
 
 /* ── HERO — stesso stile pagina GTV Experience ──────────── */
 function CollaborazioniHero() {
+  const t = useT();
   const [slide, setSlide] = useState<HeroSlide | null>(null);
 
   useEffect(() => {
@@ -60,7 +63,7 @@ function CollaborazioniHero() {
       <div className="absolute inset-0 bg-black/40" />
       <div className="absolute inset-0 flex items-center justify-center text-center px-8">
         <h1 className="font-serif text-4xl md:text-5xl lg:text-[4rem] text-white leading-[1.2] tracking-tight">
-          Collaborazione nuovi designer
+          {t("collaborazioni.hero.title")}
         </h1>
       </div>
     </section>
@@ -69,6 +72,8 @@ function CollaborazioniHero() {
 
 /* ── PAGE ──────────────────────────────────────────────── */
 export default function CollaborazioniPage() {
+  const t = useT();
+  const lang = useLang();
   const [fieldConfig, setFieldConfig] = useState<FieldConfig[] | null>(null);
   const [form, setForm] = useState<Record<string, string | boolean>>({});
   const [sent, setSent] = useState(false);
@@ -114,12 +119,12 @@ export default function CollaborazioniPage() {
 
     const privacyField = activeConfig.find((f) => f.key === "acceptPrivacy");
     if (privacyField?.required && !form.acceptPrivacy) {
-      setError("Devi accettare la privacy policy per inviare il messaggio.");
+      setError(t("collaborazioni.error.privacy"));
       return;
     }
     const profilingField = activeConfig.find((f) => f.key === "acceptProfiling");
     if (profilingField?.required && !form.acceptProfiling) {
-      setError("Devi accettare la profilazione per inviare il messaggio.");
+      setError(t("collaborazioni.error.profiling"));
       return;
     }
 
@@ -314,10 +319,7 @@ export default function CollaborazioniPage() {
             transition={{ duration: 0.6 }}
             className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto"
           >
-            GTV è sempre alla ricerca di nuove visioni e talenti nel design.
-            Se desideri collaborare con noi e proporre le tue idee, inviaci la
-            tua candidatura attraverso il form sottostante. Siamo pronti a
-            esplorare insieme nuove possibilità.
+            {t("collaborazioni.intro")}
           </motion.p>
         </div>
       </section>
@@ -328,8 +330,8 @@ export default function CollaborazioniPage() {
           <div className="max-w-[940px] mx-auto">
             {sent ? (
               <div className="text-center py-12">
-                <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">Grazie!</h2>
-                <p className="text-[16px] text-black font-light">La tua candidatura è stata inviata con successo.</p>
+                <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">{t("collaborazioni.success.title")}</h2>
+                <p className="text-[16px] text-black font-light">{t("collaborazioni.success.message")}</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -348,7 +350,7 @@ export default function CollaborazioniPage() {
                     className="uppercase text-[14px] tracking-[0.1em] text-black font-medium hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ textUnderlineOffset: "6px", textDecorationThickness: "0.5px" }}
                   >
-                    {submitting ? "Invio in corso..." : "Invia i tuoi dati"}
+                    {submitting ? t("rete-vendita.modal.submitting") : t("collaborazioni.submit.label")}
                   </button>
                 </div>
               </form>
@@ -360,11 +362,11 @@ export default function CollaborazioniPage() {
       {/* ── Breadcrumbs — stile mondo-gtv ────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href={localizePath("/", lang)}>{t("common.breadcrumb_home")}</Link>
           <span>&gt;</span>
-          <Link href="/contatti">Contatti</Link>
+          <Link href={localizePath("/contatti", lang)}>{t("nav.contact")}</Link>
           <span>&gt;</span>
-          <span>Collaborazione nuovi designer</span>
+          <span>{t("collaborazioni.breadcrumb")}</span>
         </div>
       </div>
     </>

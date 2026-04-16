@@ -5,6 +5,7 @@ import Script from "next/script";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
+import { useT } from "@/contexts/I18nContext";
 import type { PointOfSale } from "@/types";
 
 interface FieldConfig {
@@ -34,6 +35,7 @@ const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 const DEFAULT_HERO_BG = "/foto-gebvienna/rete-di-vendita.png";
 
 export default function ReteVenditaPage() {
+  const t = useT();
   const [activeTab, setActiveTab] = useState<"STORE" | "AGENT">("STORE");
   const [stores, setStores] = useState<PointOfSale[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -275,7 +277,7 @@ export default function ReteVenditaPage() {
             className="font-serif text-4xl md:text-5xl lg:text-6xl tracking-wide mb-8"
             style={{ color: "#000000" }}
           >
-            Rete di vendita
+            {t("rete-vendita.hero.title")}
           </h1>
 
           {/* Tabs — under title, above search */}
@@ -290,7 +292,7 @@ export default function ReteVenditaPage() {
               }}
               className="text-sm md:text-base font-medium uppercase tracking-[0.2em] pb-2 transition-colors"
             >
-              Negozio
+              {t("rete-vendita.tab.store")}
             </button>
             <button
               onClick={() => setActiveTab("AGENT")}
@@ -302,14 +304,14 @@ export default function ReteVenditaPage() {
               }}
               className="text-sm md:text-base font-medium uppercase tracking-[0.2em] pb-2 transition-colors"
             >
-              Agenti e Distributori
+              {t("rete-vendita.tab.agent")}
             </button>
           </div>
 
           {/* Search */}
           <div className="w-full max-w-xl">
             <label className="block text-sm mb-2" style={{ color: "#000000" }}>
-              Trova il punto vendita più vicino a te
+              {t("rete-vendita.search.label")}
             </label>
             <div className="relative">
               <input
@@ -317,7 +319,7 @@ export default function ReteVenditaPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Roma, RM, Italia"
+                placeholder={t("rete-vendita.search.placeholder")}
                 className="w-full px-5 py-3.5 text-base pr-12 focus:outline-none"
                 style={{
                   color: "#000000",
@@ -342,7 +344,7 @@ export default function ReteVenditaPage() {
               className="block mx-auto mt-5 text-sm font-medium uppercase tracking-[0.2em] cursor-pointer transition-opacity hover:opacity-60"
               style={{ color: "#000000", background: "none", border: "none" }}
             >
-              Avvia la ricerca
+              {t("rete-vendita.search.button")}
             </button>
           </div>
         </div>
@@ -352,7 +354,7 @@ export default function ReteVenditaPage() {
       {searchLocation && (
         <div className="text-center py-8">
           <p className="text-lg md:text-xl font-medium tracking-wide" style={{ color: "#000000" }}>
-            CI SONO <strong>{resultCount}</strong> PUNTI VENDITA VICINO A{" "}
+            {t("rete-vendita.results.text")} <strong>{resultCount}</strong> {t("rete-vendita.results.near")}{" "}
             <strong>{searchLocation.toUpperCase()}</strong>
           </p>
         </div>
@@ -416,7 +418,7 @@ export default function ReteVenditaPage() {
                       className="flex-shrink-0 self-center text-xs font-medium px-4 py-1.5 uppercase tracking-wider transition-colors"
                       style={{ color: "#000000", border: "1px solid #000000", backgroundColor: "transparent" }}
                     >
-                      Contattaci
+                      {t("rete-vendita.contact.button")}
                     </button>
                   </div>
                 </div>
@@ -442,7 +444,7 @@ export default function ReteVenditaPage() {
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold" style={{ color: "#000000" }}>
-                Contatta {contactStore.name}
+                {t("rete-vendita.modal.title")} {contactStore.name}
               </h3>
               <button onClick={() => setContactStore(null)} style={{ color: "#999" }} className="hover:opacity-60">
                 <X size={20} />
@@ -451,14 +453,14 @@ export default function ReteVenditaPage() {
 
             {contactSent ? (
               <div className="text-center py-8">
-                <p className="font-medium" style={{ color: "#000000" }}>Messaggio inviato!</p>
-                <p className="text-sm mt-2" style={{ color: "#666" }}>Ti risponderanno il prima possibile.</p>
+                <p className="font-medium" style={{ color: "#000000" }}>{t("rete-vendita.modal.success.title")}</p>
+                <p className="text-sm mt-2" style={{ color: "#666" }}>{t("rete-vendita.modal.success.message")}</p>
                 <button
                   onClick={() => setContactStore(null)}
                   className="mt-4 text-sm underline"
                   style={{ color: "#000000" }}
                 >
-                  Chiudi
+                  {t("common.close")}
                 </button>
               </div>
             ) : (
@@ -558,7 +560,7 @@ export default function ReteVenditaPage() {
                   className="w-full py-2.5 rounded text-sm font-medium transition-colors disabled:opacity-50"
                   style={{ backgroundColor: "#000000", color: "#ffffff" }}
                 >
-                  {contactSending ? "Invio..." : "Invia messaggio"}
+                  {contactSending ? t("rete-vendita.modal.submitting") : t("rete-vendita.modal.submit")}
                 </button>
               </form>
             )}

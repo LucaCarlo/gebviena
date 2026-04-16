@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Plus, Minus, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useT, useLang } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 
 interface ProductSheet {
   id: string;
@@ -20,6 +22,8 @@ const CATEGORY_ORDER = ["SEDUTE", "IMBOTTITI", "COMPLEMENTI", "TAVOLI", "OUTDOOR
 type Tab = "modelli" | "schede";
 
 export default function MaterialeTecnicoPage() {
+  const t = useT();
+  const lang = useLang();
   const [products, setProducts] = useState<ProductSheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
@@ -60,7 +64,7 @@ export default function MaterialeTecnicoPage() {
   // Reset open accordion when tab changes
   useEffect(() => { setOpenCategory(null); }, [tab]);
 
-  const title = tab === "schede" ? "Schede Tecniche" : "Modelli 2D e 3D";
+  const title = tab === "schede" ? t("materiale-tecnico.sheets.title") : t("materiale-tecnico.models.title");
 
   return (
     <>
@@ -80,7 +84,7 @@ export default function MaterialeTecnicoPage() {
                 tab === "modelli" ? "bg-dark text-white" : "bg-warm-100 text-dark hover:bg-warm-200"
               }`}
             >
-              Modelli 2D e 3D
+              {t("materiale-tecnico.models.tab")}
             </button>
             <button
               onClick={() => setTab("schede")}
@@ -88,7 +92,7 @@ export default function MaterialeTecnicoPage() {
                 tab === "schede" ? "bg-dark text-white" : "bg-warm-100 text-dark hover:bg-warm-200"
               }`}
             >
-              Schede Tecniche
+              {t("materiale-tecnico.sheets.tab")}
             </button>
           </div>
         </div>
@@ -103,9 +107,9 @@ export default function MaterialeTecnicoPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             {loading ? (
-              <div className="py-20 text-center text-warm-400 text-sm">Caricamento...</div>
+              <div className="py-20 text-center text-warm-400 text-sm">{t("common.loading")}</div>
             ) : filtered.length === 0 ? (
-              <div className="py-20 text-center text-warm-400 text-sm">Nessun file disponibile.</div>
+              <div className="py-20 text-center text-warm-400 text-sm">{t("materiale-tecnico.empty")}</div>
             ) : (
               <div className="divide-y divide-black border-t border-b border-black">
                 {categories.map((cat) => {
@@ -216,9 +220,9 @@ export default function MaterialeTecnicoPage() {
       {/* ── Breadcrumbs — stile mondo-gtv ────────────────────── */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
-          <Link href="/">Home</Link>
+          <Link href={localizePath("/", lang)}>{t("common.breadcrumb_home")}</Link>
           <span>&gt;</span>
-          <Link href="/professionisti">Professionisti</Link>
+          <Link href={localizePath("/professionisti", lang)}>{t("nav.professionals")}</Link>
           <span>&gt;</span>
           <span>{title}</span>
         </div>
