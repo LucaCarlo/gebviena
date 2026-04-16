@@ -125,7 +125,7 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
   const collectBlockTexts = (blocks: CampaignBlock[]): Record<string, string> => {
     const out: Record<string, string> = {};
     blocks.forEach((b, i) => {
-      const d = b.data as Record<string, unknown>;
+      const d = b.data as unknown as Record<string, unknown>;
       const put = (sub: string, v: unknown) => {
         if (typeof v === "string" && v.trim()) out[`${i}.${sub}`] = v;
       };
@@ -154,7 +154,7 @@ export default function CampaignForm({ campaignId }: CampaignFormProps) {
 
   const applyBlockTexts = (blocks: CampaignBlock[], translations: Record<string, string>): CampaignBlock[] => {
     return blocks.map((b, i) => {
-      const data = { ...(b.data as Record<string, unknown>) };
+      const data = { ...(b.data as unknown as Record<string, unknown>) };
       const get = (sub: string) => translations[`${i}.${sub}`];
       switch (b.type) {
         case "paragraph":
