@@ -59,8 +59,7 @@ export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
 
   if (languages.length <= 1) return null;
 
-  const current = languages.find((l) => l.code === currentLang);
-  const label = current?.name || (currentLang === "it" ? "Italiano" : currentLang.toUpperCase());
+  const shortLabel = (currentLang || "it").toUpperCase();
   const colorClass = isScrolled ? "!text-black" : "text-white";
 
   return (
@@ -72,7 +71,7 @@ export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
         style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
         aria-label="Cambia lingua"
       >
-        <span>{label}</span>
+        <span>{shortLabel}</span>
         <svg
           className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
           viewBox="0 0 24 24"
@@ -84,7 +83,7 @@ export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
         </svg>
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-3 bg-white border border-black/10 shadow-lg min-w-[180px] z-[80]">
+        <div className="absolute top-full right-0 mt-3 bg-white border border-black min-w-[180px] z-[80]">
           {languages.map((l) => {
             const isCurrent = l.code === currentLang;
             return (

@@ -417,12 +417,12 @@ function ProductsContent() {
                 transition={{ duration: 0.4, delay: (i % 4) * 0.05 }}
               >
                 <Link href={`/prodotti/${product.slug}`} className="group block">
-                  <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "4/5" }}>
+                  <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "4/5", isolation: "isolate" }}>
                     <Image
                       src={product.coverImage || product.imageUrl}
                       alt={product.name}
                       fill
-                      className="object-cover mix-blend-multiply"
+                      className="object-contain mix-blend-multiply p-4"
                       sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                     />
                   </div>
