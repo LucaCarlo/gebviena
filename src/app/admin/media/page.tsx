@@ -683,7 +683,7 @@ export default function AdminMediaPage() {
                   }`}
                 >
                   {/* Thumbnail */}
-                  <div className="w-full h-40 relative bg-warm-50">
+                  <div className="w-full h-48 relative bg-warm-50">
                     {isImage(file.mimeType) ? (
                       <button
                         onClick={() => openDetail(file)}
@@ -693,7 +693,7 @@ export default function AdminMediaPage() {
                           src={file.thumbnailUrl || file.url}
                           alt={file.altText || file.originalName}
                           fill
-                          className="object-cover"
+                          className="object-contain p-2"
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                         />
                       </button>
