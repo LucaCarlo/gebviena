@@ -122,7 +122,13 @@ export interface Campaign {
 }
 
 // ── Campaign page blocks ───────────────────────────────────────────
-export type CampaignBlockType = "paragraph" | "image_text" | "three_images";
+export type CampaignBlockType =
+  | "paragraph"
+  | "image_text"
+  | "three_images"
+  | "single_image"
+  | "image_with_paragraph"
+  | "fullwidth_banner";
 
 export interface CampaignParagraphData {
   title?: string;
@@ -141,10 +147,36 @@ export interface CampaignThreeImagesData {
   images: { url: string; caption: string }[];
 }
 
+export interface CampaignSingleImageData {
+  imageUrl: string;
+  caption?: string;
+  videoUrl?: string;
+}
+
+export interface CampaignImageWithParagraphData {
+  imageUrl: string;
+  videoUrl?: string;
+  title?: string;
+  body: string;
+}
+
+export interface CampaignFullwidthBannerData {
+  imageUrl: string;
+  title: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+}
+
 export interface CampaignBlock {
   id: string;
   type: CampaignBlockType;
-  data: CampaignParagraphData | CampaignImageTextData | CampaignThreeImagesData;
+  data:
+    | CampaignParagraphData
+    | CampaignImageTextData
+    | CampaignThreeImagesData
+    | CampaignSingleImageData
+    | CampaignImageWithParagraphData
+    | CampaignFullwidthBannerData;
 }
 
 export interface NewsArticle {
@@ -225,6 +257,7 @@ export interface NewsSingleImageData {
 
 export interface NewsImageWithParagraphData {
   imageUrl: string;
+  videoUrl?: string;
   title?: string;
   body: string;
 }

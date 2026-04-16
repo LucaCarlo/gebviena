@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Bold, Underline as UnderlineIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Bold, Underline as UnderlineIcon, Link as LinkIcon, Unlink } from "lucide-react";
 
 interface Props {
   value: string;
@@ -25,14 +25,38 @@ function sanitize(html: string): string {
     if (tag === "strong" || tag === "b") return `<strong>${inner}</strong>`;
     if (tag === "u") return `<u>${inner}</u>`;
     if (tag === "br") return "<br>";
+    if (tag === "a") {
+      const href = el.getAttribute("href") || "";
+      const safe = /^(https?:|mailto:|tel:|\/|#)/i.test(href) ? href : "";
+      if (!safe || !inner) return inner;
+      const isExternal = /^https?:/i.test(safe);
+      const attrs = isExternal
+        ? ` target="_blank" rel="noopener noreferrer"`
+        : "";
+      return `<a href="${safe.replace(/"/g, "&quot;")}"${attrs}>${inner}</a>`;
+    }
     if (tag === "div" || tag === "p") return (inner ? inner + "<br>" : "");
     return inner;
   };
   return Array.from(root.childNodes).map(walk).join("").replace(/(<br>)+$/, "");
 }
 
+function getSelectionAnchor(root: HTMLElement): HTMLAnchorElement | null {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+  let node: Node | null = sel.getRangeAt(0).startContainer;
+  while (node && node !== root) {
+    if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === "A") {
+      return node as HTMLAnchorElement;
+    }
+    node = node.parentNode;
+  }
+  return null;
+}
+
 export default function RichTextField({ value, onChange, placeholder, multiline = false, minHeight = 40 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const [linkActive, setLinkActive] = useState(false);
 
   useEffect(() => {
     if (ref.current && ref.current.innerHTML !== value) {
@@ -44,6 +68,42 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
     ref.current?.focus();
     document.execCommand(cmd);
     if (ref.current) onChange(sanitize(ref.current.innerHTML));
+  };
+
+  const refreshLinkState = () => {
+    if (!ref.current) return;
+    setLinkActive(!!getSelectionAnchor(ref.current));
+  };
+
+  const insertLink = () => {
+    if (!ref.current) return;
+    ref.current.focus();
+    const existing = getSelectionAnchor(ref.current);
+    const current = existing?.getAttribute("href") || "";
+    const url = window.prompt("Inserisci URL (https://... o /percorso)", current || "https://");
+    if (url === null) return;
+    const trimmed = url.trim();
+    if (!trimmed) {
+      document.execCommand("unlink");
+    } else {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) {
+        // Nessun testo selezionato: inserisci il link con l'URL come testo
+        document.execCommand("insertHTML", false, `<a href="${trimmed}">${trimmed}</a>`);
+      } else {
+        document.execCommand("createLink", false, trimmed);
+      }
+    }
+    onChange(sanitize(ref.current.innerHTML));
+    refreshLinkState();
+  };
+
+  const removeLink = () => {
+    if (!ref.current) return;
+    ref.current.focus();
+    document.execCommand("unlink");
+    onChange(sanitize(ref.current.innerHTML));
+    refreshLinkState();
   };
 
   return (
@@ -65,6 +125,29 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
         >
           <UnderlineIcon size={14} />
         </button>
+        <div className="w-px h-4 bg-warm-200 mx-1" />
+        <button
+          type="button"
+          onMouseDown={(e) => { e.preventDefault(); insertLink(); }}
+          className={`p-1.5 rounded transition-colors ${
+            linkActive
+              ? "bg-warm-800 text-white"
+              : "text-warm-600 hover:bg-warm-200 hover:text-warm-900"
+          }`}
+          title="Inserisci/modifica link"
+        >
+          <LinkIcon size={14} />
+        </button>
+        {linkActive && (
+          <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); removeLink(); }}
+            className="p-1.5 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors"
+            title="Rimuovi link"
+          >
+            <Unlink size={14} />
+          </button>
+        )}
       </div>
       <div
         ref={ref}
@@ -76,7 +159,12 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
         style={{ minHeight }}
         onInput={() => {
           if (ref.current) onChange(sanitize(ref.current.innerHTML));
+          refreshLinkState();
         }}
+        onKeyUp={refreshLinkState}
+        onMouseUp={refreshLinkState}
+        onFocus={refreshLinkState}
+        onBlur={() => setLinkActive(false)}
         onKeyDown={(e) => {
           if (!multiline && e.key === "Enter") e.preventDefault();
           if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
@@ -86,6 +174,10 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
           if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "u") {
             e.preventDefault();
             apply("underline");
+          }
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+            e.preventDefault();
+            insertLink();
           }
         }}
         onPaste={(e) => {
@@ -99,6 +191,10 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
           content: attr(data-placeholder);
           color: #9ca3af;
           pointer-events: none;
+        }
+        .rich-text-editor :global(a) {
+          color: #1d4ed8;
+          text-decoration: underline;
         }
       `}</style>
     </div>

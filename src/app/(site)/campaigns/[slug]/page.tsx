@@ -2,7 +2,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import type { CampaignBlock, CampaignParagraphData, CampaignImageTextData, CampaignThreeImagesData } from "@/types";
+import type {
+  CampaignBlock,
+  CampaignParagraphData,
+  CampaignImageTextData,
+  CampaignThreeImagesData,
+  CampaignSingleImageData,
+  CampaignImageWithParagraphData,
+  CampaignFullwidthBannerData,
+} from "@/types";
 import type { Metadata } from "next";
 
 interface Params {
@@ -189,6 +197,110 @@ export default async function CampaignDetailPage({ params }: Params) {
                         )}
                       </div>
                     ))}
+                  </div>
+                </section>
+              );
+            }
+            if (block.type === "single_image") {
+              const d = block.data as CampaignSingleImageData;
+              if (!d.imageUrl && !d.videoUrl) return null;
+              const v = d.videoUrl?.trim();
+              const ytM = v?.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+              const vimeoM = v?.match(/vimeo\.com\/(\d+)/);
+              return (
+                <section key={block.id} className="gtv-container">
+                  <div className="mx-auto max-w-[940px]">
+                    {v ? (
+                      ytM ? (
+                        <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
+                          <iframe src={`https://www.youtube.com/embed/${ytM[1]}?rel=0`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                        </div>
+                      ) : vimeoM ? (
+                        <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
+                          <iframe src={`https://player.vimeo.com/video/${vimeoM[1]}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+                        </div>
+                      ) : (
+                        <video controls playsInline className="w-full h-auto bg-warm-100">
+                          <source src={v} />
+                        </video>
+                      )
+                    ) : (
+                      <Image src={d.imageUrl} alt={d.caption || ""} width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 940px) 100vw, 940px" />
+                    )}
+                    {d.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{d.caption}</p>}
+                  </div>
+                </section>
+              );
+            }
+            if (block.type === "image_with_paragraph") {
+              const d = block.data as CampaignImageWithParagraphData;
+              const v = d.videoUrl?.trim();
+              if (!d.imageUrl && !d.body && !v) return null;
+              const ytM = v?.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+              const vimeoM = v?.match(/vimeo\.com\/(\d+)/);
+              return (
+                <section key={block.id} className="gtv-container">
+                  <div className="mx-auto max-w-[940px] px-6 md:px-16 lg:px-24">
+                    {(d.imageUrl || v) && (
+                      <div className="mx-auto max-w-[420px]">
+                        {v ? (
+                          ytM ? (
+                            <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
+                              <iframe src={`https://www.youtube.com/embed/${ytM[1]}?rel=0`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                            </div>
+                          ) : vimeoM ? (
+                            <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
+                              <iframe src={`https://player.vimeo.com/video/${vimeoM[1]}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+                            </div>
+                          ) : (
+                            <video controls playsInline className="w-full h-auto bg-warm-100">
+                              <source src={v} />
+                            </video>
+                          )
+                        ) : (
+                          <Image src={d.imageUrl} alt="" width={1200} height={800} className="w-full h-auto" sizes="(max-width: 420px) 100vw, 420px" />
+                        )}
+                      </div>
+                    )}
+                    {d.title && (
+                      <h2
+                        className="font-serif text-[30px] md:text-[38px] text-black tracking-tight font-light leading-[1.2] text-center mt-10"
+                        dangerouslySetInnerHTML={{ __html: d.title }}
+                      />
+                    )}
+                    {d.body && (
+                      <div
+                        className="text-[20px] text-black leading-snug font-light tracking-normal text-center mt-6 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line"
+                        dangerouslySetInnerHTML={{ __html: d.body }}
+                      />
+                    )}
+                  </div>
+                </section>
+              );
+            }
+            if (block.type === "fullwidth_banner") {
+              const d = block.data as CampaignFullwidthBannerData;
+              if (!d.imageUrl) return null;
+              const isPdf = d.ctaHref ? /\.pdf($|\?)/i.test(d.ctaHref) : false;
+              return (
+                <section key={block.id} className="relative w-full" style={{ height: "85vh" }}>
+                  <Image src={d.imageUrl} alt={d.title || ""} fill className="object-cover brightness-[0.6]" sizes="100vw" />
+                  <div className="absolute top-14 md:top-18 lg:top-22 left-0 right-0 px-7 md:px-12 lg:px-16 text-left">
+                    {d.title && (
+                      <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug max-w-3xl">
+                        {d.title}
+                      </h2>
+                    )}
+                    {d.ctaLabel && d.ctaHref && (
+                      <a
+                        href={d.ctaHref}
+                        {...(isPdf ? { download: "", target: "_blank", rel: "noopener noreferrer" } : {})}
+                        className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] text-white font-medium transition-colors hover:underline"
+                        style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+                      >
+                        {d.ctaLabel} &rarr;
+                      </a>
+                    )}
                   </div>
                 </section>
               );

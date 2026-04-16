@@ -44,17 +44,36 @@ function ProductBlock({ productId }: { productId: string }) {
 }
 
 function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
-  if (!d.imageUrl && !d.body) return null;
+  const video = d.videoUrl?.trim();
+  if (!d.imageUrl && !d.body && !video) return null;
+  const yt = video?.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  const vimeo = video?.match(/vimeo\.com\/(\d+)/);
   return (
     <section className="gtv-container">
       <div className="mx-auto max-w-[940px] px-6 md:px-16 lg:px-24">
-        {d.imageUrl && (
-          <div className="mx-auto max-w-[520px]">
-            <Image src={d.imageUrl} alt="" width={1200} height={800} className="w-full h-auto" sizes="(max-width: 520px) 100vw, 520px" />
+        {(d.imageUrl || video) && (
+          <div className="mx-auto max-w-[420px]">
+            {video ? (
+              yt ? (
+                <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
+                  <iframe src={`https://www.youtube.com/embed/${yt[1]}?rel=0`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                </div>
+              ) : vimeo ? (
+                <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
+                  <iframe src={`https://player.vimeo.com/video/${vimeo[1]}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+                </div>
+              ) : (
+                <video controls playsInline className="w-full h-auto bg-warm-100">
+                  <source src={video} />
+                </video>
+              )
+            ) : (
+              <Image src={d.imageUrl} alt="" width={1200} height={800} className="w-full h-auto" sizes="(max-width: 420px) 100vw, 420px" />
+            )}
           </div>
         )}
         {d.title && (
-          <h2 className="font-serif text-[34px] md:text-[44px] text-black tracking-tight font-light leading-[1.2] text-center mt-10" dangerouslySetInnerHTML={{ __html: d.title }} />
+          <h2 className="font-serif text-[30px] md:text-[38px] text-black tracking-tight font-light leading-[1.2] text-center mt-10" dangerouslySetInnerHTML={{ __html: d.title }} />
         )}
         {d.body && (
           <div className="text-[20px] text-black leading-snug font-light tracking-normal text-center mt-6 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.body }} />
@@ -69,9 +88,9 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
   return (
     <section className="relative w-full" style={{ height: "85vh" }}>
       <Image src={d.imageUrl} alt={d.title || ""} fill className="object-cover brightness-[0.6]" sizes="100vw" />
-      <div className="absolute top-14 md:top-18 lg:top-22 left-0 right-0 px-7 md:px-12 lg:px-16 text-center">
+      <div className="absolute top-14 md:top-18 lg:top-22 left-0 right-0 px-7 md:px-12 lg:px-16 text-left">
         {d.title && (
-          <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug">
+          <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug max-w-3xl">
             {d.title}
           </h2>
         )}

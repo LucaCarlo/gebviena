@@ -12,6 +12,9 @@ import {
   Type,
   LayoutTemplate,
   Grid3x3,
+  Image as ImageIcon,
+  AlignCenter,
+  Maximize2,
 } from "lucide-react";
 import type {
   CampaignBlock,
@@ -19,21 +22,33 @@ import type {
   CampaignParagraphData,
   CampaignImageTextData,
   CampaignThreeImagesData,
+  CampaignSingleImageData,
+  CampaignImageWithParagraphData,
+  CampaignFullwidthBannerData,
 } from "@/types";
 import ParagraphBlockEditor from "./ParagraphBlockEditor";
 import ImageTextBlockEditor from "./ImageTextBlockEditor";
 import ThreeImagesBlockEditor from "./ThreeImagesBlockEditor";
+import SingleImageBlockEditor from "./SingleImageBlockEditor";
+import ImageWithParagraphBlockEditor from "./ImageWithParagraphBlockEditor";
+import FullwidthBannerBlockEditor from "./FullwidthBannerBlockEditor";
 
 const BLOCK_TYPE_MENU: { type: CampaignBlockType; icon: React.ElementType; label: string }[] = [
   { type: "paragraph", icon: Type, label: "Paragrafo" },
   { type: "image_text", icon: LayoutTemplate, label: "Immagine + Testo" },
   { type: "three_images", icon: Grid3x3, label: "Tre immagini" },
+  { type: "single_image", icon: ImageIcon, label: "Immagine singola" },
+  { type: "image_with_paragraph", icon: AlignCenter, label: "Immagine + paragrafo centrato" },
+  { type: "fullwidth_banner", icon: Maximize2, label: "Banner full-width con testo" },
 ];
 
 const LABELS: Record<CampaignBlockType, string> = {
   paragraph: "Paragrafo",
   image_text: "Immagine + Testo",
   three_images: "Tre immagini",
+  single_image: "Immagine singola",
+  image_with_paragraph: "Immagine + paragrafo centrato",
+  fullwidth_banner: "Banner full-width con testo",
 };
 
 function getDefaultData(type: CampaignBlockType): CampaignBlock["data"] {
@@ -44,6 +59,12 @@ function getDefaultData(type: CampaignBlockType): CampaignBlock["data"] {
       return { title: "", text: "", imageUrl: "", imagePosition: "left" } satisfies CampaignImageTextData;
     case "three_images":
       return { images: [{ url: "", caption: "" }, { url: "", caption: "" }, { url: "", caption: "" }] } satisfies CampaignThreeImagesData;
+    case "single_image":
+      return { imageUrl: "", caption: "" } satisfies CampaignSingleImageData;
+    case "image_with_paragraph":
+      return { imageUrl: "", title: "", body: "" } satisfies CampaignImageWithParagraphData;
+    case "fullwidth_banner":
+      return { imageUrl: "", title: "", ctaLabel: "", ctaHref: "" } satisfies CampaignFullwidthBannerData;
   }
 }
 
@@ -118,6 +139,12 @@ export default function CampaignBlockBuilder({ value, onChange }: Props) {
         return <ImageTextBlockEditor data={block.data as CampaignImageTextData} onChange={(d) => updateBlock(block.id, d)} />;
       case "three_images":
         return <ThreeImagesBlockEditor data={block.data as CampaignThreeImagesData} onChange={(d) => updateBlock(block.id, d)} />;
+      case "single_image":
+        return <SingleImageBlockEditor data={block.data as CampaignSingleImageData} onChange={(d) => updateBlock(block.id, d)} />;
+      case "image_with_paragraph":
+        return <ImageWithParagraphBlockEditor data={block.data as CampaignImageWithParagraphData} onChange={(d) => updateBlock(block.id, d)} />;
+      case "fullwidth_banner":
+        return <FullwidthBannerBlockEditor data={block.data as CampaignFullwidthBannerData} onChange={(d) => updateBlock(block.id, d)} />;
     }
   };
 
@@ -159,7 +186,7 @@ export default function CampaignBlockBuilder({ value, onChange }: Props) {
                 return (
                   <button key={item.type} type="button" onClick={() => addBlock(item.type)} className="flex flex-col items-center gap-1.5 px-3 py-4 bg-white text-warm-600 hover:bg-warm-50 hover:text-warm-800 transition-colors">
                     <Icon size={20} />
-                    <span className="text-xs font-medium">{item.label}</span>
+                    <span className="text-xs font-medium text-center">{item.label}</span>
                   </button>
                 );
               })}
