@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import MobileMenu from "./MobileMenu";
 import SearchPanel from "./SearchPanel";
+import HeaderLanguageSwitcher from "./HeaderLanguageSwitcher";
 
 export default function Header() {
   const pathname = usePathname();
@@ -84,19 +85,22 @@ export default function Header() {
               </Link>
             </div>
 
-            {/* Search right — flipped */}
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              className={`p-1 transition-colors ${
-                isScrolled ? "text-neutral-700" : "text-white"
-              }`}
-              aria-label="Cerca"
-            >
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "scaleX(-1) rotate(8deg)" }}>
-                <circle cx="11" cy="11" r="6.5" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-            </button>
+            {/* Right — language + search */}
+            <div className="flex items-center gap-4 md:gap-6">
+              <HeaderLanguageSwitcher isScrolled={isScrolled} />
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className={`p-1 transition-colors ${
+                  isScrolled ? "text-neutral-700" : "text-white"
+                }`}
+                aria-label="Cerca"
+              >
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "scaleX(-1) rotate(8deg)" }}>
+                  <circle cx="11" cy="11" r="6.5" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </header>

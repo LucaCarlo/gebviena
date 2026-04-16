@@ -32,6 +32,17 @@ interface StatsData {
     synced: number;
     unsynced: number;
   };
+  disk: {
+    uploadsTotal: number;
+    uploadsCount: number;
+    uploadsByType: Record<string, { count: number; size: number }>;
+    uploadsByFolder: Record<string, { count: number; size: number }>;
+    largestFiles: Array<{ name: string; size: number; path: string }>;
+    publicTotal: number;
+    nextTotal: number;
+    dbSize: number;
+    dbTables: number;
+  };
 }
 
 interface BackupPreview {
@@ -645,7 +656,7 @@ function StatsTab() {
 
       {/* Media counts */}
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">File Media</h3>
+        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">File Media (tabella DB)</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-warm-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-warm-800">{stats.media.images}</div>
@@ -657,7 +668,7 @@ function StatsTab() {
           </div>
           <div className="bg-warm-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-warm-800">{stats.media.synced}</div>
-            <div className="text-xs text-warm-500 mt-1">Sincronizzati</div>
+            <div className="text-xs text-warm-500 mt-1">Sincronizzati Wasabi</div>
           </div>
           <div className="bg-warm-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-warm-800">{stats.media.unsynced}</div>
@@ -665,6 +676,101 @@ function StatsTab() {
           </div>
         </div>
       </div>
+
+      {/* Disk usage overview */}
+      {stats.disk && (
+        <>
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+            <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">Spazio disco sul server</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-warm-50 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-warm-800">{formatBytes(stats.disk.uploadsTotal)}</div>
+                <div className="text-xs text-warm-500 mt-1">Uploads totali ({stats.disk.uploadsCount} file)</div>
+              </div>
+              <div className="bg-warm-50 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-warm-800">{formatBytes(stats.disk.publicTotal)}</div>
+                <div className="text-xs text-warm-500 mt-1">Cartella public/ totale</div>
+              </div>
+              <div className="bg-warm-50 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-warm-800">{formatBytes(stats.disk.nextTotal)}</div>
+                <div className="text-xs text-warm-500 mt-1">Build Next.js (.next/)</div>
+              </div>
+              <div className="bg-warm-50 rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-warm-800">{formatBytes(stats.disk.dbSize)}</div>
+                <div className="text-xs text-warm-500 mt-1">Database MySQL ({stats.disk.dbTables} tabelle)</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Uploads by type */}
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+            <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">Uploads per tipo file</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {(["images", "videos", "pdf", "archives", "other"] as const).map((key) => {
+                const labels: Record<string, string> = {
+                  images: "Immagini",
+                  videos: "Video",
+                  pdf: "PDF",
+                  archives: "ZIP/Archivi",
+                  other: "Altro",
+                };
+                const bucket = stats.disk.uploadsByType[key] || { count: 0, size: 0 };
+                const pct = stats.disk.uploadsTotal > 0 ? Math.round((bucket.size / stats.disk.uploadsTotal) * 100) : 0;
+                return (
+                  <div key={key} className="bg-warm-50 rounded-lg p-4">
+                    <div className="text-xs text-warm-500 uppercase tracking-wider mb-2">{labels[key]}</div>
+                    <div className="text-xl font-bold text-warm-800">{formatBytes(bucket.size)}</div>
+                    <div className="text-[11px] text-warm-500 mt-1">{bucket.count} file · {pct}%</div>
+                    <div className="mt-2 h-1.5 bg-white rounded overflow-hidden">
+                      <div className="h-full bg-warm-600" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Uploads by folder */}
+          {Object.keys(stats.disk.uploadsByFolder).length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+              <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">Uploads per cartella</h3>
+              <div className="space-y-2">
+                {Object.entries(stats.disk.uploadsByFolder)
+                  .sort(([, a], [, b]) => b.size - a.size)
+                  .map(([folder, bucket]) => {
+                    const pct = stats.disk.uploadsTotal > 0 ? Math.round((bucket.size / stats.disk.uploadsTotal) * 100) : 0;
+                    return (
+                      <div key={folder} className="flex items-center gap-4 text-sm">
+                        <div className="w-40 font-mono text-warm-600 truncate">{folder}</div>
+                        <div className="flex-1 relative h-5 bg-warm-100 rounded overflow-hidden">
+                          <div className="h-full bg-warm-500" style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="w-28 text-right font-mono text-warm-800">{formatBytes(bucket.size)}</div>
+                        <div className="w-16 text-right text-warm-400 text-xs">{bucket.count} file</div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Largest files */}
+          {stats.disk.largestFiles.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+              <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">Top 10 file più grandi</h3>
+              <div className="space-y-1.5">
+                {stats.disk.largestFiles.map((f, i) => (
+                  <div key={i} className="flex items-center gap-3 text-sm py-1.5 border-b border-warm-100 last:border-0">
+                    <div className="w-6 text-warm-400 text-xs font-mono">#{i + 1}</div>
+                    <div className="flex-1 font-mono text-warm-700 truncate text-xs" title={f.path}>{f.path}</div>
+                    <div className="w-24 text-right font-mono text-warm-800 font-semibold">{formatBytes(f.size)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
