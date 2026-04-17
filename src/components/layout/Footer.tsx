@@ -375,7 +375,7 @@ export default function Footer() {
       </div>
 
       {/* Copyright */}
-      <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-[9.9rem] pt-16 md:pt-24">
+      <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-[9.9rem] pt-8 md:pt-12">
         <div className="flex items-center justify-between gap-6">
           <div className="flex-1">
             <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
