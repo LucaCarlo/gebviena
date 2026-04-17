@@ -413,8 +413,8 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
               className="flex-shrink-0"
             >
               <div
-                className="relative overflow-hidden"
-                style={{ width: "calc(28vw - 14px)", minWidth: "242px", aspectRatio: "2.5 / 4" }}
+                className="relative overflow-hidden w-[62vw] min-w-[140px] sm:w-[38vw] sm:min-w-[180px] lg:w-[calc(28vw-14px)] lg:min-w-[242px]"
+                style={{ aspectRatio: "2.5 / 4" }}
               >
                 <Image
                   src={url}
