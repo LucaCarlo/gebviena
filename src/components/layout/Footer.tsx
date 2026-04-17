@@ -290,7 +290,7 @@ export default function Footer() {
           </div>
 
           {/* Link columns — pushed to right */}
-          <div className="lg:flex-1 flex flex-col md:flex-row gap-[6.5rem] lg:justify-end">
+          <div className="lg:flex-1 flex flex-col md:flex-row gap-10 md:gap-12 lg:gap-[6.5rem] lg:justify-end">
           {/* Esplora */}
           <div>
             <h4 className="text-[16px] font-bold uppercase tracking-[0.05em] mb-8" style={{ color: "#000" }}>
@@ -376,7 +376,7 @@ export default function Footer() {
 
       {/* Copyright */}
       <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-[9.9rem] pt-8 md:pt-12">
-        <div className="flex items-center justify-between gap-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex-1">
             <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
               {t("footer.bottom.copyright")}

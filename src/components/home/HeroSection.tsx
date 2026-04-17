@@ -75,7 +75,7 @@ export default function HeroSection() {
 
   if (loading) {
     return (
-      <section className="relative w-full bg-warm-100" style={{ height: "min(118vh, 1107px)" }}>
+      <section className="relative w-full bg-warm-100 h-[min(118vh,1107px)] max-md:h-[55vh]">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
         </div>
@@ -93,7 +93,7 @@ export default function HeroSection() {
   const textAlignV = "bottom-[calc(12.5vh-30px)]";
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "min(118vh, 1107px)" }}>
+    <section className="relative w-full overflow-hidden h-[min(118vh,1107px)] max-md:h-[55vh]">
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}

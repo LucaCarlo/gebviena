@@ -40,12 +40,12 @@ function ProjectsHero() {
 
   if (loaded && slides.length === 0) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 7.5rem + 2px)" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-900 h-[calc(100vh-7.5rem+2px)] max-md:h-[55vh]">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.3 }}
-          className="font-serif text-[58px] text-white tracking-normal"
+          className="font-serif text-[36px] md:text-[58px] text-white tracking-normal"
           style={{ marginTop: "-12px" }}
         >
           {t("progetti.title")}
@@ -56,7 +56,7 @@ function ProjectsHero() {
 
   if (!loaded) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900" style={{ height: "calc(100vh - 7.5rem + 2px)" }}>
+      <section className="relative w-full flex items-center justify-center bg-warm-900 h-[calc(100vh-7.5rem+2px)] max-md:h-[55vh]">
         <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
       </section>
     );
@@ -75,7 +75,7 @@ function ProjectsHero() {
     "top-[46%] -translate-y-1/2";
 
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "calc(100vh - 7.5rem + 2px)" }}>
+    <section className="relative w-full overflow-hidden h-[calc(100vh-7.5rem+2px)] max-md:h-[55vh]">
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
@@ -107,7 +107,7 @@ function ProjectsHero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className="font-serif text-[58px] text-white tracking-normal" style={{ marginTop: "-12px" }}>
+          <h1 className="font-serif text-[36px] md:text-[58px] text-white tracking-normal" style={{ marginTop: "-12px" }}>
             {slide.title}
           </h1>
           {slide.subtitle && (
@@ -554,7 +554,7 @@ function ProjectsContent() {
       </section>
 
       {/* ===== BREADCRUMBS ===== */}
-      <div className="gtv-container pb-2 -mt-10">
+      <div className="gtv-container pb-2 mt-8 md:mt-0 md:-mt-10">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">
           <Link href="/">{t("common.breadcrumb_home")}</Link>
           <ChevronRight size={12} />
