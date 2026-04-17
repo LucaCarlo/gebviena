@@ -487,7 +487,7 @@ export default function ProductDetailPage() {
                                   <div className="space-y-3">
                                     {entries.map(([label, value]) => (
                                       <div key={label}>
-                                        <p className="text-[16px] text-warm-500 uppercase tracking-wider mb-0.5">{label}</p>
+                                        <p className="text-[16px] text-black font-bold uppercase tracking-wider mb-0.5">{label}</p>
                                         <p className="text-[16px] text-warm-800">{value}</p>
                                       </div>
                                     ))}
