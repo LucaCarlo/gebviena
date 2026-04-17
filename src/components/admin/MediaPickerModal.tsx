@@ -13,6 +13,8 @@ interface MediaPickerModalProps {
   multiple?: boolean;
 }
 
+const PAGE_SIZE = 50;
+
 export default function MediaPickerModal({
   open,
   onClose,
@@ -21,29 +23,61 @@ export default function MediaPickerModal({
 }: MediaPickerModalProps) {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [activeFolder, setActiveFolder] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const loadFiles = useCallback(async () => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (activeFolder) params.set("folder", activeFolder);
-    if (search) params.set("search", search);
-    try {
+  const fetchPage = useCallback(
+    async (pageToLoad: number) => {
+      const params = new URLSearchParams();
+      if (activeFolder) params.set("folder", activeFolder);
+      if (search) params.set("search", search);
+      params.set("page", String(pageToLoad));
+      params.set("pageSize", String(PAGE_SIZE));
       const res = await fetch(`/api/media?${params}`);
-      const data = await res.json();
-      if (data.success) setFiles(data.data || []);
+      return res.json();
+    },
+    [activeFolder, search]
+  );
+
+  const loadFirstPage = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchPage(1);
+      if (data.success) {
+        setFiles(data.data || []);
+        setTotal(data.total || 0);
+        setPage(1);
+      }
     } catch { /* silent */ }
     setLoading(false);
-  }, [activeFolder, search]);
+  }, [fetchPage]);
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const next = page + 1;
+      const data = await fetchPage(next);
+      if (data.success) {
+        setFiles((prev) => [...prev, ...(data.data || [])]);
+        setTotal(data.total || 0);
+        setPage(next);
+      }
+    } catch { /* silent */ }
+    setLoadingMore(false);
+  }, [fetchPage, page]);
 
   useEffect(() => {
     if (open) {
       setSelected(new Set());
-      loadFiles();
+      loadFirstPage();
     }
-  }, [open, loadFiles]);
+  }, [open, loadFirstPage]);
+
+  const hasMore = files.length < total;
 
   const toggleSelect = (url: string) => {
     if (multiple) {
@@ -129,6 +163,7 @@ export default function MediaPickerModal({
               <p className="text-sm">Nessun media trovato</p>
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
               {files.filter((f) => f.mimeType.startsWith("image/")).map((file) => {
                 const isSelected = selected.has(file.url);
@@ -164,6 +199,22 @@ export default function MediaPickerModal({
                 );
               })}
             </div>
+            {hasMore && (
+              <div className="flex justify-center mt-5">
+                <button
+                  type="button"
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="px-4 py-2 bg-warm-100 hover:bg-warm-200 text-warm-700 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {loadingMore && (
+                    <span className="w-3.5 h-3.5 border-2 border-warm-400 border-t-warm-800 rounded-full animate-spin" />
+                  )}
+                  {loadingMore ? "Caricamento..." : `Carica altri (${files.length} di ${total})`}
+                </button>
+              </div>
+            )}
+            </>
           )}
         </div>
 
