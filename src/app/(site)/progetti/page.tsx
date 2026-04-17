@@ -177,6 +177,7 @@ function FilterDropdown({ label, options, value, onChange }: {
   value: string;
   onChange: (val: string) => void;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
@@ -209,7 +210,7 @@ function FilterDropdown({ label, options, value, onChange }: {
           <div className="px-1 py-0.5 bg-warm-50">
             <input
               type="text"
-              placeholder="Cerca"
+              placeholder={t("common.search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full text-[14px] font-light text-warm-500 placeholder:text-warm-400 tracking-normal px-1 py-0 bg-warm-50 focus:outline-none"
