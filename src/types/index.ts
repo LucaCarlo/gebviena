@@ -70,6 +70,18 @@ export interface Product {
   updatedAt: string;
   designer?: Designer;
   projects?: ProjectProduct[];
+  extraDimensions?: ProductDimension[];
+}
+
+export interface ProductDimension {
+  id: string;
+  productId: string;
+  name: string | null;
+  blockId: string | null;
+  values: string | null;
+  freeText: string | null;
+  image: string | null;
+  sortOrder: number;
 }
 
 export interface Project {

@@ -5,12 +5,23 @@ import { requirePermission, isErrorResponse } from "@/lib/permissions";
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const data = await prisma.product.findUnique({
     where: { id: params.id },
-    include: { designer: true },
+    include: {
+      designer: true,
+      extraDimensions: { orderBy: { sortOrder: "asc" } },
+    },
   });
   if (!data) {
     return NextResponse.json({ success: false, error: "Non trovato" }, { status: 404 });
   }
   return NextResponse.json({ success: true, data });
+}
+
+interface ExtraDimensionInput {
+  name?: string | null;
+  blockId?: string | null;
+  values?: string | null;
+  freeText?: string | null;
+  image?: string | null;
 }
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
@@ -22,7 +33,31 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     delete body.designer;
     if (body.designerId === "") body.designerId = null;
 
-    const data = await prisma.product.update({ where: { id: params.id }, data: body });
+    const extraDimensions: ExtraDimensionInput[] | undefined = body.extraDimensions;
+    delete body.extraDimensions;
+
+    const data = await prisma.product.update({
+      where: { id: params.id },
+      data: {
+        ...body,
+        ...(Array.isArray(extraDimensions)
+          ? {
+              extraDimensions: {
+                deleteMany: {},
+                create: extraDimensions.map((d, i) => ({
+                  name: d.name || null,
+                  blockId: d.blockId || null,
+                  values: d.values || null,
+                  freeText: d.freeText || null,
+                  image: d.image || null,
+                  sortOrder: i,
+                })),
+              },
+            }
+          : {}),
+      },
+      include: { extraDimensions: { orderBy: { sortOrder: "asc" } } },
+    });
 
     return NextResponse.json({ success: true, data });
   } catch (e) {

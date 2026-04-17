@@ -33,6 +33,14 @@ interface CategoryOption {
   typologies: { typology: { id: string; value: string } }[];
 }
 
+interface ExtraDim {
+  name: string;
+  blockId: string;
+  values: string;
+  freeText: string;
+  image: string;
+}
+
 export default function ProductForm({ productId }: ProductFormProps) {
   const router = useRouter();
   const tCtx = useTranslationCtx();
@@ -42,6 +50,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [typologies, setTypologies] = useState<TypologyOption[]>([]);
   const [allCategories, setAllCategories] = useState<CategoryOption[]>([]);
   const [dimensionBlocks, setDimensionBlocks] = useState<{ id: string; name: string; labels: string }[]>([]);
+  const [extraDimensions, setExtraDimensions] = useState<ExtraDim[]>([]);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -129,6 +138,15 @@ export default function ProductForm({ productId }: ProductFormProps) {
         seoDescription: p.seoDescription || "",
         seoKeywords: p.seoKeywords || "[]",
       });
+      setExtraDimensions(
+        (p.extraDimensions || []).map((d: { name?: string | null; blockId?: string | null; values?: string | null; freeText?: string | null; image?: string | null }) => ({
+          name: d.name || "",
+          blockId: d.blockId || "",
+          values: d.values || "{}",
+          freeText: d.freeText || "",
+          image: d.image || "",
+        }))
+      );
     }
   }, [productId]);
 
@@ -225,6 +243,13 @@ export default function ProductForm({ productId }: ProductFormProps) {
         pconSid: form.pconSid || null,
         pconOvc: form.pconOvc || null,
         techSheetUrl: form.techSheetUrl || null,
+        extraDimensions: extraDimensions.map((d) => ({
+          name: d.name || null,
+          blockId: d.blockId || null,
+          values: d.values && d.values !== "{}" ? d.values : null,
+          freeText: d.freeText || null,
+          image: d.image || null,
+        })),
       };
       const res = await fetch(url, {
         method,
@@ -260,6 +285,16 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const removeVariant = (index: number) => {
     const next = variants.filter((_, i) => i !== index);
     updateField("variants", JSON.stringify(next));
+  };
+
+  const addExtraDimension = () => {
+    setExtraDimensions((prev) => [...prev, { name: "", blockId: "", values: "{}", freeText: "", image: "" }]);
+  };
+  const removeExtraDimension = (index: number) => {
+    setExtraDimensions((prev) => prev.filter((_, i) => i !== index));
+  };
+  const updateExtraDimension = (index: number, patch: Partial<ExtraDim>) => {
+    setExtraDimensions((prev) => prev.map((d, i) => i === index ? { ...d, ...patch } : d));
   };
 
   const updateVariant = (index: number, field: "name" | "image", value: string) => {
@@ -532,6 +567,112 @@ export default function ProductForm({ productId }: ProductFormProps) {
           </div>
         )}
       </div>
+
+      {/* DIMENSIONI AGGIUNTIVE */}
+      {extraDimensions.map((dim, idx) => {
+        const selectedBlockExtra = dimensionBlocks.find((b) => b.id === dim.blockId);
+        const extraLabels: string[] = (() => {
+          if (!selectedBlockExtra) return [];
+          try { return JSON.parse(selectedBlockExtra.labels); } catch { return []; }
+        })();
+        const extraVals: Record<string, string> = (() => {
+          try { return JSON.parse(dim.values); } catch { return {}; }
+        })();
+        const setValue = (label: string, value: string) => {
+          const next = { ...extraVals, [label]: value };
+          updateExtraDimension(idx, { values: JSON.stringify(next) });
+        };
+        return (
+          <div key={idx} className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">
+                Dimensione aggiuntiva {idx + 2}
+              </h3>
+              <button
+                type="button"
+                onClick={() => removeExtraDimension(idx)}
+                className="text-xs text-red-500 hover:text-red-700 inline-flex items-center gap-1"
+              >
+                <Trash2 size={14} /> Rimuovi
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Nome (opzionale)</label>
+              <input
+                type="text"
+                value={dim.name}
+                onChange={(e) => updateExtraDimension(idx, { name: e.target.value })}
+                placeholder="es. Versione XL"
+                className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+              />
+            </div>
+
+            <ImageUploadField
+              label="Immagine dimensioni"
+              value={dim.image}
+              onChange={(url) => updateExtraDimension(idx, { image: url })}
+              onRemove={() => updateExtraDimension(idx, { image: "" })}
+              purpose="dimensions"
+              folder="products"
+              helpText="Disegno con le misure del prodotto (proporzioni libere)"
+            />
+
+            <div>
+              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Blocco dimensioni</label>
+              <select
+                value={dim.blockId}
+                onChange={(e) => updateExtraDimension(idx, { blockId: e.target.value, values: dim.values || "{}" })}
+                className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+              >
+                <option value="">— Nessun blocco (testo libero) —</option>
+                {dimensionBlocks.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {dim.blockId && extraLabels.length > 0 ? (
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Misure</label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {extraLabels.map((label) => (
+                    <div key={label}>
+                      <label className="block text-[11px] text-warm-500 mb-1">{label}</label>
+                      <input
+                        type="text"
+                        value={extraVals[label] || ""}
+                        onChange={(e) => setValue(label, e.target.value)}
+                        className="w-full border border-warm-300 rounded px-3 py-2 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+                        placeholder="es. 60 cm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Misure (testo libero)</label>
+                <textarea
+                  value={dim.freeText}
+                  onChange={(e) => updateExtraDimension(idx, { freeText: e.target.value })}
+                  className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+                  placeholder={"es.\nL 60 cm\nP 55 cm\nH 80 cm"}
+                  rows={4}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        onClick={addExtraDimension}
+        className="w-full border border-dashed border-warm-300 rounded-xl py-4 text-sm text-warm-600 hover:border-warm-500 hover:text-warm-800 transition-colors inline-flex items-center justify-center gap-2"
+      >
+        <Plus size={16} /> Aggiungi dimensione
+      </button>
 
       {/* VARIANTI PRODOTTO */}
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">

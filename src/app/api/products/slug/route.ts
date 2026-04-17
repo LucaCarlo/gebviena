@@ -29,6 +29,7 @@ export async function GET(req: Request) {
           designer: includeTranslations
             ? { include: { translations: { where: { languageCode: lang } } } }
             : true,
+          extraDimensions: { orderBy: { sortOrder: "asc" } },
           ...(includeTranslations ? { translations: { where: { languageCode: lang } } } : {}),
         },
       })
@@ -38,6 +39,7 @@ export async function GET(req: Request) {
           designer: includeTranslations
             ? { include: { translations: { where: { languageCode: lang } } } }
             : true,
+          extraDimensions: { orderBy: { sortOrder: "asc" } },
           ...(includeTranslations ? { translations: { where: { languageCode: lang } } } : {}),
         },
       });

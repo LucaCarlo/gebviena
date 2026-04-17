@@ -55,6 +55,14 @@ export async function GET(req: NextRequest) {
   });
 }
 
+interface ExtraDimensionInput {
+  name?: string | null;
+  blockId?: string | null;
+  values?: string | null;
+  freeText?: string | null;
+  image?: string | null;
+}
+
 export async function POST(req: Request) {
   const result = await requirePermission("products", "create");
   if (isErrorResponse(result)) return result;
@@ -63,7 +71,28 @@ export async function POST(req: Request) {
     const body = await req.json();
     delete body.designer;
 
-    const data = await prisma.product.create({ data: body });
+    const extraDimensions: ExtraDimensionInput[] | undefined = body.extraDimensions;
+    delete body.extraDimensions;
+
+    const data = await prisma.product.create({
+      data: {
+        ...body,
+        ...(Array.isArray(extraDimensions) && extraDimensions.length > 0
+          ? {
+              extraDimensions: {
+                create: extraDimensions.map((d, i) => ({
+                  name: d.name || null,
+                  blockId: d.blockId || null,
+                  values: d.values || null,
+                  freeText: d.freeText || null,
+                  image: d.image || null,
+                  sortOrder: i,
+                })),
+              },
+            }
+          : {}),
+      },
+    });
 
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (e) {

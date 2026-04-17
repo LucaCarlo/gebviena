@@ -468,45 +468,60 @@ export default function ProductDetailPage() {
                       className="overflow-hidden"
                     >
                       <div className="px-2 pb-8">
-                        <div className="flex flex-col md:flex-row items-start gap-8">
-                          {/* Immagine dimensioni — sinistra */}
-                          {product.dimensionImage && (
-                            <div className="relative bg-white p-4 w-full md:w-1/2 md:flex-none min-w-0" style={{ aspectRatio: "3 / 2" }}>
-                              <Image src={product.dimensionImage} alt={`${product.name} dimensioni`} fill className="object-contain" sizes="(max-width: 768px) 100vw, 50vw" />
-                            </div>
-                          )}
-
-                          {/* Misure — destra (o sotto su mobile) */}
-                          <div className={product.dimensionImage ? "w-full md:flex-1 md:min-w-[200px]" : "w-full"}>
-                            {product.dimensionValues && product.dimensionValues !== "{}" ? (() => {
-                              try {
-                                const vals: Record<string, string> = JSON.parse(product.dimensionValues);
-                                const entries = Object.entries(vals).filter(([, v]) => v);
-                                if (entries.length === 0) return null;
-                                return (
-                                  <div className="space-y-3">
-                                    {entries.map(([label, value]) => (
-                                      <div key={label}>
-                                        <p className="text-[16px] text-black font-bold uppercase tracking-wider mb-0.5">{label}</p>
-                                        <p className="text-[16px] text-warm-800">{value}</p>
+                        {(() => {
+                          const allSets: { name?: string | null; image?: string | null; values?: string | null; freeText?: string | null }[] = [
+                            { image: product.dimensionImage, values: product.dimensionValues, freeText: product.dimensions, name: null },
+                            ...((product.extraDimensions || []).map((d) => ({ image: d.image, values: d.values, freeText: d.freeText, name: d.name }))),
+                          ].filter((s) => s.image || (s.values && s.values !== "{}") || s.freeText);
+                          if (allSets.length === 0) {
+                            return <p className="text-[16px] text-warm-500">{t("prodotti.detail.dims_unavailable")}</p>;
+                          }
+                          return (
+                            <div className="space-y-8">
+                              {allSets.map((s, setIdx) => (
+                                <div key={setIdx} className={setIdx > 0 ? "pt-8 border-t border-warm-200" : ""}>
+                                  {s.name && (
+                                    <p className="text-[14px] text-black font-semibold uppercase tracking-wider mb-4">{s.name}</p>
+                                  )}
+                                  <div className="flex flex-col md:flex-row items-start gap-8">
+                                    {s.image && (
+                                      <div className="relative bg-white p-4 w-full md:w-1/2 md:flex-none min-w-0" style={{ aspectRatio: "3 / 2" }}>
+                                        <Image src={s.image} alt={`${product.name} dimensioni`} fill className="object-contain" sizes="(max-width: 768px) 100vw, 50vw" />
                                       </div>
-                                    ))}
+                                    )}
+                                    <div className={s.image ? "w-full md:flex-1 md:min-w-[200px]" : "w-full"}>
+                                      {s.values && s.values !== "{}" ? (() => {
+                                        try {
+                                          const vals: Record<string, string> = JSON.parse(s.values);
+                                          const entries = Object.entries(vals).filter(([, v]) => v);
+                                          if (entries.length === 0) return null;
+                                          return (
+                                            <div className="space-y-3">
+                                              {entries.map(([label, value]) => (
+                                                <div key={label}>
+                                                  <p className="text-[16px] text-black font-bold uppercase tracking-wider mb-0.5">{label}</p>
+                                                  <p className="text-[16px] text-warm-800">{value}</p>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          );
+                                        } catch { return null; }
+                                      })() : s.freeText ? (
+                                        <div>
+                                          {s.freeText.split("\n").map((line, i) => (
+                                            <p key={i} className="text-[16px] text-warm-800 leading-relaxed">
+                                              {line || "\u00A0"}
+                                            </p>
+                                          ))}
+                                        </div>
+                                      ) : null}
+                                    </div>
                                   </div>
-                                );
-                              } catch { return null; }
-                            })() : product.dimensions ? (
-                              <div>
-                                {product.dimensions.split("\n").map((line, i) => (
-                                  <p key={i} className="text-[16px] text-warm-800 leading-relaxed">
-                                    {line || "\u00A0"}
-                                  </p>
-                                ))}
-                              </div>
-                            ) : !product.dimensionImage && (
-                              <p className="text-[16px] text-warm-500">{t("prodotti.detail.dims_unavailable")}</p>
-                            )}
-                          </div>
-                        </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </motion.div>
                   )}
