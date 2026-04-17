@@ -27,7 +27,6 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const doSearch = useCallback(async (q: string) => {
@@ -51,21 +50,12 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
     }
   }, []);
 
-  // Debounced search on typing
+  // Reset results when user edits the query (so stale results don't linger
+  // after clicking "Avvia la ricerca" then typing again)
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (query.trim().length < 2) {
-      setResults([]);
-      setSearched(false);
-      return;
-    }
-    debounceRef.current = setTimeout(() => {
-      doSearch(query);
-    }, 350);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [query, doSearch]);
+    setResults([]);
+    setSearched(false);
+  }, [query]);
 
   // Reset on close
   useEffect(() => {

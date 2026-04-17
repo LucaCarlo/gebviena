@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCategoryLabelMap } from "@/lib/server-categories";
+import { lookupLabel } from "@/lib/category-lookup";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -76,11 +78,21 @@ export async function GET(req: Request) {
             { organization: { contains: q } },
           ],
         },
-        select: { id: true, name: true, year: true, organization: true, imageUrl: true },
+        select: {
+          id: true,
+          name: true,
+          year: true,
+          organization: true,
+          imageUrl: true,
+          productName: true,
+          products: { select: { product: { select: { name: true } } } },
+        },
         take: 4,
         orderBy: { year: "desc" },
       }),
     ]);
+
+    const productCatMap = await getCategoryLabelMap("product");
 
     const results: Array<{
       type: string;
@@ -92,13 +104,15 @@ export async function GET(req: Request) {
     }> = [];
 
     for (const p of products) {
+      const firstCat = (p.category || "").split(",").map((s) => s.trim()).filter(Boolean)[0] || "";
+      const catLabel = firstCat ? lookupLabel(productCatMap, firstCat) : "";
       results.push({
         type: "product",
         typeLabel: "Prodotto",
         name: p.name,
         url: `/prodotti/${p.slug}`,
         image: p.coverImage || p.imageUrl || null,
-        subtitle: [p.category, p.designerName].filter(Boolean).join(" — "),
+        subtitle: [catLabel, p.designerName].filter(Boolean).join(" — "),
       });
     }
 
@@ -136,13 +150,15 @@ export async function GET(req: Request) {
     }
 
     for (const a of awards) {
+      const productNames = a.products.map((ap) => ap.product.name).filter(Boolean);
+      if (productNames.length === 0 && a.productName) productNames.push(a.productName);
       results.push({
         type: "award",
         typeLabel: "Premio",
         name: a.name,
         url: `/mondo-gtv`,
         image: a.imageUrl || null,
-        subtitle: [a.organization, a.year?.toString()].filter(Boolean).join(" — "),
+        subtitle: productNames.length > 0 ? productNames.join(", ") : null,
       });
     }
 
