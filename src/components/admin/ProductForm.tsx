@@ -228,11 +228,27 @@ export default function ProductForm({ productId }: ProductFormProps) {
       if (ok) router.push("/admin/products");
       return;
     }
+    const filterValuesToBlock = (valuesJson: string, blockId: string): string => {
+      if (!blockId) return valuesJson;
+      const block = dimensionBlocks.find((b) => b.id === blockId);
+      if (!block) return valuesJson;
+      let labels: string[] = [];
+      try { labels = JSON.parse(block.labels); } catch { labels = []; }
+      if (labels.length === 0) return valuesJson;
+      try {
+        const vals: Record<string, string> = JSON.parse(valuesJson);
+        const cleaned: Record<string, string> = {};
+        for (const l of labels) if (vals[l] != null) cleaned[l] = vals[l];
+        return JSON.stringify(cleaned);
+      } catch { return valuesJson; }
+    };
+
     try {
       const url = productId ? `/api/products/${productId}` : "/api/products";
       const method = productId ? "PUT" : "POST";
       const payload = {
         ...form,
+        dimensionValues: filterValuesToBlock(form.dimensionValues, form.dimensionBlockId),
         imageUrl: form.coverImage || "",
         year: form.year ? parseInt(form.year, 10) : null,
         model2dUrl: form.model2dUrl || null,
@@ -243,13 +259,16 @@ export default function ProductForm({ productId }: ProductFormProps) {
         pconSid: form.pconSid || null,
         pconOvc: form.pconOvc || null,
         techSheetUrl: form.techSheetUrl || null,
-        extraDimensions: extraDimensions.map((d) => ({
-          name: d.name || null,
-          blockId: d.blockId || null,
-          values: d.values && d.values !== "{}" ? d.values : null,
-          freeText: d.freeText || null,
-          image: d.image || null,
-        })),
+        extraDimensions: extraDimensions.map((d) => {
+          const cleanedValues = d.values ? filterValuesToBlock(d.values, d.blockId) : "";
+          return {
+            name: d.name || null,
+            blockId: d.blockId || null,
+            values: cleanedValues && cleanedValues !== "{}" ? cleanedValues : null,
+            freeText: d.freeText || null,
+            image: d.image || null,
+          };
+        }),
       };
       const res = await fetch(url, {
         method,
