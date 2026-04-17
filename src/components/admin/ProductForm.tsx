@@ -629,16 +629,16 @@ export default function ProductForm({ productId }: ProductFormProps) {
           value={form.model2dUrl}
           onChange={(url) => updateField("model2dUrl", url)}
           folder="tech-sheets"
-          accept=".zip,application/zip,application/x-zip-compressed"
-          fileLabel="ZIP"
+          accept=".zip,.dwg,.dxf,.pdf,application/zip,application/x-zip-compressed,image/vnd.dwg,application/dxf,application/pdf"
+          fileLabel="file"
         />
         <FileUploadField
           label="Modello 3D"
           value={form.model3dUrl}
           onChange={(url) => updateField("model3dUrl", url)}
           folder="tech-sheets"
-          accept=".zip,application/zip,application/x-zip-compressed"
-          fileLabel="ZIP"
+          accept=".zip,.dwg,.dxf,.step,.stp,.iges,.igs,.stl,.obj,.3ds,.fbx,.skp,.gltf,.glb,.dae,.ply,application/zip,application/x-zip-compressed"
+          fileLabel="file"
         />
       </div>
 
