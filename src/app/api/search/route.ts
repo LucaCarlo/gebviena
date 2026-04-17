@@ -25,7 +25,7 @@ export async function GET(req: Request) {
             { materials: { contains: q } },
           ],
         },
-        select: { name: true, slug: true, category: true, coverImage: true, imageUrl: true, designerName: true },
+        select: { name: true, slug: true, category: true, subcategory: true, coverImage: true, imageUrl: true, designerName: true },
         take: 8,
         orderBy: { sortOrder: "asc" },
       }),
@@ -104,8 +104,10 @@ export async function GET(req: Request) {
     }> = [];
 
     for (const p of products) {
+      const firstSub = (p.subcategory || "").split(",").map((s) => s.trim()).filter(Boolean)[0] || "";
       const firstCat = (p.category || "").split(",").map((s) => s.trim()).filter(Boolean)[0] || "";
-      const catLabel = firstCat ? lookupLabel(productCatMap, firstCat) : "";
+      const rawCat = firstSub || firstCat;
+      const catLabel = rawCat ? lookupLabel(productCatMap, rawCat) : "";
       results.push({
         type: "product",
         typeLabel: "Prodotto",
