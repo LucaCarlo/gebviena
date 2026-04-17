@@ -382,8 +382,7 @@ export default function ProductDetailPage() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="relative overflow-hidden"
-                style={{ aspectRatio: "4 / 5" }}
+                className="relative overflow-hidden aspect-[4/5] lg:aspect-auto"
               >
                 <Image
                   src={product.designer.imageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1000&fit=crop&crop=face"}
@@ -472,7 +471,7 @@ export default function ProductDetailPage() {
                         <div className="flex flex-col md:flex-row items-start gap-8">
                           {/* Immagine dimensioni — sinistra */}
                           {product.dimensionImage && (
-                            <div className="relative bg-white p-4 flex-1 min-w-0" style={{ aspectRatio: "3 / 2" }}>
+                            <div className="relative bg-white p-4 flex-1 min-w-0 md:max-w-[480px]" style={{ aspectRatio: "3 / 2" }}>
                               <Image src={product.dimensionImage} alt={`${product.name} dimensioni`} fill className="object-contain" sizes="(max-width: 768px) 100vw, 50vw" />
                             </div>
                           )}
