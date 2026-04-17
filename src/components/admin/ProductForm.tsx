@@ -789,7 +789,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
           value={form.model2dUrl}
           onChange={(url) => updateField("model2dUrl", url)}
           folder="tech-sheets"
-          accept=".zip,.dwg,.dxf,.pdf,application/zip,application/x-zip-compressed,image/vnd.dwg,application/dxf,application/pdf"
+          accept=".zip,.rar,.dwg,.dxf,.pdf,application/zip,application/x-zip-compressed,application/vnd.rar,application/x-rar-compressed,image/vnd.dwg,application/dxf,application/pdf"
           fileLabel="file"
         />
         <FileUploadField
@@ -797,7 +797,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
           value={form.model3dUrl}
           onChange={(url) => updateField("model3dUrl", url)}
           folder="tech-sheets"
-          accept=".zip,.dwg,.dxf,.step,.stp,.iges,.igs,.stl,.obj,.3ds,.fbx,.skp,.gltf,.glb,.dae,.ply,application/zip,application/x-zip-compressed"
+          accept=".zip,.rar,.dwg,.dxf,.step,.stp,.iges,.igs,.stl,.obj,.3ds,.fbx,.skp,.gltf,.glb,.dae,.ply,application/zip,application/x-zip-compressed,application/vnd.rar,application/x-rar-compressed"
           fileLabel="file"
         />
       </div>
