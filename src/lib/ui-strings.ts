@@ -349,7 +349,6 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "prodotti.detail.dims_unavailable", defaultValue: "Dimensioni non disponibili." },
       { key: "prodotti.detail.custom.title", defaultValue: "Dimensioni personalizzate dei prodotti" },
       { key: "prodotti.detail.custom.cta", defaultValue: "Contattaci per il tuo progetto" },
-      { key: "prodotti.detail.projects.title", defaultValue: "Progetti con questo prodotto" },
     ],
   },
   {

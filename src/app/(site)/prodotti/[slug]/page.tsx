@@ -657,7 +657,7 @@ export default function ProductDetailPage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="flex flex-col justify-center bg-white"
-                style={{ padding: "72px 80px" }}
+                style={{ padding: "72px 80px 72px 160px" }}
               >
                 <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{t("prodotti.detail.projects.label")}</p>
                 <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
