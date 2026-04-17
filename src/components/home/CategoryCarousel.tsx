@@ -26,7 +26,7 @@ export default function CategoryCarousel() {
           typos.map((t: { label: string; value: string; imageUrl: string }) => ({
             name: t.label,
             image: t.imageUrl,
-            href: `/prodotti?typology=${t.value}`,
+            href: `/prodotti?category=${t.value}`,
           }))
         );
       })
@@ -86,9 +86,9 @@ export default function CategoryCarousel() {
     <section className="py-20 md:py-28 lg:py-36 bg-white">
       {/* Title */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.8 }}
         className="text-center mb-16 md:mb-24 px-4"
       >
@@ -105,7 +105,7 @@ export default function CategoryCarousel() {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          className={`flex gap-6 md:gap-10 lg:gap-14 overflow-x-auto px-6 md:px-12 lg:px-20 pb-2 ${
+          className={`flex gap-6 md:gap-10 lg:gap-14 overflow-x-auto px-6 md:px-12 lg:px-20 pb-2 min-h-[296px] md:min-h-[320px] lg:min-h-[368px] ${
             isDragging ? "cursor-grabbing select-none" : "cursor-grab"
           }`}
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -113,9 +113,9 @@ export default function CategoryCarousel() {
           {categories.map((cat, i) => (
             <motion.div
               key={cat.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
               className="flex-shrink-0 flex flex-col items-center"
             >
