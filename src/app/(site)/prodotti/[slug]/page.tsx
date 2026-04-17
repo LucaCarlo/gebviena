@@ -10,6 +10,7 @@ import type { Product, Designer, Project } from "@/types";
 import { buildPconUrl } from "@/lib/pcon";
 import { useLang, useT } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
+import GallerySlideshow from "@/components/site/GallerySlideshow";
 
 interface ProductDetail extends Omit<Product, "projects"> {
   related: (Product & { designer?: Designer })[];
@@ -17,7 +18,7 @@ interface ProductDetail extends Omit<Product, "projects"> {
 }
 
 /* ─── Inspiration Carousel sub-component ─── */
-function InspirationCarousel({ images, productName }: { images: string[]; productName: string }) {
+function InspirationCarousel({ images, productName, id }: { images: string[]; productName: string; id?: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -104,7 +105,7 @@ function InspirationCarousel({ images, productName }: { images: string[]; produc
   if (images.length === 0) return null;
 
   return (
-    <section id="ispirazione" className="pb-16 lg:pb-24">
+    <section id={id} className="pb-16 lg:pb-24">
       <div className="relative">
         <div
           ref={scrollRef}
@@ -178,6 +179,7 @@ export default function ProductDetailPage() {
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [descExpanded, setDescExpanded] = useState(false);
   const [supportImg, setSupportImg] = useState("https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop&q=80");
+  const [imageOrientations, setImageOrientations] = useState<Record<string, "h" | "v">>({});
 
   useEffect(() => {
     async function load() {
@@ -195,6 +197,25 @@ export default function ProductDetailPage() {
       if (img?.imageUrl) setSupportImg(img.imageUrl);
     });
   }, [slug, lang]);
+
+  // Measure image orientations for gallery split (horizontal vs vertical)
+  useEffect(() => {
+    if (!product?.galleryImages) return;
+    let urls: string[] = [];
+    try { urls = JSON.parse(product.galleryImages); } catch { /* ignore */ }
+    if (urls.length === 0) return;
+    let cancelled = false;
+    urls.forEach((url) => {
+      const img = new window.Image();
+      img.onload = () => {
+        if (cancelled) return;
+        const orient: "h" | "v" = img.naturalWidth >= img.naturalHeight ? "h" : "v";
+        setImageOrientations((prev) => (prev[url] ? prev : { ...prev, [url]: orient }));
+      };
+      img.src = url;
+    });
+    return () => { cancelled = true; };
+  }, [product?.galleryImages]);
 
   if (loading) {
     return (
@@ -219,11 +240,15 @@ export default function ProductDetailPage() {
     } catch { /* ignore */ }
     return [];
   })();
+  // Split gallery by orientation; before measurement images default to horizontal.
+  const horizontalGallery = gallery.filter((u) => imageOrientations[u] !== "v");
+  const verticalGallery = gallery.filter((u) => imageOrientations[u] === "v");
+  const hasAnyGallery = horizontalGallery.length > 0 || verticalGallery.length > 0;
   const heroImg = product.heroImage || product.coverImage || product.imageUrl;
   const sideImg = product.sideImage || product.coverImage || product.imageUrl;
 
   const sectionNav = [
-    { label: t("prodotti.detail.nav.inspiration"), id: "ispirazione" },
+    ...(hasAnyGallery ? [{ label: t("prodotti.detail.nav.inspiration"), id: "ispirazione" }] : []),
     { label: t("prodotti.detail.nav.designer"), id: "designer" },
     { label: t("prodotti.detail.nav.specs"), id: "specifiche" },
     { label: t("prodotti.detail.nav.projects"), id: "progetti" },
@@ -365,11 +390,21 @@ export default function ProductDetailPage() {
         </div>
       </nav>
 
-      {/* ===== 4. ISPIRAZIONE — scrollable carousel ===== */}
-      <InspirationCarousel
-        images={gallery.length > 0 ? gallery : product.related.map(r => r.imageUrl)}
-        productName={product.name}
-      />
+      {/* ===== 4. ISPIRAZIONE — horizontal slideshow + vertical carousel ===== */}
+      {horizontalGallery.length > 0 && (
+        <GallerySlideshow
+          images={horizontalGallery}
+          name={product.name}
+          id="ispirazione"
+        />
+      )}
+      {verticalGallery.length > 0 && (
+        <InspirationCarousel
+          images={verticalGallery}
+          productName={product.name}
+          id={horizontalGallery.length === 0 ? "ispirazione" : undefined}
+        />
+      )}
 
       {/* ===== 5. DESIGNER SECTION ===== */}
       <section id="designer">
