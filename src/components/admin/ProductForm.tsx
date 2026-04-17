@@ -416,6 +416,62 @@ export default function ProductForm({ productId }: ProductFormProps) {
         </div>
       </div>
 
+      {/* IMMAGINI */}
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-6">
+        <div>
+          <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Immagini prodotto</h3>
+          <p className="text-[10px] text-warm-400 mt-0.5">
+            Tutte le immagini vengono automaticamente convertite in WebP e ottimizzate per il web
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ImageUploadField
+            label="Immagine Cover"
+            value={form.coverImage}
+            onChange={(url) => updateField("coverImage", url)}
+            onRemove={() => updateField("coverImage", "")}
+            purpose="cover"
+            folder="products"
+            helpText="Mostrata nella griglia prodotti dello shop"
+            recommendedSize="960 x 960 px (quadrata 1:1)"
+            aspectRatio={1}
+          />
+
+          <ImageUploadField
+            label="Immagine Hero"
+            value={form.heroImage}
+            onChange={(url) => updateField("heroImage", url)}
+            onRemove={() => updateField("heroImage", "")}
+            purpose="hero"
+            folder="products"
+            helpText="Banner a tutta larghezza nella pagina prodotto"
+            recommendedSize="1600 x 1000 px (orizzontale 8:5)"
+            aspectRatio={1600 / 1000}
+          />
+
+          <ImageUploadField
+            label="Immagine Laterale"
+            value={form.sideImage}
+            onChange={(url) => updateField("sideImage", url)}
+            onRemove={() => updateField("sideImage", "")}
+            purpose="side"
+            folder="products"
+            helpText="Sezione descrizione, affiancata al testo"
+            recommendedSize="1440 x 1920 px (verticale 3:4)"
+            aspectRatio={1440 / 1920}
+          />
+        </div>
+
+        <GalleryUploadField
+          label="Galleria immagini"
+          value={galleryUrls}
+          onChange={(urls) => updateField("galleryImages", JSON.stringify(urls))}
+          folder="products"
+          helpText="Immagini aggiuntive per il carosello ispirazione. Trascina per riordinare."
+        />
+      </div>
+
       {/* DIMENSIONI */}
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
         <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Dimensioni</h3>
@@ -475,62 +531,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
             />
           </div>
         )}
-      </div>
-
-      {/* IMMAGINI */}
-      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-6">
-        <div>
-          <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Immagini prodotto</h3>
-          <p className="text-[10px] text-warm-400 mt-0.5">
-            Tutte le immagini vengono automaticamente convertite in WebP e ottimizzate per il web
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ImageUploadField
-            label="Immagine Cover"
-            value={form.coverImage}
-            onChange={(url) => updateField("coverImage", url)}
-            onRemove={() => updateField("coverImage", "")}
-            purpose="cover"
-            folder="products"
-            helpText="Mostrata nella griglia prodotti dello shop"
-            recommendedSize="960 x 960 px (quadrata 1:1)"
-            aspectRatio={1}
-          />
-
-          <ImageUploadField
-            label="Immagine Hero"
-            value={form.heroImage}
-            onChange={(url) => updateField("heroImage", url)}
-            onRemove={() => updateField("heroImage", "")}
-            purpose="hero"
-            folder="products"
-            helpText="Banner a tutta larghezza nella pagina prodotto"
-            recommendedSize="1600 x 1000 px (orizzontale 8:5)"
-            aspectRatio={1600 / 1000}
-          />
-
-          <ImageUploadField
-            label="Immagine Laterale"
-            value={form.sideImage}
-            onChange={(url) => updateField("sideImage", url)}
-            onRemove={() => updateField("sideImage", "")}
-            purpose="side"
-            folder="products"
-            helpText="Sezione descrizione, affiancata al testo"
-            recommendedSize="1440 x 1920 px (verticale 3:4)"
-            aspectRatio={1440 / 1920}
-          />
-        </div>
-
-        <GalleryUploadField
-          label="Galleria immagini"
-          value={galleryUrls}
-          onChange={(urls) => updateField("galleryImages", JSON.stringify(urls))}
-          folder="products"
-          helpText="Immagini aggiuntive per il carosello ispirazione. Trascina per riordinare."
-        />
       </div>
 
       {/* VARIANTI PRODOTTO */}
