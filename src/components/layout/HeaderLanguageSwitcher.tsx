@@ -5,18 +5,6 @@ import { usePathname } from "next/navigation";
 import { useLang } from "@/contexts/I18nContext";
 import { translateSegmentsBackward, translateSegmentsForward, DEFAULT_LANG } from "@/lib/path-segments";
 
-// Language names displayed in a given UI language
-const LANG_NAMES: Record<string, Record<string, string>> = {
-  it: { it: "Italiano", en: "Inglese", de: "Tedesco", fr: "Francese" },
-  en: { it: "Italian", en: "English", de: "German", fr: "French" },
-  de: { it: "Italienisch", en: "Englisch", de: "Deutsch", fr: "Französisch" },
-  fr: { it: "Italien", en: "Anglais", de: "Allemand", fr: "Français" },
-};
-
-function localizedName(code: string, uiLang: string, fallback: string): string {
-  return LANG_NAMES[uiLang]?.[code] || fallback;
-}
-
 interface Language {
   code: string;
   name: string;
@@ -97,20 +85,19 @@ export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
         </svg>
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-3 bg-white border border-black min-w-[180px] z-[80]">
-          {languages.map((l) => {
-            const isCurrent = l.code === currentLang;
-            return (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 bg-white border border-black z-[80]">
+          {languages
+            .filter((l) => l.code !== currentLang)
+            .map((l) => (
               <button
                 key={l.code}
                 onClick={() => switchTo(l)}
-                className={`block w-full text-left px-5 py-3 text-[16px] uppercase tracking-[0.03em] transition-all hover:underline ${isCurrent ? "font-semibold" : "font-normal"}`}
+                className="block w-full text-center px-4 py-2 text-[16px] uppercase tracking-[0.03em] font-normal transition-all hover:underline"
                 style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}
               >
-                {localizedName(l.code, currentLang, l.name)}
+                {l.code.toUpperCase()}
               </button>
-            );
-          })}
+            ))}
         </div>
       )}
     </div>

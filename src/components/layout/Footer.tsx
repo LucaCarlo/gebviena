@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Logo from "./Logo";
-import LanguageSwitcher from "./LanguageSwitcher";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
@@ -288,11 +287,6 @@ export default function Footer() {
                 <p>Codice Fiscale: 08743760012 – REA: TO-997261</p>
               </div>
             </div>
-
-            {/* Language selector */}
-            <div className="pt-4">
-              <LanguageSwitcher />
-            </div>
           </div>
 
           {/* Link columns — pushed to right */}
@@ -382,23 +376,36 @@ export default function Footer() {
 
       {/* Copyright */}
       <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-[9.9rem] pt-16 md:pt-24">
-        <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
-          {t("footer.bottom.copyright")}
-        </p>
-        <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#000" }}>
-          {t("footer.bottom.disclaimer")}
-        </p>
-        {builtByLogo && (
-          <div className="flex items-center gap-1.5 mt-10" style={{ color: "#000" }}>
-            <span className="text-[13px] font-normal">Built by</span>
-            {builtByLink ? (
-              <a
-                href={builtByLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block"
-                aria-label="Built by"
-              >
+        <div className="flex items-center justify-between gap-6">
+          <div className="flex-1">
+            <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
+              {t("footer.bottom.copyright")}
+            </p>
+            <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#000" }}>
+              {t("footer.bottom.disclaimer")}
+            </p>
+          </div>
+          {builtByLogo && (
+            <div className="flex items-center gap-1.5 shrink-0" style={{ color: "#000" }}>
+              <span className="text-[13px] font-normal">Built by</span>
+              {builtByLink ? (
+                <a
+                  href={builtByLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block"
+                  aria-label="Built by"
+                >
+                  <Image
+                    src={builtByLogo}
+                    alt="Built by"
+                    width={80}
+                    height={18}
+                    className="object-contain h-[18px] w-auto"
+                    unoptimized
+                  />
+                </a>
+              ) : (
                 <Image
                   src={builtByLogo}
                   alt="Built by"
@@ -407,19 +414,10 @@ export default function Footer() {
                   className="object-contain h-[18px] w-auto"
                   unoptimized
                 />
-              </a>
-            ) : (
-              <Image
-                src={builtByLogo}
-                alt="Built by"
-                width={80}
-                height={18}
-                className="object-contain h-[18px] w-auto"
-                unoptimized
-              />
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </footer>
   );
