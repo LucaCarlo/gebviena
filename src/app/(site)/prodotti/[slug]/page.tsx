@@ -622,7 +622,7 @@ export default function ProductDetailPage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
                 className="relative"
-                style={{ aspectRatio: "4 / 3" }}
+                style={{ aspectRatio: "1 / 1" }}
               >
                 <Image
                   src={proj.imageUrl}
@@ -631,8 +631,8 @@ export default function ProductDetailPage() {
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8 lg:p-12">
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent" />
+                <div className="absolute top-0 left-0 right-0 p-8 lg:p-12">
                   {proj.country && (
                     <p className="uppercase text-[16px] tracking-[0.03em] text-white/70 font-light mb-1.5">
                       {proj.country}
@@ -679,7 +679,7 @@ export default function ProductDetailPage() {
       </section>
 
       {/* ===== 8. SUPPORTO AI PROFESSIONISTI — split text + image ===== */}
-      <section className="w-full">
+      <section className="w-full mt-[30px]">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           {/* Left — text content */}
           <motion.div
