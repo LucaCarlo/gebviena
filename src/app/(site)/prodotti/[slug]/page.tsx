@@ -487,8 +487,8 @@ export default function ProductDetailPage() {
                                   <div className="space-y-3">
                                     {entries.map(([label, value]) => (
                                       <div key={label}>
-                                        <p className="text-xs text-warm-400 uppercase tracking-wider mb-0.5">{label}</p>
-                                        <p className="text-sm text-warm-700 font-light">{value}</p>
+                                        <p className="text-[16px] text-warm-500 uppercase tracking-wider mb-0.5">{label}</p>
+                                        <p className="text-[16px] text-warm-800">{value}</p>
                                       </div>
                                     ))}
                                   </div>
@@ -497,13 +497,13 @@ export default function ProductDetailPage() {
                             })() : product.dimensions ? (
                               <div>
                                 {product.dimensions.split("\n").map((line, i) => (
-                                  <p key={i} className="text-sm text-warm-700 font-light leading-relaxed">
+                                  <p key={i} className="text-[16px] text-warm-800 leading-relaxed">
                                     {line || "\u00A0"}
                                   </p>
                                 ))}
                               </div>
                             ) : !product.dimensionImage && (
-                              <p className="text-sm text-warm-400 font-light">{t("prodotti.detail.dims_unavailable")}</p>
+                              <p className="text-[16px] text-warm-500">{t("prodotti.detail.dims_unavailable")}</p>
                             )}
                           </div>
                         </div>
