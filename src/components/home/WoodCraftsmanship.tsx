@@ -14,7 +14,7 @@ export default function WoodCraftsmanship({ videoUrl }: WoodCraftsmanshipProps) 
   const lang = useLang();
   return (
     <section className="w-full px-1 md:px-2 lg:px-3">
-      <div className="relative w-full" style={{ height: "90vh" }}>
+      <div className="relative w-full h-[min(90vh,900px)] max-md:h-[70vh]">
         {/* Background video */}
         <video
           autoPlay
