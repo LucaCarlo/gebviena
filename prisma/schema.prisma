@@ -111,6 +111,7 @@ model Product {
   heroImage        String? @db.Text
   sideImage        String? @db.Text
   galleryImages    String? @db.Text
+  galleryOrientations String? @db.Text
   variants         String? @db.Text
   dimensionImage   String? @db.Text
   techSheetUrl     String? @db.Text

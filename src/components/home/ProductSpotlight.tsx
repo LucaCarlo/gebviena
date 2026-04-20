@@ -35,7 +35,7 @@ export default function ProductSpotlight({ ambianceImage, productImage }: Produc
         </motion.div>
 
         {/* Right — product image centered with white space + text below centered */}
-        <div className="flex flex-col items-center justify-center py-16 lg:py-24 px-10 md:px-16 lg:px-20">
+        <div className="flex flex-col items-center justify-center py-16 lg:py-24 px-0 md:px-16 lg:px-20">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}

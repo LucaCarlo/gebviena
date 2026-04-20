@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { slugify } from "@/lib/utils";
 import { Plus, X, Upload, FileText, Trash2 } from "lucide-react";
@@ -67,6 +68,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
     heroImage: "",
     sideImage: "",
     galleryImages: "[]",
+    galleryOrientations: "{}",
     variants: "[]",
     dimensionImage: "",
     techSheetUrl: "",
@@ -121,6 +123,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         heroImage: p.heroImage || "",
         sideImage: p.sideImage || "",
         galleryImages: p.galleryImages || "[]",
+        galleryOrientations: p.galleryOrientations || "{}",
         variants: p.variants || "[]",
         dimensionImage: p.dimensionImage || "",
         techSheetUrl: p.techSheetUrl || "",
@@ -291,6 +294,23 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const galleryUrls: string[] = (() => {
     try { return JSON.parse(form.galleryImages); } catch { return []; }
   })();
+
+  const galleryOrientations: Record<string, "h" | "v"> = (() => {
+    try {
+      const parsed = JSON.parse(form.galleryOrientations || "{}");
+      return typeof parsed === "object" && parsed !== null ? parsed : {};
+    } catch { return {}; }
+  })();
+
+  const setGalleryOrientation = (url: string, orient: "" | "h" | "v") => {
+    const next = { ...galleryOrientations };
+    if (orient === "") {
+      delete next[url];
+    } else {
+      next[url] = orient;
+    }
+    updateField("galleryOrientations", JSON.stringify(next));
+  };
 
   const variants: { name: string; image: string }[] = (() => {
     try { return JSON.parse(form.variants); } catch { return []; }
@@ -524,6 +544,45 @@ export default function ProductForm({ productId }: ProductFormProps) {
           folder="products"
           helpText="Immagini aggiuntive per il carosello ispirazione. Trascina per riordinare."
         />
+
+        {galleryUrls.length > 0 && (
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+              Orientamento carosello
+            </label>
+            <p className="text-[10px] text-warm-400 mb-3">
+              Per ogni immagine scegli se mostrarla nel carosello orizzontale o in quello verticale. Se lasci &quot;Auto&quot;, l&apos;orientamento viene rilevato dall&apos;aspect ratio dell&apos;immagine.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {galleryUrls.map((url) => {
+                const orient = galleryOrientations[url] || "";
+                return (
+                  <div key={url} className="border border-warm-200 rounded-lg p-2 bg-warm-50">
+                    <div className="relative aspect-square rounded overflow-hidden mb-2 bg-white">
+                      <Image src={url} alt="" fill className="object-cover" sizes="200px" />
+                    </div>
+                    <div className="flex gap-1">
+                      {(["", "h", "v"] as const).map((val) => (
+                        <button
+                          key={val || "auto"}
+                          type="button"
+                          onClick={() => setGalleryOrientation(url, val)}
+                          className={`flex-1 text-[10px] py-1 rounded border ${
+                            orient === val
+                              ? "bg-warm-900 text-white border-warm-900"
+                              : "bg-white text-warm-600 border-warm-300 hover:border-warm-500"
+                          }`}
+                        >
+                          {val === "" ? "Auto" : val === "h" ? "Orizz." : "Vert."}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* DIMENSIONI */}

@@ -46,6 +46,7 @@ export interface Product {
   heroImage: string | null;
   sideImage: string | null;
   galleryImages: string | null;
+  galleryOrientations: string | null;
   variants: string | null;
   dimensionImage: string | null;
   techSheetUrl: string | null;

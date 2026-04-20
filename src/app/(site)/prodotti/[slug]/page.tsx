@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -202,7 +202,16 @@ export default function ProductDetailPage() {
     });
   }, [slug, lang]);
 
-  // Measure image orientations for gallery split (horizontal vs vertical)
+  // Manual orientation overrides from admin (galleryOrientations JSON: {url: "h"|"v"})
+  const manualOrientations: Record<string, "h" | "v"> = useMemo(() => {
+    if (!product?.galleryOrientations) return {};
+    try {
+      const parsed = JSON.parse(product.galleryOrientations);
+      return typeof parsed === "object" && parsed !== null ? parsed : {};
+    } catch { return {}; }
+  }, [product?.galleryOrientations]);
+
+  // Measure image orientations for gallery split — only for URLs without a manual override.
   useEffect(() => {
     if (!product?.galleryImages) return;
     let urls: string[] = [];
@@ -210,6 +219,7 @@ export default function ProductDetailPage() {
     if (urls.length === 0) return;
     let cancelled = false;
     urls.forEach((url) => {
+      if (manualOrientations[url]) return;
       const img = new window.Image();
       img.onload = () => {
         if (cancelled) return;
@@ -219,7 +229,7 @@ export default function ProductDetailPage() {
       img.src = url;
     });
     return () => { cancelled = true; };
-  }, [product?.galleryImages]);
+  }, [product?.galleryImages, manualOrientations]);
 
   if (loading) {
     return (
@@ -244,9 +254,11 @@ export default function ProductDetailPage() {
     } catch { /* ignore */ }
     return [];
   })();
-  // Split gallery by orientation; before measurement images default to horizontal.
-  const horizontalGallery = gallery.filter((u) => imageOrientations[u] !== "v");
-  const verticalGallery = gallery.filter((u) => imageOrientations[u] === "v");
+  // Split gallery by orientation — manual overrides from admin take precedence, else auto-measured.
+  const resolvedOrientation = (u: string): "h" | "v" | undefined =>
+    manualOrientations[u] || imageOrientations[u];
+  const horizontalGallery = gallery.filter((u) => resolvedOrientation(u) !== "v");
+  const verticalGallery = gallery.filter((u) => resolvedOrientation(u) === "v");
   const hasAnyGallery = horizontalGallery.length > 0 || verticalGallery.length > 0;
   const heroImg = product.heroImage || product.coverImage || product.imageUrl;
   const sideImg = product.sideImage || product.coverImage || product.imageUrl;
@@ -308,7 +320,7 @@ export default function ProductDetailPage() {
           </motion.div>
 
           {/* Right — description + actions, vertically centered */}
-          <div className="flex flex-col justify-center px-10 md:px-16 lg:px-20">
+          <div className="flex flex-col justify-center px-0 md:px-16 lg:px-20">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -414,14 +426,14 @@ export default function ProductDetailPage() {
       <section id="designer">
         {product.designer && (
           <div style={{ backgroundColor: "#f9f8f6" }}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-2 items-center">
               {/* Designer photo */}
               <motion.div
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="relative overflow-hidden aspect-[4/5]"
+                className="relative overflow-hidden aspect-[4/5] w-full"
               >
                 <Image
                   src={product.designer.imageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1000&fit=crop&crop=face"}
@@ -438,7 +450,7 @@ export default function ProductDetailPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="flex flex-col justify-center px-10 md:px-16 lg:px-[150px] py-16 lg:py-24"
+                className="flex flex-col justify-center px-0 md:px-16 lg:px-[150px] py-16 lg:py-24"
               >
                 <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">{t("prodotti.detail.designer.label")}</p>
                 <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -741,7 +753,7 @@ export default function ProductDetailPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col justify-center px-10 md:px-16 lg:pl-[135px] lg:pr-20 py-16 lg:py-24 bg-white"
+            className="flex flex-col justify-center px-0 md:px-16 lg:pl-[135px] lg:pr-20 py-16 lg:py-24 bg-white"
           >
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">{t("prodotti.detail.support.label")}</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] whitespace-pre-line">

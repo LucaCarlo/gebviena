@@ -14,7 +14,7 @@ export default function FullWidthBanner({ bannerImage }: FullWidthBannerProps) {
   const t = useT();
   const lang = useLang();
   return (
-    <section className="relative w-full" style={{ height: "85vh" }}>
+    <section className="relative w-full" style={{ height: "calc(85vh - 40px)" }}>
       {/* Background image — dark scene */}
       <Image
         src={bannerImage}
