@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
     createdAt: "createdAt",
     size: "size",
     originalName: "originalName",
+    url: "url",
   };
   const sortField = allowedSort[sortBy] || "createdAt";
 

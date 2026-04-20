@@ -62,12 +62,15 @@ export default function AdminMediaPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [totalCount, setTotalCount] = useState(0);
-  const [sortBy, setSortBy] = useState<"createdAt" | "size" | "originalName">("createdAt");
+  const [sortBy, setSortBy] = useState<"createdAt" | "size" | "originalName" | "url">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Folder counts (total across all pages)
   const [allCount, setAllCount] = useState(0);
   const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
+
+  // Products index for grouping media by product (when folder=products)
+  const [productsIndex, setProductsIndex] = useState<Record<string, string>>({});
 
   // Wasabi / sync
   const [wasabi, setWasabi] = useState<WasabiStatus | null>(null);
@@ -144,7 +147,25 @@ export default function AdminMediaPage() {
   useEffect(() => {
     fetchWasabiStatus();
     fetchCounts();
+    fetch("/api/products?limit=10000")
+      .then((r) => r.json())
+      .then((d) => {
+        const idx: Record<string, string> = {};
+        for (const p of (d.data || [])) {
+          if (p.slug) idx[p.slug] = p.name || p.slug;
+        }
+        setProductsIndex(idx);
+      })
+      .catch(() => { /* silent */ });
   }, [fetchWasabiStatus, fetchCounts]);
+
+  // Auto-sort by URL (ascending) when inside "products" folder so files group naturally by product slug.
+  useEffect(() => {
+    if (activeFolder === "products") {
+      setSortBy("url");
+      setSortOrder("asc");
+    }
+  }, [activeFolder]);
 
   /* --- upload ------------------------------------------------------- */
   const uploadFiles = async (fileList: FileList) => {
@@ -341,6 +362,185 @@ export default function AdminMediaPage() {
     return Math.round(((original - processed) / original) * 100);
   };
 
+  /* --- product slug extraction for grouping ------------------------- */
+  const getProductSlugFromUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    const m = url.match(/\/uploads\/products\/([^/]+)\//);
+    return m ? m[1] : null;
+  };
+
+  const groupedByProduct = (() => {
+    if (activeFolder !== "products") return null;
+    const byProduct: Record<string, MediaFile[]> = {};
+    const others: MediaFile[] = [];
+    for (const f of files) {
+      const slug = getProductSlugFromUrl(f.url);
+      if (slug) {
+        if (!byProduct[slug]) byProduct[slug] = [];
+        byProduct[slug].push(f);
+      } else {
+        others.push(f);
+      }
+    }
+    const keys = Object.keys(byProduct).sort((a, b) => {
+      const na = (productsIndex[a] || a).toLowerCase();
+      const nb = (productsIndex[b] || b).toLowerCase();
+      return na.localeCompare(nb);
+    });
+    return {
+      groups: keys.map((slug) => ({ slug, name: productsIndex[slug] || slug, files: byProduct[slug] })),
+      others,
+    };
+  })();
+
+  const renderCard = (file: MediaFile) => {
+    const isSelected = selected.has(file.id);
+    const savings = optimizationPercent(file.originalSize, file.size);
+    return (
+      <div
+        key={file.id}
+        className={`bg-white rounded-xl shadow-sm border overflow-hidden group transition-all ${
+          isSelected
+            ? "border-warm-800 ring-1 ring-warm-800"
+            : detailFile?.id === file.id
+              ? "border-blue-500 ring-1 ring-blue-500"
+              : "border-warm-200 hover:border-warm-300"
+        }`}
+      >
+        {/* Thumbnail */}
+        <div className="w-full h-48 relative bg-warm-50">
+          {isImage(file.mimeType) ? (
+            <button
+              onClick={() => openDetail(file)}
+              className="w-full h-full relative cursor-pointer"
+            >
+              <Image
+                src={file.thumbnailUrl || file.url}
+                alt={file.altText || file.originalName}
+                fill
+                className="object-contain p-2"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+              />
+            </button>
+          ) : (
+            <button
+              onClick={() => openDetail(file)}
+              className="w-full h-full flex items-center justify-center text-warm-300 cursor-pointer"
+            >
+              <FileText size={40} />
+            </button>
+          )}
+
+          {/* Top-left: checkbox */}
+          <button
+            onClick={() => toggleSelect(file.id)}
+            className={`absolute top-2 left-2 p-0.5 rounded transition-all ${
+              isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            }`}
+          >
+            {isSelected ? (
+              <CheckSquare size={20} className="text-warm-800 drop-shadow" />
+            ) : (
+              <Square size={20} className="text-white drop-shadow" />
+            )}
+          </button>
+
+          {/* Top-right: sync status icon */}
+          <div className="absolute top-2 right-2 flex items-center gap-1">
+            {file.isSynced ? (
+              <span
+                title={`Sincronizzato il ${file.syncedAt ? formatDate(file.syncedAt) : ""}`}
+                className="p-1 bg-white/90 rounded-lg shadow-sm"
+              >
+                <CheckCircle2 size={14} className="text-emerald-600" />
+              </span>
+            ) : (
+              <button
+                onClick={() => handleSyncSingle(file.id)}
+                disabled={syncing}
+                title="Sincronizza su Wasabi"
+                className="p-1 bg-white/90 rounded-lg shadow-sm text-warm-400 hover:text-blue-600 transition-colors disabled:opacity-50"
+              >
+                <CloudUpload size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Dimensions badge */}
+          {file.width && file.height && (
+            <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-all">
+              <ImageIcon size={10} />
+              {file.width}&times;{file.height}
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="p-3">
+          <p
+            className="text-sm font-medium text-warm-800 truncate"
+            title={file.originalName}
+          >
+            {file.originalName}
+          </p>
+
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-xs text-warm-400">{formatSize(file.size)}</span>
+            <span className="text-xs text-warm-400">{formatDate(file.createdAt)}</span>
+          </div>
+
+          {/* Optimization stats */}
+          {file.originalSize && file.originalSize > file.size && (
+            <div className="mt-1.5">
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="text-warm-400">
+                  {formatSize(file.originalSize)} &rarr; {formatSize(file.size)}
+                </span>
+                {savings !== null && (
+                  <span className="text-emerald-600 font-semibold">
+                    -{savings}%
+                  </span>
+                )}
+              </div>
+              {savings !== null && (
+                <div className="w-full bg-warm-100 rounded-full h-1 mt-1 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full"
+                    style={{ width: `${savings}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Variants indicator */}
+          {(file.thumbnailUrl || file.mediumUrl) && (
+            <div className="mt-1.5 flex items-center gap-1">
+              <Info size={10} className="text-blue-400 shrink-0" />
+              <span className="text-[10px] text-blue-500">
+                {[file.thumbnailUrl && "thumb", file.mediumUrl && "medium"].filter(Boolean).join(" + ")} + large
+              </span>
+            </div>
+          )}
+
+          {/* Sync status line */}
+          <div className="mt-1 flex items-center gap-1">
+            {file.isSynced ? (
+              <>
+                <CheckCircle2 size={11} className="text-emerald-500 shrink-0" />
+                <span className="text-[10px] text-emerald-600">Sincronizzato</span>
+              </>
+            ) : (
+              <>
+                <CloudOff size={11} className="text-warm-300 shrink-0" />
+                <span className="text-[10px] text-warm-400">Non sincronizzato</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   /* --- render ------------------------------------------------------- */
   return (
@@ -570,6 +770,7 @@ export default function AdminMediaPage() {
                 <option value="createdAt">Data upload</option>
                 <option value="size">Dimensione</option>
                 <option value="originalName">Nome</option>
+                <option value="url">Prodotto (path)</option>
               </select>
               <select
                 value={sortOrder}
@@ -639,162 +840,49 @@ export default function AdminMediaPage() {
               Clicca o trascina file qui per caricarli
             </p>
           </div>
+        ) : groupedByProduct ? (
+          <div className="space-y-8">
+            {groupedByProduct.groups.length === 0 && groupedByProduct.others.length === files.length ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {files.map(renderCard)}
+              </div>
+            ) : (
+              <>
+                {groupedByProduct.groups.map((g) => (
+                  <div key={g.slug}>
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-warm-200">
+                      <FolderOpen size={15} className="text-warm-500 shrink-0" />
+                      <h3 className="text-sm font-semibold text-warm-800">{g.name}</h3>
+                      <span className="text-xs text-warm-400 font-normal">/{g.slug}</span>
+                      <span className="ml-auto text-xs text-warm-500 bg-warm-100 px-2 py-0.5 rounded-full">
+                        {g.files.length} {g.files.length === 1 ? "file" : "file"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                      {g.files.map(renderCard)}
+                    </div>
+                  </div>
+                ))}
+                {groupedByProduct.others.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-warm-200">
+                      <FolderOpen size={15} className="text-warm-400 shrink-0" />
+                      <h3 className="text-sm font-semibold text-warm-600">Altri (senza prodotto)</h3>
+                      <span className="ml-auto text-xs text-warm-500 bg-warm-100 px-2 py-0.5 rounded-full">
+                        {groupedByProduct.others.length}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                      {groupedByProduct.others.map(renderCard)}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {files.map((file) => {
-              const isSelected = selected.has(file.id);
-              const savings = optimizationPercent(file.originalSize, file.size);
-
-              return (
-                <div
-                  key={file.id}
-                  className={`bg-white rounded-xl shadow-sm border overflow-hidden group transition-all ${
-                    isSelected
-                      ? "border-warm-800 ring-1 ring-warm-800"
-                      : detailFile?.id === file.id
-                        ? "border-blue-500 ring-1 ring-blue-500"
-                        : "border-warm-200 hover:border-warm-300"
-                  }`}
-                >
-                  {/* Thumbnail */}
-                  <div className="w-full h-48 relative bg-warm-50">
-                    {isImage(file.mimeType) ? (
-                      <button
-                        onClick={() => openDetail(file)}
-                        className="w-full h-full relative cursor-pointer"
-                      >
-                        <Image
-                          src={file.thumbnailUrl || file.url}
-                          alt={file.altText || file.originalName}
-                          fill
-                          className="object-contain p-2"
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                        />
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => openDetail(file)}
-                        className="w-full h-full flex items-center justify-center text-warm-300 cursor-pointer"
-                      >
-                        <FileText size={40} />
-                      </button>
-                    )}
-
-                    {/* Top-left: checkbox */}
-                    <button
-                      onClick={() => toggleSelect(file.id)}
-                      className={`absolute top-2 left-2 p-0.5 rounded transition-all ${
-                        isSelected
-                          ? "opacity-100"
-                          : "opacity-0 group-hover:opacity-100"
-                      }`}
-                    >
-                      {isSelected ? (
-                        <CheckSquare size={20} className="text-warm-800 drop-shadow" />
-                      ) : (
-                        <Square
-                          size={20}
-                          className="text-white drop-shadow"
-                        />
-                      )}
-                    </button>
-
-                    {/* Top-right: sync status icon */}
-                    <div className="absolute top-2 right-2 flex items-center gap-1">
-                      {file.isSynced ? (
-                        <span
-                          title={`Sincronizzato il ${file.syncedAt ? formatDate(file.syncedAt) : ""}`}
-                          className="p-1 bg-white/90 rounded-lg shadow-sm"
-                        >
-                          <CheckCircle2 size={14} className="text-emerald-600" />
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleSyncSingle(file.id)}
-                          disabled={syncing}
-                          title="Sincronizza su Wasabi"
-                          className="p-1 bg-white/90 rounded-lg shadow-sm text-warm-400 hover:text-blue-600 transition-colors disabled:opacity-50"
-                        >
-                          <CloudUpload size={14} />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Dimensions badge */}
-                    {file.width && file.height && (
-                      <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-all">
-                        <ImageIcon size={10} />
-                        {file.width}&times;{file.height}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="p-3">
-                    <p
-                      className="text-sm font-medium text-warm-800 truncate"
-                      title={file.originalName}
-                    >
-                      {file.originalName}
-                    </p>
-
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-warm-400">{formatSize(file.size)}</span>
-                      <span className="text-xs text-warm-400">{formatDate(file.createdAt)}</span>
-                    </div>
-
-                    {/* Optimization stats */}
-                    {file.originalSize && file.originalSize > file.size && (
-                      <div className="mt-1.5">
-                        <div className="flex items-center justify-between text-[10px]">
-                          <span className="text-warm-400">
-                            {formatSize(file.originalSize)} &rarr; {formatSize(file.size)}
-                          </span>
-                          {savings !== null && (
-                            <span className="text-emerald-600 font-semibold">
-                              -{savings}%
-                            </span>
-                          )}
-                        </div>
-                        {savings !== null && (
-                          <div className="w-full bg-warm-100 rounded-full h-1 mt-1 overflow-hidden">
-                            <div
-                              className="h-full bg-emerald-500 rounded-full"
-                              style={{ width: `${savings}%` }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Variants indicator */}
-                    {(file.thumbnailUrl || file.mediumUrl) && (
-                      <div className="mt-1.5 flex items-center gap-1">
-                        <Info size={10} className="text-blue-400 shrink-0" />
-                        <span className="text-[10px] text-blue-500">
-                          {[file.thumbnailUrl && "thumb", file.mediumUrl && "medium"].filter(Boolean).join(" + ")} + large
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Sync status line */}
-                    <div className="mt-1 flex items-center gap-1">
-                      {file.isSynced ? (
-                        <>
-                          <CheckCircle2 size={11} className="text-emerald-500 shrink-0" />
-                          <span className="text-[10px] text-emerald-600">Sincronizzato</span>
-                        </>
-                      ) : (
-                        <>
-                          <CloudOff size={11} className="text-warm-300 shrink-0" />
-                          <span className="text-[10px] text-warm-400">Non sincronizzato</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {files.map(renderCard)}
           </div>
         )}
       </div>

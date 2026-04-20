@@ -210,6 +210,14 @@ export default function AdminProductsPage() {
       { key: "designer", label: "Tutti i designer", options: designers.map((d) => ({ value: d, label: d })) },
       { key: "category", label: "Tutte le tipologie", options: categories.map((c) => ({ value: c, label: c })) },
       { key: "subcategory", label: "Tutte le categorie", options: subcategories.map((s) => ({ value: s, label: s })) },
+      {
+        key: "techSheet",
+        label: "Tutte le schede tecniche",
+        options: [
+          { value: "with", label: "Con scheda tecnica" },
+          { value: "without", label: "Senza scheda tecnica" },
+        ],
+      },
     ];
   }, [products]);
 
@@ -220,6 +228,8 @@ export default function AdminProductsPage() {
     if (activeFilters.designer) result = result.filter((p) => p.designerName === activeFilters.designer);
     if (activeFilters.category) result = result.filter((p) => p.category?.includes(activeFilters.category));
     if (activeFilters.subcategory) result = result.filter((p) => p.subcategory === activeFilters.subcategory);
+    if (activeFilters.techSheet === "with") result = result.filter((p) => !!p.techSheetUrl);
+    if (activeFilters.techSheet === "without") result = result.filter((p) => !p.techSheetUrl);
     return result;
   }, [products, search, activeFilters]);
 
