@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { slugify } from "@/lib/utils";
-import { Plus, X, Upload, FileText, Trash2 } from "lucide-react";
+import { Plus, X, Upload, FileText, Trash2, ImageIcon } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
 import GalleryUploadField from "./GalleryUploadField";
+import MediaPickerModal from "./MediaPickerModal";
 import SeoPanel from "./SeoPanel";
 import PconConfigurator from "./PconConfigurator";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
@@ -916,6 +917,7 @@ function PdfUploadField({
   folder?: string;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -961,20 +963,37 @@ function PdfUploadField({
           </button>
         </div>
       ) : (
-        <label className="flex items-center gap-2 px-4 py-3 border border-dashed border-warm-300 rounded-lg cursor-pointer hover:border-warm-500 transition-colors">
-          <Upload size={16} className="text-warm-400" />
-          <span className="text-sm text-warm-500">
-            {uploading ? "Caricamento..." : `Carica PDF ${label.toLowerCase()}`}
-          </span>
-          <input
-            type="file"
-            accept=".pdf,application/pdf"
-            onChange={handleUpload}
-            className="hidden"
-            disabled={uploading}
-          />
-        </label>
+        <div className="flex gap-2">
+          <label className="flex-1 flex items-center gap-2 px-4 py-3 border border-dashed border-warm-300 rounded-lg cursor-pointer hover:border-warm-500 transition-colors">
+            <Upload size={16} className="text-warm-400" />
+            <span className="text-sm text-warm-500">
+              {uploading ? "Caricamento..." : `Carica PDF ${label.toLowerCase()}`}
+            </span>
+            <input
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={handleUpload}
+              className="hidden"
+              disabled={uploading}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="flex items-center gap-2 px-4 py-3 border border-warm-300 rounded-lg text-sm text-warm-600 hover:bg-warm-50 hover:border-warm-400 transition-colors"
+          >
+            <ImageIcon size={16} />
+            Da Media
+          </button>
+        </div>
       )}
+      <MediaPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(urls) => { if (urls[0]) onChange(urls[0]); }}
+        imagesOnly={false}
+        defaultFolder="products"
+      />
     </div>
   );
 }
@@ -996,6 +1015,7 @@ function FileUploadField({
   fileLabel?: string;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1041,20 +1061,37 @@ function FileUploadField({
           </button>
         </div>
       ) : (
-        <label className="flex items-center gap-2 px-4 py-3 border border-dashed border-warm-300 rounded-lg cursor-pointer hover:border-warm-500 transition-colors">
-          <Upload size={16} className="text-warm-400" />
-          <span className="text-sm text-warm-500">
-            {uploading ? "Caricamento..." : `Carica ${fileLabel} ${label.toLowerCase()}`}
-          </span>
-          <input
-            type="file"
-            accept={accept}
-            onChange={handleUpload}
-            className="hidden"
-            disabled={uploading}
-          />
-        </label>
+        <div className="flex gap-2">
+          <label className="flex-1 flex items-center gap-2 px-4 py-3 border border-dashed border-warm-300 rounded-lg cursor-pointer hover:border-warm-500 transition-colors">
+            <Upload size={16} className="text-warm-400" />
+            <span className="text-sm text-warm-500">
+              {uploading ? "Caricamento..." : `Carica ${fileLabel} ${label.toLowerCase()}`}
+            </span>
+            <input
+              type="file"
+              accept={accept}
+              onChange={handleUpload}
+              className="hidden"
+              disabled={uploading}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="flex items-center gap-2 px-4 py-3 border border-warm-300 rounded-lg text-sm text-warm-600 hover:bg-warm-50 hover:border-warm-400 transition-colors"
+          >
+            <ImageIcon size={16} />
+            Da Media
+          </button>
+        </div>
       )}
+      <MediaPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(urls) => { if (urls[0]) onChange(urls[0]); }}
+        imagesOnly={false}
+        defaultFolder="products"
+      />
     </div>
   );
 }

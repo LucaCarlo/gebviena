@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import { X, Search, Check, FolderOpen } from "lucide-react";
+import { X, Search, Check, FolderOpen, FileText } from "lucide-react";
 import { MEDIA_FOLDERS } from "@/lib/constants";
 import type { MediaFile } from "@/types";
 
@@ -11,6 +11,8 @@ interface MediaPickerModalProps {
   onClose: () => void;
   onSelect: (urls: string[]) => void;
   multiple?: boolean;
+  imagesOnly?: boolean;
+  defaultFolder?: string;
 }
 
 const PAGE_SIZE = 50;
@@ -20,15 +22,30 @@ export default function MediaPickerModal({
   onClose,
   onSelect,
   multiple = false,
+  imagesOnly = true,
+  defaultFolder,
 }: MediaPickerModalProps) {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [activeFolder, setActiveFolder] = useState("");
+  const [activeFolder, setActiveFolder] = useState(defaultFolder || "");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [productsIndex, setProductsIndex] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/products?limit=10000")
+      .then((r) => r.json())
+      .then((d) => {
+        const idx: Record<string, string> = {};
+        for (const p of (d.data || [])) if (p.slug) idx[p.slug] = p.name || p.slug;
+        setProductsIndex(idx);
+      })
+      .catch(() => { /* silent */ });
+  }, [open]);
 
   const fetchPage = useCallback(
     async (pageToLoad: number) => {
@@ -37,6 +54,10 @@ export default function MediaPickerModal({
       if (search) params.set("search", search);
       params.set("page", String(pageToLoad));
       params.set("pageSize", String(PAGE_SIZE));
+      if (activeFolder === "products") {
+        params.set("sortBy", "url");
+        params.set("sortOrder", "asc");
+      }
       const res = await fetch(`/api/media?${params}`);
       return res.json();
     },
@@ -73,9 +94,10 @@ export default function MediaPickerModal({
   useEffect(() => {
     if (open) {
       setSelected(new Set());
+      if (defaultFolder !== undefined) setActiveFolder(defaultFolder);
       loadFirstPage();
     }
-  }, [open, loadFirstPage]);
+  }, [open, loadFirstPage, defaultFolder]);
 
   const hasMore = files.length < total;
 
@@ -164,9 +186,13 @@ export default function MediaPickerModal({
             </div>
           ) : (
             <>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-              {files.filter((f) => f.mimeType.startsWith("image/")).map((file) => {
+            {(() => {
+              const visibleFiles = imagesOnly
+                ? files.filter((f) => f.mimeType.startsWith("image/"))
+                : files;
+              const renderTile = (file: MediaFile) => {
                 const isSelected = selected.has(file.url);
+                const isImg = file.mimeType.startsWith("image/");
                 return (
                   <button
                     key={file.id}
@@ -178,13 +204,22 @@ export default function MediaPickerModal({
                         : "border-warm-200 hover:border-warm-400"
                     }`}
                   >
-                    <Image
-                      src={file.url}
-                      alt={file.originalName}
-                      fill
-                      className="object-cover"
-                      sizes="150px"
-                    />
+                    {isImg ? (
+                      <Image
+                        src={file.url}
+                        alt={file.originalName}
+                        fill
+                        className="object-cover"
+                        sizes="150px"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-warm-50 p-2">
+                        <FileText size={28} className="text-warm-400" />
+                        <span className="text-[9px] text-warm-600 font-medium uppercase">
+                          {(file.originalName.split(".").pop() || "file").slice(0, 4)}
+                        </span>
+                      </div>
+                    )}
                     {isSelected && (
                       <div className="absolute inset-0 bg-warm-800/30 flex items-center justify-center">
                         <div className="w-7 h-7 bg-warm-800 rounded-full flex items-center justify-center">
@@ -197,8 +232,64 @@ export default function MediaPickerModal({
                     </div>
                   </button>
                 );
-              })}
-            </div>
+              };
+
+              if (activeFolder === "products") {
+                const byProduct: Record<string, MediaFile[]> = {};
+                const others: MediaFile[] = [];
+                for (const f of visibleFiles) {
+                  const m = f.url.match(/\/uploads\/products\/([^/]+)\//);
+                  if (m) {
+                    if (!byProduct[m[1]]) byProduct[m[1]] = [];
+                    byProduct[m[1]].push(f);
+                  } else {
+                    others.push(f);
+                  }
+                }
+                const keys = Object.keys(byProduct).sort((a, b) => {
+                  const na = (productsIndex[a] || a).toLowerCase();
+                  const nb = (productsIndex[b] || b).toLowerCase();
+                  return na.localeCompare(nb);
+                });
+                return (
+                  <div className="space-y-5">
+                    {keys.map((slug) => (
+                      <div key={slug}>
+                        <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-warm-200">
+                          <FolderOpen size={13} className="text-warm-500 shrink-0" />
+                          <h3 className="text-xs font-semibold text-warm-800">{productsIndex[slug] || slug}</h3>
+                          <span className="text-[10px] text-warm-400 font-normal">/{slug}</span>
+                          <span className="ml-auto text-[10px] text-warm-500 bg-warm-100 px-1.5 py-0.5 rounded-full">
+                            {byProduct[slug].length}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                          {byProduct[slug].map(renderTile)}
+                        </div>
+                      </div>
+                    ))}
+                    {others.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-warm-200">
+                          <FolderOpen size={13} className="text-warm-400 shrink-0" />
+                          <h3 className="text-xs font-semibold text-warm-600">Altri (senza prodotto)</h3>
+                          <span className="ml-auto text-[10px] text-warm-500 bg-warm-100 px-1.5 py-0.5 rounded-full">{others.length}</span>
+                        </div>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                          {others.map(renderTile)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                  {visibleFiles.map(renderTile)}
+                </div>
+              );
+            })()}
             {hasMore && (
               <div className="flex justify-center mt-5">
                 <button
