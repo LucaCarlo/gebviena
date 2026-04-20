@@ -648,6 +648,7 @@ model MediaFileTranslation {
 model PointOfSale {
   id        String   @id @default(cuid())
   name      String
+  agentName String?  @db.Text
   type      String
   address   String @db.Text
   city      String

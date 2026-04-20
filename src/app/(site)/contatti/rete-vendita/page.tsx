@@ -290,6 +290,14 @@ export default function ReteVenditaPage() {
                       >
                         {store.name}
                       </h3>
+                      {store.type === "AGENT" && store.agentName && (
+                        <p
+                          className="text-sm md:text-base italic mb-1"
+                          style={{ color: "#000000" }}
+                        >
+                          {store.agentName}
+                        </p>
+                      )}
                       <p
                         className="text-sm md:text-base leading-relaxed"
                         style={{ color: "#000000" }}

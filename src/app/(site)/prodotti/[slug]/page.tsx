@@ -92,11 +92,14 @@ function InspirationCarousel({ images, productName, id }: { images: string[]; pr
     if (el && isDragging) {
       const moved = Math.abs(e.pageX - el.offsetLeft - startX);
       if (moved < 5) {
-        const itemWidth = Math.max(el.clientWidth / 3, 260);
+        const firstCard = el.querySelector<HTMLElement>("[data-slide-card]");
+        const cardWidth = firstCard ? firstCard.getBoundingClientRect().width : el.clientWidth / 3;
+        const gap = window.innerWidth >= 1024 ? 24 : 16;
+        const step = cardWidth + gap;
         const rect = el.getBoundingClientRect();
         const cx = e.clientX - rect.left;
-        if (cx < rect.width / 3) el.scrollBy({ left: -itemWidth, behavior: "smooth" });
-        else if (cx > (rect.width * 2) / 3) el.scrollBy({ left: itemWidth, behavior: "smooth" });
+        if (cx < rect.width / 3) el.scrollBy({ left: -step, behavior: "smooth" });
+        else if (cx > (rect.width * 2) / 3) el.scrollBy({ left: step, behavior: "smooth" });
       }
     }
     setIsDragging(false);
@@ -113,16 +116,17 @@ function InspirationCarousel({ images, productName, id }: { images: string[]; pr
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={(e) => { handleMouseUp(e); setHoverSide(null); }}
-          className={`flex gap-4 lg:gap-6 overflow-x-auto px-4 lg:px-6 pb-2 ${isDragging ? "select-none" : ""}`}
+          className={`flex gap-4 lg:gap-6 overflow-x-auto px-4 lg:px-6 pb-2 snap-x snap-mandatory scroll-smooth ${isDragging ? "select-none" : ""}`}
           style={{ scrollbarWidth: "none", msOverflowStyle: "none", cursor: ARROW_CURSOR }}
         >
           {images.map((url, i) => (
             <div
               key={i}
-              className="flex-shrink-0"
+              data-slide-card
+              className="flex-shrink-0 snap-start"
             >
               <div
-                className="relative overflow-hidden w-[62vw] min-w-[140px] max-w-[260px] sm:w-[38vw] sm:min-w-[180px] sm:max-w-[300px] lg:w-[calc(28vw-14px)] lg:min-w-[242px] lg:max-w-[360px]"
+                className="relative overflow-hidden w-[85vw] max-w-[360px] sm:w-[calc(50vw-24px)] sm:max-w-[420px] lg:w-[calc((100vw-96px)/3)] lg:max-w-[480px]"
                 style={{ aspectRatio: "2.5 / 4" }}
               >
                 <Image

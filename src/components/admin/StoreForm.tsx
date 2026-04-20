@@ -17,6 +17,7 @@ export default function StoreForm({ storeId, defaultType = "STORE", backUrl }: S
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "",
+    agentName: "",
     type: defaultType,
     address: "",
     city: "",
@@ -36,6 +37,7 @@ export default function StoreForm({ storeId, defaultType = "STORE", backUrl }: S
       const s: PointOfSale = data.data;
       setForm({
         name: s.name,
+        agentName: s.agentName || "",
         type: s.type,
         address: s.address,
         city: s.city,
@@ -162,6 +164,21 @@ export default function StoreForm({ storeId, defaultType = "STORE", backUrl }: S
             required
           />
         </div>
+
+        {form.type === "AGENT" && (
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+              Nome agente
+            </label>
+            <input
+              type="text"
+              value={form.agentName}
+              onChange={(e) => updateField("agentName", e.target.value)}
+              placeholder="Nome del referente / persona di contatto"
+              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+            />
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>

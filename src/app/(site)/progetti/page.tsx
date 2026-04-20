@@ -40,7 +40,7 @@ function ProjectsHero() {
 
   if (loaded && slides.length === 0) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900 h-[calc(100vh-7.5rem+2px)] max-md:h-[55vh]">
+      <section className="relative w-full flex items-center justify-center bg-warm-900 h-[calc(100vh-7.5rem-48px)] max-md:h-[55vh]">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -56,7 +56,7 @@ function ProjectsHero() {
 
   if (!loaded) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900 h-[calc(100vh-7.5rem+2px)] max-md:h-[55vh]">
+      <section className="relative w-full flex items-center justify-center bg-warm-900 h-[calc(100vh-7.5rem-48px)] max-md:h-[55vh]">
         <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
       </section>
     );
@@ -75,7 +75,7 @@ function ProjectsHero() {
     "top-[46%] -translate-y-1/2";
 
   return (
-    <section className="relative w-full overflow-hidden h-[calc(100vh-7.5rem+2px)] max-md:h-[55vh]">
+    <section className="relative w-full overflow-hidden h-[calc(100vh-7.5rem-48px)] max-md:h-[55vh]">
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}

@@ -1,6 +1,7 @@
 export interface PointOfSale {
   id: string;
   name: string;
+  agentName: string | null;
   type: "STORE" | "AGENT";
   address: string;
   city: string;
