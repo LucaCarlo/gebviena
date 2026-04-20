@@ -42,7 +42,7 @@ function ProductsHero() {
   // Fallback: static hero if no slides configured
   if (loaded && slides.length === 0) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-900 h-[min(calc(113vh-70px),987px)] max-md:h-[55vh]">
+      <section className="relative w-full flex items-center justify-center bg-warm-900 h-[min(calc(113vh-110px),947px)] max-md:h-[55vh]">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -58,7 +58,7 @@ function ProductsHero() {
 
   if (!loaded) {
     return (
-      <section className="relative w-full flex items-center justify-center bg-warm-100 h-[min(calc(113vh-70px),987px)] max-md:h-[55vh]">
+      <section className="relative w-full flex items-center justify-center bg-warm-100 h-[min(calc(113vh-110px),947px)] max-md:h-[55vh]">
         <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
       </section>
     );
@@ -77,7 +77,7 @@ function ProductsHero() {
     "top-[46%] -translate-y-1/2";
 
   return (
-    <section className="relative w-full overflow-hidden h-[min(calc(113vh-70px),987px)] max-md:h-[55vh]">
+    <section className="relative w-full overflow-hidden h-[min(calc(113vh-110px),947px)] max-md:h-[55vh]">
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}

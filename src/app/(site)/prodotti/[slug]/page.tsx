@@ -426,14 +426,14 @@ export default function ProductDetailPage() {
       <section id="designer">
         {product.designer && (
           <div style={{ backgroundColor: "#f9f8f6" }}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
               {/* Designer photo */}
               <motion.div
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="relative overflow-hidden aspect-[4/5] w-full"
+                className="relative overflow-hidden w-full aspect-[4/5] lg:aspect-auto lg:h-full"
               >
                 <Image
                   src={product.designer.imageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1000&fit=crop&crop=face"}
