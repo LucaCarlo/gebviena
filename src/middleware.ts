@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { translateSegmentsBackward, translateSegmentsForward } from "@/lib/path-segments";
 
-const KNOWN_PREFIXES = ["en", "de", "fr"];
+const KNOWN_PREFIXES = ["en", "de", "fr", "es"];
 const DEFAULT_LANG = "it";
 const LANG_COOKIE = "gtv_lang";
 

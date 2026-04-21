@@ -163,6 +163,7 @@ async function main() {
     { code: "en", name: "English", nativeName: "English", flag: "🇬🇧", isDefault: false, sortOrder: 1 },
     { code: "de", name: "Tedesco", nativeName: "Deutsch", flag: "🇩🇪", isDefault: false, sortOrder: 2 },
     { code: "fr", name: "Francese", nativeName: "Français", flag: "🇫🇷", isDefault: false, sortOrder: 3 },
+    { code: "es", name: "Spagnolo", nativeName: "Español", flag: "🇪🇸", isDefault: false, sortOrder: 4 },
   ];
 
   for (const l of languages) {

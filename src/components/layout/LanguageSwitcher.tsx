@@ -6,10 +6,11 @@ import { useLang } from "@/contexts/I18nContext";
 import { translateSegmentsBackward, translateSegmentsForward, DEFAULT_LANG } from "@/lib/path-segments";
 
 const LANG_NAMES: Record<string, Record<string, string>> = {
-  it: { it: "Italiano", en: "Inglese", de: "Tedesco", fr: "Francese" },
-  en: { it: "Italian", en: "English", de: "German", fr: "French" },
-  de: { it: "Italienisch", en: "Englisch", de: "Deutsch", fr: "Französisch" },
-  fr: { it: "Italien", en: "Anglais", de: "Allemand", fr: "Français" },
+  it: { it: "Italiano", en: "Inglese", de: "Tedesco", fr: "Francese", es: "Spagnolo" },
+  en: { it: "Italian", en: "English", de: "German", fr: "French", es: "Spanish" },
+  de: { it: "Italienisch", en: "Englisch", de: "Deutsch", fr: "Französisch", es: "Spanisch" },
+  fr: { it: "Italien", en: "Anglais", de: "Allemand", fr: "Français", es: "Espagnol" },
+  es: { it: "Italiano", en: "Inglés", de: "Alemán", fr: "Francés", es: "Español" },
 };
 function localizedName(code: string, uiLang: string, fallback: string): string {
   return LANG_NAMES[uiLang]?.[code] || fallback;

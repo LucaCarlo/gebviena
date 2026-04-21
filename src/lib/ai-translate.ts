@@ -44,7 +44,7 @@ async function loadAISettings(): Promise<AISettings> {
 
 const LANG_NAMES: Record<string, string> = {
   it: "Italian", en: "English", de: "German", fr: "French",
-  es: "Spanish", pt: "Portuguese", nl: "Dutch", ru: "Russian",
+  es: "Spanish (Castilian, from Spain — NOT Latin American)", pt: "Portuguese", nl: "Dutch", ru: "Russian",
 };
 
 function langName(code: string): string {

@@ -16,7 +16,7 @@ interface Redirect {
   createdAt: string;
 }
 
-const LANG_PREFIX_RE = /^\/(en|de|fr)(\/|$)/;
+const LANG_PREFIX_RE = /^\/(en|de|fr|es)(\/|$)/;
 
 function langOf(path: string): string {
   const m = path.match(LANG_PREFIX_RE);
@@ -34,6 +34,7 @@ const LANG_LABEL: Record<string, string> = {
   en: "🇬🇧 Inglese (/en/)",
   de: "🇩🇪 Tedesco (/de/)",
   fr: "🇫🇷 Francese (/fr/)",
+  es: "🇪🇸 Spagnolo (/es/)",
 };
 
 type SortKey = "created_desc" | "hits_desc" | "last_hit_desc" | "from_asc";
@@ -172,7 +173,7 @@ export default function RedirectsPage() {
       {
         key: "language",
         label: "Tutte le lingue",
-        options: ["it", "en", "de", "fr"]
+        options: ["it", "en", "de", "fr", "es"]
           .filter((l) => langCounts.has(l))
           .map((l) => ({ value: l, label: `${LANG_LABEL[l]} (${langCounts.get(l)})` })),
       },
