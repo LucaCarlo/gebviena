@@ -322,14 +322,28 @@ export default function ProjectDetailPage() {
   );
 }
 
-/* ─── Vertical Carousel — horizontal scroll of vertical images (product-page style) ─── */
+/* ─── Vertical Carousel — same style as product page InspirationCarousel ─── */
 function VerticalCarousel({ images, projectName }: { images: string[]; projectName: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
+  const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
+  const [altMap, setAltMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (images.length === 0) return;
+    fetch("/api/media/alt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: images }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setAltMap(d.data || {}); })
+      .catch(() => { /* silent */ });
+  }, [images]);
 
   const ARROW_CURSOR = hoverSide === "left"
     ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='21' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M28 22 L16 22 M21 17 L16 22 L21 27' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 22 22, pointer"
@@ -383,11 +397,14 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
     if (el && isDragging) {
       const moved = Math.abs(e.pageX - el.offsetLeft - startX);
       if (moved < 5) {
-        const itemWidth = Math.max(el.clientWidth / 3, 260);
+        const firstCard = el.querySelector<HTMLElement>("[data-slide-card]");
+        const cardWidth = firstCard ? firstCard.getBoundingClientRect().width : el.clientWidth / 3;
+        const gap = window.innerWidth >= 1024 ? 24 : 16;
+        const step = cardWidth + gap;
         const rect = el.getBoundingClientRect();
         const cx = e.clientX - rect.left;
-        if (cx < rect.width / 3) el.scrollBy({ left: -itemWidth, behavior: "smooth" });
-        else if (cx > (rect.width * 2) / 3) el.scrollBy({ left: itemWidth, behavior: "smooth" });
+        if (cx < rect.width / 3) el.scrollBy({ left: -step, behavior: "smooth" });
+        else if (cx > (rect.width * 2) / 3) el.scrollBy({ left: step, behavior: "smooth" });
       }
     }
     setIsDragging(false);
@@ -404,26 +421,40 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={(e) => { handleMouseUp(e); setHoverSide(null); }}
-          className={`flex gap-4 lg:gap-6 overflow-x-auto px-4 lg:px-6 pb-2 ${isDragging ? "select-none" : ""}`}
+          className={`flex gap-4 lg:gap-6 overflow-x-auto px-4 lg:px-6 pb-2 snap-x snap-mandatory scroll-smooth ${isDragging ? "select-none" : ""}`}
           style={{ scrollbarWidth: "none", msOverflowStyle: "none", cursor: ARROW_CURSOR }}
         >
           {images.map((url, i) => (
             <div
               key={i}
-              className="flex-shrink-0"
+              data-slide-card
+              className="flex-shrink-0 snap-start"
             >
               <div
-                className="relative overflow-hidden w-[62vw] min-w-[140px] max-w-[260px] sm:w-[38vw] sm:min-w-[180px] sm:max-w-[300px] lg:w-[calc(28vw-14px)] lg:min-w-[242px] lg:max-w-[360px]"
+                className="relative overflow-hidden w-[85vw] max-w-[360px] sm:w-[calc(50vw-24px)] sm:max-w-[420px] lg:w-[calc((100vw-96px)/3)] lg:max-w-[480px]"
                 style={{ aspectRatio: "2.5 / 4" }}
               >
                 <Image
                   src={url}
-                  alt={`${projectName} ${i + 1}`}
+                  alt={altMap[url] || `${projectName} ${i + 1}`}
                   fill
                   className="object-cover"
                   draggable={false}
                   sizes="45vw"
                 />
+                {/* Tooltip bubble */}
+                {activeTooltip === i && (
+                  <div className="absolute bottom-14 left-4 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug">
+                    {altMap[url] || `${projectName} ${i + 1}`}
+                    <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
+                  </div>
+                )}
+                <button
+                  className="absolute bottom-4 left-4 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center hover:bg-warm-100 transition-colors shadow-sm"
+                  onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === i ? null : i); }}
+                >
+                  i
+                </button>
               </div>
             </div>
           ))}

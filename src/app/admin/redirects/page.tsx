@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { ArrowRight, Plus, Trash2, Check, AlertCircle, Loader2, Power, ExternalLink, Pencil, X, ArrowUpDown } from "lucide-react";
+import { ArrowRight, Plus, Trash2, Check, AlertCircle, Loader2, Power, ExternalLink, Pencil, X, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import AdminListFilters from "@/components/admin/AdminListFilters";
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100, 200];
 
 interface Redirect {
   id: string;
@@ -63,6 +65,8 @@ export default function RedirectsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ fromPath: "", toPath: "", statusCode: 301, note: "" });
   const [toast, setToast] = useState<Toast | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
   const showToast = useCallback((message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -236,6 +240,17 @@ export default function RedirectsPage() {
     return sorted;
   }, [redirects, search, activeFilters, sort]);
 
+  // Reset to page 1 whenever filters/search/sort/pageSize change
+  useEffect(() => {
+    setPage(1);
+  }, [search, activeFilters, sort, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageEnd = pageStart + pageSize;
+  const paginated = useMemo(() => filtered.slice(pageStart, pageEnd), [filtered, pageStart, pageEnd]);
+
   return (
     <div>
       {toast && (
@@ -374,7 +389,7 @@ export default function RedirectsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
-              {filtered.map((r) => (
+              {paginated.map((r) => (
                 <tr key={r.id} className={`hover:bg-warm-50 ${!r.enabled ? "opacity-50" : ""}`}>
                   {editingId === r.id ? (
                     <>
@@ -494,6 +509,49 @@ export default function RedirectsPage() {
               ))}
             </tbody>
           </table>
+
+          {filtered.length > pageSize && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-warm-200 bg-warm-50">
+              <div className="text-xs text-warm-600">
+                {pageStart + 1}–{Math.min(pageEnd, filtered.length)} di {filtered.length}
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold text-warm-600 uppercase tracking-wider">Per pagina</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(parseInt(e.target.value))}
+                    className="border border-warm-300 rounded px-2 py-1 text-xs text-warm-700 bg-white focus:border-warm-800 focus:outline-none"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-1.5 rounded border border-warm-300 text-warm-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                    aria-label="Pagina precedente"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <span className="text-xs text-warm-700 px-2">
+                    Pagina <strong>{currentPage}</strong> di {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-1.5 rounded border border-warm-300 text-warm-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                    aria-label="Pagina successiva"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
