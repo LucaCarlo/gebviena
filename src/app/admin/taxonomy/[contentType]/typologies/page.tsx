@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import { Plus, Pencil, Trash2, X, Check } from "lucide-react";
 import InlineLabelTranslator from "@/components/admin/InlineLabelTranslator";
+import BulkTranslator from "@/components/admin/BulkTranslator";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 
 interface Typology {
@@ -21,6 +22,7 @@ const CONTENT_LABELS: Record<string, string> = {
   products: "Prodotti",
   projects: "Progetti",
   campaigns: "Campagne",
+  news: "News",
 };
 
 export default function TypologiesPage() {
@@ -84,12 +86,19 @@ export default function TypologiesPage() {
           <h1 className="text-2xl font-semibold text-warm-800">Tipologie {CONTENT_LABELS[contentType]}</h1>
           <p className="text-sm text-warm-500 mt-1">Gestisci le tipologie per i {CONTENT_LABELS[contentType]?.toLowerCase()}</p>
         </div>
-        <button
-          onClick={() => setShowNew(true)}
-          className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
-        >
-          <Plus size={16} /> Nuova tipologia
-        </button>
+        <div className="flex items-center gap-3">
+          <BulkTranslator
+            entity="typology"
+            items={typologies.map((t) => ({ id: t.id, label: t.label }))}
+            onDone={fetchData}
+          />
+          <button
+            onClick={() => setShowNew(true)}
+            className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
+          >
+            <Plus size={16} /> Nuova tipologia
+          </button>
+        </div>
       </div>
 
       {showNew && (

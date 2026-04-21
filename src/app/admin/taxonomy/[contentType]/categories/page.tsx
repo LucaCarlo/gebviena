@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Plus, Pencil, Trash2, X, Check } from "lucide-react";
 import InlineLabelTranslator from "@/components/admin/InlineLabelTranslator";
+import BulkTranslator from "@/components/admin/BulkTranslator";
 
 interface Typology {
   id: string;
@@ -25,6 +26,7 @@ const CONTENT_LABELS: Record<string, string> = {
   products: "Prodotti",
   projects: "Progetti",
   campaigns: "Campagne",
+  news: "News",
 };
 
 export default function CategoriesPage() {
@@ -103,12 +105,19 @@ export default function CategoriesPage() {
           <h1 className="text-2xl font-semibold text-warm-800">Categorie {CONTENT_LABELS[contentType]}</h1>
           <p className="text-sm text-warm-500 mt-1">Gestisci le categorie per i {CONTENT_LABELS[contentType]?.toLowerCase()}. Ogni categoria puo appartenere a piu tipologie.</p>
         </div>
-        <button
-          onClick={() => setShowNew(true)}
-          className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
-        >
-          <Plus size={16} /> Nuova categoria
-        </button>
+        <div className="flex items-center gap-3">
+          <BulkTranslator
+            entity="category"
+            items={categories.map((c) => ({ id: c.id, label: c.label }))}
+            onDone={fetchData}
+          />
+          <button
+            onClick={() => setShowNew(true)}
+            className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
+          >
+            <Plus size={16} /> Nuova categoria
+          </button>
+        </div>
       </div>
 
       {showNew && (
