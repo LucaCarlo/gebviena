@@ -128,6 +128,43 @@ export const COUNTRY_SLUGS: Record<string, Record<Lang, string>> = {
   "Rep. Dominicana": { it: "repubblica-dominicana", fr: "republique-dominicaine", en: "dominican-republic", de: "dominikanische-republik", es: "republica-dominicana" },
 };
 
+// ─── COUNTRY LABELS (human-readable per lang) ────────────────────────────────
+// Used for the "Country" dropdown on the projects page. Country values in the
+// DB are free-text Italian strings; we translate them to the active language
+// for display. Keys match the DB canonical value (IT).
+export const COUNTRY_LABELS: Record<string, Record<Lang, string>> = {
+  Italia:            { it: "Italia",              fr: "Italie",                en: "Italy",             de: "Italien",                        es: "Italia" },
+  Francia:           { it: "Francia",             fr: "France",                en: "France",            de: "Frankreich",                     es: "Francia" },
+  Germania:          { it: "Germania",            fr: "Allemagne",             en: "Germany",           de: "Deutschland",                    es: "Alemania" },
+  Spagna:            { it: "Spagna",              fr: "Espagne",               en: "Spain",             de: "Spanien",                        es: "España" },
+  Austria:           { it: "Austria",             fr: "Autriche",              en: "Austria",           de: "Österreich",                     es: "Austria" },
+  Svizzera:          { it: "Svizzera",            fr: "Suisse",                en: "Switzerland",       de: "Schweiz",                        es: "Suiza" },
+  Belgio:            { it: "Belgio",              fr: "Belgique",              en: "Belgium",           de: "Belgien",                        es: "Bélgica" },
+  Olanda:            { it: "Olanda",              fr: "Pays-Bas",              en: "Netherlands",       de: "Niederlande",                    es: "Países Bajos" },
+  Portogallo:        { it: "Portogallo",          fr: "Portugal",              en: "Portugal",          de: "Portugal",                       es: "Portugal" },
+  "Gran Bretagna":   { it: "Gran Bretagna",       fr: "Royaume-Uni",           en: "United Kingdom",    de: "Großbritannien",                 es: "Reino Unido" },
+  Grecia:            { it: "Grecia",              fr: "Grèce",                 en: "Greece",            de: "Griechenland",                   es: "Grecia" },
+  Svezia:            { it: "Svezia",              fr: "Suède",                 en: "Sweden",            de: "Schweden",                       es: "Suecia" },
+  Norvegia:          { it: "Norvegia",            fr: "Norvège",               en: "Norway",            de: "Norwegen",                       es: "Noruega" },
+  Danimarca:         { it: "Danimarca",           fr: "Danemark",              en: "Denmark",           de: "Dänemark",                       es: "Dinamarca" },
+  Polonia:           { it: "Polonia",             fr: "Pologne",               en: "Poland",            de: "Polen",                          es: "Polonia" },
+  Ucraina:           { it: "Ucraina",             fr: "Ukraine",               en: "Ukraine",           de: "Ukraine",                        es: "Ucrania" },
+  Russia:            { it: "Russia",              fr: "Russie",                en: "Russia",            de: "Russland",                       es: "Rusia" },
+  Turchia:           { it: "Turchia",             fr: "Turquie",               en: "Turkey",            de: "Türkei",                         es: "Turquía" },
+  "Arabia Saudita":  { it: "Arabia Saudita",      fr: "Arabie Saoudite",       en: "Saudi Arabia",      de: "Saudi-Arabien",                  es: "Arabia Saudita" },
+  UAE:               { it: "Emirati Arabi Uniti", fr: "Émirats Arabes Unis",   en: "UAE",               de: "Vereinigte Arabische Emirate",   es: "Emiratos Árabes Unidos" },
+  Singapore:         { it: "Singapore",           fr: "Singapour",             en: "Singapore",         de: "Singapur",                       es: "Singapur" },
+  Filippine:         { it: "Filippine",           fr: "Philippines",           en: "Philippines",       de: "Philippinen",                    es: "Filipinas" },
+  Australia:         { it: "Australia",           fr: "Australie",             en: "Australia",         de: "Australien",                     es: "Australia" },
+  Brasile:           { it: "Brasile",             fr: "Brésil",                en: "Brazil",            de: "Brasilien",                      es: "Brasil" },
+  "Rep. Dominicana": { it: "Repubblica Dominicana", fr: "République Dominicaine", en: "Dominican Republic", de: "Dominikanische Republik",   es: "República Dominicana" },
+};
+
+export function countryValueToLabel(value: string, lang: string): string {
+  if (!isLang(lang)) return value;
+  return COUNTRY_LABELS[value]?.[lang] || COUNTRY_LABELS[value]?.it || value;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function buildReverseMap(map: Record<string, Record<Lang, string>>): Record<Lang, Record<string, string>> {

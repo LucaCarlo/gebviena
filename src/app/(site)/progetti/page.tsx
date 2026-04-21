@@ -13,6 +13,7 @@ import {
   projectTypeEnumToSlug,
   countrySlugToValue,
   countryValueToSlug,
+  countryValueToLabel,
 } from "@/lib/filter-slugs";
 import type { Project, HeroSlide } from "@/types";
 
@@ -358,7 +359,7 @@ function ProjectsContent() {
       setCountryOptions(
         Object.entries(countryCounts)
           .sort(([, a], [, b]) => b - a)
-          .map(([country, count]) => ({ value: country, label: country, count }))
+          .map(([country, count]) => ({ value: country, label: countryValueToLabel(country, lang), count }))
       );
 
       // Product counter: exclude "product" itself from filters, but apply country if selected
