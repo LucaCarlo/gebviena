@@ -258,22 +258,21 @@ function ProjectsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // URL query params use language-specific slugs; convert to DB enum/value for filtering
+  // All filter state is derived directly from searchParams (single source of truth).
+  // This prevents double-fetch flashes that occurred when state + URL were updated separately.
   const urlProjType = searchParams.get("_proj_type") || "";
   const currentType = urlProjType ? (projectTypeSlugToEnum(urlProjType, lang) || "TUTTI") : "TUTTI";
   const urlCountrySlug = searchParams.get("_proj_country") || "";
-  const initialCountry = urlCountrySlug ? (countrySlugToValue(urlCountrySlug, lang) || "") : "";
-  const urlProductSlug = searchParams.get("_proj_product") || "";
+  const selectedCountry = urlCountrySlug ? (countrySlugToValue(urlCountrySlug, lang) || "") : "";
+  // selectedProduct is the Product.slug (matches _proj_product in URL)
+  const selectedProduct = searchParams.get("_proj_product") || "";
   const currentPage = parseInt(searchParams.get("page") || "1");
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [countryOptions, setCountryOptions] = useState<FilterOption[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState(initialCountry);
   const [productOptions, setProductOptions] = useState<FilterOption[]>([]);
-  // selectedProduct is the Product.slug (matches _proj_product in URL)
-  const [selectedProduct, setSelectedProduct] = useState(urlProductSlug);
   // Reverse map: Product.slug → Product.id (needed because API filters by productId)
   const [productIdBySlug, setProductIdBySlug] = useState<Record<string, string>>({});
   const [projectCategories, setProjectCategories] = useState<CategoryItem[]>([]);
@@ -309,7 +308,6 @@ function ProjectsContent() {
   }, [lang]);
 
   const fetchProjects = useCallback(async () => {
-    setLoading(true);
     const params = new URLSearchParams();
     if (currentType !== "TUTTI") params.set("type", currentType);
     if (selectedCountry) params.set("country", selectedCountry);
@@ -413,8 +411,6 @@ function ProjectsContent() {
   };
 
   const setType = (type: string) => {
-    setSelectedCountry("");
-    setSelectedProduct("");
     router.push(buildProjectsUrl({ type, country: "", productSlug: "", page: 1 }), { scroll: false });
     setTimeout(() => document.querySelector("section.pt-2")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
@@ -523,19 +519,13 @@ function ProjectsContent() {
             label={t("progetti.filter.country")}
             options={countryOptions}
             value={selectedCountry}
-            onChange={(v) => {
-              setSelectedCountry(v);
-              router.push(buildProjectsUrl({ country: v, page: 1 }), { scroll: false });
-            }}
+            onChange={(v) => router.push(buildProjectsUrl({ country: v, page: 1 }), { scroll: false })}
           />
           <FilterDropdown
             label={t("progetti.filter.product")}
             options={productOptions}
             value={selectedProduct}
-            onChange={(v) => {
-              setSelectedProduct(v);
-              router.push(buildProjectsUrl({ productSlug: v, page: 1 }), { scroll: false });
-            }}
+            onChange={(v) => router.push(buildProjectsUrl({ productSlug: v, page: 1 }), { scroll: false })}
           />
         </div>
       </div>
