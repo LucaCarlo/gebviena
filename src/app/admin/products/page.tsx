@@ -302,6 +302,7 @@ export default function AdminProductsPage() {
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Immagine</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Nome</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Slug</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Designer</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Tipologia</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Categoria</th>
@@ -317,6 +318,7 @@ export default function AdminProductsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 font-medium text-warm-800">{p.name}</td>
+                  <td className="px-6 py-4 text-warm-500 text-xs font-mono">{p.slug}</td>
                   <td className="px-6 py-4 text-warm-600">{p.designerName || p.designer?.name}</td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1">

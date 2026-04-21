@@ -131,6 +131,7 @@ export default function AdminProjectsPage() {
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Immagine</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Nome</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Slug</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Tipologia</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Paese</th>
                 <th className="text-right px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Azioni</th>
@@ -145,6 +146,7 @@ export default function AdminProjectsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 font-medium text-warm-800">{p.name}</td>
+                  <td className="px-6 py-4 text-warm-500 text-xs font-mono">{p.slug}</td>
                   <td className="px-6 py-4">
                     <span className="px-2 py-1 bg-warm-100 text-warm-600 text-xs rounded">{p.type.replace(/_/g, " ")}</span>
                   </td>

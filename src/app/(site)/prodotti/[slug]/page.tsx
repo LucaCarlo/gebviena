@@ -433,7 +433,8 @@ export default function ProductDetailPage() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="relative overflow-hidden w-full aspect-[4/5] lg:aspect-auto lg:h-full"
+                className="relative overflow-hidden"
+                style={{ aspectRatio: "3 / 4.2" }}
               >
                 <Image
                   src={product.designer.imageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1000&fit=crop&crop=face"}

@@ -133,6 +133,7 @@ export default function AdminDesignersPage() {
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Immagine</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Nome</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Slug</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Paese</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">N. Prodotti</th>
                 <th className="text-right px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Azioni</th>
@@ -151,6 +152,7 @@ export default function AdminDesignersPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 font-medium text-warm-800">{d.name}</td>
+                  <td className="px-6 py-4 text-warm-500 text-xs font-mono">{d.slug}</td>
                   <td className="px-6 py-4 text-warm-600">{d.country || "—"}</td>
                   <td className="px-6 py-4 text-warm-600">{d._count?.products ?? 0}</td>
                   <td className="px-6 py-4 text-right">
