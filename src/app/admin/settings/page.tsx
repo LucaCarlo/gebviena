@@ -641,48 +641,29 @@ function StatsTab() {
         </div>
       </div>
 
-      {/* Storage stats */}
+      {/* Storage media */}
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
         <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">Storage Media</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-warm-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-warm-800">{formatBytes(stats.storage.totalSize)}</div>
             <div className="text-xs text-warm-500 mt-1">Dimensione totale</div>
-          </div>
-          <div className="bg-warm-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-warm-800">{formatBytes(stats.storage.totalOriginalSize)}</div>
-            <div className="text-xs text-warm-500 mt-1">Dimensione originale</div>
-          </div>
-          <div className="bg-green-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-green-700">{formatBytes(stats.storage.spaceSaved)}</div>
-            <div className="text-xs text-green-600 mt-1">Spazio risparmiato</div>
           </div>
           <div className="bg-green-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-green-700">{stats.storage.optimizationPercent}%</div>
             <div className="text-xs text-green-600 mt-1">Ottimizzazione</div>
           </div>
-        </div>
-      </div>
-
-      {/* Media counts */}
-      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider mb-4">File Media (tabella DB)</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-warm-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-warm-800">{stats.media.images}</div>
             <div className="text-xs text-warm-500 mt-1">Immagini</div>
           </div>
           <div className="bg-warm-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-warm-800">{stats.media.others}</div>
-            <div className="text-xs text-warm-500 mt-1">Altri file</div>
+            <div className="text-2xl font-bold text-warm-800">{stats.media.images + stats.media.others}</div>
+            <div className="text-xs text-warm-500 mt-1">File totali</div>
           </div>
           <div className="bg-warm-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-warm-800">{stats.media.synced}</div>
             <div className="text-xs text-warm-500 mt-1">Sincronizzati Wasabi</div>
-          </div>
-          <div className="bg-warm-50 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-warm-800">{stats.media.unsynced}</div>
-            <div className="text-xs text-warm-500 mt-1">Non sincronizzati</div>
           </div>
         </div>
       </div>
