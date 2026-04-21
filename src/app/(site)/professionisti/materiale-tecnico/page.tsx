@@ -21,6 +21,8 @@ const CATEGORY_ORDER = ["SEDUTE", "IMBOTTITI", "COMPLEMENTI", "TAVOLI", "OUTDOOR
 
 type Tab = "modelli" | "schede";
 
+interface TypologyItem { value: string; label: string }
+
 export default function MaterialeTecnicoPage() {
   const t = useT();
   const lang = useLang();
@@ -28,6 +30,7 @@ export default function MaterialeTecnicoPage() {
   const [loading, setLoading] = useState(true);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("schede");
+  const [typologies, setTypologies] = useState<TypologyItem[]>([]);
 
   useEffect(() => {
     fetch("/api/products/tech-sheets")
@@ -37,6 +40,19 @@ export default function MaterialeTecnicoPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    fetch(`/api/typologies?contentType=products&lang=${lang}`)
+      .then((r) => r.json())
+      .then((data) => setTypologies(data.data || []))
+      .catch(() => {});
+  }, [lang]);
+
+  const categoryLabel = useMemo(() => {
+    const map: Record<string, string> = {};
+    typologies.forEach((t) => { map[t.value] = t.label; });
+    return map;
+  }, [typologies]);
 
   // Filter products by tab availability
   const filtered = useMemo(() => {
@@ -122,7 +138,7 @@ export default function MaterialeTecnicoPage() {
                         className="w-full flex items-center justify-between py-5 px-2 group"
                       >
                         <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
-                          {cat}
+                          {categoryLabel[cat] || cat}
                         </span>
                         <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
                           {isOpen ? <Minus size={18} /> : <Plus size={18} />}

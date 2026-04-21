@@ -24,7 +24,6 @@ const STATIC_PATHS = new Set<string>([
   "/designers",
   "/progetti",
   "/campaigns",
-  "/news",
   "/mondo-gtv",
   "/mondo-gtv/brand-manifesto",
   "/mondo-gtv/heritage",
@@ -32,6 +31,7 @@ const STATIC_PATHS = new Set<string>([
   "/mondo-gtv/sostenibilita",
   "/mondo-gtv/designer-e-premi",
   "/mondo-gtv/gtv-experience",
+  "/mondo-gtv/news-e-rassegna-stampa",
   "/professionisti",
   "/professionisti/cataloghi",
   "/professionisti/materiale-tecnico",
@@ -94,12 +94,6 @@ export async function validateDestinationPath(path: string): Promise<{ ok: boole
           (await prisma.projectTranslation.findFirst({ where: { slug }, select: { id: true } }));
         return ok ? { ok: true } : { ok: false, reason: `Progetto con slug "${slug}" non trovato` };
       }
-      case "news": {
-        const ok =
-          (await prisma.newsArticle.findFirst({ where: { slug, isActive: true }, select: { id: true } })) ||
-          (await prisma.newsArticleTranslation.findFirst({ where: { slug }, select: { id: true } }));
-        return ok ? { ok: true } : { ok: false, reason: `Articolo con slug "${slug}" non trovato` };
-      }
       case "campaigns": {
         const ok =
           (await prisma.campaign.findFirst({ where: { slug, isActive: true }, select: { id: true } })) ||
@@ -111,6 +105,15 @@ export async function validateDestinationPath(path: string): Promise<{ ok: boole
         return ok ? { ok: true } : { ok: false, reason: `Landing page "${slug}" non trovata` };
       }
     }
+  }
+
+  // 3-segment patterns: /mondo-gtv/news-e-rassegna-stampa/<article-slug>
+  if (segments.length === 3 && segments[0] === "mondo-gtv" && segments[1] === "news-e-rassegna-stampa") {
+    const slug = segments[2];
+    const ok =
+      (await prisma.newsArticle.findFirst({ where: { slug, isActive: true }, select: { id: true } })) ||
+      (await prisma.newsArticleTranslation.findFirst({ where: { slug }, select: { id: true } }));
+    return ok ? { ok: true } : { ok: false, reason: `Articolo con slug "${slug}" non trovato` };
   }
 
   return { ok: false, reason: "Path non corrisponde a nessuna pagina del sito" };

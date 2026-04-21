@@ -249,7 +249,7 @@ function RelatedBlock({ related, categoryLabelMap, title }: { related: NewsArtic
         <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">{title}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
           {related.slice(0, 4).map((rel) => (
-            <Link key={rel.id} href={`/news/${rel.slug}`} className="group block">
+            <Link key={rel.id} href={`/mondo-gtv/news-e-rassegna-stampa/${rel.slug}`} className="group block">
               <div className="relative aspect-[1/1] bg-warm-100 overflow-hidden">
                 {rel.imageUrl && <Image src={rel.imageUrl} alt={rel.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 50vw, 25vw" />}
               </div>
@@ -309,7 +309,7 @@ export default function NewsDetailPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <p className="text-warm-500">Articolo non trovato</p>
-        <Link href="/news" className="gtv-link">Torna alle news</Link>
+        <Link href="/mondo-gtv/news-e-rassegna-stampa" className="gtv-link">Torna alle news</Link>
       </div>
     );
   }
@@ -372,7 +372,7 @@ export default function NewsDetailPage() {
         <nav className="flex items-center gap-2 text-[14px] tracking-normal text-black font-light">
           <Link href={localizePath("/", lang)}>{t("common.breadcrumb_home")}</Link>
           <ChevronRight size={12} />
-          <Link href={localizePath("/news", lang)}>{t("news.breadcrumb")}</Link>
+          <Link href={localizePath("/mondo-gtv/news-e-rassegna-stampa", lang)}>{t("news.breadcrumb")}</Link>
           <ChevronRight size={12} />
           <span>{article.title}</span>
         </nav>

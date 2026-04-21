@@ -71,7 +71,7 @@ function NewsContent() {
     }
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
-    return `/news${qs ? "?" + qs : ""}`;
+    return `/mondo-gtv/news-e-rassegna-stampa${qs ? "?" + qs : ""}`;
   };
 
   const setCategory = (cat: string) => {
@@ -164,7 +164,7 @@ function NewsContent() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: (i % 4) * 0.05 }}
               >
-                <Link href={`/news/${article.slug}`} className="group block">
+                <Link href={`/mondo-gtv/news-e-rassegna-stampa/${article.slug}`} className="group block">
                   <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "1/1" }}>
                     <Image
                       src={article.imageUrl}

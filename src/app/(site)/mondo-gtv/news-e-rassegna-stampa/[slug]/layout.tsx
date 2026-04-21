@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const seoDescription = tForLang?.seoDescription?.trim() || raw.seoDescription?.trim() || undefined;
   const slugByLang: Record<string, string> = { [DEFAULT_LANG]: raw.slug };
   for (const t of raw.translations) if (t.slug) slugByLang[t.languageCode] = t.slug;
-  const alternates = await buildAlternates(`/news/${raw.slug}`, slugByLang);
+  const alternates = await buildAlternates(`/mondo-gtv/news-e-rassegna-stampa/${raw.slug}`, slugByLang);
   return {
     title: seoTitle, description: seoDescription, alternates,
     openGraph: { title: seoTitle, description: seoDescription, images: raw.imageUrl ? [raw.imageUrl] : undefined },
