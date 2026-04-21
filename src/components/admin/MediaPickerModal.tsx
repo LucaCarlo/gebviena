@@ -22,7 +22,7 @@ export default function MediaPickerModal({
   onClose,
   onSelect,
   multiple = false,
-  imagesOnly = true,
+  imagesOnly = false,
   defaultFolder,
 }: MediaPickerModalProps) {
   const [files, setFiles] = useState<MediaFile[]>([]);
@@ -91,13 +91,18 @@ export default function MediaPickerModal({
     setLoadingMore(false);
   }, [fetchPage, page]);
 
+  // On open: reset selected + apply default folder (once per open)
   useEffect(() => {
     if (open) {
       setSelected(new Set());
       if (defaultFolder !== undefined) setActiveFolder(defaultFolder);
-      loadFirstPage();
     }
-  }, [open, loadFirstPage, defaultFolder]);
+  }, [open, defaultFolder]);
+
+  // Reload page 1 whenever the query (activeFolder/search via loadFirstPage) changes
+  useEffect(() => {
+    if (open) loadFirstPage();
+  }, [open, loadFirstPage]);
 
   const hasMore = files.length < total;
 
@@ -148,7 +153,7 @@ export default function MediaPickerModal({
               className="w-full pl-9 pr-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:border-warm-500"
             />
           </div>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1 w-full">
             <button
               type="button"
               onClick={() => setActiveFolder("")}
