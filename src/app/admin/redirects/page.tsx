@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { ArrowRight, Plus, Trash2, Check, AlertCircle, Loader2, Power, Search, ExternalLink, Pencil, X } from "lucide-react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { ArrowRight, Plus, Trash2, Check, AlertCircle, Loader2, Power, ExternalLink, Pencil, X, ArrowUpDown } from "lucide-react";
+import AdminListFilters from "@/components/admin/AdminListFilters";
 
 interface Redirect {
   id: string;
@@ -15,6 +16,35 @@ interface Redirect {
   createdAt: string;
 }
 
+const LANG_PREFIX_RE = /^\/(en|de|fr)(\/|$)/;
+
+function langOf(path: string): string {
+  const m = path.match(LANG_PREFIX_RE);
+  return m ? m[1] : "it";
+}
+
+function sectionOf(path: string): string {
+  const stripped = path.replace(LANG_PREFIX_RE, "/");
+  const seg = stripped.split("/").filter(Boolean)[0];
+  return seg || "(root)";
+}
+
+const LANG_LABEL: Record<string, string> = {
+  it: "🇮🇹 Italiano (default)",
+  en: "🇬🇧 Inglese (/en/)",
+  de: "🇩🇪 Tedesco (/de/)",
+  fr: "🇫🇷 Francese (/fr/)",
+};
+
+type SortKey = "created_desc" | "hits_desc" | "last_hit_desc" | "from_asc";
+
+const SORT_LABELS: Record<SortKey, string> = {
+  created_desc: "Più recenti",
+  hits_desc: "Più visitati",
+  last_hit_desc: "Ultima visita recente",
+  from_asc: "Alfabetico (Da)",
+};
+
 interface Toast {
   message: string;
   type: "success" | "error";
@@ -25,6 +55,8 @@ export default function RedirectsPage() {
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [sort, setSort] = useState<SortKey>("created_desc");
   const [form, setForm] = useState({ fromPath: "", toPath: "", statusCode: 301, note: "" });
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -126,11 +158,82 @@ export default function RedirectsPage() {
     }
   };
 
-  const filtered = redirects.filter((r) => {
-    const q = search.trim().toLowerCase();
-    if (!q) return true;
-    return r.fromPath.toLowerCase().includes(q) || r.toPath.toLowerCase().includes(q);
-  });
+  const sections = useMemo(() => {
+    return Array.from(new Set(redirects.map((r) => sectionOf(r.fromPath)))).sort();
+  }, [redirects]);
+
+  const filters = useMemo(() => {
+    const langCounts = new Map<string, number>();
+    for (const r of redirects) {
+      const l = langOf(r.fromPath);
+      langCounts.set(l, (langCounts.get(l) || 0) + 1);
+    }
+    return [
+      {
+        key: "language",
+        label: "Tutte le lingue",
+        options: ["it", "en", "de", "fr"]
+          .filter((l) => langCounts.has(l))
+          .map((l) => ({ value: l, label: `${LANG_LABEL[l]} (${langCounts.get(l)})` })),
+      },
+      {
+        key: "section",
+        label: "Tutte le sezioni",
+        options: sections.map((s) => ({ value: s, label: `/${s}` })),
+      },
+      {
+        key: "status",
+        label: "Tutti gli stati",
+        options: [
+          { value: "enabled", label: "Attivi" },
+          { value: "disabled", label: "Disattivi" },
+        ],
+      },
+      {
+        key: "statusCode",
+        label: "Tutti i tipi",
+        options: [
+          { value: "301", label: "301 Permanente" },
+          { value: "302", label: "302 Temporaneo" },
+        ],
+      },
+    ];
+  }, [redirects, sections]);
+
+  const filtered = useMemo(() => {
+    const result = redirects.filter((r) => {
+      const q = search.trim().toLowerCase();
+      if (q && !r.fromPath.toLowerCase().includes(q) && !r.toPath.toLowerCase().includes(q) && !(r.note || "").toLowerCase().includes(q)) return false;
+      if (activeFilters.language && langOf(r.fromPath) !== activeFilters.language) return false;
+      if (activeFilters.section && sectionOf(r.fromPath) !== activeFilters.section) return false;
+      if (activeFilters.status === "enabled" && !r.enabled) return false;
+      if (activeFilters.status === "disabled" && r.enabled) return false;
+      if (activeFilters.statusCode && String(r.statusCode) !== activeFilters.statusCode) return false;
+      return true;
+    });
+
+    const sorted = [...result];
+    switch (sort) {
+      case "hits_desc":
+        sorted.sort((a, b) => b.hits - a.hits || a.fromPath.localeCompare(b.fromPath));
+        break;
+      case "last_hit_desc":
+        sorted.sort((a, b) => {
+          const ta = a.lastHitAt ? new Date(a.lastHitAt).getTime() : 0;
+          const tb = b.lastHitAt ? new Date(b.lastHitAt).getTime() : 0;
+          return tb - ta || b.hits - a.hits;
+        });
+        break;
+      case "from_asc":
+        sorted.sort((a, b) => a.fromPath.localeCompare(b.fromPath));
+        break;
+      case "created_desc":
+      default:
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+    }
+    return sorted;
+  }, [redirects, search, activeFilters, sort]);
 
   return (
     <div>
@@ -220,16 +323,34 @@ export default function RedirectsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-3 mb-4">
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cerca per URL…"
-            className="w-full border border-warm-200 rounded pl-9 pr-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none"
-          />
+      <AdminListFilters
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Cerca per URL o nota…"
+        filters={filters}
+        activeFilters={activeFilters}
+        onFilterChange={(key, value) => setActiveFilters((prev) => ({ ...prev, [key]: value }))}
+        totalCount={redirects.length}
+        filteredCount={filtered.length}
+      />
+
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs text-warm-500">
+          {filtered.length} {filtered.length === 1 ? "redirect" : "redirect"}
+          {filtered.length !== redirects.length && <span className="text-warm-400"> di {redirects.length}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <ArrowUpDown size={13} className="text-warm-400" />
+          <span className="text-xs font-semibold text-warm-600 uppercase tracking-wider">Ordina</span>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            className="border border-warm-300 rounded-lg px-3 py-1.5 text-sm text-warm-700 bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          >
+            {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+              <option key={k} value={k}>{SORT_LABELS[k]}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -315,7 +436,12 @@ export default function RedirectsPage() {
                   ) : (
                     <>
                       <td className="px-4 py-3">
-                        <code className="text-xs text-warm-700">{r.fromPath}</code>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] uppercase tracking-wider text-warm-500 bg-warm-100 px-1.5 py-0.5 rounded font-mono">
+                            {langOf(r.fromPath)}
+                          </span>
+                          <code className="text-xs text-warm-700">{r.fromPath}</code>
+                        </div>
                         {r.note && <p className="text-[10px] text-warm-400 mt-0.5">{r.note}</p>}
                       </td>
                       <td className="px-4 py-3">
