@@ -315,15 +315,18 @@ function ProjectsContent() {
   }, [fetchProjects]);
 
   useEffect(() => {
+    const projectsQs = new URLSearchParams({ limit: "500", lang });
+    if (currentType !== "TUTTI") projectsQs.set("type", currentType);
     Promise.all([
-      fetch(`/api/projects?limit=500&lang=${lang}`).then((r) => r.json()),
+      fetch(`/api/projects?${projectsQs}`).then((r) => r.json()),
       fetch(`/api/products?limit=500&lang=${lang}`).then((r) => r.json()),
     ]).then(([projectsResp, productsResp]) => {
       const projects: (Project & { products?: { productId: string }[] })[] = projectsResp.data || [];
 
-      // Count per country
+      // Count per country (filtered by current type)
       const countryCounts: Record<string, number> = {};
       projects.forEach((p) => {
+        if (!p.country) return;
         countryCounts[p.country] = (countryCounts[p.country] || 0) + 1;
       });
       setCountryOptions(
@@ -332,7 +335,7 @@ function ProjectsContent() {
           .map(([country, count]) => ({ value: country, label: country, count }))
       );
 
-      // Count per product (number of projects featuring each product)
+      // Count per product (number of projects featuring each product, within current type)
       const productCounts: Record<string, number> = {};
       projects.forEach((p) => {
         (p.products || []).forEach((pp) => {
@@ -349,9 +352,11 @@ function ProjectsContent() {
           .filter((o: FilterOption) => o.count > 0)
       );
     });
-  }, [lang]);
+  }, [lang, currentType]);
 
   const setType = (type: string) => {
+    setSelectedCountry("");
+    setSelectedProduct("");
     const params = new URLSearchParams();
     if (type !== "TUTTI") params.set("type", type);
     router.push(`/progetti?${params}`, { scroll: false });
