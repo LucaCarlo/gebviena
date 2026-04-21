@@ -143,23 +143,56 @@ function chunkEntries(
   return chunks;
 }
 
+function extractJson(raw: string): string {
+  let s = raw.trim();
+  const fenceMatch = s.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fenceMatch) s = fenceMatch[1].trim();
+  const firstBrace = s.indexOf("{");
+  const lastBrace = s.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    s = s.slice(firstBrace, lastBrace + 1);
+  }
+  return s;
+}
+
+async function callProvider(
+  system: string,
+  user: string,
+  settings: AISettings
+): Promise<string> {
+  return settings.provider === "openai"
+    ? callOpenAI(system, user, settings)
+    : callAnthropic(system, user, settings);
+}
+
 async function translateChunk(
   entries: [string, string][],
   system: string,
-  settings: AISettings
+  settings: AISettings,
+  opts: TranslateOptions
 ): Promise<Record<string, string>> {
   const user = JSON.stringify(Object.fromEntries(entries));
-  const raw = settings.provider === "openai"
-    ? await callOpenAI(system, user, settings)
-    : await callAnthropic(system, user, settings);
-  let json = raw.trim();
-  const fenceMatch = json.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenceMatch) json = fenceMatch[1].trim();
-  try {
-    return JSON.parse(json) as Record<string, string>;
-  } catch {
-    throw new Error(`Risposta AI non in formato JSON valido (chunk di ${entries.length} campi)`);
+
+  // Try JSON batch up to 2 times
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const raw = await callProvider(system, user, settings);
+    try {
+      const parsed = JSON.parse(extractJson(raw)) as Record<string, string>;
+      const out: Record<string, string> = {};
+      for (const [k] of entries) if (typeof parsed[k] === "string") out[k] = parsed[k];
+      if (Object.keys(out).length === entries.length) return out;
+    } catch {
+      // fall through to retry / fallback
+    }
   }
+
+  // Fallback: translate each field individually (reliable, no JSON needed)
+  const singleSystem = renderPrompt(settings.systemPromptTemplate, opts);
+  const out: Record<string, string> = {};
+  for (const [k, v] of entries) {
+    out[k] = (await callProvider(singleSystem, v, settings)).trim();
+  }
+  return out;
 }
 
 export async function translateFields(
@@ -180,7 +213,7 @@ You will receive a JSON object with fields to translate. Return ONLY a JSON obje
   const merged: Record<string, string> = {};
   for (let i = 0; i < chunks.length; i += CONCURRENCY) {
     const batch = chunks.slice(i, i + CONCURRENCY);
-    const results = await Promise.all(batch.map((c) => translateChunk(c, system, settings)));
+    const results = await Promise.all(batch.map((c) => translateChunk(c, system, settings, opts)));
     for (const r of results) Object.assign(merged, r);
   }
 
