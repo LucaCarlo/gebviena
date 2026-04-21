@@ -131,6 +131,7 @@ export async function GET() {
       mediaFilesCount,
       adminUsersCount,
       mediaAggregations,
+      optimizedAggregations,
       imageCount,
       syncedCount,
       unsyncedCount,
@@ -158,6 +159,10 @@ export async function GET() {
       prisma.mediaFile.aggregate({
         _sum: { size: true, originalSize: true },
       }),
+      prisma.mediaFile.aggregate({
+        _sum: { size: true, originalSize: true },
+        where: { originalSize: { not: null } },
+      }),
       prisma.mediaFile.count({ where: { mimeType: { startsWith: "image/" } } }),
       prisma.mediaFile.count({ where: { isSynced: true } }),
       prisma.mediaFile.count({ where: { isSynced: false } }),
@@ -173,8 +178,9 @@ export async function GET() {
     const grandTotal = cwdTotal + db.sizeBytes;
 
     const totalSize = mediaAggregations._sum.size || 0;
-    const totalOriginalSize = mediaAggregations._sum.originalSize || 0;
-    const spaceSaved = totalOriginalSize - totalSize;
+    const totalOriginalSize = optimizedAggregations._sum.originalSize || 0;
+    const optimizedCurrentSize = optimizedAggregations._sum.size || 0;
+    const spaceSaved = Math.max(0, totalOriginalSize - optimizedCurrentSize);
     const optimizationPercent = totalOriginalSize > 0
       ? Math.round((spaceSaved / totalOriginalSize) * 100)
       : 0;

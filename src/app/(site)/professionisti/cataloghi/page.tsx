@@ -102,7 +102,7 @@ function CatalogSection({ item, textLeft }: { item: Catalog; textLeft: boolean }
   );
 
   const textEl = (
-    <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
+    <div className="flex flex-col justify-center px-6 py-12 lg:px-[150px] lg:py-24">
       {item.pretitle && (
         <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">
           {item.pretitle}

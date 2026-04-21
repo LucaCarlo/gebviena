@@ -35,7 +35,7 @@ export default async function UfficioStampaPage() {
       <section className="w-full bg-warm-50">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
           {/* Left: text */}
-          <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
+          <div className="flex flex-col justify-center px-6 py-12 lg:px-[150px] lg:py-24">
             <p className="text-[20px] text-black leading-snug font-light tracking-normal">
               {T["ufficio-stampa.intro"]}
             </p>

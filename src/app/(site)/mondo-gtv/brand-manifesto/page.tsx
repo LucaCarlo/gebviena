@@ -90,7 +90,7 @@ export default async function BrandManifestoPage() {
           </div>
 
           {/* Right: text — same style as product page description */}
-          <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
+          <div className="flex flex-col justify-center px-6 py-12 lg:px-[150px] lg:py-24">
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{T["brand-manifesto.heritage.label"]}</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               {T["brand-manifesto.heritage.title"]}
@@ -154,7 +154,7 @@ export default async function BrandManifestoPage() {
       <section className="w-full bg-warm-50 mt-20 md:mt-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
           {/* Left: text — same style/padding as Our Heritage */}
-          <div className="flex flex-col justify-center" style={{ padding: "96px 150px" }}>
+          <div className="flex flex-col justify-center px-6 py-12 lg:px-[150px] lg:py-24">
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{T["brand-manifesto.designers.label"]}</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               {T["brand-manifesto.designers.title"]}
