@@ -47,8 +47,16 @@ export async function middleware(req: NextRequest) {
   const origin = req.nextUrl.origin;
   const redirects = await getRedirects(origin);
   if (redirects.length > 0) {
-    // Match against pathname (with and without trailing slash)
-    const candidates = [pathname, pathname.replace(/\/$/, ""), pathname + "/"];
+    // Match against pathname (with and without trailing slash).
+    // If a fromPath includes a query string, also match pathname+search so
+    // admin-defined redirects like "/fr/produits/?_tipologia=outdoor-fr" work.
+    const search = req.nextUrl.search;
+    const pathNoSlash = pathname.replace(/\/$/, "");
+    const pathWithSlash = pathname.endsWith("/") ? pathname : pathname + "/";
+    const candidates = [pathname, pathNoSlash, pathWithSlash];
+    if (search) {
+      candidates.push(pathname + search, pathNoSlash + search, pathWithSlash + search);
+    }
     const match = redirects.find((r) => candidates.includes(r.fromPath));
     if (match) {
       const target = /^https?:\/\//.test(match.toPath)
