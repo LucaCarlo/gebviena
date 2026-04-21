@@ -8,7 +8,7 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
-import { productCategorySlugToEnum, productCategoryEnumToSlug } from "@/lib/filter-slugs";
+import { useFilterSlugs } from "@/lib/use-filter-slugs";
 import type { Product, HeroSlide } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -196,9 +196,13 @@ function ProductsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // URL uses lang-specific slug via `_tipologia`; convert to DB enum for filtering
+  // URL uses lang-specific slug via `_tipologia`; slug is derived from the
+  // translated label in DB (see /api/filter-slugs).
+  const { ready: slugsReady, slugToValue, valueToSlug } = useFilterSlugs();
   const urlTipologia = searchParams.get("_tipologia") || "";
-  const currentCategory = urlTipologia ? (productCategorySlugToEnum(urlTipologia, lang) || "TUTTI") : "TUTTI";
+  const currentCategory = urlTipologia
+    ? (slugsReady ? (slugToValue("products", urlTipologia, lang) || "TUTTI") : "")
+    : "TUTTI";
   const currentSubcategory = searchParams.get("subcategory") || null;
   const currentPage = parseInt(searchParams.get("page") || "1");
   const [products, setProducts] = useState<Product[]>([]);
@@ -244,6 +248,8 @@ function ProductsContent() {
   }, [lang]);
 
   const fetchProducts = useCallback(async () => {
+    // Wait for slug cache to resolve _tipologia → value before fetching
+    if (currentCategory === "") return;
     setLoading(true);
     const params = new URLSearchParams();
     if (currentCategory !== "TUTTI") params.set("category", currentCategory);
@@ -275,7 +281,7 @@ function ProductsContent() {
 
     const params = new URLSearchParams();
     if (catEnum && catEnum !== "TUTTI") {
-      const slug = productCategoryEnumToSlug(catEnum, lang);
+      const slug = valueToSlug("products", catEnum, lang);
       if (slug) params.set("_tipologia", slug);
     }
     if (sub) params.set("subcategory", sub);

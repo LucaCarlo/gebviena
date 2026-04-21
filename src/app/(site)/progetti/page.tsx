@@ -9,12 +9,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
 import {
-  projectTypeSlugToEnum,
-  projectTypeEnumToSlug,
   countrySlugToValue,
   countryValueToSlug,
   countryValueToLabel,
 } from "@/lib/filter-slugs";
+import { useFilterSlugs } from "@/lib/use-filter-slugs";
 import type { Project, HeroSlide } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -260,8 +259,11 @@ function ProjectsContent() {
 
   // All filter state is derived directly from searchParams (single source of truth).
   // This prevents double-fetch flashes that occurred when state + URL were updated separately.
+  const { ready: slugsReady, slugToValue, valueToSlug } = useFilterSlugs();
   const urlProjType = searchParams.get("_proj_type") || "";
-  const currentType = urlProjType ? (projectTypeSlugToEnum(urlProjType, lang) || "TUTTI") : "TUTTI";
+  const currentType = urlProjType
+    ? (slugsReady ? (slugToValue("projects", urlProjType, lang) || "TUTTI") : "")
+    : "TUTTI";
   const urlCountrySlug = searchParams.get("_proj_country") || "";
   const selectedCountry = urlCountrySlug ? (countrySlugToValue(urlCountrySlug, lang) || "") : "";
   // selectedProduct is the Product.slug (matches _proj_product in URL)
@@ -308,6 +310,8 @@ function ProjectsContent() {
   }, [lang]);
 
   const fetchProjects = useCallback(async () => {
+    // Wait for slug cache to resolve _proj_type → value before fetching
+    if (currentType === "") return;
     const params = new URLSearchParams();
     if (currentType !== "TUTTI") params.set("type", currentType);
     if (selectedCountry) params.set("country", selectedCountry);
@@ -330,6 +334,7 @@ function ProjectsContent() {
   }, [fetchProjects]);
 
   useEffect(() => {
+    if (currentType === "") return;
     const projectsQs = new URLSearchParams({ limit: "500", lang });
     if (currentType !== "TUTTI") projectsQs.set("type", currentType);
     Promise.all([
@@ -396,7 +401,7 @@ function ProjectsContent() {
 
     const params = new URLSearchParams();
     if (typeEnum && typeEnum !== "TUTTI") {
-      const slug = projectTypeEnumToSlug(typeEnum, lang);
+      const slug = valueToSlug("projects", typeEnum, lang);
       if (slug) params.set("_proj_type", slug);
     }
     if (countryValue) {

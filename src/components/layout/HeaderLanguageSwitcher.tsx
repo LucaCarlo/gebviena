@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useLang } from "@/contexts/I18nContext";
 import { translateSegmentsBackward, translateSegmentsForward, DEFAULT_LANG } from "@/lib/path-segments";
 import { translateFilterParams } from "@/lib/filter-slugs";
+import { useFilterSlugs } from "@/lib/use-filter-slugs";
 
 interface Language {
   code: string;
@@ -22,6 +23,9 @@ interface Props {
 export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
   const pathname = usePathname();
   const currentLang = useLang();
+  // Prefetch the filter-slug cache so translateFilterParams is ready before
+  // the user clicks to change language.
+  useFilterSlugs();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);

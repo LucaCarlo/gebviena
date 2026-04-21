@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useLang } from "@/contexts/I18nContext";
 import { translateSegmentsBackward, translateSegmentsForward, DEFAULT_LANG } from "@/lib/path-segments";
 import { translateFilterParams } from "@/lib/filter-slugs";
+import { useFilterSlugs } from "@/lib/use-filter-slugs";
 
 const LANG_NAMES: Record<string, Record<string, string>> = {
   it: { it: "Italiano", en: "Inglese", de: "Tedesco", fr: "Francese", es: "Spagnolo" },
@@ -29,6 +30,9 @@ interface Language {
 export default function LanguageSwitcher() {
   const pathname = usePathname();
   const currentLang = useLang();
+  // Load the filter-slug cache so translateFilterParams can convert
+  // URL params like _tipologia/_proj_type/_article_type when switching.
+  useFilterSlugs();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);

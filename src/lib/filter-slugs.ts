@@ -1,103 +1,18 @@
 /**
- * Bidirectional mapping between DB enum/label values and URL slugs per language.
+ * Bidirectional mapping for URL filter params.
  *
- * URL convention:
- *   - Products:  /<lang>/<productsSegment>?_tipologia=<slug>
- *   - Projects:  /<lang>/<projectsSegment>?_proj_type=<slug>&_proj_country=<slug>&_proj_product=<prodSlug>
+ * Product typologies, project types, news and campaigns categories are driven
+ * by the DB — the URL slug is derived from the translated label via
+ * `slugify(label)`, cached by `use-filter-slugs.ts`. When an admin renames a
+ * taxonomy in the backoffice the URL updates automatically.
  *
- * Where <slug> is lowercase, hyphenated, language-specific. The lookup converts
- * the slug to the DB value before hitting the API. Reverse lookup is used when
- * building outbound links (so an IT→FR language switch translates the params).
- *
- * NOTE: _proj_product uses Product.slug directly (not mapped here).
+ * Country slugs stay hardcoded here: Project.country is free-text Italian and
+ * has no translation table in the admin.
  */
+import { translateFilterSlug } from "./use-filter-slugs";
+
 export type Lang = "it" | "en" | "de" | "fr" | "es";
 export const LANGS: Lang[] = ["it", "en", "de", "fr", "es"];
-
-// ─── PROJECT TYPE (Project.type enum) ────────────────────────────────────────
-export const PROJECT_TYPE_SLUGS: Record<string, Record<Lang, string>> = {
-  BISTROT_RESTAURANT: {
-    it: "bistrot-restaurant",
-    fr: "bistrots-restaurants",
-    en: "bistros-restaurants",
-    de: "bistros-restaurants",
-    es: "bistros-restaurantes",
-  },
-  HOTELLERIE: {
-    it: "hotellerie",
-    fr: "hotellerie",
-    en: "hotellerie",
-    de: "hotellerie",
-    es: "hosteleria",
-  },
-  SPAZI_CULTURALI: {
-    it: "spazi-culturali",
-    fr: "espaces-culturels",
-    en: "cultural-spaces",
-    de: "kulturraume",
-    es: "espacios-culturales",
-  },
-  RESIDENZIALE: {
-    it: "residenziali",
-    fr: "residentiels",
-    en: "residential",
-    de: "wohnen",
-    es: "residenciales",
-  },
-};
-
-// ─── PRODUCT CATEGORY (Product.category macro) ───────────────────────────────
-export const PRODUCT_CATEGORY_SLUGS: Record<string, Record<Lang, string>> = {
-  CLASSICI: {
-    it: "classici",
-    fr: "les-classiques",
-    en: "classics",
-    de: "klassiker",
-    es: "clasicos",
-  },
-  TAVOLI: {
-    it: "tavoli",
-    fr: "tables",
-    en: "tables",
-    de: "tische",
-    es: "mesas",
-  },
-  SEDUTE: {
-    it: "sedute",
-    fr: "assises",
-    en: "seating",
-    de: "sitze",
-    es: "asientos",
-  },
-  IMBOTTITI: {
-    it: "imbottiti",
-    fr: "rembourres",
-    en: "upholstered",
-    de: "polstermobel",
-    es: "tapizados",
-  },
-  COMPLEMENTI: {
-    it: "complementi",
-    fr: "complements",
-    en: "accessories",
-    de: "zubehor",
-    es: "complementos",
-  },
-  OUTDOOR: {
-    it: "outdoor",
-    fr: "outdoor",
-    en: "outdoor",
-    de: "outdoor",
-    es: "outdoor",
-  },
-  "NOVITÀ_2025": {
-    it: "novita-2025",
-    fr: "nouveautes-2025",
-    en: "new-2025",
-    de: "neuheiten-2025",
-    es: "novedades-2025",
-  },
-};
 
 // ─── COUNTRY (Project.country canonical values — IT names) ────────────────────
 export const COUNTRY_SLUGS: Record<string, Record<Lang, string>> = {
@@ -128,10 +43,6 @@ export const COUNTRY_SLUGS: Record<string, Record<Lang, string>> = {
   "Rep. Dominicana": { it: "repubblica-dominicana", fr: "republique-dominicaine", en: "dominican-republic", de: "dominikanische-republik", es: "republica-dominicana" },
 };
 
-// ─── COUNTRY LABELS (human-readable per lang) ────────────────────────────────
-// Used for the "Country" dropdown on the projects page. Country values in the
-// DB are free-text Italian strings; we translate them to the active language
-// for display. Keys match the DB canonical value (IT).
 export const COUNTRY_LABELS: Record<string, Record<Lang, string>> = {
   Italia:            { it: "Italia",              fr: "Italie",                en: "Italy",             de: "Italien",                        es: "Italia" },
   Francia:           { it: "Francia",             fr: "France",                en: "France",            de: "Frankreich",                     es: "Francia" },
@@ -177,49 +88,35 @@ function buildReverseMap(map: Record<string, Record<Lang, string>>): Record<Lang
   return out as Record<Lang, Record<string, string>>;
 }
 
-const PROJECT_TYPE_REVERSE = buildReverseMap(PROJECT_TYPE_SLUGS);
-const PRODUCT_CATEGORY_REVERSE = buildReverseMap(PRODUCT_CATEGORY_SLUGS);
 const COUNTRY_REVERSE = buildReverseMap(COUNTRY_SLUGS);
 
 function isLang(x: string | undefined | null): x is Lang {
   return !!x && LANGS.includes(x as Lang);
 }
 
-/** slug (in given lang) → DB enum/value. Returns null if not found. */
-export function projectTypeSlugToEnum(slug: string, lang: string): string | null {
-  if (!isLang(lang)) return null;
-  return PROJECT_TYPE_REVERSE[lang][slug] || null;
-}
-export function productCategorySlugToEnum(slug: string, lang: string): string | null {
-  if (!isLang(lang)) return null;
-  return PRODUCT_CATEGORY_REVERSE[lang][slug] || null;
-}
 export function countrySlugToValue(slug: string, lang: string): string | null {
   if (!isLang(lang)) return null;
   return COUNTRY_REVERSE[lang][slug] || null;
 }
 
-/** DB enum/value → slug in given lang. Falls back to IT if the target lang
- *  is missing (shouldn't happen if mapping is complete). */
-export function projectTypeEnumToSlug(enumValue: string, lang: string): string | null {
-  if (!isLang(lang)) return null;
-  return PROJECT_TYPE_SLUGS[enumValue]?.[lang] || PROJECT_TYPE_SLUGS[enumValue]?.it || null;
-}
-export function productCategoryEnumToSlug(enumValue: string, lang: string): string | null {
-  if (!isLang(lang)) return null;
-  return PRODUCT_CATEGORY_SLUGS[enumValue]?.[lang] || PRODUCT_CATEGORY_SLUGS[enumValue]?.it || null;
-}
 export function countryValueToSlug(value: string, lang: string): string | null {
   if (!isLang(lang)) return null;
   return COUNTRY_SLUGS[value]?.[lang] || COUNTRY_SLUGS[value]?.it || null;
 }
 
 /**
- * Re-translate all known filter query params between languages. Used when the
- * language switcher changes /fr/... to /en/..., the filter slugs must adapt.
+ * Re-translate all known filter query params between languages. Called by the
+ * language switcher so that `/fr/produits?_tipologia=sieges` → `/it/prodotti?
+ * _tipologia=sedute`.
  *
- * Input: URLSearchParams in sourceLang. Output: a new URLSearchParams in
- * targetLang, with unknown keys preserved as-is.
+ * Dynamic params (_tipologia, _proj_type, _article_type, _campaigns_type)
+ * depend on the in-memory cache populated by `use-filter-slugs.ts`. Callers
+ * must call `ensureFilterSlugsLoaded()` once before invoking this function
+ * (the language switcher does so at mount time).
+ *
+ * `_proj_country` uses the static mapping above.
+ *
+ * Unknown params and unresolved values pass through unchanged.
  */
 export function translateFilterParams(
   params: URLSearchParams,
@@ -228,24 +125,24 @@ export function translateFilterParams(
 ): URLSearchParams {
   const out = new URLSearchParams();
   params.forEach((value, key) => {
-    if (key === "_proj_type") {
-      const enumV = projectTypeSlugToEnum(value, sourceLang);
-      const slug = enumV ? projectTypeEnumToSlug(enumV, targetLang) : null;
-      if (slug) out.set(key, slug);
-      else out.set(key, value);
-    } else if (key === "_proj_country") {
+    if (key === "_proj_country") {
       const dbV = countrySlugToValue(value, sourceLang);
       const slug = dbV ? countryValueToSlug(dbV, targetLang) : null;
-      if (slug) out.set(key, slug);
-      else out.set(key, value);
-    } else if (key === "_tipologia") {
-      const enumV = productCategorySlugToEnum(value, sourceLang);
-      const slug = enumV ? productCategoryEnumToSlug(enumV, targetLang) : null;
-      if (slug) out.set(key, slug);
-      else out.set(key, value);
-    } else {
-      out.set(key, value);
+      out.set(key, slug || value);
+      return;
     }
+    const dynamicType =
+      key === "_tipologia" ? "products" :
+      key === "_proj_type" ? "projects" :
+      key === "_article_type" ? "news" :
+      key === "_campaigns_type" ? "campaigns" :
+      null;
+    if (dynamicType) {
+      const translated = translateFilterSlug(dynamicType, value, sourceLang, targetLang);
+      out.set(key, translated || value);
+      return;
+    }
+    out.set(key, value);
   });
   return out;
 }

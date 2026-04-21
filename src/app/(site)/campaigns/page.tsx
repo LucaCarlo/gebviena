@@ -8,6 +8,7 @@ import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
+import { useFilterSlugs } from "@/lib/use-filter-slugs";
 import type { Campaign } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -23,7 +24,11 @@ function CampaignsContent() {
   const lang = useLang();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentCategory = searchParams.get("category") || "TUTTI";
+  const { ready: slugsReady, slugToValue, valueToSlug } = useFilterSlugs();
+  const urlCampaignsType = searchParams.get("_campaigns_type") || "";
+  const currentCategory = urlCampaignsType
+    ? (slugsReady ? (slugToValue("campaigns", urlCampaignsType, lang) || "TUTTI") : "")
+    : "TUTTI";
   const currentPage = parseInt(searchParams.get("page") || "1");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -37,6 +42,7 @@ function CampaignsContent() {
   }, [lang]);
 
   const fetchCampaigns = useCallback(async () => {
+    if (currentCategory === "") return;
     setLoading(true);
     const params = new URLSearchParams();
     if (currentCategory !== "TUTTI") params.set("category", currentCategory);
@@ -57,18 +63,24 @@ function CampaignsContent() {
 
   const categoryLabelMap = useMemo(() => buildLabelLookup(categories), [categories]);
 
-  const setCategory = (cat: string) => {
+  const buildCampaignsUrl = (catValue: string, page: number) => {
     const params = new URLSearchParams();
-    if (cat !== "TUTTI") params.set("category", cat);
-    router.push(`/campaigns?${params}`, { scroll: false });
+    if (catValue && catValue !== "TUTTI") {
+      const slug = valueToSlug("campaigns", catValue, lang);
+      if (slug) params.set("_campaigns_type", slug);
+    }
+    if (page > 1) params.set("page", String(page));
+    const qs = params.toString();
+    return `/campaigns${qs ? "?" + qs : ""}`;
+  };
+
+  const setCategory = (cat: string) => {
+    router.push(buildCampaignsUrl(cat, 1), { scroll: false });
     setTimeout(() => document.querySelector("section.py-8")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   const setPage = (page: number) => {
-    const params = new URLSearchParams();
-    if (currentCategory !== "TUTTI") params.set("category", currentCategory);
-    params.set("page", page.toString());
-    router.push(`/campaigns?${params}`, { scroll: false });
+    router.push(buildCampaignsUrl(currentCategory, page), { scroll: false });
     setTimeout(() => document.querySelector("section.py-8")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 

@@ -9,6 +9,7 @@ import { NAV_ITEMS } from "@/lib/constants";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
 import { localizeHref } from "@/lib/localize-href";
+import { useFilterSlugs } from "@/lib/use-filter-slugs";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -20,6 +21,9 @@ const DEFAULT_FEATURED_IMAGE = "https://images.unsplash.com/photo-1618221195710-
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const t = useT();
   const lang = useLang();
+  // Load the filter-slug cache so NAV_ITEMS hrefs like "/prodotti?_tipologia=sedute"
+  // get correctly translated by localizeHref once the DB labels are fetched.
+  useFilterSlugs();
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [featuredImage, setFeaturedImage] = useState<string>(DEFAULT_FEATURED_IMAGE);
 
