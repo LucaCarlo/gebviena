@@ -323,9 +323,12 @@ function ProjectsContent() {
     ]).then(([projectsResp, productsResp]) => {
       const projects: (Project & { products?: { productId: string }[] })[] = projectsResp.data || [];
 
-      // Count per country (filtered by current type)
+      // Country counter: exclude "country" itself from filters, but apply product if selected
+      const projectsForCountry = selectedProduct
+        ? projects.filter((p) => (p.products || []).some((pp) => pp.productId === selectedProduct))
+        : projects;
       const countryCounts: Record<string, number> = {};
-      projects.forEach((p) => {
+      projectsForCountry.forEach((p) => {
         if (!p.country) return;
         countryCounts[p.country] = (countryCounts[p.country] || 0) + 1;
       });
@@ -335,9 +338,12 @@ function ProjectsContent() {
           .map(([country, count]) => ({ value: country, label: country, count }))
       );
 
-      // Count per product (number of projects featuring each product, within current type)
+      // Product counter: exclude "product" itself from filters, but apply country if selected
+      const projectsForProduct = selectedCountry
+        ? projects.filter((p) => p.country === selectedCountry)
+        : projects;
       const productCounts: Record<string, number> = {};
-      projects.forEach((p) => {
+      projectsForProduct.forEach((p) => {
         (p.products || []).forEach((pp) => {
           productCounts[pp.productId] = (productCounts[pp.productId] || 0) + 1;
         });
@@ -352,7 +358,7 @@ function ProjectsContent() {
           .filter((o: FilterOption) => o.count > 0)
       );
     });
-  }, [lang, currentType]);
+  }, [lang, currentType, selectedCountry, selectedProduct]);
 
   const setType = (type: string) => {
     setSelectedCountry("");
