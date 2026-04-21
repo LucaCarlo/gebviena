@@ -183,11 +183,14 @@ export default function UiTranslationsPage() {
       if (data.success) {
         const translations = data.translations as Record<string, string>;
         setDrafts((p) => ({ ...p, ...translations }));
-        // Persist all
-        for (const [k, v] of Object.entries(translations)) {
-          await persistOne(k, v);
+        // Persist all — parallel with concurrency cap
+        const entries = Object.entries(translations);
+        const CONCURRENCY = 6;
+        for (let i = 0; i < entries.length; i += CONCURRENCY) {
+          const batch = entries.slice(i, i + CONCURRENCY);
+          await Promise.all(batch.map(([k, v]) => persistOne(k, v)));
         }
-        showToast(`${Object.keys(translations).length} stringhe tradotte e salvate`, "success");
+        showToast(`${entries.length} stringhe tradotte e salvate`, "success");
       } else {
         showToast(data.error || "Errore traduzione batch", "error");
       }

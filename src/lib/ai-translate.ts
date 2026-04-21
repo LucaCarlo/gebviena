@@ -70,7 +70,7 @@ async function callAnthropic(system: string, user: string, settings: AISettings)
     },
     body: JSON.stringify({
       model: settings.anthropicModel,
-      max_tokens: 4096,
+      max_tokens: 8192,
       system,
       messages: [{ role: "user", content: user }],
     }),
@@ -120,6 +120,48 @@ export async function translateText(text: string, opts: TranslateOptions): Promi
   return callAnthropic(system, text, settings);
 }
 
+/** Split entries into chunks bounded by entry count and total char size */
+function chunkEntries(
+  entries: [string, string][],
+  maxEntries: number,
+  maxChars: number
+): [string, string][][] {
+  const chunks: [string, string][][] = [];
+  let current: [string, string][] = [];
+  let currentChars = 0;
+  for (const [k, v] of entries) {
+    const entryChars = k.length + v.length + 8;
+    if (current.length >= maxEntries || (current.length > 0 && currentChars + entryChars > maxChars)) {
+      chunks.push(current);
+      current = [];
+      currentChars = 0;
+    }
+    current.push([k, v]);
+    currentChars += entryChars;
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks;
+}
+
+async function translateChunk(
+  entries: [string, string][],
+  system: string,
+  settings: AISettings
+): Promise<Record<string, string>> {
+  const user = JSON.stringify(Object.fromEntries(entries));
+  const raw = settings.provider === "openai"
+    ? await callOpenAI(system, user, settings)
+    : await callAnthropic(system, user, settings);
+  let json = raw.trim();
+  const fenceMatch = json.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fenceMatch) json = fenceMatch[1].trim();
+  try {
+    return JSON.parse(json) as Record<string, string>;
+  } catch {
+    throw new Error(`Risposta AI non in formato JSON valido (chunk di ${entries.length} campi)`);
+  }
+}
+
 export async function translateFields(
   fields: Record<string, string>,
   opts: TranslateOptions
@@ -130,22 +172,19 @@ export async function translateFields(
   const settings = await loadAISettings();
   const system = `${renderPrompt(settings.systemPromptTemplate, opts)}
 You will receive a JSON object with fields to translate. Return ONLY a JSON object with the same keys and translated values. No prose, no markdown fences.`;
-  const user = JSON.stringify(Object.fromEntries(entries));
 
-  const raw = settings.provider === "openai"
-    ? await callOpenAI(system, user, settings)
-    : await callAnthropic(system, user, settings);
+  const chunks = chunkEntries(entries, 30, 4000);
 
-  // Extract JSON (model may wrap in fences despite instructions)
-  let json = raw.trim();
-  const fenceMatch = json.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenceMatch) json = fenceMatch[1].trim();
-  try {
-    const parsed = JSON.parse(json) as Record<string, string>;
-    const out: Record<string, string> = {};
-    for (const k of Object.keys(fields)) out[k] = parsed[k] ?? fields[k];
-    return out;
-  } catch {
-    throw new Error("Risposta AI non in formato JSON valido");
+  // Limit concurrency to avoid rate limits
+  const CONCURRENCY = 3;
+  const merged: Record<string, string> = {};
+  for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+    const batch = chunks.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(batch.map((c) => translateChunk(c, system, settings)));
+    for (const r of results) Object.assign(merged, r);
   }
+
+  const out: Record<string, string> = {};
+  for (const k of Object.keys(fields)) out[k] = merged[k] ?? fields[k];
+  return out;
 }
