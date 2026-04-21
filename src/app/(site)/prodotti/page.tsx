@@ -8,6 +8,7 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
+import { productCategorySlugToEnum, productCategoryEnumToSlug } from "@/lib/filter-slugs";
 import type { Product, HeroSlide } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -194,7 +195,10 @@ function ProductsContent() {
   const lang = useLang();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentCategory = searchParams.get("category") || "TUTTI";
+
+  // URL uses lang-specific slug via `_tipologia`; convert to DB enum for filtering
+  const urlTipologia = searchParams.get("_tipologia") || "";
+  const currentCategory = urlTipologia ? (productCategorySlugToEnum(urlTipologia, lang) || "TUTTI") : "TUTTI";
   const currentSubcategory = searchParams.get("subcategory") || null;
   const currentPage = parseInt(searchParams.get("page") || "1");
   const [products, setProducts] = useState<Product[]>([]);
@@ -259,27 +263,40 @@ function ProductsContent() {
     fetchProducts();
   }, [fetchProducts]);
 
-  const setCategory = (cat: string) => {
+  /** Build URL with current filters + overrides, using lang-specific _tipologia slug. */
+  const buildProductsUrl = (overrides: {
+    category?: string;
+    subcategory?: string | null;
+    page?: number;
+  } = {}) => {
+    const catEnum = overrides.category !== undefined ? overrides.category : currentCategory;
+    const sub = overrides.subcategory !== undefined ? overrides.subcategory : currentSubcategory;
+    const page = overrides.page !== undefined ? overrides.page : 1;
+
     const params = new URLSearchParams();
-    if (cat !== "TUTTI") params.set("category", cat);
-    router.push(`/prodotti?${params}`, { scroll: false });
+    if (catEnum && catEnum !== "TUTTI") {
+      const slug = productCategoryEnumToSlug(catEnum, lang);
+      if (slug) params.set("_tipologia", slug);
+    }
+    if (sub) params.set("subcategory", sub);
+    if (page > 1) params.set("page", String(page));
+
+    const qs = params.toString();
+    return `/prodotti${qs ? "?" + qs : ""}`;
+  };
+
+  const setCategory = (cat: string) => {
+    router.push(buildProductsUrl({ category: cat, subcategory: null, page: 1 }), { scroll: false });
     setTimeout(() => document.querySelector("section.py-8")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   const setSubcategory = (sub: string | null) => {
-    const params = new URLSearchParams();
-    if (currentCategory !== "TUTTI") params.set("category", currentCategory);
-    if (sub) params.set("subcategory", sub);
-    router.push(`/prodotti?${params}`, { scroll: false });
+    router.push(buildProductsUrl({ subcategory: sub, page: 1 }), { scroll: false });
     setTimeout(() => document.querySelector("section.py-8")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   const setPage = (page: number) => {
-    const params = new URLSearchParams();
-    if (currentCategory !== "TUTTI") params.set("category", currentCategory);
-    if (currentSubcategory) params.set("subcategory", currentSubcategory);
-    params.set("page", page.toString());
-    router.push(`/prodotti?${params}`, { scroll: false });
+    router.push(buildProductsUrl({ page }), { scroll: false });
     setTimeout(() => document.querySelector("section.py-8")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 

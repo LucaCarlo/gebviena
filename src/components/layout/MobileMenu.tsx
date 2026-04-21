@@ -8,6 +8,7 @@ import Image from "next/image";
 import { NAV_ITEMS } from "@/lib/constants";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
+import { localizeHref } from "@/lib/localize-href";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -110,7 +111,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           </button>
                         ) : (
                           <Link
-                            href={localizePath(item.href, lang)}
+                            href={localizeHref(item.href, lang)}
                             onClick={onClose}
                             className="font-sans text-lg md:text-xl lg:text-2xl uppercase tracking-wider font-light text-dark transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[0.5px]"
                           >
@@ -180,7 +181,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                       {activeNav.children.map((child) => (
                         <li key={child.label}>
                           <Link
-                            href={localizePath(child.href, lang)}
+                            href={localizeHref(child.href, lang)}
                             onClick={onClose}
                             className="block font-sans text-sm md:text-base uppercase tracking-wider font-light transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap"
                             style={{ color: "#000000" }}

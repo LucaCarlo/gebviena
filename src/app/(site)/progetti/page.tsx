@@ -8,6 +8,12 @@ import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
+import {
+  projectTypeSlugToEnum,
+  projectTypeEnumToSlug,
+  countrySlugToValue,
+  countryValueToSlug,
+} from "@/lib/filter-slugs";
 import type { Project, HeroSlide } from "@/types";
 
 const ITEMS_PER_PAGE = 24;
@@ -250,17 +256,25 @@ function ProjectsContent() {
   const lang = useLang();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentType = searchParams.get("type") || "TUTTI";
+
+  // URL query params use language-specific slugs; convert to DB enum/value for filtering
+  const urlProjType = searchParams.get("_proj_type") || "";
+  const currentType = urlProjType ? (projectTypeSlugToEnum(urlProjType, lang) || "TUTTI") : "TUTTI";
+  const urlCountrySlug = searchParams.get("_proj_country") || "";
+  const initialCountry = urlCountrySlug ? (countrySlugToValue(urlCountrySlug, lang) || "") : "";
+  const urlProductSlug = searchParams.get("_proj_product") || "";
   const currentPage = parseInt(searchParams.get("page") || "1");
-  const urlProductId = searchParams.get("productId") || "";
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [countryOptions, setCountryOptions] = useState<FilterOption[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState(initialCountry);
   const [productOptions, setProductOptions] = useState<FilterOption[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState(urlProductId);
+  // selectedProduct is the Product.slug (matches _proj_product in URL)
+  const [selectedProduct, setSelectedProduct] = useState(urlProductSlug);
+  // Reverse map: Product.slug → Product.id (needed because API filters by productId)
+  const [productIdBySlug, setProductIdBySlug] = useState<Record<string, string>>({});
   const [projectCategories, setProjectCategories] = useState<CategoryItem[]>([]);
   const separatorRef = useRef<HTMLDivElement>(null);
   const typeButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -298,7 +312,9 @@ function ProjectsContent() {
     const params = new URLSearchParams();
     if (currentType !== "TUTTI") params.set("type", currentType);
     if (selectedCountry) params.set("country", selectedCountry);
-    if (selectedProduct) params.set("productId", selectedProduct);
+    // Convert product slug → id for the API (API still expects productId)
+    const productId = selectedProduct ? productIdBySlug[selectedProduct] : "";
+    if (productId) params.set("productId", productId);
     params.set("page", currentPage.toString());
     params.set("limit", ITEMS_PER_PAGE.toString());
     params.set("lang", lang);
@@ -308,7 +324,7 @@ function ProjectsContent() {
     setProjects(data.data || []);
     setTotalPages(data.meta?.totalPages || 1);
     setLoading(false);
-  }, [currentType, currentPage, selectedCountry, selectedProduct, lang]);
+  }, [currentType, currentPage, selectedCountry, selectedProduct, productIdBySlug, lang]);
 
   useEffect(() => {
     fetchProjects();
@@ -322,10 +338,17 @@ function ProjectsContent() {
       fetch(`/api/products?limit=500&lang=${lang}`).then((r) => r.json()),
     ]).then(([projectsResp, productsResp]) => {
       const projects: (Project & { products?: { productId: string }[] })[] = projectsResp.data || [];
+      const products: { id: string; name: string; slug: string }[] = productsResp.data || [];
+
+      // Build slug → id reverse map for API calls
+      const idBySlug: Record<string, string> = {};
+      products.forEach((p) => { idBySlug[p.slug] = p.id; });
+      setProductIdBySlug(idBySlug);
+      const selectedProductId = selectedProduct ? idBySlug[selectedProduct] : "";
 
       // Country counter: exclude "country" itself from filters, but apply product if selected
-      const projectsForCountry = selectedProduct
-        ? projects.filter((p) => (p.products || []).some((pp) => pp.productId === selectedProduct))
+      const projectsForCountry = selectedProductId
+        ? projects.filter((p) => (p.products || []).some((pp) => pp.productId === selectedProductId))
         : projects;
       const countryCounts: Record<string, number> = {};
       projectsForCountry.forEach((p) => {
@@ -349,9 +372,9 @@ function ProjectsContent() {
         });
       });
       setProductOptions(
-        (productsResp.data || [])
-          .map((p: { id: string; name: string }) => ({
-            value: p.id,
+        products
+          .map((p) => ({
+            value: p.slug,
             label: p.name,
             count: productCounts[p.id] || 0,
           }))
@@ -360,21 +383,43 @@ function ProjectsContent() {
     });
   }, [lang, currentType, selectedCountry, selectedProduct]);
 
+  /** Build URL for projects page with current state + overrides, using lang-specific slugs. */
+  const buildProjectsUrl = (overrides: {
+    type?: string;
+    country?: string;
+    productSlug?: string;
+    page?: number;
+  } = {}) => {
+    const typeEnum = overrides.type !== undefined ? overrides.type : currentType;
+    const countryValue = overrides.country !== undefined ? overrides.country : selectedCountry;
+    const productSlug = overrides.productSlug !== undefined ? overrides.productSlug : selectedProduct;
+    const page = overrides.page !== undefined ? overrides.page : 1;
+
+    const params = new URLSearchParams();
+    if (typeEnum && typeEnum !== "TUTTI") {
+      const slug = projectTypeEnumToSlug(typeEnum, lang);
+      if (slug) params.set("_proj_type", slug);
+    }
+    if (countryValue) {
+      const slug = countryValueToSlug(countryValue, lang);
+      if (slug) params.set("_proj_country", slug);
+    }
+    if (productSlug) params.set("_proj_product", productSlug);
+    if (page > 1) params.set("page", String(page));
+
+    const qs = params.toString();
+    return `/progetti${qs ? "?" + qs : ""}`;
+  };
+
   const setType = (type: string) => {
     setSelectedCountry("");
     setSelectedProduct("");
-    const params = new URLSearchParams();
-    if (type !== "TUTTI") params.set("type", type);
-    router.push(`/progetti?${params}`, { scroll: false });
+    router.push(buildProjectsUrl({ type, country: "", productSlug: "", page: 1 }), { scroll: false });
     setTimeout(() => document.querySelector("section.pt-2")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
   const setPage = (page: number) => {
-    const params = new URLSearchParams();
-    if (currentType !== "TUTTI") params.set("type", currentType);
-    if (selectedCountry) params.set("country", selectedCountry);
-    params.set("page", page.toString());
-    router.push(`/progetti?${params}`, { scroll: false });
+    router.push(buildProjectsUrl({ page }), { scroll: false });
     setTimeout(() => document.querySelector("section.pt-2")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   };
 
@@ -477,13 +522,19 @@ function ProjectsContent() {
             label={t("progetti.filter.country")}
             options={countryOptions}
             value={selectedCountry}
-            onChange={setSelectedCountry}
+            onChange={(v) => {
+              setSelectedCountry(v);
+              router.push(buildProjectsUrl({ country: v, page: 1 }), { scroll: false });
+            }}
           />
           <FilterDropdown
             label={t("progetti.filter.product")}
             options={productOptions}
             value={selectedProduct}
-            onChange={setSelectedProduct}
+            onChange={(v) => {
+              setSelectedProduct(v);
+              router.push(buildProjectsUrl({ productSlug: v, page: 1 }), { scroll: false });
+            }}
           />
         </div>
       </div>

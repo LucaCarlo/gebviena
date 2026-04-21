@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useLang } from "@/contexts/I18nContext";
 import { translateSegmentsBackward, translateSegmentsForward, DEFAULT_LANG } from "@/lib/path-segments";
+import { translateFilterParams } from "@/lib/filter-slugs";
 
 interface Language {
   code: string;
@@ -20,6 +21,7 @@ interface Props {
 
 export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const currentLang = useLang();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [open, setOpen] = useState(false);
@@ -53,7 +55,10 @@ export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
     const target = lang.isDefault ? DEFAULT_LANG : (lang.urlPrefix || lang.code);
     const translated = translateSegmentsForward(segments, target);
     const path = translated.length ? "/" + translated.join("/") : "/";
-    const destination = lang.isDefault ? path : `/${target}${path === "/" ? "" : path}`;
+    // Preserve and translate known filter query params (e.g. _tipologia, _proj_type)
+    const translatedParams = translateFilterParams(new URLSearchParams(searchParams.toString()), currentLang, target);
+    const qs = translatedParams.toString();
+    const destination = (lang.isDefault ? path : `/${target}${path === "/" ? "" : path}`) + (qs ? `?${qs}` : "");
     // Persist preference so hardcoded Italian links keep redirecting to EN
     document.cookie = `gtv_lang=${target}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
     window.location.href = destination;

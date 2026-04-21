@@ -10,6 +10,7 @@ import type { Product, Designer, Project } from "@/types";
 import { buildPconUrl } from "@/lib/pcon";
 import { useLang, useT } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
+import { localizeHref } from "@/lib/localize-href";
 import GallerySlideshow from "@/components/site/GallerySlideshow";
 
 interface ProductDetail extends Omit<Product, "projects"> {
@@ -732,7 +733,7 @@ export default function ProductDetailPage() {
                 </h3>
                 <div className="flex flex-col gap-4 mt-8">
                   <Link
-                    href={localizePath(`/progetti?productId=${product.id}`, lang)}
+                    href={localizeHref(`/progetti?_proj_product=${product.slug}`, lang)}
                     className="inline-block uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
                     style={{ textUnderlineOffset: "8px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
                   >

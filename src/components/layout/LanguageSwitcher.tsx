@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useLang } from "@/contexts/I18nContext";
 import { translateSegmentsBackward, translateSegmentsForward, DEFAULT_LANG } from "@/lib/path-segments";
+import { translateFilterParams } from "@/lib/filter-slugs";
 
 const LANG_NAMES: Record<string, Record<string, string>> = {
   it: { it: "Italiano", en: "Inglese", de: "Tedesco", fr: "Francese", es: "Spagnolo" },
@@ -27,6 +28,7 @@ interface Language {
 
 export default function LanguageSwitcher() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const currentLang = useLang();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [open, setOpen] = useState(false);
@@ -63,7 +65,10 @@ export default function LanguageSwitcher() {
     const target = lang.isDefault ? DEFAULT_LANG : (lang.urlPrefix || lang.code);
     const translated = translateSegmentsForward(segments, target);
     const path = translated.length ? "/" + translated.join("/") : "/";
-    const destination = lang.isDefault ? path : `/${target}${path === "/" ? "" : path}`;
+    // Preserve and translate known filter query params (e.g. _tipologia, _proj_type)
+    const translatedParams = translateFilterParams(new URLSearchParams(searchParams.toString()), currentLang, target);
+    const qs = translatedParams.toString();
+    const destination = (lang.isDefault ? path : `/${target}${path === "/" ? "" : path}`) + (qs ? `?${qs}` : "");
     document.cookie = `gtv_lang=${target}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
     window.location.href = destination;
   };

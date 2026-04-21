@@ -337,11 +337,11 @@ export const NAV_ITEMS = [
     children: [
       { label: "TUTTI I PRODOTTI", i18nKey: "menu.products.all", href: "/prodotti" },
       { label: "COMPLEMENTI", i18nKey: "menu.products.complementi", href: "/prodotti?category=COMPLEMENTI" },
-      { label: "I CLASSICI", i18nKey: "menu.products.classici", href: "/prodotti?category=CLASSICI" },
-      { label: "IMBOTTITI", i18nKey: "menu.products.imbottiti", href: "/prodotti?category=IMBOTTITI" },
-      { label: "OUTDOOR", i18nKey: "menu.products.outdoor", href: "/prodotti?category=OUTDOOR" },
-      { label: "SEDUTE", i18nKey: "menu.products.sedute", href: "/prodotti?category=SEDUTE" },
-      { label: "TAVOLI", i18nKey: "menu.products.tavoli", href: "/prodotti?category=TAVOLI" },
+      { label: "I CLASSICI", i18nKey: "menu.products.classici", href: "/prodotti?_tipologia=classici" },
+      { label: "IMBOTTITI", i18nKey: "menu.products.imbottiti", href: "/prodotti?_tipologia=imbottiti" },
+      { label: "OUTDOOR", i18nKey: "menu.products.outdoor", href: "/prodotti?_tipologia=outdoor" },
+      { label: "SEDUTE", i18nKey: "menu.products.sedute", href: "/prodotti?_tipologia=sedute" },
+      { label: "TAVOLI", i18nKey: "menu.products.tavoli", href: "/prodotti?_tipologia=tavoli" },
     ],
   },
   {
@@ -350,10 +350,10 @@ export const NAV_ITEMS = [
     href: "/progetti",
     children: [
       { label: "TUTTI I PROGETTI", i18nKey: "menu.projects.all", href: "/progetti" },
-      { label: "BISTROT & RESTAURANT", i18nKey: "menu.projects.bistrot", href: "/progetti?type=BISTROT_RESTAURANT" },
-      { label: "HOTELLERIE", i18nKey: "menu.projects.hotellerie", href: "/progetti?type=HOTELLERIE" },
-      { label: "SPAZI CULTURALI", i18nKey: "menu.projects.cultural", href: "/progetti?type=SPAZI_CULTURALI" },
-      { label: "RESIDENZIALI", i18nKey: "menu.projects.residential", href: "/progetti?type=RESIDENZIALE" },
+      { label: "BISTROT & RESTAURANT", i18nKey: "menu.projects.bistrot", href: "/progetti?_proj_type=bistrot-restaurant" },
+      { label: "HOTELLERIE", i18nKey: "menu.projects.hotellerie", href: "/progetti?_proj_type=hotellerie" },
+      { label: "SPAZI CULTURALI", i18nKey: "menu.projects.cultural", href: "/progetti?_proj_type=spazi-culturali" },
+      { label: "RESIDENZIALI", i18nKey: "menu.projects.residential", href: "/progetti?_proj_type=residenziali" },
     ],
   },
   {

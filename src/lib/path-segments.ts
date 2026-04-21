@@ -160,3 +160,4 @@ export function localizePath(path: string, lang: string, langPrefix?: string | n
   const prefix = langPrefix || lang;
   return `/${prefix}` + (translated.length ? "/" + translated.join("/") : "");
 }
+
