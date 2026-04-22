@@ -14,7 +14,7 @@ function NewHeroSlideContent() {
     <div>
       <div className="flex items-center gap-3 mb-8">
         <Link
-          href="/admin/gestione-immagini"
+          href="/admin/gestione-contenuti"
           className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors"
         >
           <ArrowLeft size={20} />

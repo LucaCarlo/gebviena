@@ -86,7 +86,7 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
       const data = await res.json();
 
       if (data.success) {
-        router.push("/admin/gestione-immagini");
+        router.push("/admin/gestione-contenuti");
       } else {
         setError(data.error || "Errore nel salvataggio");
       }

@@ -131,7 +131,7 @@ const navSections: NavSection[] = [
   {
     label: "Configurazione",
     items: [
-      { href: "/admin/gestione-immagini", label: "Gestione Contenuti", icon: Images, permission: "hero.view" },
+      { href: "/admin/gestione-contenuti", label: "Gestione Contenuti", icon: Images, permission: "hero.view" },
       { href: "/admin/media", label: "Media", icon: ImageIcon, permission: "media.view" },
       { href: "/admin/translations", label: "Traduzioni del sito", icon: Languages, permission: "settings.view" },
       { href: "/admin/redirects", label: "Redirect URL", icon: ArrowRightLeft, permission: "settings.view" },
