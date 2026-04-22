@@ -143,8 +143,10 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
     strings: [
       { key: "home.featured.label", defaultValue: "Nuovo prodotto" },
       { key: "home.featured.title", defaultValue: "Una silhouette\nmorbida\ne accogliente" },
+      { key: "home.featured.cta", defaultValue: "Scopri il prodotto" },
       { key: "home.spotlight.label", defaultValue: "Icona del design" },
       { key: "home.spotlight.title", defaultValue: "L'eleganza\nsenza tempo\ndel legno curvato" },
+      { key: "home.spotlight.cta", defaultValue: "Scopri il prodotto" },
       { key: "home.wood.title", defaultValue: "L'armonia del legno" },
       { key: "home.wood.cta", defaultValue: "Scopri l'arte del legno curvato" },
       { key: "home.banner.title", defaultValue: "Sedute che invitano a restare,\nmomenti che prendono forma" },

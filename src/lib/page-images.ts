@@ -20,6 +20,24 @@ export async function getPageImages(
 }
 
 /**
+ * Like getPageImages, but also returns per-section linkUrls
+ * (only included when a non-empty linkUrl is stored in the DB).
+ */
+export async function getPageImagesWithLinks(
+  page: string,
+  defaults: Record<string, string>
+): Promise<{ images: Record<string, string>; links: Record<string, string> }> {
+  const dbImages = await prisma.pageImage.findMany({ where: { page } });
+  const images = { ...defaults };
+  const links: Record<string, string> = {};
+  for (const img of dbImages) {
+    images[img.section] = img.imageUrl;
+    if (img.linkUrl && img.linkUrl.trim()) links[img.section] = img.linkUrl;
+  }
+  return { images, links };
+}
+
+/**
  * Fetch card images for related pages.
  * Priority: PageImage "card" section > HeroSlide coverImage > HeroSlide imageUrl
  */

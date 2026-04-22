@@ -9,11 +9,15 @@ import { localizePath } from "@/lib/path-segments";
 interface FeaturedProductProps {
   ambianceImage: string;
   productImage: string;
+  ctaLink?: string;
 }
 
-export default function FeaturedProduct({ ambianceImage, productImage }: FeaturedProductProps) {
+export default function FeaturedProduct({ ambianceImage, productImage, ctaLink }: FeaturedProductProps) {
   const t = useT();
   const lang = useLang();
+  const href = ctaLink && ctaLink.trim()
+    ? (/^https?:\/\//.test(ctaLink) ? ctaLink : localizePath(ctaLink, lang))
+    : localizePath("/prodotti", lang);
   return (
     <section className="w-full">
       <div className="grid grid-cols-1 lg:grid-cols-2 items-start">
@@ -70,11 +74,11 @@ export default function FeaturedProduct({ ambianceImage, productImage }: Feature
               {t("home.featured.title")}
             </h2>
             <Link
-              href={localizePath("/prodotti", lang)}
+              href={href}
               className="inline-block mt-[16px] uppercase text-[16px] tracking-[0.03em] !text-black font-medium hover:underline"
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
-              {t("common.discover_product")} &rarr;
+              {t("home.featured.cta")} &rarr;
             </Link>
           </motion.div>
         </div>

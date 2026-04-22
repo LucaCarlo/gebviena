@@ -49,7 +49,7 @@ export default function UiTranslationsPage() {
           setLanguages(data.data);
           const def = (data.data as Language[]).find((l) => l.isDefault);
           if (def) setDefaultCode(def.code);
-          const first = (data.data as Language[]).find((l) => !l.isDefault);
+          const first = (data.data as Language[]).find((l) => !l.isDefault) || (data.data as Language[])[0];
           if (first) setTargetLang(first.code);
         }
       });
@@ -229,8 +229,8 @@ export default function UiTranslationsPage() {
             onChange={(e) => setTargetLang(e.target.value)}
             className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none"
           >
-            {languages.filter((l) => !l.isDefault).map((l) => (
-              <option key={l.code} value={l.code}>{l.flag || ""} {l.name}</option>
+            {languages.map((l) => (
+              <option key={l.code} value={l.code}>{l.flag || ""} {l.name}{l.isDefault ? " (default)" : ""}</option>
             ))}
           </select>
         </div>

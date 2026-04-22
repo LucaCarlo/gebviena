@@ -13,10 +13,26 @@ import {
   Trash2,
   Image as LucideImage,
   Images,
+  Languages,
 } from "lucide-react";
 import { HERO_PAGES, PAGE_IMAGES_CONFIG } from "@/lib/constants";
 import ImageUploadField from "@/components/admin/ImageUploadField";
+import { UI_STRINGS_BY_KEY } from "@/lib/ui-strings";
 import type { HeroSlide, PageImage } from "@/types";
+
+interface LanguageRow {
+  code: string;
+  name: string;
+  flag: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+interface UiOverride {
+  key: string;
+  languageCode: string;
+  value: string;
+}
 
 /* ── Build unified list of all pages ── */
 const ALL_PAGES: { value: string; label: string; hasHero: boolean; hasImages: boolean }[] = (() => {
@@ -50,6 +66,14 @@ export default function GestioneImmaginiPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  /* ── i18n state (per-section editable texts) ── */
+  const [languages, setLanguages] = useState<LanguageRow[]>([]);
+  const [targetLang, setTargetLang] = useState<string>("it");
+  // overrides[key][lang] = value
+  const [textOverrides, setTextOverrides] = useState<Record<string, Record<string, string>>>({});
+  // textEdits[`${lang}:${key}`] = value
+  const [textEdits, setTextEdits] = useState<Record<string, string>>({});
+
   /* ── Fetch data ── */
   const fetchSlides = useCallback(async () => {
     try {
@@ -75,10 +99,39 @@ export default function GestioneImmaginiPage() {
     }
   }, []);
 
+  const fetchLanguages = useCallback(async () => {
+    try {
+      const res = await fetch("/api/languages");
+      const data = await res.json();
+      if (data.success) {
+        setLanguages(data.data);
+        const def = (data.data as LanguageRow[]).find((l) => l.isDefault);
+        if (def) setTargetLang(def.code);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const fetchTextOverrides = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/ui-translations");
+      const data = await res.json();
+      if (data.success) {
+        const map: Record<string, Record<string, string>> = {};
+        for (const o of data.data as UiOverride[]) {
+          if (!map[o.key]) map[o.key] = {};
+          map[o.key][o.languageCode] = o.value;
+        }
+        setTextOverrides(map);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => {
     fetchSlides();
     fetchImages();
-  }, [fetchSlides, fetchImages]);
+    fetchLanguages();
+    fetchTextOverrides();
+  }, [fetchSlides, fetchImages, fetchLanguages, fetchTextOverrides]);
 
   /* ── Hero slide actions ── */
   const handleDeleteSlide = async (id: string) => {
@@ -116,6 +169,22 @@ export default function GestioneImmaginiPage() {
     setSaved(false);
   };
 
+  /* ── Text (UI translation override) helpers ── */
+  const getTextValue = (uiKey: string, lang: string) => {
+    const editKey = `${lang}:${uiKey}`;
+    if (editKey in textEdits) return textEdits[editKey];
+    const override = textOverrides[uiKey]?.[lang];
+    if (override !== undefined) return override;
+    // Fallback to IT default from code
+    return UI_STRINGS_BY_KEY[uiKey]?.defaultValue ?? "";
+  };
+
+  const handleTextChange = (uiKey: string, lang: string, value: string) => {
+    setTextEdits((prev) => ({ ...prev, [`${lang}:${uiKey}`]: value }));
+    setDirty(true);
+    setSaved(false);
+  };
+
   const handleImageRemove = (page: string, section: string, defaultUrl: string) => {
     handleImageChange(page, section, defaultUrl);
   };
@@ -148,16 +217,38 @@ export default function GestioneImmaginiPage() {
         body: JSON.stringify({ images: imagesToSave }),
       });
       const data = await res.json();
-      if (data.success) {
-        setSaved(true);
-        setDirty(false);
-        setEdits({});
-        setLinkEdits({});
-        await fetchImages();
-        setTimeout(() => setSaved(false), 3000);
-      } else {
+      if (!data.success) {
         alert("Errore: " + (data.error || "Salvataggio fallito"));
+        setSaving(false);
+        return;
       }
+
+      // Persist text edits (UI translation overrides), with concurrency cap
+      const textEntries = Object.entries(textEdits);
+      if (textEntries.length > 0) {
+        const CONCURRENCY = 6;
+        for (let i = 0; i < textEntries.length; i += CONCURRENCY) {
+          const batch = textEntries.slice(i, i + CONCURRENCY);
+          await Promise.all(batch.map(async ([composite, value]) => {
+            const idx = composite.indexOf(":");
+            const lang = composite.slice(0, idx);
+            const uiKey = composite.slice(idx + 1);
+            await fetch("/api/admin/ui-translations", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ key: uiKey, languageCode: lang, value }),
+            });
+          }));
+        }
+      }
+
+      setSaved(true);
+      setDirty(false);
+      setEdits({});
+      setLinkEdits({});
+      setTextEdits({});
+      await Promise.all([fetchImages(), fetchTextOverrides()]);
+      setTimeout(() => setSaved(false), 3000);
     } catch {
       alert("Errore durante il salvataggio");
     } finally {
@@ -220,12 +311,28 @@ export default function GestioneImmaginiPage() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-warm-800">Gestione Immagini</h1>
+          <h1 className="text-2xl font-semibold text-warm-800">Gestione Contenuti</h1>
           <p className="text-sm text-warm-500 mt-1">
-            Hero slides e immagini di pagina per tutto il sito
+            Hero slides, immagini, testi e link di pagina per tutto il sito
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {languages.length > 0 && (
+            <div className="flex items-center gap-2 bg-white border border-warm-200 rounded-lg px-3 py-1.5">
+              <Languages size={14} className="text-warm-500" />
+              <span className="text-[11px] font-semibold text-warm-600 uppercase tracking-wider">Testi in</span>
+              <select
+                value={targetLang}
+                onChange={(e) => setTargetLang(e.target.value)}
+                className="text-sm focus:outline-none bg-transparent"
+                title="Lingua dei testi modificabili per sezione"
+              >
+                {languages.map((l) => (
+                  <option key={l.code} value={l.code}>{l.flag || ""} {l.name}{l.isDefault ? " (default)" : ""}</option>
+                ))}
+              </select>
+            </div>
+          )}
           {!hasImageData && (
             <button
               onClick={handleInitialize}
@@ -247,7 +354,7 @@ export default function GestioneImmaginiPage() {
             ) : (
               <Save size={16} />
             )}
-            {saving ? "Salvataggio..." : saved ? "Salvato!" : "Salva immagini"}
+            {saving ? "Salvataggio..." : saved ? "Salvato!" : "Salva"}
           </button>
         </div>
       </div>
@@ -448,10 +555,49 @@ export default function GestioneImmaginiPage() {
                                   type="url"
                                   value={getLinkUrl(pageConfig.page, imgConfig.section)}
                                   onChange={(e) => handleLinkChange(pageConfig.page, imgConfig.section, e.target.value)}
-                                  placeholder="https://..."
+                                  placeholder="https://... oppure /prodotti/nome-prodotto"
                                   className="w-full border border-warm-300 rounded px-3 py-1.5 text-xs focus:border-warm-800 focus:outline-none"
                                 />
-                                <p className="text-[10px] text-warm-400 mt-1">Se compilato, l&apos;immagine sarà cliccabile e porterà a questo URL.</p>
+                                <p className="text-[10px] text-warm-400 mt-1">Se compilato, il CTA della sezione punterà a questo URL (accetta path interni o URL completi).</p>
+                              </div>
+                            )}
+                            {imgConfig.textKeys && imgConfig.textKeys.length > 0 && (
+                              <div className="space-y-2 pt-2 border-t border-warm-100">
+                                <p className="text-[11px] font-semibold text-warm-600 uppercase tracking-wider">
+                                  Testi ({targetLang.toUpperCase()})
+                                </p>
+                                {imgConfig.textKeys.map((tk) => {
+                                  const currentValue = getTextValue(tk.key, targetLang);
+                                  const hasOverride = !!textOverrides[tk.key]?.[targetLang];
+                                  const isEdited = `${targetLang}:${tk.key}` in textEdits;
+                                  return (
+                                    <div key={tk.key}>
+                                      <label className="block text-[10px] font-medium text-warm-500 mb-1">
+                                        {tk.label}
+                                        <code className="ml-2 text-warm-400">{tk.key}</code>
+                                      </label>
+                                      {tk.long ? (
+                                        <textarea
+                                          value={currentValue}
+                                          onChange={(e) => handleTextChange(tk.key, targetLang, e.target.value)}
+                                          rows={3}
+                                          className={`w-full border rounded px-3 py-1.5 text-xs focus:outline-none resize-y ${
+                                            isEdited ? "border-amber-400 bg-amber-50" : hasOverride ? "border-green-300 bg-green-50" : "border-warm-300"
+                                          }`}
+                                        />
+                                      ) : (
+                                        <input
+                                          type="text"
+                                          value={currentValue}
+                                          onChange={(e) => handleTextChange(tk.key, targetLang, e.target.value)}
+                                          className={`w-full border rounded px-3 py-1.5 text-xs focus:outline-none ${
+                                            isEdited ? "border-amber-400 bg-amber-50" : hasOverride ? "border-green-300 bg-green-50" : "border-warm-300"
+                                          }`}
+                                        />
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>

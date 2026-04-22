@@ -50,11 +50,10 @@ async function loadOverrides(lang: string): Promise<Map<string, string>> {
 
 /**
  * Translate a UI string key.
- * Order: DB override for current lang → default IT string → key itself.
+ * Order: DB override for current lang (including IT) → default IT string from code → key itself.
  */
 export async function t(key: string): Promise<string> {
   const lang = getCurrentLang();
-  if (lang === DEFAULT_LANG) return getDefaultString(key);
   const overrides = await loadOverrides(lang);
   return overrides.get(key) ?? getDefaultString(key);
 }
@@ -65,11 +64,6 @@ export async function t(key: string): Promise<string> {
  */
 export async function tBatch(keys: string[]): Promise<Record<string, string>> {
   const lang = getCurrentLang();
-  if (lang === DEFAULT_LANG) {
-    const out: Record<string, string> = {};
-    for (const k of keys) out[k] = getDefaultString(k);
-    return out;
-  }
   const overrides = await loadOverrides(lang);
   const out: Record<string, string> = {};
   for (const k of keys) out[k] = overrides.get(k) ?? getDefaultString(k);
@@ -82,7 +76,6 @@ export async function tBatch(keys: string[]): Promise<Record<string, string>> {
  */
 export async function loadAllUiTranslations(lang?: string): Promise<Record<string, string>> {
   const code = lang || getCurrentLang();
-  if (code === DEFAULT_LANG) return {};
   const overrides = await loadOverrides(code);
   return Object.fromEntries(overrides);
 }

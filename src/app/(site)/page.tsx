@@ -5,7 +5,7 @@ import FullWidthBanner from "@/components/home/FullWidthBanner";
 import ProductSpotlight from "@/components/home/ProductSpotlight";
 import BornInVienna from "@/components/home/BornInVienna";
 import WoodCraftsmanship from "@/components/home/WoodCraftsmanship";
-import { getPageImages } from "@/lib/page-images";
+import { getPageImagesWithLinks } from "@/lib/page-images";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ const HOMEPAGE_DEFAULTS: Record<string, string> = {
 };
 
 export default async function HomePage() {
-  const images = await getPageImages("homepage", HOMEPAGE_DEFAULTS);
+  const { images, links } = await getPageImagesWithLinks("homepage", HOMEPAGE_DEFAULTS);
 
   return (
     <>
@@ -28,12 +28,14 @@ export default async function HomePage() {
       <FeaturedProduct
         ambianceImage={images["featured-ambiance"]}
         productImage={images["featured-product"]}
+        ctaLink={links["featured-product"]}
       />
       <CategoryCarousel />
       <FullWidthBanner bannerImage={images["banner-fullwidth"]} />
       <ProductSpotlight
         ambianceImage={images["spotlight-ambiance"]}
         productImage={images["spotlight-product"]}
+        ctaLink={links["spotlight-product"]}
       />
       <BornInVienna historicalImage={images["born-in-vienna"]} />
       <WoodCraftsmanship videoUrl={images["wood-craftsmanship-video"]} />

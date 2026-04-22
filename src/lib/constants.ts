@@ -154,7 +154,16 @@ export function buildPermissions(value: boolean): Record<string, boolean> {
 export const PAGE_IMAGES_CONFIG: {
   page: string;
   label: string;
-  images: { section: string; label: string; defaultUrl: string; acceptVideo?: boolean; aspectRatio?: number; acceptLink?: boolean }[];
+  images: {
+    section: string;
+    label: string;
+    defaultUrl: string;
+    acceptVideo?: boolean;
+    aspectRatio?: number;
+    acceptLink?: boolean;
+    /** UI translation keys whose values drive texts on this section (rendered as editable fields in Gestione Contenuti). */
+    textKeys?: { key: string; label: string; long?: boolean }[];
+  }[];
 }[] = [
   {
     page: "menu",
@@ -175,10 +184,32 @@ export const PAGE_IMAGES_CONFIG: {
     label: "Homepage",
     images: [
       { section: "featured-ambiance", label: "Featured Product — Ambiance", defaultUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1200&h=2000&fit=crop&q=85", aspectRatio: 3/5 },
-      { section: "featured-product", label: "Featured Product — Prodotto", defaultUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=900&h=1200&fit=crop&q=85", aspectRatio: 3/4 },
+      {
+        section: "featured-product",
+        label: "Featured Product — Prodotto",
+        defaultUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=900&h=1200&fit=crop&q=85",
+        aspectRatio: 3/4,
+        acceptLink: true,
+        textKeys: [
+          { key: "home.featured.label", label: "Etichetta" },
+          { key: "home.featured.title", label: "Titolo", long: true },
+          { key: "home.featured.cta", label: "Testo CTA" },
+        ],
+      },
       { section: "banner-fullwidth", label: "Banner a tutta larghezza", defaultUrl: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=2560&h=1700&fit=crop&q=90", aspectRatio: 3/2 },
       { section: "spotlight-ambiance", label: "Product Spotlight — Ambiance", defaultUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=2000&fit=crop&q=85", aspectRatio: 3/5 },
-      { section: "spotlight-product", label: "Product Spotlight — Prodotto", defaultUrl: "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=900&h=1200&fit=crop&q=85", aspectRatio: 3/4 },
+      {
+        section: "spotlight-product",
+        label: "Product Spotlight — Prodotto",
+        defaultUrl: "https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=900&h=1200&fit=crop&q=85",
+        aspectRatio: 3/4,
+        acceptLink: true,
+        textKeys: [
+          { key: "home.spotlight.label", label: "Etichetta" },
+          { key: "home.spotlight.title", label: "Titolo", long: true },
+          { key: "home.spotlight.cta", label: "Testo CTA" },
+        ],
+      },
       { section: "born-in-vienna", label: "Born in Vienna — Immagine storica", defaultUrl: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=1400&h=900&fit=crop&q=85", aspectRatio: 14/9 },
       { section: "wood-craftsmanship-video", label: "L'armonia del legno — Video", defaultUrl: "https://assets.mixkit.co/videos/44862/44862-720.mp4", acceptVideo: true },
     ],
