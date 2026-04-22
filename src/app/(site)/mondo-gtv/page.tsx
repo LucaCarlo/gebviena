@@ -4,17 +4,23 @@ import { getRelatedCardImages } from "@/lib/page-images";
 import { tBatch } from "@/lib/i18n";
 
 const PAGES = [
-  { page: "brand-manifesto", label: "Brand Manifesto", href: "/mondo-gtv/brand-manifesto" },
-  { page: "heritage", label: "Heritage", href: "/mondo-gtv/heritage" },
-  { page: "curvatura-legno", label: "La Curvatura del Legno", href: "/mondo-gtv/curvatura-legno" },
-  { page: "sostenibilita", label: "Sostenibilità", href: "/mondo-gtv/sostenibilita" },
-  { page: "designer-e-premi", label: "Designer e Premi", href: "/mondo-gtv/designer-e-premi" },
-  { page: "gtv-experience", label: "GTV Experience Interno Marche Design Hotel", href: "/mondo-gtv/gtv-experience" },
+  { page: "brand-manifesto", labelKey: "menu.world.manifesto", href: "/mondo-gtv/brand-manifesto" },
+  { page: "heritage", labelKey: "menu.world.heritage", href: "/mondo-gtv/heritage" },
+  { page: "curvatura-legno", labelKey: "menu.world.wood", href: "/mondo-gtv/curvatura-legno" },
+  { page: "sostenibilita", labelKey: "menu.world.sustainability", href: "/mondo-gtv/sostenibilita" },
+  { page: "designer-e-premi", labelKey: "menu.world.designers", href: "/mondo-gtv/designer-e-premi" },
+  { page: "gtv-experience", labelKey: "menu.world.experience", href: "/mondo-gtv/gtv-experience" },
 ];
 
 export default async function MondoGTVPage() {
   const cardImages = await getRelatedCardImages(PAGES.map((p) => p.page));
-  const T = await tBatch(["mondo-gtv.title", "mondo-gtv.intro", "mondo-gtv.breadcrumb", "common.breadcrumb_home"]);
+  const T = await tBatch([
+    "mondo-gtv.title",
+    "mondo-gtv.intro",
+    "mondo-gtv.breadcrumb",
+    "common.breadcrumb_home",
+    ...PAGES.map((p) => p.labelKey),
+  ]);
 
   return (
     <>
@@ -43,13 +49,14 @@ export default async function MondoGTVPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-12">
               {PAGES.map((p) => {
                 const coverSrc = cardImages[p.page] || null;
+                const label = T[p.labelKey];
                 return (
                   <Link key={p.page} href={p.href} className="group block">
                     <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
                       {coverSrc ? (
                         <Image
                           src={coverSrc}
-                          alt={p.label}
+                          alt={label}
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 100vw, 33vw"
@@ -59,7 +66,7 @@ export default async function MondoGTVPage() {
                       )}
                     </div>
                     <h4 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
-                      {p.label}
+                      {label}
                     </h4>
                   </Link>
                 );

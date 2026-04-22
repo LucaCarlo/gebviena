@@ -11,15 +11,15 @@ export const metadata: Metadata = {
 };
 
 const RELATED_PAGES = [
-  { page: "heritage", label: "Heritage", href: "/mondo-gtv/heritage" },
+  { page: "heritage", labelKey: "menu.world.heritage", href: "/mondo-gtv/heritage" },
   {
     page: "curvatura-legno",
-    label: "La Curvatura del Legno",
+    labelKey: "menu.world.wood",
     href: "/mondo-gtv/curvatura-legno",
   },
   {
     page: "sostenibilita",
-    label: "Sostenibilit\u00e0",
+    labelKey: "menu.world.sustainability",
     href: "/mondo-gtv/sostenibilita",
   },
 ];
@@ -49,6 +49,7 @@ export default async function BrandManifestoPage() {
     "common.related",
     "common.breadcrumb_home",
     "nav.world",
+    ...RELATED_PAGES.map((p) => p.labelKey),
   ]);
   const [imgs, cardImages] = await Promise.all([
     getPageImages("brand-manifesto", DEFAULTS),
@@ -188,13 +189,14 @@ export default async function BrandManifestoPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {RELATED_PAGES.map((rp) => {
               const coverSrc = cardImages[rp.page] || null;
+              const label = T[rp.labelKey];
               return (
                 <Link key={rp.page} href={rp.href} className="group block">
                   <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
                     {coverSrc ? (
                       <Image
                         src={coverSrc}
-                        alt={rp.label}
+                        alt={label}
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, 33vw"
@@ -204,7 +206,7 @@ export default async function BrandManifestoPage() {
                     )}
                   </div>
                   <h4 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-4">
-                    {rp.label}
+                    {label}
                   </h4>
                 </Link>
               );
