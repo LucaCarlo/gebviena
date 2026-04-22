@@ -151,7 +151,7 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "home.banner.cta", defaultValue: "I migliori progetti" },
       { key: "home.born.title", defaultValue: "Born in Vienna.\nMade in Italy.\nDesigned around\nthe world." },
       { key: "home.categories.title", defaultValue: "Heritage designs the future" },
-      { key: "home.categories.cta", defaultValue: "Vedi tutti i prodotti" },
+      { key: "home.categories.cta", defaultValue: "Scopri l'intera collezione" },
     ],
   },
   {

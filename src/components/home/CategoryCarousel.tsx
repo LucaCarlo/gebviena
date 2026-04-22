@@ -4,6 +4,8 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useT, useLang } from "@/contexts/I18nContext";
+import { localizePath } from "@/lib/path-segments";
 
 interface Category {
   name: string;
@@ -12,10 +14,12 @@ interface Category {
 }
 
 export default function CategoryCarousel() {
+  const t = useT();
+  const lang = useLang();
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    fetch("/api/typologies?contentType=products")
+    fetch(`/api/typologies?contentType=products&lang=${lang}`)
       .then((r) => r.json())
       .then((res) => {
         const typos = (res.data || [])
@@ -23,15 +27,15 @@ export default function CategoryCarousel() {
           .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder);
 
         setCategories(
-          typos.map((t: { label: string; value: string; imageUrl: string }) => ({
-            name: t.label,
-            image: t.imageUrl,
-            href: `/prodotti?category=${t.value}`,
+          typos.map((typ: { label: string; value: string; imageUrl: string }) => ({
+            name: typ.label,
+            image: typ.imageUrl,
+            href: `${localizePath("/prodotti", lang)}?category=${typ.value}`,
           }))
         );
       })
       .catch(() => {});
-  }, []);
+  }, [lang]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -169,10 +173,10 @@ export default function CategoryCarousel() {
         className="text-center mt-12 md:mt-16"
       >
         <Link
-          href="/prodotti"
+          href={localizePath("/prodotti", lang)}
           className="inline-block uppercase text-[16px] tracking-[0.03em] font-normal text-black bg-white border border-black px-7 py-2"
         >
-          Scopri l&apos;intera collezione
+          {t("home.categories.cta")}
         </Link>
       </motion.div>
     </section>
