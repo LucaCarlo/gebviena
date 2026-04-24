@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
 
 interface GallerySlideshowProps {
   images: string[];
@@ -14,6 +13,19 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
   const [current, setCurrent] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
+  const [altMap, setAltMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (images.length === 0) return;
+    fetch("/api/media/alt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: images }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setAltMap(d.data || {}); })
+      .catch(() => { /* silent */ });
+  }, [images]);
 
   const goNext = () => setCurrent((prev) => (prev + 1) % images.length);
   const goPrev = () => setCurrent((prev) => (prev - 1 + images.length) % images.length);
@@ -41,6 +53,8 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
 
   if (images.length === 0) return null;
 
+  const currentAlt = altMap[images[current]] || `${name} ${current + 1}`;
+
   return (
     <section id={id} className="pb-16 lg:pb-24">
       <div className="w-full">
@@ -52,31 +66,34 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoverSide(null)}
         >
-          {images.map((url, i) => (
-            <motion.div
-              key={i}
-              initial={false}
-              animate={{
-                opacity: i === current ? 1 : 0,
-                scale: i === current ? 1 : 1.02,
-              }}
-              transition={{ duration: 0.7, ease: "easeInOut" }}
-              className="absolute inset-0"
-              style={{ pointerEvents: i === current ? "auto" : "none" }}
-            >
-              <Image
-                src={url}
-                alt={`${name} ${i + 1}`}
-                fill
-                className="object-cover"
-                sizes="100vw"
-              />
-            </motion.div>
-          ))}
+          {/* Slide track: tutte le immagini in riga, shift con translateX */}
+          <div
+            className="flex h-full w-full transition-transform duration-700 ease-out"
+            style={{ transform: `translateX(-${current * 100}%)` }}
+          >
+            {images.map((url, i) => (
+              <div key={i} className="relative flex-shrink-0 w-full h-full">
+                <Image
+                  src={url}
+                  alt={altMap[url] || `${name} ${i + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="100vw"
+                  priority={i === 0}
+                />
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="gtv-container mt-8">
-          <div className="relative h-[1px] bg-warm-200 w-full max-w-3xl mx-auto">
+        {/* Alt text sotto l'immagine */}
+        <div className="px-4 lg:px-6 mt-4 min-h-[1.5em]">
+          <p className="text-[13px] text-warm-600 leading-snug">{currentAlt}</p>
+        </div>
+
+        {/* Progress bar allineata al padding */}
+        <div className="px-4 lg:px-6 mt-3">
+          <div className="relative h-[1px] bg-warm-200 w-full">
             <div
               className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-500 ease-out"
               style={{ width: `${100 / images.length}%`, transform: `translateX(${current * 100}%)` }}
@@ -84,7 +101,7 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
           </div>
         </div>
 
-        <div className="text-center mt-4">
+        <div className="text-center mt-3">
           <span className="text-[11px] text-warm-400 tracking-wider">
             {current + 1} / {images.length}
           </span>
