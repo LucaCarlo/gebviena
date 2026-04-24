@@ -4,7 +4,7 @@ import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
 const STORE_GROUPS = ["store_stripe", "store_email", "store_general"] as const;
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const result = await requirePermission("store_settings", "view");
   if (isErrorResponse(result)) return result;
 

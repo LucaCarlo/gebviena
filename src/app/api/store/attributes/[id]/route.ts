@@ -43,7 +43,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      const val = await tx.storeAttributeValue.update({
+      await tx.storeAttributeValue.update({
         where: { id: params.id },
         data: { type, code, hexColor, sortOrder, isActive },
       });

@@ -133,7 +133,7 @@ export default function StoreShippingPage() {
       await fetchAll();
       showToast("Tariffe salvate", true);
       setEditor(null);
-    } catch (e) {
+    } catch {
       showToast("Errore salvataggio", false);
     } finally {
       setSaving(false);

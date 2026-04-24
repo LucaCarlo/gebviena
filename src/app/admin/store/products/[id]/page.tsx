@@ -280,7 +280,6 @@ export default function StoreProductDetailPage() {
         <VariantsTab
           sp={sp}
           attributes={attributes}
-          languages={languages}
           onRefresh={fetchAll}
           showToast={showToast}
         />
@@ -644,11 +643,10 @@ function TranslationsTab({
 /* -------------------------------------------------------------------------- */
 
 function VariantsTab({
-  sp, attributes, languages, onRefresh, showToast,
+  sp, attributes, onRefresh, showToast,
 }: {
   sp: StoreProductDetail;
   attributes: AttrValue[];
-  languages: Language[];
   onRefresh: () => void;
   showToast: (msg: string, ok: boolean) => void;
 }) {
@@ -762,7 +760,6 @@ function VariantsTab({
           title="Nuova variante"
           initial={emptyVariant}
           attributes={attributes}
-          languages={languages}
           onSave={(v) => handleSaveVariant(v, true)}
           onCancel={() => setCreating(false)}
           saving={saving}
@@ -774,7 +771,6 @@ function VariantsTab({
           title="Modifica variante"
           initial={editing}
           attributes={attributes}
-          languages={languages}
           onSave={(v) => handleSaveVariant(v, false)}
           onCancel={() => setEditing(null)}
           saving={saving}
@@ -849,12 +845,11 @@ function VariantCard({ variant: v, onEdit, onDelete }: { variant: Variant; onEdi
 }
 
 function VariantModal({
-  title, initial, attributes, languages, onSave, onCancel, saving,
+  title, initial, attributes, onSave, onCancel, saving,
 }: {
   title: string;
   initial: Variant;
   attributes: AttrValue[];
-  languages: Language[];
   onSave: (v: Variant) => void;
   onCancel: () => void;
   saving: boolean;

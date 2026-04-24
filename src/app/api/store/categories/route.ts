@@ -22,7 +22,7 @@ function slugify(s: string) {
     .replace(/(^-|-$)/g, "");
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const result = await requirePermission("store_categories", "view");
   if (isErrorResponse(result)) return result;
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Check, X, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon } from "lucide-react";
+import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon } from "lucide-react";
 
 type Group = "store_stripe" | "store_email" | "store_general";
 
