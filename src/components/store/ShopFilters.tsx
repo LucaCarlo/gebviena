@@ -39,7 +39,7 @@ export default function ShopFilters() {
     fetch("/api/store/public/categories").then((r) => r.json()).then((d) => d.success && setCats(d.data));
   }, []);
 
-  const selectedCategoryId = search.get("categoryId") || "";
+  const selectedCategorySlug = search.get("category") || "";
   const selectedAttrs = new Set((search.get("attrs") || "").split(",").filter(Boolean));
 
   const updateQuery = (patch: Record<string, string | null>) => {
@@ -58,7 +58,7 @@ export default function ShopFilters() {
     updateQuery({ attrs: Array.from(next).join(",") || null });
   };
 
-  const hasAnyFilter = selectedCategoryId || selectedAttrs.size > 0;
+  const hasAnyFilter = selectedCategorySlug || selectedAttrs.size > 0;
 
   const toggleExpand = (k: string) => setExpanded((e) => ({ ...e, [k]: !e[k] }));
 
@@ -83,18 +83,18 @@ export default function ShopFilters() {
       <FilterGroup label="Categoria" open={expanded.category} onToggle={() => toggleExpand("category")}>
         <div className="space-y-1">
           <button
-            onClick={() => updateQuery({ categoryId: null })}
-            className={`block w-full text-left py-1 ${!selectedCategoryId ? "text-warm-900 font-medium" : "text-warm-600 hover:text-warm-900"}`}
+            onClick={() => updateQuery({ category: null })}
+            className={`block w-full text-left py-1 ${!selectedCategorySlug ? "text-warm-900 font-medium" : "text-warm-600 hover:text-warm-900"}`}
           >
             Tutte
           </button>
           {cats.filter((c) => !c.parentId).map((c) => {
             const name = c.translations.find((t) => t.languageCode === "it")?.name || c.slug;
-            const isSel = selectedCategoryId === c.id;
+            const isSel = selectedCategorySlug === c.slug;
             return (
               <button
                 key={c.id}
-                onClick={() => updateQuery({ categoryId: c.id })}
+                onClick={() => updateQuery({ category: c.slug })}
                 className={`block w-full text-left py-1 ${isSel ? "text-warm-900 font-medium" : "text-warm-600 hover:text-warm-900"}`}
               >
                 {name}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ShoppingBag, User, Menu, X, Heart } from "lucide-react";
+import { ShoppingBag, User, Menu, X, Heart, ChevronDown } from "lucide-react";
 import { useLang } from "@/contexts/I18nContext";
 
 interface Category {
@@ -17,6 +17,8 @@ interface Category {
 export default function StoreHeader() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [catsOpen, setCatsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const lang = useLang();
@@ -30,16 +32,36 @@ export default function StoreHeader() {
 
   useEffect(() => {
     setMobileOpen(false);
+    setCatsOpen(false);
   }, [pathname, searchParams]);
 
+  useEffect(() => {
+    if (!catsOpen) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setCatsOpen(false);
+      }
+    };
+    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setCatsOpen(false); };
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [catsOpen]);
+
   const rootCategories = categories.filter((c) => !c.parentId);
+  const childrenOf = (parentId: string) => categories.filter((c) => c.parentId === parentId);
+
   const label = (c: Category) =>
     c.translations.find((t) => t.languageCode === lang)?.name ||
     c.translations.find((t) => t.languageCode === "it")?.name ||
     c.slug;
 
-  const activeCategoryId = searchParams.get("categoryId") || "";
+  const activeCategorySlug = searchParams.get("category") || "";
   const isOnShopHome = pathname === "/" || pathname === "/store";
+  const activeCategory = rootCategories.find((c) => c.slug === activeCategorySlug);
 
   return (
     <>
@@ -60,34 +82,73 @@ export default function StoreHeader() {
               />
             </Link>
 
-            {/* Menu categorie centrato (desktop) */}
-            <nav className="hidden lg:flex flex-1 justify-center items-center gap-8 text-sm">
+            {/* Menu centrato (desktop): Tutti + Categorie ▾ */}
+            <nav className="hidden md:flex flex-1 justify-center items-center gap-10 text-sm" ref={dropdownRef}>
               <Link
                 href="/"
-                className={`uppercase tracking-[0.15em] text-[11px] transition-colors ${
-                  isOnShopHome && !activeCategoryId ? "text-neutral-900 font-medium" : "text-neutral-600 hover:text-neutral-900"
+                className={`uppercase tracking-[0.2em] text-[11px] transition-colors ${
+                  isOnShopHome && !activeCategorySlug ? "text-neutral-900 font-medium" : "text-neutral-600 hover:text-neutral-900"
                 }`}
               >
                 Tutti
               </Link>
-              {rootCategories.map((c) => {
-                const isActive = isOnShopHome && activeCategoryId === c.id;
-                return (
-                  <Link
-                    key={c.id}
-                    href={`/?categoryId=${c.id}`}
-                    className={`uppercase tracking-[0.15em] text-[11px] transition-colors ${
-                      isActive ? "text-neutral-900 font-medium" : "text-neutral-600 hover:text-neutral-900"
-                    }`}
-                  >
-                    {label(c)}
-                  </Link>
-                );
-              })}
+
+              <div className="relative">
+                <button
+                  onClick={() => setCatsOpen((v) => !v)}
+                  aria-expanded={catsOpen}
+                  className={`inline-flex items-center gap-1.5 uppercase tracking-[0.2em] text-[11px] transition-colors ${
+                    activeCategorySlug || catsOpen ? "text-neutral-900 font-medium" : "text-neutral-600 hover:text-neutral-900"
+                  }`}
+                >
+                  {activeCategory ? label(activeCategory) : "Categorie"}
+                  <ChevronDown size={14} className={`transition-transform ${catsOpen ? "rotate-180" : ""}`} strokeWidth={1.6} />
+                </button>
+
+                {catsOpen && (
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-5 min-w-[260px] bg-white shadow-xl border border-neutral-100 py-3">
+                    <ul className="py-1">
+                      {rootCategories.length === 0 && (
+                        <li className="px-5 py-2 text-xs text-neutral-400 italic">Nessuna categoria pubblicata.</li>
+                      )}
+                      {rootCategories.map((c) => {
+                        const children = childrenOf(c.id);
+                        const isActive = c.slug === activeCategorySlug;
+                        return (
+                          <li key={c.id}>
+                            <Link
+                              href={`/?category=${encodeURIComponent(c.slug)}`}
+                              className={`block px-5 py-2 text-[13px] transition-colors ${
+                                isActive ? "text-neutral-900 font-medium bg-neutral-50" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
+                              }`}
+                            >
+                              {label(c)}
+                            </Link>
+                            {children.length > 0 && (
+                              <ul className="pb-1">
+                                {children.map((child) => (
+                                  <li key={child.id}>
+                                    <Link
+                                      href={`/?category=${encodeURIComponent(child.slug)}`}
+                                      className="block px-8 py-1.5 text-[12px] text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+                                    >
+                                      {label(child)}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </nav>
 
-            {/* Spaziatore per mobile/tablet (senza il nav) */}
-            <div className="flex-1 lg:hidden" />
+            {/* Spaziatore per mobile (senza il nav) */}
+            <div className="flex-1 md:hidden" />
 
             {/* Azioni a destra */}
             <div className="flex items-center gap-2 md:gap-4 text-neutral-700 shrink-0">
@@ -100,10 +161,10 @@ export default function StoreHeader() {
               <Link href="/carrello" title="Carrello" className="p-1 hover:text-neutral-900 transition-colors">
                 <ShoppingBag size={20} strokeWidth={1.6} />
               </Link>
-              {/* Hamburger mobile/tablet */}
+              {/* Hamburger mobile */}
               <button
                 onClick={() => setMobileOpen(true)}
-                className="lg:hidden p-1 text-neutral-700 ml-1"
+                className="md:hidden p-1 text-neutral-700 ml-1"
                 aria-label="Apri menu"
               >
                 <Menu size={22} strokeWidth={1.6} />
@@ -115,7 +176,7 @@ export default function StoreHeader() {
 
       {/* Menu overlay mobile */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[60] bg-white flex flex-col lg:hidden">
+        <div className="fixed inset-0 z-[60] bg-white flex flex-col md:hidden">
           <div className="flex items-center justify-between h-20 md:h-24 px-4 md:px-8 border-b border-neutral-100">
             <div className="text-[10px] tracking-[0.3em] text-neutral-500 uppercase">Gebrüder Thonet Vienna · Store</div>
             <button
@@ -142,7 +203,7 @@ export default function StoreHeader() {
                 {rootCategories.map((c) => (
                   <li key={c.id}>
                     <Link
-                      href={`/?categoryId=${c.id}`}
+                      href={`/?category=${encodeURIComponent(c.slug)}`}
                       className="block text-2xl md:text-4xl text-neutral-900 hover:text-neutral-600 transition-colors"
                       style={{ fontFamily: "'Libre Caslon Text', serif" }}
                     >

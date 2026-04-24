@@ -7,11 +7,13 @@ export const revalidate = 0;
 
 /**
  * GET /api/store/public/products
- * Query: lang=it|en|de|fr, categoryId, attrs=ID1,ID2 (OR di attributi), q
+ * Query: lang=it|en|de|fr, category=<slug> (preferito), categoryId (legacy),
+ *        attrs=ID1,ID2 (OR di attributi), q
  */
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const lang = sp.get("lang") || "it";
+  const categorySlug = sp.get("category");
   const categoryId = sp.get("categoryId");
   const attrs = (sp.get("attrs") || "").split(",").filter(Boolean);
   const q = (sp.get("q") || "").trim();
@@ -20,7 +22,11 @@ export async function GET(req: NextRequest) {
     isPublished: true,
     variants: { some: { isPublished: true } },
   };
-  if (categoryId) where.storeCategoryId = categoryId;
+  if (categorySlug) {
+    where.storeCategory = { slug: categorySlug };
+  } else if (categoryId) {
+    where.storeCategoryId = categoryId;
+  }
   if (q) {
     where.OR = [
       { product: { name: { contains: q } } },
