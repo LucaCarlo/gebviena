@@ -33,8 +33,6 @@ import {
   FileText,
   ShoppingBag,
   ShoppingCart,
-  Layers,
-  Tag,
   Truck,
   CreditCard,
 } from "lucide-react";
