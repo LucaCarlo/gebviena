@@ -359,12 +359,14 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
     setVisibleFraction(Math.min(1, Math.max(0.05, vf)));
     const maxScroll = el.scrollWidth - el.clientWidth;
     if (maxScroll <= 0) { setScrollProgress(0); return; }
-    setScrollProgress(el.scrollLeft / maxScroll);
+    const sp = el.scrollLeft < 3 ? 0 : el.scrollLeft > maxScroll - 3 ? 1 : el.scrollLeft / maxScroll;
+    setScrollProgress(sp);
   }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    el.scrollLeft = 0;
     el.addEventListener("scroll", updateProgress, { passive: true });
     window.addEventListener("resize", updateProgress);
     updateProgress();
@@ -468,18 +470,23 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
         </div>
       </div>
 
-      {/* Progress bar — stretta, centrata; parte nera = frazione visibile */}
-      <div className="max-w-[260px] mx-auto mt-8 px-4">
-        <div className="relative h-[2px] bg-warm-200 w-full">
-          <div
-            className="absolute inset-y-0 bg-warm-900 transition-[left,width] duration-150 ease-out"
-            style={{
-              width: `${visibleFraction * 100}%`,
-              left: `${scrollProgress * (1 - visibleFraction) * 100}%`,
-            }}
-          />
+      {/* Progress bar — grigia 1px, nera 2px che rappresenta la frazione visibile */}
+      {visibleFraction < 0.999 && (
+        <div className="max-w-[780px] mx-auto mt-8 px-4">
+          <div className="relative h-[1px] bg-warm-200 w-full">
+            <div
+              className="absolute bg-warm-900"
+              style={{
+                top: "-0.5px",
+                height: "2px",
+                width: `${visibleFraction * 100}%`,
+                left: `${Math.max(0, Math.min(1, scrollProgress)) * (1 - visibleFraction) * 100}%`,
+                transition: "left 150ms ease-out, width 200ms ease-out",
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

@@ -77,15 +77,23 @@ export default function ExperienceCarousel({ images }: ExperienceCarouselProps) 
           ))}
         </div>
 
-        {/* Progress bar — stretta, centrata; nera 2px indica l'immagine corrente */}
-        <div className="max-w-[260px] mx-auto mt-8 px-4">
-          <div className="relative h-[2px] bg-warm-200 w-full">
-            <div
-              className="absolute inset-y-0 bg-warm-900 transition-[left,width] duration-500 ease-out"
-              style={{ width: `${100 / total}%`, left: `${(current / total) * 100}%` }}
-            />
+        {/* Progress bar — grigia 1px, nera 2px; indica l'immagine corrente */}
+        {total > 1 && (
+          <div className="max-w-[780px] mx-auto mt-8 px-4">
+            <div className="relative h-[1px] bg-warm-200 w-full">
+              <div
+                className="absolute bg-warm-900"
+                style={{
+                  top: "-0.5px",
+                  height: "2px",
+                  width: `${100 / total}%`,
+                  left: `${(current / total) * 100}%`,
+                  transition: "left 500ms ease-out, width 500ms ease-out",
+                }}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Counter */}
         <div className="text-center mt-4">
