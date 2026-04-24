@@ -360,7 +360,7 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
     setVisibleFraction(Math.min(1, Math.max(0.05, vf)));
     const maxScroll = el.scrollWidth - el.clientWidth;
     if (maxScroll <= 0) { setScrollProgress(0); return; }
-    const sp = el.scrollLeft < 3 ? 0 : el.scrollLeft > maxScroll - 3 ? 1 : el.scrollLeft / maxScroll;
+    const sp = el.scrollLeft < 50 ? 0 : el.scrollLeft > maxScroll - 50 ? 1 : el.scrollLeft / maxScroll;
     setScrollProgress(sp);
   }, []);
 
@@ -368,12 +368,16 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
     const el = scrollRef.current;
     if (!el) return;
     el.scrollLeft = 0;
+    const computeVf = () => {
+      const vf = el.scrollWidth > 0 ? el.clientWidth / el.scrollWidth : 1;
+      setVisibleFraction(Math.min(1, Math.max(0.05, vf)));
+    };
+    computeVf();
     el.addEventListener("scroll", updateProgress, { passive: true });
-    window.addEventListener("resize", updateProgress);
-    updateProgress();
+    window.addEventListener("resize", computeVf);
     return () => {
       el.removeEventListener("scroll", updateProgress);
-      window.removeEventListener("resize", updateProgress);
+      window.removeEventListener("resize", computeVf);
     };
   }, [updateProgress]);
 
