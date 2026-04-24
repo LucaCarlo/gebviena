@@ -10,6 +10,7 @@ import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
 import { localizePath } from "@/lib/path-segments";
 import GallerySlideshow from "@/components/site/GallerySlideshow";
+import CarouselProgressBar from "@/components/site/CarouselProgressBar";
 
 interface ProjectDetail extends Omit<Project, "products"> {
   products: { product: Product & { designer?: Designer } }[];
@@ -470,23 +471,7 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
         </div>
       </div>
 
-      {/* Progress bar — overlay nera con clip-path (no sub-pixel offset) */}
-      {visibleFraction < 0.999 && (
-        <div className="max-w-[780px] mx-auto mt-8 px-4">
-          <div className="relative h-[1px] bg-warm-200 w-full">
-            <div
-              className="absolute left-0 bg-warm-900"
-              style={{
-                top: "-0.5px",
-                height: "2px",
-                width: "100%",
-                clipPath: `inset(0 ${(1 - Math.max(0, Math.min(1, scrollProgress))) * (1 - visibleFraction) * 100}% 0 ${Math.max(0, Math.min(1, scrollProgress)) * (1 - visibleFraction) * 100}%)`,
-                transition: "clip-path 180ms ease-out",
-              }}
-            />
-          </div>
-        </div>
-      )}
+      <CarouselProgressBar progress={scrollProgress} visibleFraction={visibleFraction} className="mt-8" />
     </section>
   );
 }

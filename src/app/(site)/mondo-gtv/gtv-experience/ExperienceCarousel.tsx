@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import CarouselProgressBar from "@/components/site/CarouselProgressBar";
 
 interface ExperienceCarouselProps {
   images: { src: string; alt: string }[];
@@ -77,22 +78,13 @@ export default function ExperienceCarousel({ images }: ExperienceCarouselProps) 
           ))}
         </div>
 
-        {/* Progress bar — overlay nera con clip-path */}
         {total > 1 && (
-          <div className="max-w-[780px] mx-auto mt-8 px-4">
-            <div className="relative h-[1px] bg-warm-200 w-full">
-              <div
-                className="absolute left-0 bg-warm-900"
-                style={{
-                  top: "-0.5px",
-                  height: "2px",
-                  width: "100%",
-                  clipPath: `inset(0 ${((total - 1 - current) / total) * 100}% 0 ${(current / total) * 100}%)`,
-                  transition: "clip-path 500ms ease-out",
-                }}
-              />
-            </div>
-          </div>
+          <CarouselProgressBar
+            progress={total > 1 ? current / (total - 1) : 0}
+            visibleFraction={1 / total}
+            className="mt-8"
+            transitionMs={500}
+          />
         )}
 
         {/* Counter */}
