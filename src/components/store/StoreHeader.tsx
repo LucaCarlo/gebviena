@@ -4,21 +4,38 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ShoppingBag, User, Menu, X, Heart, ChevronDown } from "lucide-react";
+import { ShoppingBag, User, Menu, X, Heart } from "lucide-react";
 import { useLang } from "@/contexts/I18nContext";
 
 interface Category {
   id: string;
   parentId: string | null;
   slug: string;
+  coverImage?: string | null;
   translations: { languageCode: string; name: string; slug: string }[];
 }
 
+interface MiniProduct {
+  id: string;
+  slug: string;
+  name: string;
+  coverImage: string | null;
+  priceFromCents: number;
+}
+
+type MenuKey = "categories" | "top-sold" | "top-favorited" | null;
+
+const eur = (cents: number) =>
+  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(cents / 100);
+
 export default function StoreHeader() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [topSold, setTopSold] = useState<MiniProduct[]>([]);
+  const [topFav, setTopFav] = useState<MiniProduct[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [catsOpen, setCatsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [openMenu, setOpenMenu] = useState<MenuKey>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const lang = useLang();
@@ -28,28 +45,26 @@ export default function StoreHeader() {
       .then((r) => r.json())
       .then((d) => { if (d.success) setCategories(d.data); })
       .catch(() => {});
-  }, []);
+    fetch(`/api/store/public/products/top-sold?lang=${lang}&limit=8`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setTopSold(d.data); })
+      .catch(() => {});
+    fetch(`/api/store/public/products/top-favorited?lang=${lang}&limit=8`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setTopFav(d.data); })
+      .catch(() => {});
+  }, [lang]);
 
   useEffect(() => {
     setMobileOpen(false);
-    setCatsOpen(false);
+    setOpenMenu(null);
   }, [pathname, searchParams]);
 
   useEffect(() => {
-    if (!catsOpen) return;
-    const onClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setCatsOpen(false);
-      }
-    };
-    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setCatsOpen(false); };
-    document.addEventListener("mousedown", onClickOutside);
-    document.addEventListener("keydown", onEsc);
-    return () => {
-      document.removeEventListener("mousedown", onClickOutside);
-      document.removeEventListener("keydown", onEsc);
-    };
-  }, [catsOpen]);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpenMenu(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   const rootCategories = categories.filter((c) => !c.parentId);
   const childrenOf = (parentId: string) => categories.filter((c) => c.parentId === parentId);
@@ -61,159 +76,160 @@ export default function StoreHeader() {
 
   const activeCategorySlug = searchParams.get("category") || "";
   const isOnShopHome = pathname === "/" || pathname === "/store";
-  const activeCategory = rootCategories.find((c) => c.slug === activeCategorySlug);
+
+  const openOnHover = (key: MenuKey) => {
+    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+    setOpenMenu(key);
+  };
+  const scheduleClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpenMenu(null), 140);
+  };
+
+  const navItem = (key: Exclude<MenuKey, null>, text: string) => {
+    const isActive = openMenu === key;
+    return (
+      <button
+        key={key}
+        onMouseEnter={() => openOnHover(key)}
+        onClick={() => setOpenMenu(isActive ? null : key)}
+        aria-expanded={isActive}
+        className={`uppercase tracking-[0.25em] text-[11px] py-1 px-0.5 transition-colors ${
+          isActive ? "text-neutral-900 font-medium" : "text-neutral-700 hover:text-neutral-900"
+        }`}
+      >
+        {text}
+      </button>
+    );
+  };
 
   return (
     <>
-      <header
-        className="fixed top-0 z-50 bg-white"
-        style={{ left: "var(--site-margin)", right: "var(--site-margin)" }}
-      >
-        <div className="px-4 md:px-6 lg:px-10">
-          <div className="flex items-center h-20 md:h-24 gap-4">
-            {/* Logo a sinistra */}
-            <Link href="/" className="flex items-center shrink-0" aria-label="Gebrüder Thonet Vienna Store">
-              <Image
-                src="/logo.webp"
-                alt="Gebrüder Thonet Vienna"
-                width={80}
-                height={65}
-                priority
-              />
-            </Link>
-
-            {/* Menu centrato (desktop): Tutti + Categorie ▾ */}
-            <nav className="hidden md:flex flex-1 justify-center items-center gap-10 text-sm" ref={dropdownRef}>
-              <Link
-                href="/"
-                className={`uppercase tracking-[0.2em] text-[11px] transition-colors ${
-                  isOnShopHome && !activeCategorySlug ? "text-neutral-900 font-medium" : "text-neutral-600 hover:text-neutral-900"
-                }`}
-              >
-                Tutti
+      <div onMouseLeave={scheduleClose}>
+        <header
+          className="fixed top-0 z-50 bg-white"
+          style={{ left: "var(--site-margin)", right: "var(--site-margin)" }}
+        >
+          <div className="px-4 md:px-6 lg:px-10">
+            <div className="flex items-center h-20 md:h-24 gap-4">
+              <Link href="/" className="flex items-center shrink-0" aria-label="Gebrüder Thonet Vienna Store">
+                <Image src="/logo.webp" alt="Gebrüder Thonet Vienna" width={80} height={65} priority />
               </Link>
 
-              <div className="relative">
-                <button
-                  onClick={() => setCatsOpen((v) => !v)}
-                  aria-expanded={catsOpen}
-                  className={`inline-flex items-center gap-1.5 uppercase tracking-[0.2em] text-[11px] transition-colors ${
-                    activeCategorySlug || catsOpen ? "text-neutral-900 font-medium" : "text-neutral-600 hover:text-neutral-900"
+              <nav className="hidden md:flex flex-1 justify-center items-center gap-10">
+                <Link
+                  href="/"
+                  onMouseEnter={() => openOnHover(null)}
+                  className={`uppercase tracking-[0.25em] text-[11px] py-1 transition-colors ${
+                    isOnShopHome && !activeCategorySlug ? "text-neutral-900 font-medium" : "text-neutral-700 hover:text-neutral-900"
                   }`}
                 >
-                  {activeCategory ? label(activeCategory) : "Categorie"}
-                  <ChevronDown size={14} className={`transition-transform ${catsOpen ? "rotate-180" : ""}`} strokeWidth={1.6} />
+                  Tutti
+                </Link>
+                {navItem("categories", "Categorie")}
+                {navItem("top-sold", "Top venduti")}
+                {navItem("top-favorited", "Più piaciuti")}
+              </nav>
+
+              <div className="flex-1 md:hidden" />
+
+              <div className="flex items-center gap-2 md:gap-4 text-neutral-700 shrink-0">
+                <Link href="/account/favorites" title="Preferiti" className="p-1 hover:text-neutral-900 transition-colors hidden sm:inline-flex">
+                  <Heart size={20} strokeWidth={1.6} />
+                </Link>
+                <Link href="/account" title="Area riservata" className="p-1 hover:text-neutral-900 transition-colors">
+                  <User size={20} strokeWidth={1.6} />
+                </Link>
+                <Link href="/carrello" title="Carrello" className="p-1 hover:text-neutral-900 transition-colors">
+                  <ShoppingBag size={20} strokeWidth={1.6} />
+                </Link>
+                <button
+                  onClick={() => setMobileOpen(true)}
+                  className="md:hidden p-1 text-neutral-700 ml-1"
+                  aria-label="Apri menu"
+                >
+                  <Menu size={22} strokeWidth={1.6} />
                 </button>
-
-                {catsOpen && (
-                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-5 min-w-[260px] bg-white shadow-xl border border-neutral-100 py-3">
-                    <ul className="py-1">
-                      {rootCategories.length === 0 && (
-                        <li className="px-5 py-2 text-xs text-neutral-400 italic">Nessuna categoria pubblicata.</li>
-                      )}
-                      {rootCategories.map((c) => {
-                        const children = childrenOf(c.id);
-                        const isActive = c.slug === activeCategorySlug;
-                        return (
-                          <li key={c.id}>
-                            <Link
-                              href={`/?category=${encodeURIComponent(c.slug)}`}
-                              className={`block px-5 py-2 text-[13px] transition-colors ${
-                                isActive ? "text-neutral-900 font-medium bg-neutral-50" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900"
-                              }`}
-                            >
-                              {label(c)}
-                            </Link>
-                            {children.length > 0 && (
-                              <ul className="pb-1">
-                                {children.map((child) => (
-                                  <li key={child.id}>
-                                    <Link
-                                      href={`/?category=${encodeURIComponent(child.slug)}`}
-                                      className="block px-8 py-1.5 text-[12px] text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
-                                    >
-                                      {label(child)}
-                                    </Link>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
               </div>
-            </nav>
-
-            {/* Spaziatore per mobile (senza il nav) */}
-            <div className="flex-1 md:hidden" />
-
-            {/* Azioni a destra */}
-            <div className="flex items-center gap-2 md:gap-4 text-neutral-700 shrink-0">
-              <Link href="/account/favorites" title="Preferiti" className="p-1 hover:text-neutral-900 transition-colors hidden sm:inline-flex">
-                <Heart size={20} strokeWidth={1.6} />
-              </Link>
-              <Link href="/account" title="Area riservata" className="p-1 hover:text-neutral-900 transition-colors">
-                <User size={20} strokeWidth={1.6} />
-              </Link>
-              <Link href="/carrello" title="Carrello" className="p-1 hover:text-neutral-900 transition-colors">
-                <ShoppingBag size={20} strokeWidth={1.6} />
-              </Link>
-              {/* Hamburger mobile */}
-              <button
-                onClick={() => setMobileOpen(true)}
-                className="md:hidden p-1 text-neutral-700 ml-1"
-                aria-label="Apri menu"
-              >
-                <Menu size={22} strokeWidth={1.6} />
-              </button>
             </div>
           </div>
-        </div>
-      </header>
 
-      {/* Menu overlay mobile */}
+          {openMenu && (
+            <div
+              onMouseEnter={() => openOnHover(openMenu)}
+              className="absolute left-0 right-0 top-full bg-white border-t border-neutral-100 shadow-lg"
+            >
+              <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-10">
+                {openMenu === "categories" && (
+                  <MegaCategories rootCategories={rootCategories} childrenOf={childrenOf} label={label} />
+                )}
+                {openMenu === "top-sold" && (
+                  <MegaProducts title="I più venduti" items={topSold} emptyText="Ancora nessun ordine registrato." />
+                )}
+                {openMenu === "top-favorited" && (
+                  <MegaProducts title="I più piaciuti dai clienti" items={topFav} emptyText="Ancora nessun preferito registrato." />
+                )}
+              </div>
+            </div>
+          )}
+        </header>
+      </div>
+
       {mobileOpen && (
         <div className="fixed inset-0 z-[60] bg-white flex flex-col md:hidden">
           <div className="flex items-center justify-between h-20 md:h-24 px-4 md:px-8 border-b border-neutral-100">
             <div className="text-[10px] tracking-[0.3em] text-neutral-500 uppercase">Gebrüder Thonet Vienna · Store</div>
-            <button
-              onClick={() => setMobileOpen(false)}
-              className="p-2 text-neutral-700 hover:text-neutral-900"
-              aria-label="Chiudi"
-            >
+            <button onClick={() => setMobileOpen(false)} className="p-2 text-neutral-700 hover:text-neutral-900" aria-label="Chiudi">
               <X size={24} strokeWidth={1.6} />
             </button>
           </div>
           <nav className="flex-1 overflow-y-auto px-6 md:px-12 py-10">
-            <div className="max-w-3xl">
-              <div className="text-[11px] tracking-[0.3em] text-neutral-500 uppercase mb-6">Collezioni</div>
-              <ul className="space-y-4 md:space-y-6">
-                <li>
-                  <Link
-                    href="/"
-                    className="block text-2xl md:text-4xl text-neutral-900 hover:text-neutral-600 transition-colors"
-                    style={{ fontFamily: "'Libre Caslon Text', serif" }}
-                  >
-                    Tutti i prodotti
-                  </Link>
-                </li>
-                {rootCategories.map((c) => (
-                  <li key={c.id}>
-                    <Link
-                      href={`/?category=${encodeURIComponent(c.slug)}`}
-                      className="block text-2xl md:text-4xl text-neutral-900 hover:text-neutral-600 transition-colors"
-                      style={{ fontFamily: "'Libre Caslon Text', serif" }}
-                    >
-                      {label(c)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            <div className="max-w-3xl space-y-10">
+              <div>
+                <div className="text-[11px] tracking-[0.3em] text-neutral-500 uppercase mb-4">Naviga</div>
+                <ul className="space-y-3 text-lg">
+                  <li><Link href="/" className="text-neutral-900 hover:text-neutral-600">Tutti i prodotti</Link></li>
+                  <li><Link href="/?sort=top-sold" className="text-neutral-900 hover:text-neutral-600">Top venduti</Link></li>
+                  <li><Link href="/?sort=top-favorited" className="text-neutral-900 hover:text-neutral-600">Più piaciuti</Link></li>
+                </ul>
+              </div>
 
-              <div className="mt-14 pt-8 border-t border-neutral-200 space-y-3 text-sm">
+              <div>
+                <div className="text-[11px] tracking-[0.3em] text-neutral-500 uppercase mb-4">Categorie</div>
+                {rootCategories.length === 0 ? (
+                  <div className="text-neutral-400 italic text-sm">Nessuna categoria pubblicata.</div>
+                ) : (
+                  <ul className="space-y-4">
+                    {rootCategories.map((c) => {
+                      const children = childrenOf(c.id);
+                      return (
+                        <li key={c.id}>
+                          <Link
+                            href={`/?category=${encodeURIComponent(c.slug)}`}
+                            className="block text-2xl md:text-3xl text-neutral-900 hover:text-neutral-600"
+                            style={{ fontFamily: "'Libre Caslon Text', serif" }}
+                          >
+                            {label(c)}
+                          </Link>
+                          {children.length > 0 && (
+                            <ul className="pl-4 mt-2 space-y-1 text-sm">
+                              {children.map((child) => (
+                                <li key={child.id}>
+                                  <Link href={`/?category=${encodeURIComponent(child.slug)}`} className="text-neutral-500 hover:text-neutral-900">
+                                    {label(child)}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
+              <div className="pt-8 border-t border-neutral-200 space-y-2 text-sm">
                 <Link href="/account" className="block text-neutral-700 hover:text-neutral-900 uppercase tracking-wider">Area riservata</Link>
                 <Link href="/account/favorites" className="block text-neutral-700 hover:text-neutral-900 uppercase tracking-wider">Preferiti</Link>
                 <Link href="/carrello" className="block text-neutral-700 hover:text-neutral-900 uppercase tracking-wider">Carrello</Link>
@@ -224,5 +240,97 @@ export default function StoreHeader() {
         </div>
       )}
     </>
+  );
+}
+
+function MegaCategories({
+  rootCategories,
+  childrenOf,
+  label,
+}: {
+  rootCategories: Category[];
+  childrenOf: (parentId: string) => Category[];
+  label: (c: Category) => string;
+}) {
+  if (rootCategories.length === 0) {
+    return <div className="text-neutral-400 italic text-sm">Nessuna categoria pubblicata.</div>;
+  }
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-10 gap-y-8">
+      {rootCategories.map((c) => {
+        const children = childrenOf(c.id);
+        return (
+          <div key={c.id}>
+            <Link
+              href={`/?category=${encodeURIComponent(c.slug)}`}
+              className="block text-sm uppercase tracking-[0.2em] text-neutral-900 font-medium pb-3 mb-3 border-b border-neutral-200 hover:text-neutral-600 transition-colors"
+            >
+              {label(c)}
+            </Link>
+            {children.length > 0 ? (
+              <ul className="space-y-2 text-[13px]">
+                {children.map((child) => (
+                  <li key={child.id}>
+                    <Link
+                      href={`/?category=${encodeURIComponent(child.slug)}`}
+                      className="text-neutral-600 hover:text-neutral-900 transition-colors"
+                    >
+                      {label(child)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-[12px] text-neutral-400 italic">Nessuna sottocategoria</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MegaProducts({
+  title,
+  items,
+  emptyText,
+}: {
+  title: string;
+  items: MiniProduct[];
+  emptyText: string;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="text-xs uppercase tracking-[0.25em] text-neutral-500">{title}</div>
+      </div>
+      {items.length === 0 ? (
+        <div className="text-neutral-400 italic text-sm py-8">{emptyText}</div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8">
+          {items.slice(0, 8).map((p) => (
+            <Link key={p.id} href={`/prodotti/${p.slug}`} className="group block">
+              <div className="relative aspect-[4/5] bg-warm-100 overflow-hidden">
+                {p.coverImage && (
+                  <Image
+                    src={p.coverImage}
+                    alt={p.name}
+                    fill
+                    sizes="20vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                )}
+              </div>
+              <div className="mt-3 space-y-0.5">
+                <div className="text-[13px] text-neutral-900 group-hover:text-neutral-600 transition-colors truncate">{p.name}</div>
+                {p.priceFromCents > 0 && (
+                  <div className="text-[12px] text-neutral-500 font-mono">da {eur(p.priceFromCents)}</div>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
