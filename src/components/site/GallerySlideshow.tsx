@@ -94,18 +94,18 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
           <p className="text-[13px] text-warm-600 leading-snug">{currentAlt}</p>
         </div>
 
-        {/* Progress bar — grigia 1px, nera 2px; indica l'immagine corrente */}
+        {/* Progress bar — overlay nera con clip-path; segmento = immagine corrente */}
         {images.length > 1 && (
           <div className="max-w-[780px] mx-auto mt-3 px-4">
             <div className="relative h-[1px] bg-warm-200 w-full">
               <div
-                className="absolute bg-warm-900"
+                className="absolute left-0 bg-warm-900"
                 style={{
                   top: "-0.5px",
                   height: "2px",
-                  width: `${100 / images.length}%`,
-                  left: `${(current / images.length) * 100}%`,
-                  transition: "left 500ms ease-out, width 500ms ease-out",
+                  width: "100%",
+                  clipPath: `inset(0 ${((images.length - 1 - current) / images.length) * 100}% 0 ${(current / images.length) * 100}%)`,
+                  transition: "clip-path 500ms ease-out",
                 }}
               />
             </div>

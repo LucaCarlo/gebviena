@@ -160,18 +160,18 @@ export default function CategoryCarousel() {
         </div>
       </div>
 
-      {/* Scroll progress bar — grigia 1px, nera 2px; parte nera = frazione visibile */}
+      {/* Scroll progress bar — overlay con clip-path */}
       {visibleFraction < 0.999 && (
         <div className="max-w-[780px] mx-auto mt-10 md:mt-14 px-4">
           <div className="relative h-[1px] bg-grey-mid/30 w-full">
             <div
-              className="absolute bg-dark"
+              className="absolute left-0 bg-dark"
               style={{
                 top: "-0.5px",
                 height: "2px",
-                width: `${visibleFraction * 100}%`,
-                left: `${Math.max(0, Math.min(1, scrollProgress)) * (1 - visibleFraction) * 100}%`,
-                transition: "left 150ms ease-out, width 200ms ease-out",
+                width: "100%",
+                clipPath: `inset(0 ${(1 - Math.max(0, Math.min(1, scrollProgress))) * (1 - visibleFraction) * 100}% 0 ${Math.max(0, Math.min(1, scrollProgress)) * (1 - visibleFraction) * 100}%)`,
+                transition: "clip-path 180ms ease-out",
               }}
             />
           </div>
