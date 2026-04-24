@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import ShopFilters from "@/components/store/ShopFilters";
 
+export const dynamic = "force-dynamic";
+
 interface ProductCard {
   id: string;
   slug: string;

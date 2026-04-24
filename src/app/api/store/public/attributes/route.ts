@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // Public endpoint: active attribute values grouped by type (for filters)
 export async function GET() {
   const values = await prisma.storeAttributeValue.findMany({

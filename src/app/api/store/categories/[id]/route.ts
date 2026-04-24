@@ -49,21 +49,34 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       });
 
       if (translations) {
-        await tx.storeCategoryTranslation.deleteMany({ where: { categoryId: params.id } });
-        const clean = translations
-          .filter((t) => t.languageCode && t.name)
-          .map((t) => ({
-            categoryId: params.id,
-            languageCode: String(t.languageCode),
-            name: String(t.name).trim(),
-            slug: String(t.slug).trim(),
-            description: t.description ?? null,
-            seoTitle: t.seoTitle ?? null,
-            seoDescription: t.seoDescription ?? null,
-            seoKeywords: t.seoKeywords ?? null,
-            isPublished: t.isPublished === true,
-          }));
-        if (clean.length) await tx.storeCategoryTranslation.createMany({ data: clean });
+        // Upsert per lingua invece di deleteMany+createMany: preserva le traduzioni
+        // di altre lingue gestite separatamente via StoreTranslationsPanel.
+        for (const t of translations) {
+          if (!t.languageCode || !t.name) continue;
+          await tx.storeCategoryTranslation.upsert({
+            where: { categoryId_languageCode: { categoryId: params.id, languageCode: String(t.languageCode) } },
+            update: {
+              name: String(t.name).trim(),
+              slug: String(t.slug).trim(),
+              description: t.description ?? null,
+              seoTitle: t.seoTitle ?? null,
+              seoDescription: t.seoDescription ?? null,
+              seoKeywords: t.seoKeywords ?? null,
+              isPublished: t.isPublished === true,
+            },
+            create: {
+              categoryId: params.id,
+              languageCode: String(t.languageCode),
+              name: String(t.name).trim(),
+              slug: String(t.slug).trim(),
+              description: t.description ?? null,
+              seoTitle: t.seoTitle ?? null,
+              seoDescription: t.seoDescription ?? null,
+              seoKeywords: t.seoKeywords ?? null,
+              isPublished: t.isPublished === true,
+            },
+          });
+        }
       }
 
       return tx.storeCategory.findUnique({

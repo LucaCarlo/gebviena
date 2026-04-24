@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductDetail from "@/components/store/ProductDetail";
 
+export const dynamic = "force-dynamic";
+
 async function getProduct(slug: string) {
   try {
     const res = await fetch(`http://127.0.0.1:3002/api/store/public/products/${encodeURIComponent(slug)}?lang=it`, {

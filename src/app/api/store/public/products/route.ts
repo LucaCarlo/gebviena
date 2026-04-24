@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 /**
  * GET /api/store/public/products
  * Query: lang=it|en|de|fr, categoryId, attrs=ID1,ID2 (OR di attributi), q
@@ -15,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   const where: Prisma.StoreProductWhereInput = {
     isPublished: true,
-    variants: { some: { isPublished: true, priceCents: { gt: 0 } } },
+    variants: { some: { isPublished: true } },
   };
   if (categoryId) where.storeCategoryId = categoryId;
   if (q) {
@@ -26,12 +29,10 @@ export async function GET(req: NextRequest) {
     ];
   }
   if (attrs.length > 0) {
-    // Un prodotto matcha se almeno 1 variante ha TUTTI gli attrs richiesti?
-    // Semplificato: OR tra attributi (match se qualunque variante ha 1 degli attrs).
+    // Match se almeno una variante ha uno degli attributi richiesti
     where.variants = {
       some: {
         isPublished: true,
-        priceCents: { gt: 0 },
         attributes: { some: { valueId: { in: attrs } } },
       },
     };
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
         },
       },
       variants: {
-        where: { isPublished: true, priceCents: { gt: 0 } },
+        where: { isPublished: true },
         select: {
           id: true, sku: true, priceCents: true, stockQty: true, trackStock: true,
           isDefault: true, coverImage: true,

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, Check, X, Loader2, AlertCircle, ChevronRight, ChevronDown, Image as ImageIcon } from "lucide-react";
 import ImageUploadField from "@/components/admin/ImageUploadField";
+import StoreTranslationsPanel from "@/components/admin/StoreTranslationsPanel";
 
 interface CatTranslation {
   id?: string;
@@ -410,44 +411,42 @@ function CategoryModal({
             </div>
           </div>
 
+          {/* Contenuti: IT sempre qui, altre lingue nel pannello dropdown sotto (solo in edit mode) */}
           <div>
-            <div className="text-xs font-medium text-warm-600 mb-2">Traduzioni</div>
-            <div className="space-y-3">
-              {languages.map((l) => {
-                const t = data.translations.find((tr) => tr.languageCode === l.code) || {
-                  languageCode: l.code,
-                  name: "",
-                  slug: "",
-                };
-                const isDef = l.code === defLang;
+            <div className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-2">Contenuti italiano</div>
+            <div className="bg-warm-50 rounded-lg p-3 space-y-2">
+              {(() => {
+                const t = data.translations.find((tr) => tr.languageCode === defLang) || { languageCode: defLang, name: "", slug: "" };
                 return (
-                  <div key={l.code} className="bg-warm-50 rounded-lg p-3 space-y-2">
-                    <div className="text-xs font-medium uppercase tracking-wider text-warm-500">
-                      {l.code} · {l.name}
-                      {isDef && <span className="ml-2 text-warm-400 normal-case text-[10px]">(default)</span>}
-                    </div>
+                  <>
                     <input
                       value={t.name}
-                      onChange={(e) =>
-                        isDef ? handleDefaultNameChange(e.target.value) : updateTranslation(l.code, { name: e.target.value })
-                      }
-                      placeholder={`Nome in ${l.name}`}
-                      className="w-full px-3 py-1.5 border border-warm-200 rounded text-sm bg-white"
+                      onChange={(e) => handleDefaultNameChange(e.target.value)}
+                      placeholder="Nome categoria (es. Sedie)"
+                      className="w-full px-3 py-2 border border-warm-200 rounded text-sm bg-white"
                     />
                     <input
                       value={t.slug}
-                      onChange={(e) => updateTranslation(l.code, { slug: e.target.value.toLowerCase() })}
-                      placeholder={`slug-${l.code}`}
-                      className="w-full px-3 py-1.5 border border-warm-200 rounded text-sm font-mono bg-white"
+                      onChange={(e) => updateTranslation(defLang, { slug: e.target.value.toLowerCase() })}
+                      placeholder={`slug-it (es. sedie)`}
+                      className="w-full px-3 py-2 border border-warm-200 rounded text-sm font-mono bg-white"
                     />
-                  </div>
+                  </>
                 );
-              })}
+              })()}
             </div>
             {defName && !data.slug && (
               <div className="text-xs text-warm-500 mt-2">Slug globale si auto-popolerà: <code>{slugify(defName)}</code></div>
             )}
           </div>
+
+          {/* Traduzioni altre lingue: solo in edit mode via StoreTranslationsPanel */}
+          {data.id && (
+            <div className="border-t border-warm-200 pt-6">
+              <div className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-3">Altre lingue</div>
+              <StoreTranslationsPanel entity="store-category" entityId={data.id} />
+            </div>
+          )}
         </div>
 
         <div className="px-6 py-4 border-t border-warm-200 flex justify-end gap-2">
