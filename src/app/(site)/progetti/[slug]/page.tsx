@@ -468,11 +468,11 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
         </div>
       </div>
 
-      {/* Progress bar — la parte nera rappresenta la frazione visibile dello slider */}
-      <div className="px-10 lg:px-16 mt-8">
-        <div className="relative h-[1px] bg-warm-200 w-full">
+      {/* Progress bar — stretta, centrata; parte nera = frazione visibile */}
+      <div className="max-w-[260px] mx-auto mt-8 px-4">
+        <div className="relative h-[2px] bg-warm-200 w-full">
           <div
-            className="absolute top-0 h-full bg-warm-800 transition-all duration-150 ease-out"
+            className="absolute inset-y-0 bg-warm-900 transition-[left,width] duration-150 ease-out"
             style={{
               width: `${visibleFraction * 100}%`,
               left: `${scrollProgress * (1 - visibleFraction) * 100}%`,

@@ -178,6 +178,7 @@ function GalleryBlock({ data }: { data: GalleryBlockData }) {
 function SlideshowBlock({ data }: { data: SlideshowBlockData }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [visibleFraction, setVisibleFraction] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
   const scrollLeft = useRef(0);
@@ -187,6 +188,8 @@ function SlideshowBlock({ data }: { data: SlideshowBlockData }) {
   const updateProgress = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
+    const vf = el.scrollWidth > 0 ? el.clientWidth / el.scrollWidth : 1;
+    setVisibleFraction(Math.min(1, Math.max(0.05, vf)));
     const maxScroll = el.scrollWidth - el.clientWidth;
     if (maxScroll <= 0) { setScrollProgress(0); return; }
     setScrollProgress(el.scrollLeft / maxScroll);
@@ -196,8 +199,12 @@ function SlideshowBlock({ data }: { data: SlideshowBlockData }) {
     const el = scrollRef.current;
     if (!el) return;
     el.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("resize", updateProgress);
     updateProgress();
-    return () => el.removeEventListener("scroll", updateProgress);
+    return () => {
+      el.removeEventListener("scroll", updateProgress);
+      window.removeEventListener("resize", updateProgress);
+    };
   }, [updateProgress]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -255,11 +262,14 @@ function SlideshowBlock({ data }: { data: SlideshowBlockData }) {
         </div>
       </div>
       {total > 1 && (
-        <div className="gtv-container mt-8">
-          <div className="relative h-[1px] bg-warm-200 w-full max-w-3xl mx-auto">
+        <div className="max-w-[260px] mx-auto mt-8 px-4">
+          <div className="relative h-[2px] bg-warm-200 w-full">
             <div
-              className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-150 ease-out"
-              style={{ width: "33%", transform: `translateX(${scrollProgress * 200}%)` }}
+              className="absolute inset-y-0 bg-warm-900 transition-[left,width] duration-150 ease-out"
+              style={{
+                width: `${visibleFraction * 100}%`,
+                left: `${scrollProgress * (1 - visibleFraction) * 100}%`,
+              }}
             />
           </div>
         </div>
