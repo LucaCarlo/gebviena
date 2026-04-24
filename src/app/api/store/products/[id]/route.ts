@@ -51,6 +51,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const storeCategoryId = body.storeCategoryId !== undefined ? (body.storeCategoryId || null) : undefined;
     const coverImage = body.coverImage !== undefined ? (body.coverImage ? String(body.coverImage) : null) : undefined;
     const galleryImages = body.galleryImages !== undefined ? (body.galleryImages ? String(body.galleryImages) : null) : undefined;
+    const excludedCatalogImages = body.excludedCatalogImages !== undefined ? (body.excludedCatalogImages ? String(body.excludedCatalogImages) : null) : undefined;
     const isPublished = typeof body.isPublished === "boolean" ? body.isPublished : undefined;
     const sortOrder = Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : undefined;
     const translations: TranslationInput[] | undefined = Array.isArray(body.translations) ? body.translations : undefined;
@@ -59,6 +60,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (storeCategoryId !== undefined) data.storeCategoryId = storeCategoryId;
     if (coverImage !== undefined) data.coverImage = coverImage;
     if (galleryImages !== undefined) data.galleryImages = galleryImages;
+    if (excludedCatalogImages !== undefined) data.excludedCatalogImages = excludedCatalogImages;
     if (isPublished !== undefined) {
       data.isPublished = isPublished;
       if (isPublished) data.publishedAt = new Date();

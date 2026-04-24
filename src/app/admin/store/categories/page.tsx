@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, Check, X, Loader2, AlertCircle, ChevronRight, ChevronDown, Image as ImageIcon } from "lucide-react";
+import ImageUploadField from "@/components/admin/ImageUploadField";
 
 interface CatTranslation {
   id?: string;
@@ -375,19 +376,16 @@ function CategoryModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-warm-600 mb-1">URL immagine cover</label>
-            <input
+            <ImageUploadField
+              label="Immagine cover categoria"
               value={data.coverImage || ""}
-              onChange={(e) => update({ coverImage: e.target.value || null })}
-              placeholder="https://..."
-              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
+              onChange={(url) => update({ coverImage: url || null })}
+              onRemove={() => update({ coverImage: null })}
+              folder="store-categories"
+              purpose="category-cover"
+              recommendedSize="1200 × 900 px (4:3)"
+              aspectRatio={4 / 3}
             />
-            {data.coverImage && (
-              <div
-                className="mt-2 w-full h-32 rounded border border-warm-200 bg-warm-50 bg-cover bg-center"
-                style={{ backgroundImage: `url(${data.coverImage})` }}
-              />
-            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

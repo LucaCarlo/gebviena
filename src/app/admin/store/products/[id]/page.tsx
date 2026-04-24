@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-  Loader2, Check, X, ArrowLeft, Plus, Pencil, Trash2, Star, Image as ImageIcon, Calculator, Globe, Package, Truck, AlertCircle,
+  Loader2, Check, X, ArrowLeft, Plus, Pencil, Trash2, Star, Image as ImageIcon, Calculator, Globe, Package, Truck, AlertCircle, Eye, EyeOff,
 } from "lucide-react";
+import ImageUploadField from "@/components/admin/ImageUploadField";
+import GalleryUploadField from "@/components/admin/GalleryUploadField";
 
 type ShippingClass = "STANDARD" | "FRAGILE" | "OVERSIZED" | "QUOTE_ONLY";
 type AttrType = "MATERIAL" | "FINISH" | "COLOR" | "OTHER";
@@ -48,6 +50,7 @@ interface StoreProductDetail {
   sortOrder: number;
   coverImage: string | null;
   galleryImages: string | null;
+  excludedCatalogImages: string | null;
   storeCategoryId: string | null;
   product: {
     id: string;
@@ -392,101 +395,98 @@ function ImagesTab({
 }) {
   const [cover, setCover] = useState(sp.coverImage || "");
   const [gallery, setGallery] = useState<string[]>(parseGallery(sp.galleryImages));
-  const [newImg, setNewImg] = useState("");
 
-  const addImg = () => {
-    const u = newImg.trim();
-    if (!u) return;
-    setGallery((g) => [...g, u]);
-    setNewImg("");
+  // Gallery catalogo: esclusioni (array di URL nascosti)
+  const catalogGallery = parseGallery(sp.product.galleryImages);
+  const initialExcluded = parseGallery(sp.excludedCatalogImages);
+  const [excluded, setExcluded] = useState<Set<string>>(new Set(initialExcluded));
+
+  const toggleExclude = (url: string) => {
+    setExcluded((prev) => {
+      const next = new Set(prev);
+      if (next.has(url)) next.delete(url);
+      else next.add(url);
+      return next;
+    });
   };
 
   const save = () => {
     onSave({
       coverImage: cover || null,
       galleryImages: stringifyGallery(gallery),
+      excludedCatalogImages: stringifyGallery(Array.from(excluded)),
     } as unknown as Partial<StoreProductDetail>);
   };
-
-  const catalogGallery = parseGallery(sp.product.galleryImages);
 
   return (
     <div className="max-w-3xl space-y-6">
       <section className="bg-white rounded-lg border border-warm-200 p-6">
-        <h2 className="font-medium text-warm-900 mb-4">Cover Store</h2>
-        <p className="text-sm text-warm-500 mb-3">
+        <h2 className="font-medium text-warm-900 mb-1">Cover Store</h2>
+        <p className="text-sm text-warm-500 mb-4">
           Immagine principale visualizzata nella lista prodotti e nell&apos;hero della pagina dettaglio shop.
         </p>
-        <input
+        <ImageUploadField
+          label=""
           value={cover}
-          onChange={(e) => setCover(e.target.value)}
-          placeholder="https://... (URL immagine)"
-          className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
+          onChange={setCover}
+          onRemove={() => setCover("")}
+          folder="store-products"
+          purpose="cover"
+          recommendedSize="1200 × 900 px (4:3)"
+          aspectRatio={4 / 3}
         />
-        {cover && (
-          <div
-            className="mt-3 w-full max-w-sm aspect-[4/3] rounded border border-warm-200 bg-warm-50 bg-cover bg-center"
-            style={{ backgroundImage: `url(${cover})` }}
-          />
-        )}
       </section>
 
       <section className="bg-white rounded-lg border border-warm-200 p-6">
-        <h2 className="font-medium text-warm-900 mb-4">Gallery Store</h2>
-        <p className="text-sm text-warm-500 mb-3">
-          Immagini aggiuntive per la pagina dettaglio shop. Carica le immagini in /admin/media e incolla qui gli URL.
+        <h2 className="font-medium text-warm-900 mb-1">Gallery Store</h2>
+        <p className="text-sm text-warm-500 mb-4">
+          Immagini aggiuntive per la pagina dettaglio shop. Carica da PC o scegli dalla media library.
         </p>
-
-        <div className="space-y-2 mb-4">
-          {gallery.map((u, i) => (
-            <div key={i} className="flex items-center gap-2 bg-warm-50 rounded-lg p-2">
-              <div
-                className="w-14 h-14 rounded bg-warm-100 bg-cover bg-center flex-shrink-0"
-                style={{ backgroundImage: `url(${u})` }}
-              />
-              <input
-                value={u}
-                onChange={(e) => setGallery((g) => g.map((x, idx) => (idx === i ? e.target.value : x)))}
-                className="flex-1 px-3 py-1.5 border border-warm-200 rounded text-sm bg-white font-mono"
-              />
-              <button
-                onClick={() => setGallery((g) => g.filter((_, idx) => idx !== i))}
-                className="p-1.5 text-red-500 hover:bg-red-50 rounded"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-2">
-          <input
-            value={newImg}
-            onChange={(e) => setNewImg(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addImg()}
-            placeholder="https://... aggiungi URL"
-            className="flex-1 px-3 py-2 border border-warm-200 rounded-lg text-sm"
-          />
-          <button onClick={addImg} className="px-4 py-2 bg-warm-100 text-warm-800 rounded-lg hover:bg-warm-200 text-sm">
-            <Plus size={14} />
-          </button>
-        </div>
+        <GalleryUploadField
+          label=""
+          value={gallery}
+          onChange={setGallery}
+          folder="store-products"
+          helpText="Trascina più immagini in una volta o scegli dalla libreria. Riordina trascinandole."
+        />
       </section>
 
       {catalogGallery.length > 0 && (
-        <section className="bg-warm-50 rounded-lg border border-warm-200 p-6">
+        <section className="bg-white rounded-lg border border-warm-200 p-6">
           <h2 className="font-medium text-warm-900 mb-1">Slideshow del catalogo (mostrato in fondo)</h2>
-          <p className="text-sm text-warm-500 mb-3">
-            Queste immagini vengono dalle gallery del Product catalogo e verranno mostrate come sezione &quot;estetica&quot; in fondo alla pagina shop. Non editabili qui.
+          <p className="text-sm text-warm-500 mb-4">
+            Queste immagini arrivano dal Product catalogo e vengono mostrate come sezione &quot;estetica&quot; in fondo alla pagina shop.
+            <strong className="text-warm-700"> Puoi nascondere quelle che non vuoi mostrare nello store</strong> (cliccando l&apos;occhio).
           </p>
-          <div className="flex gap-2 flex-wrap">
-            {catalogGallery.map((u, i) => (
-              <div
-                key={i}
-                className="w-20 h-20 rounded bg-warm-200 bg-cover bg-center"
-                style={{ backgroundImage: `url(${u})` }}
-              />
-            ))}
+          <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+            {catalogGallery.map((u, i) => {
+              const isHidden = excluded.has(u);
+              return (
+                <button
+                  type="button"
+                  key={i}
+                  onClick={() => toggleExclude(u)}
+                  title={isHidden ? "Nascosta — click per ripristinare" : "Visibile — click per nascondere"}
+                  className={`relative aspect-square rounded overflow-hidden border-2 transition-all ${
+                    isHidden ? "border-red-300 opacity-40" : "border-transparent hover:border-warm-400"
+                  }`}
+                >
+                  <div
+                    className="w-full h-full bg-warm-100 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${u})` }}
+                  />
+                  <div className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity ${
+                    isHidden ? "opacity-100" : "opacity-0 hover:opacity-100"
+                  }`}>
+                    {isHidden ? <EyeOff size={18} className="text-white" /> : <Eye size={18} className="text-white" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-xs text-warm-500 mt-3">
+            {excluded.size > 0 ? `${excluded.size} immagine/i nascoste` : "Tutte visibili"}
+            {` · Totale catalogo: ${catalogGallery.length}`}
           </div>
         </section>
       )}
@@ -1009,19 +1009,20 @@ function VariantModal({
 
           {/* Immagini */}
           <div className="space-y-3">
-            <div className="text-xs font-medium text-warm-600 uppercase tracking-wider">Immagini variante (opz.)</div>
-            <input
+            <div className="text-xs font-medium text-warm-600 uppercase tracking-wider">Foto della variante (opz.)</div>
+            <p className="text-xs text-warm-500">
+              Questa foto sostituisce la cover del prodotto quando il cliente seleziona questa variante.
+            </p>
+            <ImageUploadField
+              label=""
               value={v.coverImage || ""}
-              onChange={(e) => update({ coverImage: e.target.value || null })}
-              placeholder="URL cover variante"
-              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
+              onChange={(url) => update({ coverImage: url || null })}
+              onRemove={() => update({ coverImage: null })}
+              folder="store-variants"
+              purpose="variant-cover"
+              recommendedSize="1200 × 900 px (4:3)"
+              aspectRatio={4 / 3}
             />
-            {v.coverImage && (
-              <div
-                className="w-40 h-32 rounded border border-warm-200 bg-warm-50 bg-cover bg-center"
-                style={{ backgroundImage: `url(${v.coverImage})` }}
-              />
-            )}
           </div>
 
           {/* Flags */}
@@ -1073,12 +1074,14 @@ function VolumeCalculator({ volumeM3, onChange }: { volumeM3: number; onChange: 
   const [W, setW] = useState<number>(0);
   const [H, setH] = useState<number>(0);
 
+  const computed = L > 0 && W > 0 && H > 0 ? Math.round(((L * W * H) / 1_000_000) * 1000) / 1000 : 0;
+
   useEffect(() => {
-    if (mode === "dimensions" && L > 0 && W > 0 && H > 0) {
-      const m3 = (L * W * H) / 1_000_000; // cm³ → m³
-      onChange(Math.round(m3 * 1000) / 1000);
-    }
-  }, [mode, L, W, H, onChange]);
+    if (mode === "dimensions" && computed > 0) onChange(computed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, computed]);
+
+  const displayed = mode === "dimensions" && computed > 0 ? computed : Number(volumeM3);
 
   return (
     <div className="border border-warm-200 rounded-lg p-4 bg-white">
@@ -1128,7 +1131,8 @@ function VolumeCalculator({ volumeM3, onChange }: { volumeM3: number; onChange: 
             </div>
           </div>
           <div className="text-xs text-warm-500 mt-2">
-            = <strong className="text-warm-800 font-mono">{Number(volumeM3).toFixed(3)} m³</strong>
+            = <strong className="text-warm-800 font-mono">{displayed.toFixed(3)} m³</strong>
+            {computed > 0 && <span className="ml-2 text-emerald-600">(applicato)</span>}
           </div>
         </>
       )}

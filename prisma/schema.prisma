@@ -1151,16 +1151,17 @@ model StoreCategoryTranslation {
 // ─── Store: Products & Variants ────────────────────────────────────────
 
 model StoreProduct {
-  id              String    @id @default(cuid())
-  productId       String    @unique
-  storeCategoryId String?
-  coverImage      String?   @db.Text
-  galleryImages   String?   @db.Text
-  isPublished     Boolean   @default(false)
-  publishedAt     DateTime?
-  sortOrder       Int       @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  productId             String    @unique
+  storeCategoryId       String?
+  coverImage            String?   @db.Text
+  galleryImages         String?   @db.Text
+  excludedCatalogImages String?   @db.Text
+  isPublished           Boolean   @default(false)
+  publishedAt           DateTime?
+  sortOrder             Int       @default(0)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   product       Product                   @relation(fields: [productId], references: [id], onDelete: Cascade)
   storeCategory StoreCategory?            @relation(fields: [storeCategoryId], references: [id], onDelete: SetNull)

@@ -148,6 +148,41 @@ export const TRANSLATION_ENTITIES: Record<string, TranslationEntityDef> = {
     sourceDelegate: "contentSubcategory",
     fields: [{ key: "label", label: "Etichetta", type: "short" }],
   },
+  "store-product": {
+    delegate: "storeProductTranslation",
+    parentField: "storeProductId",
+    sourceDelegate: "storeProduct",
+    fields: [
+      { key: "name", label: "Nome commerciale (opz., eredita dal catalogo se vuoto)", type: "short" },
+      { key: "slug", label: "Slug URL", type: "slug" },
+      { key: "shortDescription", label: "Descrizione breve", type: "long" },
+      { key: "marketingDescription", label: "Descrizione estesa (marketing)", type: "html" },
+      { key: "seoTitle", label: "SEO Title", type: "short" },
+      { key: "seoDescription", label: "SEO Description", type: "long" },
+      { key: "seoKeywords", label: "SEO Keywords", type: "long" },
+    ],
+  },
+  "store-category": {
+    delegate: "storeCategoryTranslation",
+    parentField: "categoryId",
+    sourceDelegate: "storeCategory",
+    fields: [
+      { key: "name", label: "Nome", type: "short" },
+      { key: "slug", label: "Slug URL", type: "slug" },
+      { key: "description", label: "Descrizione", type: "long" },
+      { key: "seoTitle", label: "SEO Title", type: "short" },
+      { key: "seoDescription", label: "SEO Description", type: "long" },
+      { key: "seoKeywords", label: "SEO Keywords", type: "long" },
+    ],
+  },
+  "store-attribute": {
+    delegate: "storeAttributeValueTranslation",
+    parentField: "valueId",
+    sourceDelegate: "storeAttributeValue",
+    fields: [
+      { key: "label", label: "Etichetta", type: "short" },
+    ],
+  },
 };
 
 export function getEntityDef(entity: string): TranslationEntityDef | null {
