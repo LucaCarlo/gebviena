@@ -470,18 +470,18 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
         </div>
       </div>
 
-      {/* Progress bar — grigia 1px, nera 2px che rappresenta la frazione visibile */}
+      {/* Progress bar — overlay nera con clip-path (no sub-pixel offset) */}
       {visibleFraction < 0.999 && (
         <div className="max-w-[780px] mx-auto mt-8 px-4">
           <div className="relative h-[1px] bg-warm-200 w-full">
             <div
-              className="absolute bg-warm-900"
+              className="absolute left-0 bg-warm-900"
               style={{
                 top: "-0.5px",
                 height: "2px",
-                width: `${visibleFraction * 100}%`,
-                left: `${Math.max(0, Math.min(1, scrollProgress)) * (1 - visibleFraction) * 100}%`,
-                transition: "left 150ms ease-out, width 200ms ease-out",
+                width: "100%",
+                clipPath: `inset(0 ${(1 - Math.max(0, Math.min(1, scrollProgress))) * (1 - visibleFraction) * 100}% 0 ${Math.max(0, Math.min(1, scrollProgress)) * (1 - visibleFraction) * 100}%)`,
+                transition: "clip-path 180ms ease-out",
               }}
             />
           </div>
