@@ -120,6 +120,13 @@ export const PERMISSION_RESOURCES = [
   { key: "landing_page", label: "Landing Page" },
   { key: "email_templates", label: "Template Email" },
   { key: "email_analytics", label: "Analitiche Email" },
+  { key: "store_attributes", label: "Store — Attributi" },
+  { key: "store_categories", label: "Store — Categorie" },
+  { key: "store_products", label: "Store — Prodotti" },
+  { key: "store_shipping", label: "Store — Spedizioni" },
+  { key: "store_settings", label: "Store — Impostazioni" },
+  { key: "store_orders", label: "Store — Ordini" },
+  { key: "store_customers", label: "Store — Clienti" },
 ] as const;
 
 export const PERMISSION_ACTIONS = [
