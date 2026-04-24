@@ -32,15 +32,41 @@ async function getRedirects(origin: string): Promise<RedirectRow[]> {
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const host = (req.headers.get("host") || "").toLowerCase();
+  const isStoreHost = host.startsWith("store.");
 
+  // Passa-through per asset statici e API
   if (
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
-    pathname.startsWith("/admin") ||
     pathname.startsWith("/static/") ||
     pathname.includes(".")
   ) {
     return NextResponse.next();
+  }
+
+  // Separazione host-based:
+  // - /admin su host store → redirect al main host (la dashboard è solo sul main)
+  // - /store/* su host main → redirect al host store (shop pubblico solo su store.*)
+  if (pathname.startsWith("/admin")) {
+    if (isStoreHost) {
+      const mainHost = host.replace(/^store\./, "");
+      const target = new URL(pathname + req.nextUrl.search, req.url);
+      target.host = mainHost;
+      return NextResponse.redirect(target);
+    }
+    return NextResponse.next();
+  }
+
+  if (!isStoreHost && pathname === "/store") {
+    const target = new URL("/" + req.nextUrl.search, req.url);
+    target.host = "store." + host;
+    return NextResponse.redirect(target);
+  }
+  if (!isStoreHost && pathname.startsWith("/store/")) {
+    const target = new URL(pathname.replace(/^\/store/, "") + req.nextUrl.search, req.url);
+    target.host = "store." + host;
+    return NextResponse.redirect(target);
   }
 
   // 1. Apply admin-defined redirects first (matched against canonical path)
@@ -101,9 +127,13 @@ export async function middleware(req: NextRequest) {
   }
 
   const strippedPath = rest.length ? "/" + rest.join("/") : "/";
+  // Su host store, inoltriamo internamente a /store/<path>
+  const routedPath = isStoreHost
+    ? (strippedPath === "/" ? "/store" : "/store" + strippedPath)
+    : strippedPath;
 
   const url = req.nextUrl.clone();
-  url.pathname = strippedPath;
+  url.pathname = routedPath;
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-gtv-lang", lang);
   requestHeaders.set("x-gtv-canonical-path", strippedPath);
@@ -120,5 +150,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next|admin|static|favicon.ico).*)"],
+  // Admin incluso perché lo gestiamo a mano per il routing host-based
+  matcher: ["/((?!api|_next|static|favicon.ico).*)"],
 };
