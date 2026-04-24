@@ -1167,6 +1167,7 @@ model StoreProduct {
   storeCategory StoreCategory?            @relation(fields: [storeCategoryId], references: [id], onDelete: SetNull)
   translations  StoreProductTranslation[]
   variants      StoreProductVariant[]
+  favorites     CustomerFavorite[]
 
   @@index([storeCategoryId])
   @@index([isPublished])
@@ -1290,8 +1291,23 @@ model Customer {
 
   addresses Address[]
   orders    Order[]
+  favorites CustomerFavorite[]
 
   @@index([createdAt])
+}
+
+model CustomerFavorite {
+  id             String   @id @default(cuid())
+  customerId     String
+  storeProductId String
+  createdAt      DateTime @default(now())
+
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  storeProduct StoreProduct @relation(fields: [storeProductId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, storeProductId])
+  @@index([customerId])
+  @@index([storeProductId])
 }
 
 model Address {

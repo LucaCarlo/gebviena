@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Package, Ruler, ShoppingBag, Info } from "lucide-react";
+import { Package, Ruler, ShoppingBag, Info, Heart } from "lucide-react";
+import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 
 type AttrType = "MATERIAL" | "FINISH" | "COLOR" | "OTHER";
 
@@ -59,9 +60,41 @@ const eur = (cents: number) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
 
 export default function ProductDetail({ product }: { product: Product }) {
+  const { customer } = useCustomerAuth();
   const [selectedVariantId, setSelectedVariantId] = useState<string>(
     product.variants.find((v) => v.isDefault)?.id ?? product.variants[0]?.id ?? ""
   );
+  const [isFav, setIsFav] = useState(false);
+  const [favBusy, setFavBusy] = useState(false);
+
+  useEffect(() => {
+    if (!customer) { setIsFav(false); return; }
+    fetch("/api/store/public/favorites?lang=it", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setIsFav((d.data as { storeProductId: string }[]).some((f) => f.storeProductId === product.id));
+      })
+      .catch(() => {});
+  }, [customer, product.id]);
+
+  async function toggleFavorite() {
+    if (!customer) { window.location.href = "/account"; return; }
+    if (favBusy) return;
+    setFavBusy(true);
+    try {
+      if (isFav) {
+        await fetch(`/api/store/public/favorites?storeProductId=${product.id}`, { method: "DELETE" });
+        setIsFav(false);
+      } else {
+        await fetch("/api/store/public/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storeProductId: product.id }),
+        });
+        setIsFav(true);
+      }
+    } finally { setFavBusy(false); }
+  }
 
   const selectedVariant = useMemo(
     () => product.variants.find((v) => v.id === selectedVariantId) || product.variants[0],
@@ -246,12 +279,22 @@ export default function ProductDetail({ product }: { product: Product }) {
             )}
           </div>
 
-          <button
-            disabled={!inStock}
-            className="w-full inline-flex items-center justify-center gap-2 py-4 bg-warm-900 text-white uppercase text-sm tracking-wider hover:bg-warm-800 disabled:bg-warm-300 disabled:cursor-not-allowed"
-          >
-            <ShoppingBag size={16} /> Aggiungi al carrello
-          </button>
+          <div className="flex gap-2">
+            <button
+              disabled={!inStock}
+              className="flex-1 inline-flex items-center justify-center gap-2 py-4 bg-warm-900 text-white uppercase text-sm tracking-wider hover:bg-warm-800 disabled:bg-warm-300 disabled:cursor-not-allowed"
+            >
+              <ShoppingBag size={16} /> Aggiungi al carrello
+            </button>
+            <button
+              onClick={toggleFavorite}
+              disabled={favBusy}
+              title={isFav ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+              className={`px-4 border flex items-center justify-center transition-colors ${isFav ? "border-red-500 text-red-500 bg-red-50" : "border-warm-300 text-warm-700 hover:border-warm-900 hover:text-warm-900"}`}
+            >
+              <Heart size={18} fill={isFav ? "currentColor" : "none"} strokeWidth={1.6} />
+            </button>
+          </div>
           <div className="mt-2 text-xs text-warm-500 text-center">
             <Info size={11} className="inline mr-1" />
             Pagamenti in arrivo. Il carrello sarà attivo a breve.
