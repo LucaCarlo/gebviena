@@ -77,12 +77,12 @@ export default function ExperienceCarousel({ images }: ExperienceCarouselProps) 
           ))}
         </div>
 
-        {/* Progress bar */}
-        <div className="gtv-container mt-8">
-          <div className="relative h-[1px] bg-warm-200 w-full max-w-3xl mx-auto">
+        {/* Progress bar — stretta, centrata; nera 2px indica l'immagine corrente */}
+        <div className="max-w-[260px] mx-auto mt-8 px-4">
+          <div className="relative h-[2px] bg-warm-200 w-full">
             <div
-              className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-500 ease-out"
-              style={{ width: `${100 / total}%`, transform: `translateX(${current * 100}%)` }}
+              className="absolute inset-y-0 bg-warm-900 transition-[left,width] duration-500 ease-out"
+              style={{ width: `${100 / total}%`, left: `${(current / total) * 100}%` }}
             />
           </div>
         </div>

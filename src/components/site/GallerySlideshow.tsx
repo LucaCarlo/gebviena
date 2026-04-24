@@ -94,12 +94,12 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
           <p className="text-[13px] text-warm-600 leading-snug">{currentAlt}</p>
         </div>
 
-        {/* Progress bar */}
-        <div className="px-10 lg:px-16 mt-3">
-          <div className="relative h-[1px] bg-warm-200 w-full">
+        {/* Progress bar — stretta, centrata; parte nera 2px, indica l'immagine corrente */}
+        <div className="max-w-[260px] mx-auto mt-3 px-4">
+          <div className="relative h-[2px] bg-warm-200 w-full">
             <div
-              className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-500 ease-out"
-              style={{ width: `${100 / images.length}%`, transform: `translateX(${current * 100}%)` }}
+              className="absolute inset-y-0 bg-warm-900 transition-[left,width] duration-500 ease-out"
+              style={{ width: `${100 / images.length}%`, left: `${(current / images.length) * 100}%` }}
             />
           </div>
         </div>
