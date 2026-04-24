@@ -57,8 +57,6 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
     } finally { setBusy(false); }
   }, [customer, busy, isFav, p.id, onFavoriteChange]);
 
-  const activeImage = hover && p.hoverImage ? p.hoverImage : p.coverImage;
-
   return (
     <Link
       href={`/prodotti/${p.slug}`}
