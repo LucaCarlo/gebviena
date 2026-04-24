@@ -326,6 +326,7 @@ export default function ProjectDetailPage() {
 function VerticalCarousel({ images, projectName }: { images: string[]; projectName: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [visibleFraction, setVisibleFraction] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
@@ -354,6 +355,8 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
   const updateProgress = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
+    const vf = el.scrollWidth > 0 ? el.clientWidth / el.scrollWidth : 1;
+    setVisibleFraction(Math.min(1, Math.max(0.05, vf)));
     const maxScroll = el.scrollWidth - el.clientWidth;
     if (maxScroll <= 0) { setScrollProgress(0); return; }
     setScrollProgress(el.scrollLeft / maxScroll);
@@ -363,8 +366,12 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
     const el = scrollRef.current;
     if (!el) return;
     el.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("resize", updateProgress);
     updateProgress();
-    return () => el.removeEventListener("scroll", updateProgress);
+    return () => {
+      el.removeEventListener("scroll", updateProgress);
+      window.removeEventListener("resize", updateProgress);
+    };
   }, [updateProgress]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -461,14 +468,14 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
         </div>
       </div>
 
-      {/* Progress bar — allineata al padding dello slider (inizio-fine) */}
-      <div className="px-4 lg:px-6 mt-8">
+      {/* Progress bar — la parte nera rappresenta la frazione visibile dello slider */}
+      <div className="px-10 lg:px-16 mt-8">
         <div className="relative h-[1px] bg-warm-200 w-full">
           <div
-            className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-150 ease-out"
+            className="absolute top-0 h-full bg-warm-800 transition-all duration-150 ease-out"
             style={{
-              width: `${100 / Math.max(images.length, 1)}%`,
-              transform: `translateX(${scrollProgress * Math.max(images.length - 1, 0) * 100}%)`,
+              width: `${visibleFraction * 100}%`,
+              left: `${scrollProgress * (1 - visibleFraction) * 100}%`,
             }}
           />
         </div>
