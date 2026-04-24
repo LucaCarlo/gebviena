@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Footer from "@/components/layout/Footer";
 import RecaptchaProvider from "@/components/providers/RecaptchaProvider";
@@ -22,7 +23,9 @@ export default async function StoreLayout({ children }: { children: React.ReactN
             className="bg-white min-h-screen relative overflow-hidden"
             style={{ marginLeft: "var(--site-margin)", marginRight: "var(--site-margin)" }}
           >
-            <StoreHeader />
+            <Suspense fallback={<div className="fixed top-0 left-0 right-0 h-20 md:h-24 bg-white border-b border-neutral-100 z-50" />}>
+              <StoreHeader />
+            </Suspense>
             <main className="pt-20 md:pt-24">{children}</main>
             <Footer />
           </div>
