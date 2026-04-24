@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useT, useLang } from "@/contexts/I18nContext";
+import CarouselProgressBar from "@/components/site/CarouselProgressBar";
 import { localizePath } from "@/lib/path-segments";
 
 interface Category {
@@ -160,23 +161,13 @@ export default function CategoryCarousel() {
         </div>
       </div>
 
-      {/* Scroll progress bar — overlay con clip-path */}
-      {visibleFraction < 0.999 && (
-        <div className="max-w-[780px] mx-auto mt-10 md:mt-14 px-4">
-          <div className="relative h-[1px] bg-grey-mid/30 w-full">
-            <div
-              className="absolute left-0 bg-dark"
-              style={{
-                top: "-0.5px",
-                height: "2px",
-                width: "100%",
-                clipPath: `inset(0 ${(1 - Math.max(0, Math.min(1, scrollProgress))) * (1 - visibleFraction) * 100}% 0 ${Math.max(0, Math.min(1, scrollProgress)) * (1 - visibleFraction) * 100}%)`,
-                transition: "clip-path 180ms ease-out",
-              }}
-            />
-          </div>
-        </div>
-      )}
+      <CarouselProgressBar
+        progress={scrollProgress}
+        visibleFraction={visibleFraction}
+        className="mt-10 md:mt-14"
+      />
+      {/* Spacer sotto la progress per separare la CTA */}
+      <div className="h-6" />
 
       {/* CTA button */}
       <motion.div

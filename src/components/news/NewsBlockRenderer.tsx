@@ -14,6 +14,7 @@ import type {
   VideoBlockData,
   SeparatorBlockData,
 } from "@/types";
+import CarouselProgressBar from "@/components/site/CarouselProgressBar";
 
 /* ── Fade-in animation wrapper ─────────────────────────── */
 function FadeIn({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -263,21 +264,12 @@ function SlideshowBlock({ data }: { data: SlideshowBlockData }) {
           ))}
         </div>
       </div>
-      {total > 1 && visibleFraction < 0.999 && (
-        <div className="max-w-[780px] mx-auto mt-8 px-4">
-          <div className="relative h-[1px] bg-warm-200 w-full">
-            <div
-              className="absolute left-0 bg-warm-900"
-              style={{
-                top: "-0.5px",
-                height: "2px",
-                width: "100%",
-                clipPath: `inset(0 ${(1 - Math.max(0, Math.min(1, scrollProgress))) * (1 - visibleFraction) * 100}% 0 ${Math.max(0, Math.min(1, scrollProgress)) * (1 - visibleFraction) * 100}%)`,
-                transition: "clip-path 180ms ease-out",
-              }}
-            />
-          </div>
-        </div>
+      {total > 1 && (
+        <CarouselProgressBar
+          progress={scrollProgress}
+          visibleFraction={visibleFraction}
+          className="mt-8"
+        />
       )}
     </section>
   );
