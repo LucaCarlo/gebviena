@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-  Loader2, Check, X, ArrowLeft, Plus, Pencil, Trash2, Star, Image as ImageIcon, Calculator, Globe, Package, Truck, AlertCircle, Eye, EyeOff,
+  Loader2, Check, X, ArrowLeft, Plus, Pencil, Trash2, Star, Image as ImageIcon, Calculator, Package, Truck, AlertCircle, Eye, EyeOff,
 } from "lucide-react";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 import GalleryUploadField from "@/components/admin/GalleryUploadField";
@@ -84,7 +84,7 @@ interface Category {
   translations: { languageCode: string; name: string }[];
 }
 
-type Tab = "general" | "images" | "translations" | "variants";
+type Tab = "general" | "variants";
 
 const SHIPPING_CLASSES: { value: ShippingClass; label: string }[] = [
   { value: "STANDARD", label: "Standard" },
@@ -233,8 +233,6 @@ export default function StoreProductDetailPage() {
       <div className="flex gap-1 border-b border-warm-200 mb-6">
         {[
           { k: "general", l: "Generale", I: Package },
-          { k: "images", l: "Immagini", I: ImageIcon },
-          { k: "translations", l: "Traduzioni", I: Globe },
           { k: "variants", l: `Varianti (${sp.variants.length})`, I: Truck },
         ].map((t) => (
           <button
@@ -253,14 +251,23 @@ export default function StoreProductDetailPage() {
       </div>
 
       {tab === "general" && (
-        <GeneralTab sp={sp} categories={categories} onSave={saveProduct} saving={saving} />
-      )}
-      {tab === "images" && (
-        <ImagesTab sp={sp} onSave={saveProduct} saving={saving} />
-      )}
-      {tab === "translations" && (
-        <div className="max-w-3xl">
-          <StoreTranslationsPanel entity="store-product" entityId={sp.id} onSaved={fetchAll} />
+        <div className="space-y-6">
+          <section>
+            <SectionHeader title="Dati generali" subtitle="Categorizzazione e pubblicazione" />
+            <GeneralTab sp={sp} categories={categories} onSave={saveProduct} saving={saving} />
+          </section>
+
+          <section>
+            <SectionHeader title="Immagini" subtitle="Cover, gallery dello shop e selezione dello slideshow catalogo" />
+            <ImagesTab sp={sp} onSave={saveProduct} saving={saving} />
+          </section>
+
+          <section>
+            <SectionHeader title="Contenuti multilingua" subtitle="Seleziona la lingua, compila o traduci con AI, salva." />
+            <div className="max-w-3xl">
+              <StoreTranslationsPanel entity="store-product" entityId={sp.id} onSaved={fetchAll} />
+            </div>
+          </section>
         </div>
       )}
       {tab === "variants" && (
@@ -986,6 +993,15 @@ function VolumeCalculator({ volumeM3, onChange }: { volumeM3: number; onChange: 
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="mb-3">
+      <h2 className="text-lg font-semibold text-warm-900">{title}</h2>
+      {subtitle && <p className="text-sm text-warm-500 mt-0.5">{subtitle}</p>}
     </div>
   );
 }
