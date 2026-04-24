@@ -27,8 +27,11 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
       .catch(() => { /* silent */ });
   }, [images]);
 
-  const goNext = () => setCurrent((prev) => (prev + 1) % images.length);
-  const goPrev = () => setCurrent((prev) => (prev - 1 + images.length) % images.length);
+  const canGoPrev = current > 0;
+  const canGoNext = current < images.length - 1;
+
+  const goNext = () => { if (canGoNext) setCurrent((prev) => prev + 1); };
+  const goPrev = () => { if (canGoPrev) setCurrent((prev) => prev - 1); };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const el = containerRef.current;
@@ -41,15 +44,15 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
   };
 
   const handleClick = () => {
-    if (hoverSide === "left") goPrev();
-    else if (hoverSide === "right") goNext();
+    if (hoverSide === "left" && canGoPrev) goPrev();
+    else if (hoverSide === "right" && canGoNext) goNext();
   };
 
-  const cursorStyle = hoverSide === "left"
+  const cursorStyle = (hoverSide === "left" && canGoPrev)
     ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='21' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M28 22 L16 22 M21 17 L16 22 L21 27' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 22 22, pointer"
-    : hoverSide === "right"
+    : (hoverSide === "right" && canGoNext)
     ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='21' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M16 22 L28 22 M23 17 L28 22 L23 27' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 22 22, pointer"
-    : "pointer";
+    : "default";
 
   if (images.length === 0) return null;
 
@@ -86,13 +89,13 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
           </div>
         </div>
 
-        {/* Alt text sotto l'immagine */}
-        <div className="px-4 lg:px-6 mt-4 min-h-[1.5em]">
+        {/* Alt text sotto l'immagine (centrato) */}
+        <div className="px-4 lg:px-6 mt-4 min-h-[1.5em] text-center">
           <p className="text-[13px] text-warm-600 leading-snug">{currentAlt}</p>
         </div>
 
-        {/* Progress bar allineata al padding */}
-        <div className="px-4 lg:px-6 mt-3">
+        {/* Progress bar */}
+        <div className="px-10 lg:px-16 mt-3">
           <div className="relative h-[1px] bg-warm-200 w-full">
             <div
               className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-500 ease-out"
