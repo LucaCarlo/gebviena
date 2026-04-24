@@ -225,8 +225,14 @@ export async function upsertTranslation(
   // For CREATE, the translation row may have NOT NULL columns (es. title, name, slug)
   // that aren't in `clean` because the admin only translated some fields (es. only blocks).
   // Fallback: copy missing translatable fields from the IT source so the row can be created.
-  const sourceDelegate = (prisma as unknown as Record<string, AnyDelegate>)[def.sourceDelegate];
-  const source = await sourceDelegate.findUnique({ where: { id: entityId } });
+  // Per store-*, la "source" è la translation IT; per le altre è la tabella parent.
+  const source = entity.startsWith("store-")
+    ? await (prisma as unknown as Record<string, AnyDelegate>)[def.delegate].findFirst({
+        where: { [def.parentField]: entityId, languageCode: "it" },
+      })
+    : await (prisma as unknown as Record<string, AnyDelegate>)[def.sourceDelegate].findUnique({
+        where: { id: entityId },
+      });
   const createData: Record<string, unknown> = { ...clean, [def.parentField]: entityId, languageCode };
   if (source) {
     for (const f of def.fields) {
@@ -251,6 +257,17 @@ export async function upsertTranslation(
 export async function loadSourceText(entity: string, entityId: string) {
   const def = getEntityDef(entity);
   if (!def) throw new Error(`Unknown entity ${entity}`);
+
+  // Per entità store-*, i testi tradotti vivono SOLO nelle translation table
+  // (il record parent ha solo metadata come coverImage, isPublished, ecc.).
+  // Quindi la "sorgente" per la traduzione AI è la translation IT.
+  if (entity.startsWith("store-")) {
+    const translationDelegate = (prisma as unknown as Record<string, AnyDelegate>)[def.delegate];
+    return translationDelegate.findFirst({
+      where: { [def.parentField]: entityId, languageCode: "it" },
+    });
+  }
+
   const delegate = (prisma as unknown as Record<string, AnyDelegate>)[def.sourceDelegate];
   return delegate.findUnique({ where: { id: entityId } });
 }

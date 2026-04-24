@@ -92,7 +92,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return tx.storeProduct.findUnique({
         where: { id: params.id },
         include: {
-          product: true,
+          product: {
+            include: {
+              translations: true,
+              designer: { select: { id: true, name: true, slug: true } },
+            },
+          },
           storeCategory: { include: { translations: true } },
           translations: true,
           variants: {

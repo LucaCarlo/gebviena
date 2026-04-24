@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 import GalleryUploadField from "@/components/admin/GalleryUploadField";
+import StoreTranslationsPanel from "@/components/admin/StoreTranslationsPanel";
 
 type ShippingClass = "STANDARD" | "FRAGILE" | "OVERSIZED" | "QUOTE_ONLY";
 type AttrType = "MATERIAL" | "FINISH" | "COLOR" | "OTHER";
@@ -76,13 +77,6 @@ interface StoreProductDetail {
   variants: Variant[];
 }
 
-interface Language {
-  id: string;
-  code: string;
-  name: string;
-  isDefault: boolean;
-}
-
 interface Category {
   id: string;
   slug: string;
@@ -98,15 +92,6 @@ const SHIPPING_CLASSES: { value: ShippingClass; label: string }[] = [
   { value: "OVERSIZED", label: "Fuori misura" },
   { value: "QUOTE_ONLY", label: "Solo su preventivo" },
 ];
-
-function slugify(s: string) {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 function parseGallery(s: string | null): string[] {
   if (!s) return [];
@@ -129,7 +114,6 @@ export default function StoreProductDetailPage() {
   const id = params.id;
 
   const [sp, setSp] = useState<StoreProductDetail | null>(null);
-  const [languages, setLanguages] = useState<Language[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [attributes, setAttributes] = useState<AttrValue[]>([]);
   const [tab, setTab] = useState<Tab>("general");
@@ -144,14 +128,12 @@ export default function StoreProductDetailPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [spRes, langRes, catRes, attrRes] = await Promise.all([
+    const [spRes, catRes, attrRes] = await Promise.all([
       fetch(`/api/store/products/${id}`).then((r) => r.json()),
-      fetch(`/api/languages`).then((r) => r.json()),
       fetch(`/api/store/categories`).then((r) => r.json()),
       fetch(`/api/store/attributes`).then((r) => r.json()),
     ]);
     if (spRes.success) setSp(spRes.data);
-    if (langRes.success) setLanguages(langRes.data);
     if (catRes.success) setCategories(catRes.data);
     if (attrRes.success) setAttributes(attrRes.data);
     setLoading(false);
@@ -277,7 +259,9 @@ export default function StoreProductDetailPage() {
         <ImagesTab sp={sp} onSave={saveProduct} saving={saving} />
       )}
       {tab === "translations" && (
-        <TranslationsTab sp={sp} languages={languages} onSave={saveProduct} saving={saving} />
+        <div className="max-w-3xl">
+          <StoreTranslationsPanel entity="store-product" entityId={sp.id} onSaved={fetchAll} />
+        </div>
       )}
       {tab === "variants" && (
         <VariantsTab
@@ -498,140 +482,6 @@ function ImagesTab({
           className="px-4 py-2 bg-warm-900 text-white rounded-lg hover:bg-warm-800 disabled:opacity-50 text-sm"
         >
           {saving ? "Salvataggio..." : "Salva immagini"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Translations tab                                                          */
-/* -------------------------------------------------------------------------- */
-
-function TranslationsTab({
-  sp, languages, onSave, saving,
-}: {
-  sp: StoreProductDetail;
-  languages: Language[];
-  onSave: (patch: { translations: StoreProductDetail["translations"] }) => void;
-  saving: boolean;
-}) {
-  const ensure = () => {
-    const map = new Map(sp.translations.map((t) => [t.languageCode, t]));
-    return languages.map((l) => {
-      const existing = map.get(l.code);
-      const catalogName = sp.product.translations.find((t) => t.languageCode === l.code)?.name || "";
-      return existing ?? {
-        languageCode: l.code,
-        name: null,
-        slug: slugify(catalogName || sp.product.slug),
-        shortDescription: null,
-        marketingDescription: null,
-        seoTitle: null,
-        seoDescription: null,
-        seoKeywords: null,
-      };
-    });
-  };
-  const [rows, setRows] = useState<StoreProductDetail["translations"]>(ensure());
-
-  const update = (code: string, patch: Partial<StoreProductDetail["translations"][number]>) => {
-    setRows((rs) => rs.map((r) => (r.languageCode === code ? { ...r, ...patch } : r)));
-  };
-
-  return (
-    <div className="max-w-3xl space-y-4">
-      <div className="text-sm text-warm-500 bg-warm-50 border border-warm-200 rounded-lg p-3">
-        Se lasci il <strong>nome vuoto</strong>, il prodotto mostrerà il nome dal catalogo Thonet ({sp.product.name}).
-        Lo <strong>slug</strong> invece è obbligatorio per l&apos;URL.
-      </div>
-
-      {rows.map((r) => {
-        const lang = languages.find((l) => l.code === r.languageCode);
-        return (
-          <section key={r.languageCode} className="bg-white rounded-lg border border-warm-200 p-6 space-y-3">
-            <div className="flex items-center gap-2 pb-2 border-b border-warm-100">
-              <Globe size={14} className="text-warm-500" />
-              <span className="font-medium text-warm-900 uppercase">{r.languageCode}</span>
-              <span className="text-warm-500 text-sm">· {lang?.name}</span>
-              {lang?.isDefault && <span className="text-xs text-warm-400">(default)</span>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1">Nome commerciale (opz.)</label>
-                <input
-                  value={r.name || ""}
-                  onChange={(e) => update(r.languageCode, { name: e.target.value || null })}
-                  placeholder={sp.product.translations.find((t) => t.languageCode === r.languageCode)?.name || sp.product.name}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1">Slug URL</label>
-                <input
-                  value={r.slug}
-                  onChange={(e) => update(r.languageCode, { slug: e.target.value.toLowerCase() })}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm font-mono"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-warm-600 mb-1">Descrizione breve</label>
-              <textarea
-                value={r.shortDescription || ""}
-                onChange={(e) => update(r.languageCode, { shortDescription: e.target.value || null })}
-                rows={2}
-                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-warm-600 mb-1">Descrizione estesa (marketing)</label>
-              <textarea
-                value={r.marketingDescription || ""}
-                onChange={(e) => update(r.languageCode, { marketingDescription: e.target.value || null })}
-                rows={4}
-                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-              />
-            </div>
-
-            <details className="text-sm">
-              <summary className="cursor-pointer text-warm-500 hover:text-warm-900">SEO</summary>
-              <div className="mt-3 space-y-3">
-                <input
-                  value={r.seoTitle || ""}
-                  onChange={(e) => update(r.languageCode, { seoTitle: e.target.value || null })}
-                  placeholder="SEO title"
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-                />
-                <textarea
-                  value={r.seoDescription || ""}
-                  onChange={(e) => update(r.languageCode, { seoDescription: e.target.value || null })}
-                  placeholder="SEO meta description"
-                  rows={2}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-                />
-                <input
-                  value={r.seoKeywords || ""}
-                  onChange={(e) => update(r.languageCode, { seoKeywords: e.target.value || null })}
-                  placeholder="keyword1, keyword2"
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-                />
-              </div>
-            </details>
-          </section>
-        );
-      })}
-
-      <div className="flex justify-end">
-        <button
-          onClick={() => onSave({ translations: rows })}
-          disabled={saving}
-          className="px-4 py-2 bg-warm-900 text-white rounded-lg hover:bg-warm-800 disabled:opacity-50 text-sm"
-        >
-          {saving ? "Salvataggio..." : "Salva traduzioni"}
         </button>
       </div>
     </div>
