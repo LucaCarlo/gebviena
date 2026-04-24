@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import ShopFilters from "@/components/store/ShopFilters";
+import StoreHeroSection from "@/components/store/StoreHeroSection";
 
 export const dynamic = "force-dynamic";
 
@@ -43,21 +44,8 @@ export default async function ShopHomePage({ searchParams }: { searchParams: { [
 
   return (
     <>
-      {/* Hero / intro */}
-      <section className="border-b border-warm-200">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-16 text-center">
-          <div className="text-xs uppercase tracking-[0.3em] text-warm-500 mb-4">
-            Gebrüder Thonet Vienna · Shop online
-          </div>
-          <h1 className="text-3xl md:text-5xl font-light text-warm-900 mb-4">
-            Design viennese, ordinabile a casa tua
-          </h1>
-          <p className="max-w-2xl mx-auto text-warm-600 leading-relaxed">
-            Una selezione dalla nostra collezione disponibile per acquisto diretto.
-            Scegli tra materiali, finiture e colori con consegna in Italia.
-          </p>
-        </div>
-      </section>
+      {/* Hero gestito da admin (HeroSlide page=store-home) */}
+      <StoreHeroSection />
 
       {/* Body: filtri + griglia */}
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-10">

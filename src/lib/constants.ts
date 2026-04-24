@@ -79,6 +79,7 @@ export const HERO_PAGES = [
   { value: "ufficio-stampa", label: "Ufficio Stampa" },
   { value: "rete-vendita", label: "Rete di Vendita" },
   { value: "richiesta-info", label: "Richiesta Informazioni" },
+  { value: "store-home", label: "Store - Home" },
 ] as const;
 
 /** @deprecated Usa i ruoli dal DB (tabella Role) */

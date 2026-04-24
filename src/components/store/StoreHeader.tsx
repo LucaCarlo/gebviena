@@ -44,7 +44,7 @@ export default function StoreHeader() {
   return (
     <>
       <header
-        className="fixed top-0 z-50 bg-white border-b border-neutral-100"
+        className="fixed top-0 z-50 bg-white"
         style={{ left: "var(--site-margin)", right: "var(--site-margin)" }}
       >
         <div className="px-4 md:px-6 lg:px-10">
@@ -58,9 +58,6 @@ export default function StoreHeader() {
                 height={65}
                 priority
               />
-              <span className="ml-3 hidden sm:inline text-[10px] tracking-[0.3em] text-neutral-500 uppercase border-l border-neutral-200 pl-3">
-                Store
-              </span>
             </Link>
 
             {/* Menu categorie centrato (desktop) */}
