@@ -21,7 +21,12 @@ export async function GET(req: NextRequest) {
   const where: Record<string, unknown> = {};
   if (folder) where.folder = folder;
   if (search) {
-    where.originalName = { contains: search };
+    where.OR = [
+      { originalName: { contains: search } },
+      { url: { contains: search } },
+      { altText: { contains: search } },
+      { filename: { contains: search } },
+    ];
   }
 
   const allowedSort: Record<string, string> = {

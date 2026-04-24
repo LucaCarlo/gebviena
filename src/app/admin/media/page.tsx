@@ -64,6 +64,8 @@ export default function AdminMediaPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [sortBy, setSortBy] = useState<"createdAt" | "size" | "originalName" | "url">("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
 
   // Folder counts (total across all pages)
   const [allCount, setAllCount] = useState(0);
@@ -94,7 +96,7 @@ export default function AdminMediaPage() {
   const dropRef = useRef<HTMLDivElement>(null);
 
   /* --- data fetching ------------------------------------------------ */
-  const fetchMedia = useCallback((folder: string, p: number, ps: number, sb: string, so: string) => {
+  const fetchMedia = useCallback((folder: string, p: number, ps: number, sb: string, so: string, q: string) => {
     setLoading(true);
     const params = new URLSearchParams();
     if (folder !== "__all__") params.set("folder", folder);
@@ -102,6 +104,7 @@ export default function AdminMediaPage() {
     params.set("pageSize", String(ps));
     params.set("sortBy", sb);
     params.set("sortOrder", so);
+    if (q) params.set("search", q);
     fetch(`/api/media?${params.toString()}`)
       .then((r) => r.json())
       .then((data) => {
@@ -137,12 +140,18 @@ export default function AdminMediaPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [activeFolder, sortBy, sortOrder, pageSize]);
+  }, [activeFolder, sortBy, sortOrder, pageSize, search]);
 
   useEffect(() => {
-    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
+    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder, search);
     setSelected(new Set());
-  }, [activeFolder, page, pageSize, sortBy, sortOrder, fetchMedia]);
+  }, [activeFolder, page, pageSize, sortBy, sortOrder, search, fetchMedia]);
+
+  // Debounce dell'input ricerca (300ms)
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   useEffect(() => {
     fetchWasabiStatus();
@@ -183,7 +192,7 @@ export default function AdminMediaPage() {
 
     setUploading(false);
     setUploadProgress({ done: 0, total: 0 });
-    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
+    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder, search);
     fetchWasabiStatus();
     fetchCounts();
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -225,7 +234,7 @@ export default function AdminMediaPage() {
       return next;
     });
     if (detailFile?.id === id) setDetailFile(null);
-    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
+    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder, search);
     fetchWasabiStatus();
     fetchCounts();
   };
@@ -240,7 +249,7 @@ export default function AdminMediaPage() {
     }
     setSelected(new Set());
     if (detailFile && ids.includes(detailFile.id)) setDetailFile(null);
-    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
+    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder, search);
     fetchWasabiStatus();
     fetchCounts();
   };
@@ -275,7 +284,7 @@ export default function AdminMediaPage() {
 
     setSyncResult({ synced: totalSynced, failed: totalFailed, total: ids.length });
     setSyncing(false);
-    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder);
+    fetchMedia(activeFolder, page, pageSize, sortBy, sortOrder, search);
     fetchWasabiStatus();
     fetchCounts();
     setTimeout(() => setSyncResult(null), 5000);
@@ -734,6 +743,36 @@ export default function AdminMediaPage() {
             </button>
           );
         })}
+      </div>
+
+      {/* Search box */}
+      <div className="mb-4 bg-white rounded-lg shadow-sm border border-warm-200 px-4 py-2.5">
+        <div className="relative max-w-md">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.5 10a7.5 7.5 0 0013.15 6.65z" />
+          </svg>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Cerca per nome file, URL o alt text…"
+            className="w-full pl-9 pr-8 py-2 text-sm border border-warm-200 rounded-md bg-white focus:outline-none focus:border-warm-500"
+          />
+          {searchInput && (
+            <button
+              onClick={() => setSearchInput("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-700"
+              aria-label="Pulisci ricerca"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        {search && (
+          <div className="text-xs text-warm-500 mt-1.5">
+            Risultati per &ldquo;<span className="text-warm-800 font-medium">{search}</span>&rdquo;: {totalCount} file
+          </div>
+        )}
       </div>
 
       {/* Select all + sort + bulk actions bar */}

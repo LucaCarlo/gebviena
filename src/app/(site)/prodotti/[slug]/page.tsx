@@ -157,9 +157,9 @@ function InspirationCarousel({ images, productName, id }: { images: string[]; pr
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="gtv-container mt-8">
-        <div className="relative h-[1px] bg-warm-200 w-full max-w-3xl mx-auto">
+      {/* Progress bar — allineata al padding dello slider (inizio-fine) */}
+      <div className="px-4 lg:px-6 mt-8">
+        <div className="relative h-[1px] bg-warm-200 w-full">
           <div
             className="absolute top-0 left-0 h-full bg-warm-800 transition-all duration-150 ease-out"
             style={{
