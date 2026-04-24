@@ -8,6 +8,10 @@ const RESOURCES = [
   "awards", "catalogs", "news", "stores", "agents", "newsletter",
   "contacts", "forms", "media", "hero", "settings", "analytics",
   "firma", "import_export",
+  // Store (e-commerce)
+  "store_attributes", "store_categories", "store_products",
+  "store_shipping", "store_settings",
+  "store_orders", "store_customers",
 ];
 const ACTIONS = ["view", "create", "edit", "delete"];
 
@@ -41,6 +45,15 @@ function editorPerms(): Record<string, boolean> {
   // Editor can use firma
   p["firma.view"] = true;
   p["firma.edit"] = true;
+  // Store: editor può gestire prodotti/ordini/clienti ma non struttura (categorie, attributi, spedizioni, settings)
+  p["store_attributes.view"] = true;
+  p["store_categories.view"] = true;
+  p["store_products.view"] = true;
+  p["store_products.edit"] = true;
+  p["store_shipping.view"] = true;
+  p["store_orders.view"] = true;
+  p["store_orders.edit"] = true;
+  p["store_customers.view"] = true;
   return p;
 }
 

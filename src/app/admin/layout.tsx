@@ -91,6 +91,13 @@ function findFirstAllowedPath(perms: Record<string, boolean>): string | null {
     ["contacts.view", "/admin/contacts"],
     ["stores.view", "/admin/stores"],
     ["media.view", "/admin/media"],
+    ["store_orders.view", "/admin/store/orders"],
+    ["store_products.view", "/admin/store/products"],
+    ["store_categories.view", "/admin/store/categories"],
+    ["store_attributes.view", "/admin/store/attributes"],
+    ["store_shipping.view", "/admin/store/shipping"],
+    ["store_customers.view", "/admin/store/customers"],
+    ["store_settings.view", "/admin/store/settings"],
   ];
   for (const [perm, path] of permToPath) {
     if (perms[perm] === true) return path;

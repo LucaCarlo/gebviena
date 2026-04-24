@@ -3,25 +3,25 @@ generator client {
 }
 
 datasource db {
-  provider  = "mysql"
-  url       = env("DATABASE_URL")
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 model AdminUser {
   id                  String             @id @default(cuid())
   email               String             @unique
-  passwordHash        String @db.Text
+  passwordHash        String             @db.Text
   name                String?
   role                String             @default("editor")
   roleId              String?
   roleRef             Role?              @relation(fields: [roleId], references: [id])
-  avatar              String? @db.Text
+  avatar              String?            @db.Text
   isActive            Boolean            @default(true)
   lastLoginAt         DateTime?
-  emailSignature      String? @db.MediumText
-  signatureHtml       String? @db.MediumText
+  emailSignature      String?            @db.MediumText
+  signatureHtml       String?            @db.MediumText
   signatureTemplateId String?
-  signatureTemplate   SignatureTemplate?  @relation(fields: [signatureTemplateId], references: [id])
+  signatureTemplate   SignatureTemplate? @relation(fields: [signatureTemplateId], references: [id])
   scanLandingPageId   String?
   scanLandingPage     LandingPageConfig? @relation(fields: [scanLandingPageId], references: [id])
   createdAt           DateTime           @default(now())
@@ -36,7 +36,7 @@ model Role {
   id          String      @id @default(cuid())
   name        String      @unique
   label       String
-  permissions String @db.Text      @default("{}")
+  permissions String      @default("{}") @db.Text
   isSystem    Boolean     @default(false)
   sortOrder   Int         @default(0)
   createdAt   DateTime    @default(now())
@@ -47,20 +47,20 @@ model Role {
 model SignatureTemplate {
   id             String      @id @default(cuid())
   name           String
-  logoUrl        String? @db.MediumText
-  bannerUrl      String? @db.MediumText
+  logoUrl        String?     @db.MediumText
+  bannerUrl      String?     @db.MediumText
   showInstagram  Boolean     @default(true)
   showFacebook   Boolean     @default(true)
   showWeb        Boolean     @default(true)
-  instagramUrl   String? @db.Text
-  facebookUrl    String? @db.Text
-  webLinkUrl     String? @db.Text
-  websiteUrl     String? @db.Text
-  website        String? @db.Text
-  disclaimerLang String @db.Text      @default("it")
-  footerIt       String? @db.Text
-  footerEn       String? @db.Text
-  ecoText        String? @db.Text
+  instagramUrl   String?     @db.Text
+  facebookUrl    String?     @db.Text
+  webLinkUrl     String?     @db.Text
+  websiteUrl     String?     @db.Text
+  website        String?     @db.Text
+  disclaimerLang String      @default("it") @db.Text
+  footerIt       String?     @db.Text
+  footerEn       String?     @db.Text
+  ecoText        String?     @db.Text
   style          String      @default("geb")
   showLinkedin   Boolean     @default(true)
   linkedinUrl    String?
@@ -73,21 +73,21 @@ model SignatureTemplate {
 }
 
 model Designer {
-  id             String    @id @default(cuid())
+  id             String                @id @default(cuid())
   name           String
-  slug           String    @unique
-  bio            String? @db.Text
-  country        String? @db.Text
-  imageUrl       String? @db.Text
-  website        String? @db.Text
-  isActive       Boolean   @default(true)
-  isFeatured     Boolean   @default(false)
-  sortOrder      Int       @default(0)
-  seoTitle       String? @db.Text
-  seoDescription String? @db.Text
-  seoKeywords    String? @db.Text
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  slug           String                @unique
+  bio            String?               @db.Text
+  country        String?               @db.Text
+  imageUrl       String?               @db.Text
+  website        String?               @db.Text
+  isActive       Boolean               @default(true)
+  isFeatured     Boolean               @default(false)
+  sortOrder      Int                   @default(0)
+  seoTitle       String?               @db.Text
+  seoDescription String?               @db.Text
+  seoKeywords    String?               @db.Text
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
   products       Product[]
   translations   DesignerTranslation[]
 
@@ -95,49 +95,50 @@ model Designer {
 }
 
 model Product {
-  id               String           @id @default(cuid())
-  name             String
-  slug             String           @unique
-  designerId       String?
-  designerName     String @db.Text
-  category         String
-  subcategory      String?
-  description      String? @db.Text
-  materials        String? @db.Text
-  dimensions       String? @db.Text
-  dimensionBlockId String? @db.Text
-  dimensionValues  String? @db.Text
-  coverImage       String? @db.Text
-  heroImage        String? @db.Text
-  sideImage        String? @db.Text
-  galleryImages    String? @db.Text
-  galleryOrientations String? @db.Text
-  variants         String? @db.Text
-  dimensionImage   String? @db.Text
-  techSheetUrl     String? @db.Text
-  model2dUrl       String? @db.Text
-  model3dUrl       String? @db.Text
-  pconUrl          String? @db.Text
-  pconMoc          String? @db.VarChar(32)
-  pconBan          String? @db.VarChar(64)
-  pconSid          String? @db.VarChar(64)
-  pconOvc          String? @db.Text
-  year             Int?
-  imageUrl         String @db.Text           @default("")
-  isFeatured       Boolean          @default(false)
-  isNew            Boolean          @default(false)
-  isActive         Boolean          @default(true)
-  sortOrder        Int              @default(0)
-  seoTitle         String? @db.Text
-  seoDescription   String? @db.Text
-  seoKeywords      String? @db.Text
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  designer         Designer?        @relation(fields: [designerId], references: [id])
-  projects         ProjectProduct[]
-  awards           AwardProduct[]
-  translations     ProductTranslation[]
-  extraDimensions  ProductDimension[]
+  id                  String               @id @default(cuid())
+  name                String
+  slug                String               @unique
+  designerId          String?
+  designerName        String               @db.Text
+  category            String
+  subcategory         String?
+  description         String?              @db.Text
+  materials           String?              @db.Text
+  dimensions          String?              @db.Text
+  dimensionBlockId    String?              @db.Text
+  dimensionValues     String?              @db.Text
+  coverImage          String?              @db.Text
+  heroImage           String?              @db.Text
+  sideImage           String?              @db.Text
+  galleryImages       String?              @db.Text
+  galleryOrientations String?              @db.Text
+  variants            String?              @db.Text
+  dimensionImage      String?              @db.Text
+  techSheetUrl        String?              @db.Text
+  model2dUrl          String?              @db.Text
+  model3dUrl          String?              @db.Text
+  pconUrl             String?              @db.Text
+  pconMoc             String?              @db.VarChar(32)
+  pconBan             String?              @db.VarChar(64)
+  pconSid             String?              @db.VarChar(64)
+  pconOvc             String?              @db.Text
+  year                Int?
+  imageUrl            String               @default("") @db.Text
+  isFeatured          Boolean              @default(false)
+  isNew               Boolean              @default(false)
+  isActive            Boolean              @default(true)
+  sortOrder           Int                  @default(0)
+  seoTitle            String?              @db.Text
+  seoDescription      String?              @db.Text
+  seoKeywords         String?              @db.Text
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  designer            Designer?            @relation(fields: [designerId], references: [id])
+  projects            ProjectProduct[]
+  awards              AwardProduct[]
+  translations        ProductTranslation[]
+  extraDimensions     ProductDimension[]
+  storeProduct        StoreProduct?
 
   @@index([category])
   @@index([subcategory])
@@ -146,44 +147,44 @@ model Product {
 }
 
 model ProductDimension {
-  id         String  @id @default(cuid())
-  productId  String
-  name       String? @db.Text
-  blockId    String? @db.Text
-  values     String? @db.Text
-  freeText   String? @db.Text
-  image      String? @db.Text
-  sortOrder  Int     @default(0)
-  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  productId String
+  name      String? @db.Text
+  blockId   String? @db.Text
+  values    String? @db.Text
+  freeText  String? @db.Text
+  image     String? @db.Text
+  sortOrder Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
 }
 
 model Project {
-  id             String           @id @default(cuid())
-  name           String
-  slug           String           @unique
-  type           String
-  country        String
-  city           String? @db.Text
-  year           Int?
-  architect      String? @db.Text
-  description    String? @db.Text
-  shortDescription String? @db.Text
-  imageUrl       String @db.Text
-  coverImage     String? @db.Text
-  heroImage      String? @db.Text
-  sideImage      String? @db.Text
-  galleryUrls    String? @db.Text
-  isActive       Boolean          @default(true)
-  sortOrder      Int              @default(0)
-  seoTitle       String? @db.Text
-  seoDescription String? @db.Text
-  seoKeywords    String? @db.Text
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  products       ProjectProduct[]
-  translations   ProjectTranslation[]
+  id               String               @id @default(cuid())
+  name             String
+  slug             String               @unique
+  type             String
+  country          String
+  city             String?              @db.Text
+  year             Int?
+  architect        String?              @db.Text
+  description      String?              @db.Text
+  shortDescription String?              @db.Text
+  imageUrl         String               @db.Text
+  coverImage       String?              @db.Text
+  heroImage        String?              @db.Text
+  sideImage        String?              @db.Text
+  galleryUrls      String?              @db.Text
+  isActive         Boolean              @default(true)
+  sortOrder        Int                  @default(0)
+  seoTitle         String?              @db.Text
+  seoDescription   String?              @db.Text
+  seoKeywords      String?              @db.Text
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  products         ProjectProduct[]
+  translations     ProjectTranslation[]
 
   @@index([type])
   @@index([country])
@@ -201,24 +202,24 @@ model ProjectProduct {
 }
 
 model Campaign {
-  id             String   @id @default(cuid())
+  id             String                @id @default(cuid())
   name           String
-  slug           String   @unique
-  type           String   @default("")
-  subtitle       String? @db.Text
-  description    String? @db.Text
-  imageUrl       String @db.Text
-  galleryUrls    String? @db.Text
-  videoUrl       String? @db.Text
-  blocks         String? @db.Text
+  slug           String                @unique
+  type           String                @default("")
+  subtitle       String?               @db.Text
+  description    String?               @db.Text
+  imageUrl       String                @db.Text
+  galleryUrls    String?               @db.Text
+  videoUrl       String?               @db.Text
+  blocks         String?               @db.Text
   year           Int?
-  isActive       Boolean  @default(true)
-  sortOrder      Int      @default(0)
-  seoTitle       String? @db.Text
-  seoDescription String? @db.Text
-  seoKeywords    String? @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isActive       Boolean               @default(true)
+  sortOrder      Int                   @default(0)
+  seoTitle       String?               @db.Text
+  seoDescription String?               @db.Text
+  seoKeywords    String?               @db.Text
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
   translations   CampaignTranslation[]
 
   @@index([slug])
@@ -226,27 +227,27 @@ model Campaign {
 }
 
 model NewsArticle {
-  id             String   @id @default(cuid())
+  id             String                   @id @default(cuid())
   title          String
-  slug           String   @unique
-  category       String   @default("")
-  subtitle       String? @db.Text
-  excerpt        String? @db.Text
-  content        String? @db.Text
-  imageUrl       String @db.Text
-  galleryUrls    String? @db.Text
-  blocks         String? @db.Text
-  tags           String? @db.Text
-  source         String? @db.Text
-  sourceUrl      String? @db.Text
+  slug           String                   @unique
+  category       String                   @default("")
+  subtitle       String?                  @db.Text
+  excerpt        String?                  @db.Text
+  content        String?                  @db.Text
+  imageUrl       String                   @db.Text
+  galleryUrls    String?                  @db.Text
+  blocks         String?                  @db.Text
+  tags           String?                  @db.Text
+  source         String?                  @db.Text
+  sourceUrl      String?                  @db.Text
   publishedAt    DateTime?
-  isActive       Boolean  @default(true)
-  sortOrder      Int      @default(0)
-  seoTitle       String? @db.Text
-  seoDescription String? @db.Text
-  seoKeywords    String? @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isActive       Boolean                  @default(true)
+  sortOrder      Int                      @default(0)
+  seoTitle       String?                  @db.Text
+  seoDescription String?                  @db.Text
+  seoKeywords    String?                  @db.Text
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
   translations   NewsArticleTranslation[]
 
   @@index([slug])
@@ -254,22 +255,22 @@ model NewsArticle {
 }
 
 model Award {
-  id              String   @id @default(cuid())
+  id              String             @id @default(cuid())
   name            String
-  productName     String? @db.Text
-  productSlug     String? @db.Text
-  productCategory String? @db.Text
+  productName     String?            @db.Text
+  productSlug     String?            @db.Text
+  productCategory String?            @db.Text
   year            Int
-  organization    String? @db.Text
-  description     String? @db.Text
-  imageUrl        String? @db.Text
-  url             String? @db.Text
-  isActive        Boolean  @default(true)
-  seoTitle        String? @db.Text
-  seoDescription  String? @db.Text
-  seoKeywords     String? @db.Text
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  organization    String?            @db.Text
+  description     String?            @db.Text
+  imageUrl        String?            @db.Text
+  url             String?            @db.Text
+  isActive        Boolean            @default(true)
+  seoTitle        String?            @db.Text
+  seoDescription  String?            @db.Text
+  seoKeywords     String?            @db.Text
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
   products        AwardProduct[]
   translations    AwardTranslation[]
 
@@ -287,25 +288,25 @@ model AwardProduct {
 }
 
 model HeroSlide {
-  id               String   @id @default(cuid())
+  id               String                 @id @default(cuid())
   title            String
-  subtitle         String? @db.Text
-  ctaText          String? @db.Text
-  ctaLink          String? @db.Text
-  imageUrl         String @db.Text
-  coverImage       String? @db.Text
-  videoUrl         String? @db.Text
-  position         String @db.Text   @default("center")
-  verticalPosition String @db.Text   @default("center")
-  imagePosition    String @db.VarChar(32) @default("center center")
-  textColor        String @db.VarChar(16) @default("white")
-  darkOverlay      Boolean  @default(false)
-  overlayOpacity   Int      @default(60)
-  page             String   @default("homepage")
-  isActive         Boolean  @default(true)
-  sortOrder        Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  subtitle         String?                @db.Text
+  ctaText          String?                @db.Text
+  ctaLink          String?                @db.Text
+  imageUrl         String                 @db.Text
+  coverImage       String?                @db.Text
+  videoUrl         String?                @db.Text
+  position         String                 @default("center") @db.Text
+  verticalPosition String                 @default("center") @db.Text
+  imagePosition    String                 @default("center center") @db.VarChar(32)
+  textColor        String                 @default("white") @db.VarChar(16)
+  darkOverlay      Boolean                @default(false)
+  overlayOpacity   Int                    @default(60)
+  page             String                 @default("homepage")
+  isActive         Boolean                @default(true)
+  sortOrder        Int                    @default(0)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
   translations     HeroSlideTranslation[]
 
   @@index([page])
@@ -315,8 +316,8 @@ model Language {
   id         String   @id @default(cuid())
   code       String   @unique
   name       String
-  nativeName String? @db.Text
-  flag       String? @db.Text
+  nativeName String?  @db.Text
+  flag       String?  @db.Text
   urlPrefix  String?  @unique @db.VarChar(16)
   isDefault  Boolean  @default(false)
   isActive   Boolean  @default(true)
@@ -324,63 +325,68 @@ model Language {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  productTranslations    ProductTranslation[]
-  designerTranslations   DesignerTranslation[]
-  projectTranslations    ProjectTranslation[]
-  campaignTranslations   CampaignTranslation[]
-  newsTranslations       NewsArticleTranslation[]
-  catalogTranslations    CatalogTranslation[]
-  heroSlideTranslations  HeroSlideTranslation[]
-  awardTranslations      AwardTranslation[]
-  uiTranslations         UiTranslationOverride[]
-  categoryTranslations   ContentCategoryTranslation[]
-  typologyTranslations   ContentTypologyTranslation[]
+  productTranslations     ProductTranslation[]
+  designerTranslations    DesignerTranslation[]
+  projectTranslations     ProjectTranslation[]
+  campaignTranslations    CampaignTranslation[]
+  newsTranslations        NewsArticleTranslation[]
+  catalogTranslations     CatalogTranslation[]
+  heroSlideTranslations   HeroSlideTranslation[]
+  awardTranslations       AwardTranslation[]
+  uiTranslations          UiTranslationOverride[]
+  categoryTranslations    ContentCategoryTranslation[]
+  typologyTranslations    ContentTypologyTranslation[]
   subcategoryTranslations ContentSubcategoryTranslation[]
+
+  storeCategoryTranslations       StoreCategoryTranslation[]
+  storeAttributeValueTranslations StoreAttributeValueTranslation[]
+  storeProductTranslations        StoreProductTranslation[]
+  storeProductVariantTranslations StoreProductVariantTranslation[]
 }
 
 model ContentCategoryTranslation {
-  id           String   @id @default(cuid())
+  id           String          @id @default(cuid())
   categoryId   String
-  languageCode String   @db.VarChar(16)
+  languageCode String          @db.VarChar(16)
   label        String
-  status       String   @default("draft") @db.VarChar(16)
-  isPublished  Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status       String          @default("draft") @db.VarChar(16)
+  isPublished  Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
   category     ContentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  language     Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+  language     Language        @relation(fields: [languageCode], references: [code], onDelete: Cascade)
 
   @@unique([categoryId, languageCode])
   @@index([languageCode])
 }
 
 model ContentTypologyTranslation {
-  id           String   @id @default(cuid())
+  id           String          @id @default(cuid())
   typologyId   String
-  languageCode String   @db.VarChar(16)
+  languageCode String          @db.VarChar(16)
   label        String
-  status       String   @default("draft") @db.VarChar(16)
-  isPublished  Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status       String          @default("draft") @db.VarChar(16)
+  isPublished  Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
   typology     ContentTypology @relation(fields: [typologyId], references: [id], onDelete: Cascade)
-  language     Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+  language     Language        @relation(fields: [languageCode], references: [code], onDelete: Cascade)
 
   @@unique([typologyId, languageCode])
   @@index([languageCode])
 }
 
 model ContentSubcategoryTranslation {
-  id            String   @id @default(cuid())
+  id            String             @id @default(cuid())
   subcategoryId String
-  languageCode  String   @db.VarChar(16)
+  languageCode  String             @db.VarChar(16)
   label         String
-  status        String   @default("draft") @db.VarChar(16)
-  isPublished   Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status        String             @default("draft") @db.VarChar(16)
+  isPublished   Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   subcategory   ContentSubcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
-  language      Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+  language      Language           @relation(fields: [languageCode], references: [code], onDelete: Cascade)
 
   @@unique([subcategoryId, languageCode])
   @@index([languageCode])
@@ -484,24 +490,24 @@ model CampaignTranslation {
 }
 
 model NewsArticleTranslation {
-  id             String   @id @default(cuid())
+  id             String      @id @default(cuid())
   newsArticleId  String
-  languageCode   String   @db.VarChar(16)
+  languageCode   String      @db.VarChar(16)
   title          String
-  slug           String   @db.VarChar(191)
-  subtitle       String?  @db.Text
-  excerpt        String?  @db.Text
-  content        String?  @db.Text
-  blocks         String?  @db.Text
-  seoTitle       String?  @db.Text
-  seoDescription String?  @db.Text
-  seoKeywords    String?  @db.Text
-  status         String   @default("draft") @db.VarChar(16)
-  isPublished    Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  slug           String      @db.VarChar(191)
+  subtitle       String?     @db.Text
+  excerpt        String?     @db.Text
+  content        String?     @db.Text
+  blocks         String?     @db.Text
+  seoTitle       String?     @db.Text
+  seoDescription String?     @db.Text
+  seoKeywords    String?     @db.Text
+  status         String      @default("draft") @db.VarChar(16)
+  isPublished    Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
   newsArticle    NewsArticle @relation(fields: [newsArticleId], references: [id], onDelete: Cascade)
-  language       Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+  language       Language    @relation(fields: [languageCode], references: [code], onDelete: Cascade)
 
   @@unique([newsArticleId, languageCode])
   @@unique([languageCode, slug])
@@ -531,19 +537,19 @@ model CatalogTranslation {
 }
 
 model HeroSlideTranslation {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   heroSlideId  String
-  languageCode String   @db.VarChar(16)
+  languageCode String    @db.VarChar(16)
   title        String
-  subtitle     String?  @db.Text
-  ctaText      String?  @db.Text
-  ctaLink      String?  @db.Text
-  status       String   @default("draft") @db.VarChar(16)
-  isPublished  Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  subtitle     String?   @db.Text
+  ctaText      String?   @db.Text
+  ctaLink      String?   @db.Text
+  status       String    @default("draft") @db.VarChar(16)
+  isPublished  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   heroSlide    HeroSlide @relation(fields: [heroSlideId], references: [id], onDelete: Cascade)
-  language     Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+  language     Language  @relation(fields: [languageCode], references: [code], onDelete: Cascade)
 
   @@unique([heroSlideId, languageCode])
   @@index([languageCode])
@@ -570,16 +576,16 @@ model AwardTranslation {
 }
 
 model Redirect {
-  id          String   @id @default(cuid())
-  fromPath    String   @unique @db.VarChar(500)
-  toPath      String   @db.VarChar(500)
-  statusCode  Int      @default(301)
-  enabled     Boolean  @default(true)
-  hits        Int      @default(0)
-  lastHitAt   DateTime?
-  note        String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String    @id @default(cuid())
+  fromPath   String    @unique @db.VarChar(500)
+  toPath     String    @db.VarChar(500)
+  statusCode Int       @default(301)
+  enabled    Boolean   @default(true)
+  hits       Int       @default(0)
+  lastHitAt  DateTime?
+  note       String?   @db.Text
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([enabled])
 }
@@ -599,16 +605,16 @@ model UiTranslationOverride {
 
 model MediaFile {
   id           String    @id @default(cuid())
-  filename     String @db.Text
-  originalName String @db.Text
-  mimeType     String @db.Text
+  filename     String    @db.Text
+  originalName String    @db.Text
+  mimeType     String    @db.Text
   size         Int
-  url          String @db.Text
-  wasabiUrl    String? @db.Text
-  wasabiKey    String? @db.Text
+  url          String    @db.Text
+  wasabiUrl    String?   @db.Text
+  wasabiKey    String?   @db.Text
   isSynced     Boolean   @default(false)
   syncedAt     DateTime?
-  altText      String? @db.Text
+  altText      String?   @db.Text
   folder       String    @default("general")
   width        Int?
   height       Int?
@@ -651,13 +657,13 @@ model PointOfSale {
   name      String
   agentName String?  @db.Text
   type      String
-  address   String @db.Text
+  address   String   @db.Text
   city      String
   country   String
-  phone     String? @db.Text
+  phone     String?  @db.Text
   email     String?
-  website   String? @db.Text
-  imageUrl  String? @db.Text
+  website   String?  @db.Text
+  imageUrl  String?  @db.Text
   latitude  Float
   longitude Float
   isActive  Boolean  @default(true)
@@ -687,20 +693,20 @@ model NewsletterSubscriber {
   acceptsPrivacy Boolean  @default(false)
   acceptsUpdates Boolean  @default(false)
   createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
 }
 
 model ContactSubmission {
   id            String   @id @default(cuid())
   name          String
   email         String
-  subject       String? @db.Text
-  message       String @db.Text
-  company       String? @db.Text
-  phone         String? @db.Text
-  storeId       String? @db.Text
-  contactReason String? @db.Text
-  type          String @db.Text   @default("general")
+  subject       String?  @db.Text
+  message       String   @db.Text
+  company       String?  @db.Text
+  phone         String?  @db.Text
+  storeId       String?  @db.Text
+  contactReason String?  @db.Text
+  type          String   @default("general") @db.Text
   isRead        Boolean  @default(false)
   createdAt     DateTime @default(now())
 }
@@ -708,9 +714,9 @@ model ContactSubmission {
 model PageView {
   id        String   @id @default(cuid())
   path      String
-  referrer  String? @db.Text
-  userAgent String? @db.Text
-  ipHash    String? @db.Text
+  referrer  String?  @db.Text
+  userAgent String?  @db.Text
+  ipHash    String?  @db.Text
   createdAt DateTime @default(now())
 
   @@index([path])
@@ -727,16 +733,16 @@ model Setting {
 }
 
 model ContentTypology {
-  id          String                    @id @default(cuid())
-  contentType String
-  value       String
-  label       String
-  imageUrl    String? @db.Text
-  sortOrder   Int                       @default(0)
-  isActive    Boolean                   @default(true)
-  createdAt   DateTime                  @default(now())
-  updatedAt   DateTime                  @updatedAt
-  categories  ContentTypologyCategory[]
+  id           String                       @id @default(cuid())
+  contentType  String
+  value        String
+  label        String
+  imageUrl     String?                      @db.Text
+  sortOrder    Int                          @default(0)
+  isActive     Boolean                      @default(true)
+  createdAt    DateTime                     @default(now())
+  updatedAt    DateTime                     @updatedAt
+  categories   ContentTypologyCategory[]
   translations ContentTypologyTranslation[]
 
   @@unique([contentType, value])
@@ -744,14 +750,14 @@ model ContentTypology {
 }
 
 model ContentCategory {
-  id            String                    @id @default(cuid())
+  id            String                       @id @default(cuid())
   contentType   String
   value         String
   label         String
-  sortOrder     Int                       @default(0)
-  isActive      Boolean                   @default(true)
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
+  sortOrder     Int                          @default(0)
+  isActive      Boolean                      @default(true)
+  createdAt     DateTime                     @default(now())
+  updatedAt     DateTime                     @updatedAt
   typologies    ContentTypologyCategory[]
   subcategories ContentSubcategory[]
   translations  ContentCategoryTranslation[]
@@ -761,25 +767,25 @@ model ContentCategory {
 }
 
 model ContentTypologyCategory {
-  id         String           @id @default(cuid())
+  id         String          @id @default(cuid())
   typologyId String
   categoryId String
-  typology   ContentTypology  @relation(fields: [typologyId], references: [id], onDelete: Cascade)
-  category   ContentCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  typology   ContentTypology @relation(fields: [typologyId], references: [id], onDelete: Cascade)
+  category   ContentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([typologyId, categoryId])
 }
 
 model ContentSubcategory {
-  id         String          @id @default(cuid())
-  categoryId String
-  value      String
-  label      String
-  sortOrder  Int             @default(0)
-  isActive   Boolean         @default(true)
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  category   ContentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  id           String                          @id @default(cuid())
+  categoryId   String
+  value        String
+  label        String
+  sortOrder    Int                             @default(0)
+  isActive     Boolean                         @default(true)
+  createdAt    DateTime                        @default(now())
+  updatedAt    DateTime                        @updatedAt
+  category     ContentCategory                 @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   translations ContentSubcategoryTranslation[]
 
   @@index([categoryId])
@@ -788,7 +794,7 @@ model ContentSubcategory {
 model DimensionBlock {
   id        String   @id @default(cuid())
   name      String
-  labels    String @db.Text
+  labels    String   @db.Text
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
@@ -796,20 +802,20 @@ model DimensionBlock {
 }
 
 model Catalog {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  section     String   @default("")
-  pretitle    String? @db.Text
-  title       String? @db.Text
-  description String? @db.Text
-  imageUrl    String @db.Text   @default("")
-  pdfUrl      String @db.Text   @default("")
-  linkText    String? @db.Text
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String               @id @default(cuid())
+  name         String
+  slug         String               @unique
+  section      String               @default("")
+  pretitle     String?              @db.Text
+  title        String?              @db.Text
+  description  String?              @db.Text
+  imageUrl     String               @default("") @db.Text
+  pdfUrl       String               @default("") @db.Text
+  linkText     String?              @db.Text
+  isActive     Boolean              @default(true)
+  sortOrder    Int                  @default(0)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
   translations CatalogTranslation[]
 
   @@index([slug])
@@ -858,42 +864,42 @@ model FormConfigTranslation {
 }
 
 model LandingPageConfig {
-  id              String   @id @default(cuid())
-  slug            String   @unique @default("default")
-  name            String   @default("Landing Page") @db.Text
-  permalink       String   @unique @default("evento")
-  type            String   @default("evento") // evento, promo, custom
-  bannerImage     String?  @db.Text
-  logoImage       String?  @db.Text
-  heroTitle       String   @db.Text @default("Milan Design Week 2026")
-  heroSubtitle    String?  @db.Text
-  heroLocation    String?  @db.Text
-  heroDescription String?  @db.Text
-  successTitle    String   @db.Text @default("Thank you. Your QR code has been generated.")
-  successMessage  String?  @db.Text
-  privacyLabel    String   @db.Text @default("I have read and understood the Privacy Policy on processing of my personal data and I confirm that I am over 18.")
-  marketingLabel  String?  @db.Text
-  buttonLabel     String   @default("Register")
-  emailSubject    String?  @db.Text
-  emailTitle      String?  @db.Text
-  emailBody       String?  @db.Text
-  emailFooter     String?  @db.Text
-  emailTemplateId String?  // FK to EmailTemplate
+  id                  String              @id @default(cuid())
+  slug                String              @unique @default("default")
+  name                String              @default("Landing Page") @db.Text
+  permalink           String              @unique @default("evento")
+  type                String              @default("evento") // evento, promo, custom
+  bannerImage         String?             @db.Text
+  logoImage           String?             @db.Text
+  heroTitle           String              @default("Milan Design Week 2026") @db.Text
+  heroSubtitle        String?             @db.Text
+  heroLocation        String?             @db.Text
+  heroDescription     String?             @db.Text
+  successTitle        String              @default("Thank you. Your QR code has been generated.") @db.Text
+  successMessage      String?             @db.Text
+  privacyLabel        String              @default("I have read and understood the Privacy Policy on processing of my personal data and I confirm that I am over 18.") @db.Text
+  marketingLabel      String?             @db.Text
+  buttonLabel         String              @default("Register")
+  emailSubject        String?             @db.Text
+  emailTitle          String?             @db.Text
+  emailBody           String?             @db.Text
+  emailFooter         String?             @db.Text
+  emailTemplateId     String? // FK to EmailTemplate
   signatureTemplateId String? // FK to SignatureTemplate
-  signatureUserData String? @db.Text // JSON: {fullName, department, infoLine1, infoLine2, address, phone, mobile}
-  formFields      String?  @db.Text // JSON: field layout config [{key, label, width, enabled, order}]
-  tagSlug         String?  @db.VarChar(100) // Tag slug to assign on registration
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  registrations   EventRegistration[]
-  invitations     EventInvitation[]
-  scanUsers       AdminUser[]
+  signatureUserData   String?             @db.Text // JSON: {fullName, department, infoLine1, infoLine2, address, phone, mobile}
+  formFields          String?             @db.Text // JSON: field layout config [{key, label, width, enabled, order}]
+  tagSlug             String?             @db.VarChar(100) // Tag slug to assign on registration
+  isActive            Boolean             @default(true)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  registrations       EventRegistration[]
+  invitations         EventInvitation[]
+  scanUsers           AdminUser[]
 }
 
 model EventRegistration {
-  id               String    @id @default(cuid())
-  uuid             String    @unique @default(cuid())
+  id               String             @id @default(cuid())
+  uuid             String             @unique @default(cuid())
   landingPageId    String?
   landingPage      LandingPageConfig? @relation(fields: [landingPageId], references: [id])
   firstName        String
@@ -906,13 +912,13 @@ model EventRegistration {
   state            String?
   city             String
   zipCode          String
-  privacyAccepted  Boolean   @default(false)
-  marketingConsent Boolean   @default(false)
-  qrCode           String    @unique
-  checkedIn        Boolean   @default(false)
+  privacyAccepted  Boolean            @default(false)
+  marketingConsent Boolean            @default(false)
+  qrCode           String             @unique
+  checkedIn        Boolean            @default(false)
   checkedInAt      DateTime?
-  source           String?   @db.VarChar(20) // "invite" | "direct"
-  createdAt        DateTime  @default(now())
+  source           String?            @db.VarChar(20) // "invite" | "direct"
+  createdAt        DateTime           @default(now())
   invitation       EventInvitation?
 
   @@index([email])
@@ -922,19 +928,19 @@ model EventRegistration {
 }
 
 model EventInvitation {
-  id              String             @id @default(cuid())
-  email           String
-  landingPageId   String?
-  landingPage     LandingPageConfig? @relation(fields: [landingPageId], references: [id])
-  token           String             @unique
-  campaign        String?            @db.Text
-  sentAt          DateTime           @default(now())
-  openedAt        DateTime?
-  clickedAt       DateTime?
-  registeredAt    DateTime?
-  registrationId  String?            @unique
-  registration    EventRegistration? @relation(fields: [registrationId], references: [id])
-  createdAt       DateTime           @default(now())
+  id             String             @id @default(cuid())
+  email          String
+  landingPageId  String?
+  landingPage    LandingPageConfig? @relation(fields: [landingPageId], references: [id])
+  token          String             @unique
+  campaign       String?            @db.Text
+  sentAt         DateTime           @default(now())
+  openedAt       DateTime?
+  clickedAt      DateTime?
+  registeredAt   DateTime?
+  registrationId String?            @unique
+  registration   EventRegistration? @relation(fields: [registrationId], references: [id])
+  createdAt      DateTime           @default(now())
 
   @@index([email])
   @@index([landingPageId])
@@ -977,4 +983,425 @@ model EmailTemplate {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ─── Store: Geography ──────────────────────────────────────────────────
+
+model Region {
+  code      String           @id @db.VarChar(8)
+  name      String           @db.VarChar(64)
+  sortOrder Int              @default(0)
+  provinces Province[]
+  tariffs   ShippingTariff[]
+
+  @@index([sortOrder])
+}
+
+model Province {
+  code       String           @id @db.VarChar(8)
+  name       String           @db.VarChar(64)
+  regionCode String           @db.VarChar(8)
+  sortOrder  Int              @default(0)
+  region     Region           @relation(fields: [regionCode], references: [code], onDelete: Restrict)
+  cities     City[]
+  tariffs    ShippingTariff[]
+
+  @@index([regionCode])
+  @@index([sortOrder])
+}
+
+model City {
+  code         String           @id @default(cuid())
+  name         String           @db.VarChar(128)
+  provinceCode String           @db.VarChar(8)
+  createdAt    DateTime         @default(now())
+  province     Province         @relation(fields: [provinceCode], references: [code], onDelete: Restrict)
+  tariffs      ShippingTariff[]
+
+  @@unique([provinceCode, name])
+  @@index([provinceCode])
+}
+
+// ─── Store: Shipping ───────────────────────────────────────────────────
+
+enum ShippingService {
+  CURBSIDE
+  FLOOR_1_3
+  FLOOR_4_10_MAX6
+}
+
+enum ShippingClass {
+  STANDARD
+  FRAGILE
+  OVERSIZED
+  QUOTE_ONLY
+}
+
+model ShippingTariff {
+  id              String          @id @default(cuid())
+  countryCode     String          @db.VarChar(2)
+  regionCode      String?         @db.VarChar(8)
+  provinceCode    String?         @db.VarChar(8)
+  cityCode        String?
+  service         ShippingService
+  pricePerM3Cents Int
+  minChargeCents  Int             @default(0)
+  maxVolumeM3     Decimal?        @db.Decimal(7, 3)
+  isActive        Boolean         @default(true)
+  notes           String?         @db.Text
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  region   Region?   @relation(fields: [regionCode], references: [code], onDelete: SetNull)
+  province Province? @relation(fields: [provinceCode], references: [code], onDelete: SetNull)
+  city     City?     @relation(fields: [cityCode], references: [code], onDelete: SetNull)
+
+  @@index([countryCode, regionCode, provinceCode, cityCode])
+  @@index([service])
+  @@index([cityCode])
+  @@index([provinceCode])
+  @@index([regionCode])
+}
+
+// ─── Store: Attributes (material, finish, color) ───────────────────────
+
+enum StoreAttributeType {
+  MATERIAL
+  FINISH
+  COLOR
+  OTHER
+}
+
+model StoreAttributeValue {
+  id        String             @id @default(cuid())
+  type      StoreAttributeType
+  code      String             @unique @db.VarChar(64)
+  hexColor  String?            @db.VarChar(9)
+  sortOrder Int                @default(0)
+  isActive  Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  translations StoreAttributeValueTranslation[]
+  variantAttrs StoreProductVariantAttribute[]
+
+  @@index([type])
+}
+
+model StoreAttributeValueTranslation {
+  id           String   @id @default(cuid())
+  valueId      String
+  languageCode String   @db.VarChar(16)
+  label        String   @db.VarChar(128)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  value    StoreAttributeValue @relation(fields: [valueId], references: [id], onDelete: Cascade)
+  language Language            @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([valueId, languageCode])
+  @@index([languageCode])
+}
+
+// ─── Store: Categories ─────────────────────────────────────────────────
+
+model StoreCategory {
+  id          String   @id @default(cuid())
+  parentId    String?
+  slug        String   @unique @db.VarChar(191)
+  coverImage  String?  @db.Text
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent       StoreCategory?             @relation("StoreCategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children     StoreCategory[]            @relation("StoreCategoryTree")
+  translations StoreCategoryTranslation[]
+  products     StoreProduct[]
+
+  @@index([parentId])
+  @@index([isPublished])
+  @@index([sortOrder])
+}
+
+model StoreCategoryTranslation {
+  id             String   @id @default(cuid())
+  categoryId     String
+  languageCode   String   @db.VarChar(16)
+  name           String   @db.VarChar(191)
+  slug           String   @db.VarChar(191)
+  description    String?  @db.Text
+  seoTitle       String?  @db.Text
+  seoDescription String?  @db.Text
+  seoKeywords    String?  @db.Text
+  status         String   @default("draft") @db.VarChar(16)
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  category StoreCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  language Language      @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([categoryId, languageCode])
+  @@unique([languageCode, slug])
+  @@index([languageCode])
+}
+
+// ─── Store: Products & Variants ────────────────────────────────────────
+
+model StoreProduct {
+  id              String    @id @default(cuid())
+  productId       String    @unique
+  storeCategoryId String?
+  coverImage      String?   @db.Text
+  galleryImages   String?   @db.Text
+  isPublished     Boolean   @default(false)
+  publishedAt     DateTime?
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  product       Product                   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  storeCategory StoreCategory?            @relation(fields: [storeCategoryId], references: [id], onDelete: SetNull)
+  translations  StoreProductTranslation[]
+  variants      StoreProductVariant[]
+
+  @@index([storeCategoryId])
+  @@index([isPublished])
+  @@index([sortOrder])
+}
+
+model StoreProductTranslation {
+  id                   String   @id @default(cuid())
+  storeProductId       String
+  languageCode         String   @db.VarChar(16)
+  name                 String?  @db.VarChar(191)
+  slug                 String   @db.VarChar(191)
+  shortDescription     String?  @db.Text
+  marketingDescription String?  @db.Text
+  seoTitle             String?  @db.Text
+  seoDescription       String?  @db.Text
+  seoKeywords          String?  @db.Text
+  status               String   @default("draft") @db.VarChar(16)
+  isPublished          Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  storeProduct StoreProduct @relation(fields: [storeProductId], references: [id], onDelete: Cascade)
+  language     Language     @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([storeProductId, languageCode])
+  @@unique([languageCode, slug])
+  @@index([languageCode])
+}
+
+model StoreProductVariant {
+  id             String        @id @default(cuid())
+  storeProductId String
+  sku            String        @unique @db.VarChar(64)
+  priceCents     Int
+  stockQty       Int?
+  trackStock     Boolean       @default(false)
+  volumeM3       Decimal       @default(0) @db.Decimal(7, 3)
+  weightKg       Decimal?      @db.Decimal(8, 2)
+  shippingClass  ShippingClass @default(STANDARD)
+  coverImage     String?       @db.Text
+  galleryImages  String?       @db.Text
+  isDefault      Boolean       @default(false)
+  isPublished    Boolean       @default(false)
+  sortOrder      Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  storeProduct StoreProduct                     @relation(fields: [storeProductId], references: [id], onDelete: Cascade)
+  attributes   StoreProductVariantAttribute[]
+  translations StoreProductVariantTranslation[]
+  orderItems   OrderItem[]
+
+  @@index([storeProductId])
+  @@index([isPublished])
+  @@index([sortOrder])
+}
+
+model StoreProductVariantTranslation {
+  id           String   @id @default(cuid())
+  variantId    String
+  languageCode String   @db.VarChar(16)
+  name         String?  @db.VarChar(191)
+  description  String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  variant  StoreProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  language Language            @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([variantId, languageCode])
+  @@index([languageCode])
+}
+
+model StoreProductVariantAttribute {
+  variantId String
+  valueId   String
+
+  variant StoreProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  value   StoreAttributeValue @relation(fields: [valueId], references: [id], onDelete: Cascade)
+
+  @@id([variantId, valueId])
+  @@index([valueId])
+}
+
+// ─── Store: Customers, Addresses, Orders ───────────────────────────────
+
+enum AddressType {
+  SHIPPING
+  BILLING
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+model Customer {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String?   @db.Text
+  firstName      String?   @db.VarChar(128)
+  lastName       String?   @db.VarChar(128)
+  phone          String?   @db.VarChar(32)
+  taxCode        String?   @db.VarChar(32)
+  vatNumber      String?   @db.VarChar(32)
+  sdiCode        String?   @db.VarChar(16)
+  sdiPec         String?   @db.VarChar(191)
+  language       String    @default("it") @db.VarChar(16)
+  marketingOptIn Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastLoginAt    DateTime?
+
+  addresses Address[]
+  orders    Order[]
+
+  @@index([createdAt])
+}
+
+model Address {
+  id           String      @id @default(cuid())
+  customerId   String
+  type         AddressType
+  firstName    String      @db.VarChar(128)
+  lastName     String      @db.VarChar(128)
+  company      String?     @db.VarChar(191)
+  street1      String      @db.VarChar(191)
+  street2      String?     @db.VarChar(191)
+  city         String      @db.VarChar(128)
+  zip          String      @db.VarChar(16)
+  provinceCode String?     @db.VarChar(8)
+  regionCode   String?     @db.VarChar(8)
+  countryCode  String      @db.VarChar(2)
+  phone        String?     @db.VarChar(32)
+  isDefault    Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([type])
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  orderNumber String      @unique @db.VarChar(32)
+  customerId  String?
+  status      OrderStatus @default(PENDING)
+
+  email     String  @db.VarChar(191)
+  firstName String  @db.VarChar(128)
+  lastName  String  @db.VarChar(128)
+  phone     String? @db.VarChar(32)
+  language  String  @default("it") @db.VarChar(16)
+
+  // Snapshot indirizzi (JSON) — mantiene storicità anche se Address viene modificato
+  shippingAddress String @db.Text
+  billingAddress  String @db.Text
+
+  // Totali IVA esclusa / IVA / totale
+  subtotalCents Int
+  shippingCents Int    @default(0)
+  taxCents      Int    @default(0)
+  totalCents    Int
+  currency      String @default("EUR") @db.VarChar(3)
+  taxRateBp     Int    @default(2200) // basis points (22% = 2200)
+
+  // Spedizione scelta
+  shippingService   ShippingService?
+  shippingZoneLabel String?          @db.VarChar(191)
+  trackingNumber    String?          @db.VarChar(128)
+  trackingCarrier   String?          @db.VarChar(64)
+  trackingUrl       String?          @db.Text
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+
+  // Pagamento
+  paymentProvider       String?   @db.VarChar(32)
+  stripeSessionId       String?   @unique @db.VarChar(191)
+  stripePaymentIntentId String?   @unique @db.VarChar(191)
+  paidAt                DateTime?
+
+  // Rimborso
+  refundedAt        DateTime?
+  refundAmountCents Int?
+  refundReason      String?   @db.Text
+  stripeRefundId    String?   @db.VarChar(191)
+
+  // Note
+  customerNotes String? @db.Text
+  adminNotes    String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([email])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  variantId String?
+
+  // Snapshot al momento dell'ordine (per storicità)
+  productName    String   @db.VarChar(191)
+  variantName    String?  @db.VarChar(191)
+  sku            String   @db.VarChar(64)
+  unitPriceCents Int
+  quantity       Int
+  volumeM3       Decimal  @db.Decimal(7, 3)
+  weightKg       Decimal? @db.Decimal(8, 2)
+  totalCents     Int
+
+  // Attributi snapshot (JSON: {material:"Noce", finish:"Satinato", color:"Rosso"})
+  attributesSnapshot String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  order   Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant StoreProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([variantId])
 }

@@ -6,6 +6,10 @@ const RESOURCES = [
   "users","roles","products","designers","projects","campaigns","awards",
   "catalogs","news","stores","agents","newsletter","contacts","forms",
   "media","hero","settings","analytics","firma","import_export",
+  // Store (e-commerce)
+  "store_attributes","store_categories","store_products",
+  "store_shipping","store_settings",
+  "store_orders","store_customers",
 ];
 const ACTIONS = ["view","create","edit","delete"];
 
@@ -43,6 +47,12 @@ const ROLE_DEFS = [
     "media.view":true,"media.create":true,"media.edit":true,
     "hero.view":true,"hero.create":true,"hero.edit":true,
     "firma.view":true,"firma.edit":true,
+    "store_attributes.view":true,
+    "store_categories.view":true,
+    "store_products.view":true,"store_products.edit":true,
+    "store_shipping.view":true,
+    "store_orders.view":true,"store_orders.edit":true,
+    "store_customers.view":true,
   })},
   { name: "agent", label: "Agente", sort: 3, perms: makePerms({
     "stores.view":true,"agents.view":true,"contacts.view":true,

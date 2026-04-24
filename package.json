@@ -9,6 +9,10 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "npx tsx prisma/seed.ts",
+    "seed:geo": "npx tsx prisma/seed-geo-italy.ts",
+    "seed:shipping": "npx tsx prisma/seed-shipping.ts",
+    "seed:store-products": "npx tsx prisma/seed-store-products.ts",
+    "seed:store-all": "npx tsx prisma/seed-geo-italy.ts && npx tsx prisma/seed-shipping.ts && npx tsx prisma/seed-store-products.ts",
     "db:push": "prisma db push",
     "db:setup": "prisma db push && npx tsx prisma/seed.ts"
   },

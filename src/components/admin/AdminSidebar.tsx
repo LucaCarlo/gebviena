@@ -31,6 +31,12 @@ import {
   Shield,
   QrCode,
   FileText,
+  ShoppingBag,
+  ShoppingCart,
+  Layers,
+  Tag,
+  Truck,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -111,9 +117,21 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    label: "Negozio",
+    label: "Store Online",
     items: [
-      { href: "/admin/stores", label: "Negozi", icon: Store, permission: "stores.view" },
+      { href: "/admin/store/products", label: "Prodotti", icon: ShoppingBag, permission: "store_products.view" },
+      { href: "/admin/store/categories", label: "Categorie", icon: Layers, permission: "store_categories.view" },
+      { href: "/admin/store/attributes", label: "Attributi", icon: Tag, permission: "store_attributes.view" },
+      { href: "/admin/store/orders", label: "Ordini", icon: ShoppingCart, permission: "store_orders.view" },
+      { href: "/admin/store/customers", label: "Clienti", icon: Users, permission: "store_customers.view" },
+      { href: "/admin/store/shipping", label: "Spedizioni", icon: Truck, permission: "store_shipping.view" },
+      { href: "/admin/store/settings", label: "Impostazioni Store", icon: CreditCard, permission: "store_settings.view" },
+    ],
+  },
+  {
+    label: "Rete Vendita",
+    items: [
+      { href: "/admin/stores", label: "Punti vendita", icon: Store, permission: "stores.view" },
       { href: "/admin/agents", label: "Agenti", icon: Users, permission: "agents.view" },
     ],
   },
