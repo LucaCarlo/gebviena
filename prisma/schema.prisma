@@ -1199,22 +1199,25 @@ model StoreProductTranslation {
 }
 
 model StoreProductVariant {
-  id             String        @id @default(cuid())
-  storeProductId String
-  sku            String        @unique @db.VarChar(64)
-  priceCents     Int
-  stockQty       Int?
-  trackStock     Boolean       @default(false)
-  volumeM3       Decimal       @default(0) @db.Decimal(7, 3)
-  weightKg       Decimal?      @db.Decimal(8, 2)
-  shippingClass  ShippingClass @default(STANDARD)
-  coverImage     String?       @db.Text
-  galleryImages  String?       @db.Text
-  isDefault      Boolean       @default(false)
-  isPublished    Boolean       @default(false)
-  sortOrder      Int           @default(0)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  storeProductId   String
+  sku              String        @unique @db.VarChar(64)
+  priceCents       Int
+  stockQty         Int?
+  trackStock       Boolean       @default(false)
+  volumeM3         Decimal       @default(0) @db.Decimal(7, 3)
+  weightKg         Decimal?      @db.Decimal(8, 2)
+  shippingClass    ShippingClass @default(STANDARD)
+  coverImage       String?       @db.Text
+  galleryImages    String?       @db.Text
+  isDefault        Boolean       @default(false)
+  isPublished      Boolean       @default(false)
+  sortOrder        Int           @default(0)
+  // Dimensioni per-variante: riusa i DimensionBlock del catalogo principale
+  dimensionBlockId String?       @db.VarChar(191)
+  dimensionValues  String?       @db.Text
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   storeProduct StoreProduct                     @relation(fields: [storeProductId], references: [id], onDelete: Cascade)
   attributes   StoreProductVariantAttribute[]

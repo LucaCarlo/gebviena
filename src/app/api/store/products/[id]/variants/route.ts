@@ -24,6 +24,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const isPublished = body.isPublished === true;
     const sortOrder = Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 0;
     const attributeValueIds: string[] = Array.isArray(body.attributeValueIds) ? body.attributeValueIds : [];
+    const dimensionBlockId = body.dimensionBlockId ? String(body.dimensionBlockId) : null;
+    const dimensionValues = body.dimensionValues
+      ? (typeof body.dimensionValues === "string" ? body.dimensionValues : JSON.stringify(body.dimensionValues))
+      : null;
 
     if (!sku) {
       return NextResponse.json({ success: false, error: "SKU obbligatorio" }, { status: 400 });
@@ -54,6 +58,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           isDefault,
           isPublished,
           sortOrder,
+          dimensionBlockId,
+          dimensionValues,
           attributes: attributeValueIds.length
             ? { create: attributeValueIds.map((valueId) => ({ valueId })) }
             : undefined,

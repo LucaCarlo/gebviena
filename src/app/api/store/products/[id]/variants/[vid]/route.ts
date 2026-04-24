@@ -31,6 +31,14 @@ export async function PUT(
     if (body.galleryImages !== undefined) data.galleryImages = body.galleryImages ? String(body.galleryImages) : null;
     if (body.isPublished !== undefined) data.isPublished = body.isPublished === true;
     if (body.sortOrder !== undefined) data.sortOrder = Math.trunc(Number(body.sortOrder));
+    if (body.dimensionBlockId !== undefined) {
+      data.dimensionBlockId = body.dimensionBlockId ? String(body.dimensionBlockId) : null;
+    }
+    if (body.dimensionValues !== undefined) {
+      data.dimensionValues = body.dimensionValues
+        ? (typeof body.dimensionValues === "string" ? body.dimensionValues : JSON.stringify(body.dimensionValues))
+        : null;
+    }
 
     const attributeValueIds: string[] | undefined = Array.isArray(body.attributeValueIds) ? body.attributeValueIds : undefined;
     const translations: VariantTranslation[] | undefined = Array.isArray(body.translations) ? body.translations : undefined;

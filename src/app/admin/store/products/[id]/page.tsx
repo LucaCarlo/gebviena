@@ -40,8 +40,18 @@ interface Variant {
   isDefault: boolean;
   isPublished: boolean;
   sortOrder: number;
+  dimensionBlockId: string | null;
+  dimensionValues: string | null;
   attributes: VariantAttribute[];
   translations: { languageCode: string; name: string | null; description: string | null }[];
+}
+
+interface DimensionBlock {
+  id: string;
+  name: string;
+  labels: string;
+  isActive: boolean;
+  sortOrder: number;
 }
 
 interface StoreProductDetail {
@@ -116,6 +126,7 @@ export default function StoreProductDetailPage() {
   const [sp, setSp] = useState<StoreProductDetail | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [attributes, setAttributes] = useState<AttrValue[]>([]);
+  const [dimensionBlocks, setDimensionBlocks] = useState<DimensionBlock[]>([]);
   const [tab, setTab] = useState<Tab>("general");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -128,14 +139,16 @@ export default function StoreProductDetailPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [spRes, catRes, attrRes] = await Promise.all([
+    const [spRes, catRes, attrRes, blockRes] = await Promise.all([
       fetch(`/api/store/products/${id}`).then((r) => r.json()),
       fetch(`/api/store/categories`).then((r) => r.json()),
       fetch(`/api/store/attributes`).then((r) => r.json()),
+      fetch(`/api/dimension-blocks`).then((r) => r.json()),
     ]);
     if (spRes.success) setSp(spRes.data);
     if (catRes.success) setCategories(catRes.data);
     if (attrRes.success) setAttributes(attrRes.data);
+    if (blockRes.success) setDimensionBlocks(blockRes.data);
     setLoading(false);
   }, [id]);
 
@@ -274,6 +287,7 @@ export default function StoreProductDetailPage() {
         <VariantsTab
           sp={sp}
           attributes={attributes}
+          dimensionBlocks={dimensionBlocks}
           onRefresh={fetchAll}
           showToast={showToast}
         />
@@ -500,10 +514,11 @@ function ImagesTab({
 /* -------------------------------------------------------------------------- */
 
 function VariantsTab({
-  sp, attributes, onRefresh, showToast,
+  sp, attributes, dimensionBlocks, onRefresh, showToast,
 }: {
   sp: StoreProductDetail;
   attributes: AttrValue[];
+  dimensionBlocks: DimensionBlock[];
   onRefresh: () => void;
   showToast: (msg: string, ok: boolean) => void;
 }) {
@@ -534,6 +549,8 @@ function VariantsTab({
           isPublished: variant.isPublished,
           sortOrder: variant.sortOrder,
           attributeValueIds: variant.attributes.map((a) => a.valueId),
+          dimensionBlockId: variant.dimensionBlockId,
+          dimensionValues: variant.dimensionValues,
           translations: variant.translations,
         }),
       });
@@ -577,6 +594,8 @@ function VariantsTab({
     isDefault: sp.variants.length === 0,
     isPublished: false,
     sortOrder: sp.variants.length,
+    dimensionBlockId: null,
+    dimensionValues: null,
     attributes: [],
     translations: [],
   };
@@ -617,6 +636,7 @@ function VariantsTab({
           title="Nuova variante"
           initial={emptyVariant}
           attributes={attributes}
+          dimensionBlocks={dimensionBlocks}
           onSave={(v) => handleSaveVariant(v, true)}
           onCancel={() => setCreating(false)}
           saving={saving}
@@ -628,6 +648,7 @@ function VariantsTab({
           title="Modifica variante"
           initial={editing}
           attributes={attributes}
+          dimensionBlocks={dimensionBlocks}
           onSave={(v) => handleSaveVariant(v, false)}
           onCancel={() => setEditing(null)}
           saving={saving}
@@ -702,17 +723,43 @@ function VariantCard({ variant: v, onEdit, onDelete }: { variant: Variant; onEdi
 }
 
 function VariantModal({
-  title, initial, attributes, onSave, onCancel, saving,
+  title, initial, attributes, dimensionBlocks, onSave, onCancel, saving,
 }: {
   title: string;
   initial: Variant;
   attributes: AttrValue[];
+  dimensionBlocks: DimensionBlock[];
   onSave: (v: Variant) => void;
   onCancel: () => void;
   saving: boolean;
 }) {
   const [v, setV] = useState<Variant>(initial);
   const update = (patch: Partial<Variant>) => setV((prev) => ({ ...prev, ...patch }));
+
+  // Dimensioni: il blocco selezionato e i valori correnti
+  const selectedBlock = dimensionBlocks.find((b) => b.id === v.dimensionBlockId) || null;
+  const dimensionLabels: string[] = (() => {
+    if (!selectedBlock) return [];
+    try {
+      const p = JSON.parse(selectedBlock.labels);
+      return Array.isArray(p) ? p.filter((x): x is string => typeof x === "string") : [];
+    } catch { return []; }
+  })();
+  const dimensionValues: Record<string, string> = (() => {
+    if (!v.dimensionValues) return {};
+    try {
+      const p = JSON.parse(v.dimensionValues);
+      return p && typeof p === "object" ? (p as Record<string, string>) : {};
+    } catch { return {}; }
+  })();
+  const setDimensionValue = (label: string, value: string) => {
+    const next = { ...dimensionValues, [label]: value };
+    for (const k of Object.keys(next)) if (!next[k]) delete next[k];
+    update({ dimensionValues: Object.keys(next).length ? JSON.stringify(next) : null });
+  };
+  const changeBlock = (blockId: string) => {
+    update({ dimensionBlockId: blockId || null, dimensionValues: null });
+  };
 
   const toggleAttr = (val: AttrValue) => {
     const existing = v.attributes.find((a) => a.valueId === val.id);
@@ -860,6 +907,43 @@ function VariantModal({
                 Non hai ancora creato attributi.{" "}
                 <Link href="/admin/store/attributes" className="underline text-warm-900">Creane</Link>{" "}
                 prima di associarli alle varianti.
+              </div>
+            )}
+          </div>
+
+          {/* Dimensioni (gruppo DimensionBlock + valori) */}
+          <div className="space-y-3">
+            <div className="text-xs font-medium text-warm-600 uppercase tracking-wider">Dimensioni (opz.)</div>
+            <div>
+              <label className="block text-xs font-medium text-warm-600 mb-1">Gruppo dimensioni</label>
+              <select
+                value={v.dimensionBlockId ?? ""}
+                onChange={(e) => changeBlock(e.target.value)}
+                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
+              >
+                <option value="">— Nessuno —</option>
+                {dimensionBlocks.filter((b) => b.isActive).map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-warm-500 mt-1">
+                Riusa i gruppi dimensioni del catalogo principale. Gestiscili da{" "}
+                <Link href="/admin/products/dimensions" className="underline">Prodotti → Dimensioni</Link>.
+              </p>
+            </div>
+            {selectedBlock && dimensionLabels.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 bg-warm-50 rounded-lg p-3">
+                {dimensionLabels.map((lab) => (
+                  <div key={lab}>
+                    <label className="block text-[11px] font-medium text-warm-600 mb-1">{lab}</label>
+                    <input
+                      value={dimensionValues[lab] || ""}
+                      onChange={(e) => setDimensionValue(lab, e.target.value)}
+                      placeholder="es. 60 cm"
+                      className="w-full px-2.5 py-1.5 border border-warm-200 rounded-md text-sm bg-white"
+                    />
+                  </div>
+                ))}
               </div>
             )}
           </div>

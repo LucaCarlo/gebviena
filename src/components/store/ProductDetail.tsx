@@ -29,6 +29,11 @@ interface Variant {
   isDefault: boolean;
   name: string | null;
   description: string | null;
+  dimensions: {
+    blockName: string;
+    labels: string[];
+    values: Record<string, string>;
+  } | null;
   attributes: Attribute[];
 }
 
@@ -300,6 +305,26 @@ export default function ProductDetail({ product }: { product: Product }) {
             Pagamenti in arrivo. Il carrello sarà attivo a breve.
           </div>
         </div>
+
+        {/* Dimensioni (se configurate sulla variante) */}
+        {selectedVariant?.dimensions && Object.keys(selectedVariant.dimensions.values).length > 0 && (
+          <div className="py-5 border-t border-warm-200">
+            <div className="text-[11px] uppercase tracking-[0.2em] text-warm-500 mb-3 inline-flex items-center gap-1">
+              <Ruler size={11} /> Dimensioni
+              <span className="normal-case tracking-normal text-warm-400 ml-1">· {selectedVariant.dimensions.blockName}</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-2 text-sm">
+              {selectedVariant.dimensions.labels
+                .filter((l) => selectedVariant.dimensions!.values[l])
+                .map((l) => (
+                  <div key={l}>
+                    <div className="text-[10px] uppercase tracking-[0.15em] text-warm-500">{l}</div>
+                    <div className="text-warm-900 font-mono">{selectedVariant.dimensions!.values[l]}</div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         {/* Specs rapide */}
         {selectedVariant && (

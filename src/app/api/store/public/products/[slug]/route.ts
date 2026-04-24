@@ -48,6 +48,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
           id: true, sku: true, priceCents: true, stockQty: true, trackStock: true,
           volumeM3: true, weightKg: true, shippingClass: true,
           coverImage: true, galleryImages: true, isDefault: true,
+          dimensionBlockId: true, dimensionValues: true,
           attributes: {
             select: {
               valueId: true,
@@ -71,6 +72,13 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
   const tr = sp.translations.find((t) => t.languageCode === lang) || sp.translations.find((t) => t.languageCode === "it");
   const productTr = sp.product.translations.find((t) => t.languageCode === lang);
+
+  // Carica i DimensionBlock necessari per le varianti (labels JSON)
+  const blockIds = Array.from(new Set(sp.variants.map((v) => v.dimensionBlockId).filter((x): x is string => !!x)));
+  const blocks = blockIds.length
+    ? await prisma.dimensionBlock.findMany({ where: { id: { in: blockIds } } })
+    : [];
+  const blockMap = new Map(blocks.map((b) => [b.id, b]));
 
   return NextResponse.json({
     success: true,
@@ -108,6 +116,18 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
         coverImage: v.coverImage,
         galleryImages: v.galleryImages,
         isDefault: v.isDefault,
+        dimensions: (() => {
+          if (!v.dimensionBlockId) return null;
+          const block = blockMap.get(v.dimensionBlockId);
+          if (!block) return null;
+          let labels: string[] = [];
+          try { const p = JSON.parse(block.labels); if (Array.isArray(p)) labels = p.filter((x): x is string => typeof x === "string"); } catch { /* ignore */ }
+          let values: Record<string, string> = {};
+          if (v.dimensionValues) {
+            try { const p = JSON.parse(v.dimensionValues); if (p && typeof p === "object") values = p as Record<string, string>; } catch { /* ignore */ }
+          }
+          return { blockName: block.name, labels, values };
+        })(),
         name: v.translations.find((t: { languageCode: string }) => t.languageCode === lang)?.name ?? null,
         description: v.translations.find((t: { languageCode: string }) => t.languageCode === lang)?.description ?? null,
         attributes: v.attributes.map((a) => {
