@@ -115,7 +115,7 @@ export default function ProjectDetailPage() {
   return (
     <>
       {/* ===== 1. HERO — same style as product page ===== */}
-      <section className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 9" }}>
+      <section className="relative w-full overflow-hidden" style={{ height: "min(118vh, 1107px)" }}>
         <Image
           src={heroImg}
           alt={project.name}

@@ -107,6 +107,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                         {hasChildren ? (
                           <button
                             onClick={() => handleItemClick(item.label, true)}
+                            style={{ color: "#000000" }}
                             className={`font-sans text-lg md:text-xl lg:text-2xl [@media(max-height:820px)]:!text-base [@media(max-height:680px)]:!text-sm uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[0.5px] ${
                               isActive ? "underline underline-offset-[10px] decoration-[0.5px]" : ""
                             }`}
@@ -117,6 +118,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           <Link
                             href={localizeHref(item.href, lang)}
                             onClick={onClose}
+                            style={{ color: "#000000" }}
                             className="font-sans text-lg md:text-xl lg:text-2xl [@media(max-height:820px)]:!text-base [@media(max-height:680px)]:!text-sm uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[0.5px]"
                           >
                             {t(item.i18nKey)}

@@ -64,8 +64,8 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
       <div className="w-full">
         <div
           ref={containerRef}
-          className="relative w-full overflow-hidden"
-          style={{ height: "768px", cursor: cursorStyle }}
+          className="relative w-full overflow-hidden aspect-video lg:aspect-auto lg:h-[768px]"
+          style={{ cursor: cursorStyle }}
           onClick={handleClick}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setHoverSide(null)}

@@ -647,43 +647,36 @@ export default function ProductDetailPage() {
                 </AnimatePresence>
               </div>
 
+              {/* --- PCON 3D VIEWER --- sempre visibile, stessa width dei divisor */}
+              {(() => {
+                const pconSrc = product.pconBan
+                  ? buildPconUrl({
+                      moc: product.pconMoc,
+                      ban: product.pconBan,
+                      sid: product.pconSid,
+                      ovc: product.pconOvc,
+                    })
+                  : product.pconUrl || null;
+                if (!pconSrc) return null;
+                return (
+                  <div id="pcon">
+                    <iframe
+                      src={pconSrc}
+                      className="block w-full border-0"
+                      style={{ height: "640px" }}
+                      allowFullScreen
+                      allow="xr-spatial-tracking"
+                      loading="eager"
+                      title={`Visualizzatore 3D ${product.name}`}
+                    />
+                  </div>
+                );
+              })()}
+
             </div>
           </motion.div>
         </div>
       </section>
-
-      {/* ===== 6b. PCON 3D VIEWER — eager-loaded full-width section ===== */}
-      {(() => {
-        const pconSrc = product.pconBan
-          ? buildPconUrl({
-              moc: product.pconMoc,
-              ban: product.pconBan,
-              sid: product.pconSid,
-              ovc: product.pconOvc,
-            })
-          : product.pconUrl || null;
-        if (!pconSrc) return null;
-        return (
-          <section id="pcon" className="bg-white py-16 lg:py-24">
-            <div className="gtv-container">
-              <div className="text-center mb-12">
-                <h2 className="font-sans text-[38px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-                  {t("prodotti.detail.pcon.title")}
-                </h2>
-              </div>
-            </div>
-            <iframe
-              src={pconSrc}
-              className="block w-full border-0"
-              style={{ height: "640px" }}
-              allowFullScreen
-              allow="xr-spatial-tracking"
-              loading="eager"
-              title={`Visualizzatore 3D ${product.name}`}
-            />
-          </section>
-        );
-      })()}
 
       {/* ===== 7. PROJECT REFERENCE — first project where this product is used ===== */}
       <section id="progetti" className="mt-16 lg:mt-24">
