@@ -328,7 +328,7 @@ export default function ProductDetailPage() {
           </motion.div>
 
           {/* Right — description + actions, vertically centered */}
-          <div className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:px-20">
+          <div className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:px-20 pt-10 md:pt-0">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -400,12 +400,12 @@ export default function ProductDetailPage() {
 
       {/* ===== 3. SECTION NAV — 4 anchor links ===== */}
       <nav className="sticky top-0 z-30 bg-white">
-        <div className="gtv-container flex items-center justify-center gap-10 lg:gap-16" style={{ paddingTop: "5rem", paddingBottom: "5rem" }}>
+        <div className="gtv-container flex items-center justify-center gap-4 sm:gap-6 md:gap-10 lg:gap-16 overflow-x-auto whitespace-nowrap py-10 md:py-16 lg:py-[5rem] px-4">
           {sectionNav.map((item) => (
             <button
               key={item.id}
               onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" })}
-              className="uppercase text-[16px] tracking-[0.03em] text-black font-light hover:underline"
+              className="uppercase text-[12px] sm:text-[14px] md:text-[16px] tracking-[0.03em] text-black font-light hover:underline shrink-0"
               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
             >
               {item.label}
@@ -731,8 +731,7 @@ export default function ProductDetailPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="flex flex-col justify-center bg-white"
-                style={{ padding: "72px 80px 72px 160px" }}
+                className="flex flex-col justify-center bg-white px-5 py-12 sm:px-8 sm:py-14 md:px-16 md:py-16 lg:pl-[160px] lg:pr-[80px] lg:py-[72px]"
               >
                 <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{t("prodotti.detail.projects.label")}</p>
                 <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
