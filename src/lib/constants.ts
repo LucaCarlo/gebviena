@@ -430,7 +430,6 @@ export const NAV_ITEMS = [
       { label: "COLLABORAZIONI NUOVI DESIGNER", i18nKey: "menu.contact.collab", href: "/contatti/collaborazioni" },
       { label: "UFFICIO STAMPA", i18nKey: "menu.contact.press", href: "/contatti/ufficio-stampa" },
       { label: "RICHIESTA INFORMAZIONI", i18nKey: "menu.contact.info", href: "/contatti/richiesta-info" },
-      { label: "LANDING PAGE", i18nKey: "menu.contact.landing", href: "/evento-mdw-2026" },
     ],
   },
 ] as const;

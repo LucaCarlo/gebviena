@@ -328,7 +328,7 @@ export default function ProductDetailPage() {
           </motion.div>
 
           {/* Right — description + actions, vertically centered */}
-          <div className="flex flex-col justify-center px-0 md:px-16 lg:px-20">
+          <div className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:px-20 pt-10 md:pt-0">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -400,12 +400,12 @@ export default function ProductDetailPage() {
 
       {/* ===== 3. SECTION NAV — 4 anchor links ===== */}
       <nav className="sticky top-0 z-30 bg-white">
-        <div className="gtv-container flex items-center justify-center gap-10 lg:gap-16" style={{ paddingTop: "5rem", paddingBottom: "5rem" }}>
+        <div className="gtv-container flex items-center justify-center gap-4 sm:gap-6 md:gap-10 lg:gap-16 overflow-x-auto whitespace-nowrap py-10 md:py-16 lg:py-[5rem] px-4">
           {sectionNav.map((item) => (
             <button
               key={item.id}
               onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" })}
-              className="uppercase text-[16px] tracking-[0.03em] text-black font-light hover:underline"
+              className="uppercase text-[12px] sm:text-[14px] md:text-[16px] tracking-[0.03em] text-black font-light hover:underline shrink-0"
               style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
             >
               {item.label}
@@ -459,7 +459,7 @@ export default function ProductDetailPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="flex flex-col justify-center px-0 md:px-16 lg:px-[150px] py-16 lg:py-24"
+                className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:px-[150px] py-16 lg:py-24"
               >
                 <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">{t("prodotti.detail.designer.label")}</p>
                 <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -647,43 +647,36 @@ export default function ProductDetailPage() {
                 </AnimatePresence>
               </div>
 
+              {/* --- PCON 3D VIEWER --- sempre visibile, stessa width dei divisor */}
+              {(() => {
+                const pconSrc = product.pconBan
+                  ? buildPconUrl({
+                      moc: product.pconMoc,
+                      ban: product.pconBan,
+                      sid: product.pconSid,
+                      ovc: product.pconOvc,
+                    })
+                  : product.pconUrl || null;
+                if (!pconSrc) return null;
+                return (
+                  <div id="pcon">
+                    <iframe
+                      src={pconSrc}
+                      className="block w-full border-0"
+                      style={{ height: "640px" }}
+                      allowFullScreen
+                      allow="xr-spatial-tracking"
+                      loading="eager"
+                      title={`Visualizzatore 3D ${product.name}`}
+                    />
+                  </div>
+                );
+              })()}
+
             </div>
           </motion.div>
         </div>
       </section>
-
-      {/* ===== 6b. PCON 3D VIEWER — eager-loaded full-width section ===== */}
-      {(() => {
-        const pconSrc = product.pconBan
-          ? buildPconUrl({
-              moc: product.pconMoc,
-              ban: product.pconBan,
-              sid: product.pconSid,
-              ovc: product.pconOvc,
-            })
-          : product.pconUrl || null;
-        if (!pconSrc) return null;
-        return (
-          <section id="pcon" className="bg-white py-16 lg:py-24">
-            <div className="gtv-container">
-              <div className="text-center mb-12">
-                <h2 className="font-sans text-[38px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-                  {t("prodotti.detail.pcon.title")}
-                </h2>
-              </div>
-            </div>
-            <iframe
-              src={pconSrc}
-              className="block w-full border-0"
-              style={{ height: "640px" }}
-              allowFullScreen
-              allow="xr-spatial-tracking"
-              loading="eager"
-              title={`Visualizzatore 3D ${product.name}`}
-            />
-          </section>
-        );
-      })()}
 
       {/* ===== 7. PROJECT REFERENCE — first project where this product is used ===== */}
       <section id="progetti" className="mt-16 lg:mt-24">
@@ -731,8 +724,7 @@ export default function ProductDetailPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="flex flex-col justify-center bg-white"
-                style={{ padding: "72px 80px 72px 160px" }}
+                className="flex flex-col justify-center bg-white px-5 py-12 sm:px-8 sm:py-14 md:px-16 md:py-16 lg:pl-[160px] lg:pr-[80px] lg:py-[72px]"
               >
                 <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{t("prodotti.detail.projects.label")}</p>
                 <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -762,7 +754,7 @@ export default function ProductDetailPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col justify-center px-0 md:px-16 lg:pl-[135px] lg:pr-20 py-16 lg:py-24 bg-white"
+            className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:pl-[135px] lg:pr-20 py-16 lg:py-24 bg-white"
           >
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">{t("prodotti.detail.support.label")}</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] whitespace-pre-line">
