@@ -108,7 +108,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           <button
                             onClick={() => handleItemClick(item.label, true)}
                             style={{ color: "#000000" }}
-                            className={`block font-sans text-sm md:text-base uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap ${
+                            className={`block font-sans text-base md:text-lg uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap ${
                               isActive ? "underline underline-offset-[8px] decoration-[0.5px]" : ""
                             }`}
                           >
@@ -119,7 +119,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                             href={localizeHref(item.href, lang)}
                             onClick={onClose}
                             style={{ color: "#000000" }}
-                            className="block font-sans text-sm md:text-base uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap"
+                            className="block font-sans text-base md:text-lg uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap"
                           >
                             {t(item.i18nKey)}
                           </Link>
