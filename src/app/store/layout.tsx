@@ -6,6 +6,7 @@ import { I18nProvider } from "@/contexts/I18nContext";
 import { getCurrentLang, loadAllUiTranslations, DEFAULT_LANG } from "@/lib/i18n";
 import StoreHeader from "@/components/store/StoreHeader";
 import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
+import { CartProvider } from "@/contexts/CartContext";
 
 export const metadata: Metadata = {
   title: "Store — Gebrüder Thonet Vienna",
@@ -19,6 +20,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     <I18nProvider lang={lang} defaultLang={DEFAULT_LANG} overrides={overrides}>
       <RecaptchaProvider>
         <CustomerAuthProvider>
+          <CartProvider>
           <div
             className="bg-white min-h-screen relative overflow-hidden"
             style={{ marginLeft: "var(--site-margin)", marginRight: "var(--site-margin)" }}
@@ -29,6 +31,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
             <main className="pt-20 md:pt-24">{children}</main>
             <Footer />
           </div>
+        </CartProvider>
         </CustomerAuthProvider>
       </RecaptchaProvider>
     </I18nProvider>

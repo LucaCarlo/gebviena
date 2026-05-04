@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Package, Ruler, ShoppingBag, Info, Heart } from "lucide-react";
+import { Package, Ruler, ShoppingBag, Heart } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
+import { useCart } from "@/contexts/CartContext";
 
 type AttrType = "MATERIAL" | "FINISH" | "COLOR" | "OTHER";
 
@@ -66,6 +67,28 @@ const eur = (cents: number) =>
 
 export default function ProductDetail({ product }: { product: Product }) {
   const { customer } = useCustomerAuth();
+  const { addItem, count: cartCount } = useCart();
+  const [justAdded, setJustAdded] = useState(false);
+
+  const handleAddToCart = () => {
+    if (!selectedVariant) return;
+    const attrLabels = selectedVariant.attributes.map((a) => a.label).join(" · ");
+    addItem({
+      variantId: selectedVariant.id,
+      productSlug: product.slug,
+      productName: product.name,
+      variantName: selectedVariant.name,
+      variantAttributes: attrLabels,
+      sku: selectedVariant.sku,
+      priceCents: selectedVariant.priceCents,
+      coverImage: selectedVariant.coverImage || product.coverImage,
+      volumeM3: selectedVariant.volumeM3,
+      weightKg: selectedVariant.weightKg,
+      shippingClass: selectedVariant.shippingClass,
+    }, 1);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1800);
+  };
   const [selectedVariantId, setSelectedVariantId] = useState<string>(
     product.variants.find((v) => v.isDefault)?.id ?? product.variants[0]?.id ?? ""
   );
@@ -287,9 +310,10 @@ export default function ProductDetail({ product }: { product: Product }) {
           <div className="flex gap-2">
             <button
               disabled={!inStock}
-              className="flex-1 inline-flex items-center justify-center gap-2 py-4 bg-warm-900 text-white uppercase text-sm tracking-wider hover:bg-warm-800 disabled:bg-warm-300 disabled:cursor-not-allowed"
+              onClick={handleAddToCart}
+              className={`flex-1 inline-flex items-center justify-center gap-2 py-4 text-white uppercase text-sm tracking-wider disabled:bg-warm-300 disabled:cursor-not-allowed transition-colors ${justAdded ? "bg-emerald-600 hover:bg-emerald-700" : "bg-warm-900 hover:bg-warm-800"}`}
             >
-              <ShoppingBag size={16} /> Aggiungi al carrello
+              <ShoppingBag size={16} /> {justAdded ? "Aggiunto al carrello" : "Aggiungi al carrello"}
             </button>
             <button
               onClick={toggleFavorite}
@@ -300,10 +324,11 @@ export default function ProductDetail({ product }: { product: Product }) {
               <Heart size={18} fill={isFav ? "currentColor" : "none"} strokeWidth={1.6} />
             </button>
           </div>
-          <div className="mt-2 text-xs text-warm-500 text-center">
-            <Info size={11} className="inline mr-1" />
-            Pagamenti in arrivo. Il carrello sarà attivo a breve.
-          </div>
+          {cartCount > 0 && (
+            <div className="mt-2 text-xs text-warm-700 text-center">
+              <a href="/carrello" className="underline hover:text-warm-900">Vai al carrello ({cartCount})</a>
+            </div>
+          )}
         </div>
 
         {/* Dimensioni (se configurate sulla variante) */}
