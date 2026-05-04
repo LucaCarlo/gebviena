@@ -134,7 +134,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               <Link
                 href={localizePath("/mondo-gtv/gtv-experience", lang)}
                 onClick={onClose}
-                className="relative overflow-hidden hidden sm:block w-[calc(100%-60px)] mx-[30px] mt-10 mb-[30px] aspect-[1.3/1] [@media(max-height:820px)]:!aspect-[2/1] [@media(max-height:820px)]:!mt-4 [@media(max-height:820px)]:!mb-3 [@media(max-height:680px)]:!aspect-[3/1] [@media(max-height:680px)]:!mt-2 [@media(max-height:680px)]:!mb-2"
+                className="relative overflow-hidden hidden sm:block [@media(max-height:800px)]:!hidden"
+                style={{ width: "calc(100% - 60px)", aspectRatio: "1.3 / 1", margin: "40px 30px 30px 30px" }}
               >
                 <Image
                   src={featuredImage}
