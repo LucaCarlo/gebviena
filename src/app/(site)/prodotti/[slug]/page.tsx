@@ -328,7 +328,7 @@ export default function ProductDetailPage() {
           </motion.div>
 
           {/* Right — description + actions, vertically centered */}
-          <div className="flex flex-col justify-center px-0 md:px-16 lg:px-20">
+          <div className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:px-20">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -459,7 +459,7 @@ export default function ProductDetailPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="flex flex-col justify-center px-0 md:px-16 lg:px-[150px] py-16 lg:py-24"
+                className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:px-[150px] py-16 lg:py-24"
               >
                 <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">{t("prodotti.detail.designer.label")}</p>
                 <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
@@ -762,7 +762,7 @@ export default function ProductDetailPage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col justify-center px-0 md:px-16 lg:pl-[135px] lg:pr-20 py-16 lg:py-24 bg-white"
+            className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:pl-[135px] lg:pr-20 py-16 lg:py-24 bg-white"
           >
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">{t("prodotti.detail.support.label")}</p>
             <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] whitespace-pre-line">
