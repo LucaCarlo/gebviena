@@ -97,7 +97,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
               {/* Nav items */}
               <nav className="flex items-start justify-center pt-10 md:pt-14 flex-1 min-h-0 overflow-y-auto">
-                <ul className="space-y-8 md:space-y-12 [@media(max-height:820px)]:!space-y-5 [@media(max-height:680px)]:!space-y-3">
+                <ul className="space-y-8 md:space-y-12 [@media(max-height:820px)]:!space-y-6 [@media(max-height:680px)]:!space-y-5">
                   {NAV_ITEMS.map((item) => {
                     const hasChildren = "children" in item && !!item.children;
                     const isActive = activeItem === item.label;
@@ -108,7 +108,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           <button
                             onClick={() => handleItemClick(item.label, true)}
                             style={{ color: "#000000" }}
-                            className={`font-sans text-lg md:text-xl lg:text-2xl [@media(max-height:820px)]:!text-base [@media(max-height:680px)]:!text-sm uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[0.5px] ${
+                            className={`font-sans text-lg md:text-xl lg:text-2xl uppercase tracking-wider font-normal !text-black transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[0.5px] ${
                               isActive ? "underline underline-offset-[10px] decoration-[0.5px]" : ""
                             }`}
                           >
@@ -119,7 +119,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                             href={localizeHref(item.href, lang)}
                             onClick={onClose}
                             style={{ color: "#000000" }}
-                            className="font-sans text-lg md:text-xl lg:text-2xl [@media(max-height:820px)]:!text-base [@media(max-height:680px)]:!text-sm uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[0.5px]"
+                            className="font-sans text-lg md:text-xl lg:text-2xl uppercase tracking-wider font-normal !text-black transition-all hover:underline hover:underline-offset-[10px] hover:decoration-[0.5px]"
                           >
                             {t(item.i18nKey)}
                           </Link>
