@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   Search, Download, Trash2, CheckCircle2, XCircle, Users, Send, X, Mail,
   Tag, Plus, Loader2, Upload, FileText, Pencil, Eye, Building2,
-  MapPin, StickyNote, User, ChevronLeft,
+  MapPin, StickyNote, User, ChevronLeft, Clock,
 } from "lucide-react";
 
 /* ───── Types ───── */
@@ -83,6 +83,10 @@ export default function AdminSubscribersPage() {
 
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
+
+  // Schedule (datetime-local). Default = 1h from now.
+  const [scheduleMode, setScheduleMode] = useState(false);
+  const [scheduleAt, setScheduleAt] = useState("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
 
@@ -255,6 +259,15 @@ export default function AdminSubscribersPage() {
 
   const openTemplateModal = async () => {
     setShowTemplateModal(true); setTemplatesLoading(true); setSendResult(null); setTemplateLpId("");
+    // Reset schedule UI: default to next round hour
+    setScheduleMode(false);
+    const d = new Date();
+    d.setMinutes(0, 0, 0);
+    d.setHours(d.getHours() + 1);
+    // Format to datetime-local: YYYY-MM-DDTHH:mm
+    const tzOffsetMin = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - tzOffsetMin * 60_000).toISOString().slice(0, 16);
+    setScheduleAt(local);
     try {
       const [tplRes, lpRes] = await Promise.all([
         fetch("/api/email-templates").then(r => r.json()).catch(() => ({ success: false })),
@@ -283,11 +296,27 @@ export default function AdminSubscribersPage() {
     if (!ids.length) { alert("Nessun iscritto newsletter selezionato"); return; }
     setSending(true); setSendResult(null);
     try {
-      const body: Record<string, unknown> = { subscriberIds: ids, templateId };
-      if (templateLpId) body.landingPageId = templateLpId;
-      const r = await fetch("/api/newsletter/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const d = await r.json();
-      if (d.success) setSendResult(d.data); else alert(d.error);
+      if (scheduleMode) {
+        if (!scheduleAt) { alert("Imposta data e ora di invio"); setSending(false); return; }
+        const scheduledAtIso = new Date(scheduleAt).toISOString();
+        const body: Record<string, unknown> = { subscriberIds: ids, templateId, scheduledAt: scheduledAtIso };
+        if (templateLpId) body.landingPageId = templateLpId;
+        const r = await fetch("/api/scheduled-emails", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        const d = await r.json();
+        if (d.success) {
+          setSendResult({ sent: 0, failed: 0 });
+          alert(`Email programmata per ${new Date(scheduleAt).toLocaleString("it-IT")}`);
+          setShowTemplateModal(false);
+        } else {
+          alert(d.error || "Errore");
+        }
+      } else {
+        const body: Record<string, unknown> = { subscriberIds: ids, templateId };
+        if (templateLpId) body.landingPageId = templateLpId;
+        const r = await fetch("/api/newsletter/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        const d = await r.json();
+        if (d.success) setSendResult(d.data); else alert(d.error);
+      }
     } catch { alert("Errore"); }
     setSending(false);
   };
@@ -772,6 +801,29 @@ export default function AdminSubscribersPage() {
           </div>
         ) : (
           <>
+            {/* ── Schedule toggle ── */}
+            <div className="mb-4 p-3 bg-warm-50/60 rounded-lg border border-warm-200">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-warm-700">
+                  <input type="checkbox" checked={scheduleMode} onChange={(e) => setScheduleMode(e.target.checked)} className="w-4 h-4 accent-warm-800" />
+                  <span className="font-medium">Programma per data e ora</span>
+                </label>
+                {!scheduleMode && <span className="text-[10px] text-warm-500 uppercase tracking-wider">Invia subito</span>}
+              </div>
+              {scheduleMode && (
+                <div className="mt-2">
+                  <input
+                    type="datetime-local"
+                    value={scheduleAt}
+                    onChange={(e) => setScheduleAt(e.target.value)}
+                    min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                    className="w-full border border-warm-300 rounded-lg px-3 py-2 text-sm bg-white"
+                  />
+                  <p className="text-[10px] text-warm-500 mt-1">Ora locale (Europe/Rome). Verrà inviata appena si raggiunge la data.</p>
+                </div>
+              )}
+            </div>
+
             {landingPages.length > 0 && (
               <div className="mb-4 p-3 bg-purple-50 rounded-lg">
                 <label className="block text-xs font-semibold text-purple-700 uppercase tracking-wider mb-1.5">Tracking invito evento (opzionale)</label>
@@ -789,7 +841,7 @@ export default function AdminSubscribersPage() {
                   className="w-full flex items-center gap-4 p-4 rounded-lg border border-warm-200 hover:border-warm-400 hover:bg-warm-50 transition-colors text-left disabled:opacity-50">
                   <div className="w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center shrink-0"><FileText size={18} className="text-warm-600" /></div>
                   <div className="flex-1 min-w-0"><div className="font-medium text-warm-800 text-sm">{t.name}</div><div className="text-xs text-warm-500 truncate">{t.subject || "Nessun oggetto"}</div></div>
-                  <Send size={16} className="text-warm-400 shrink-0" />
+                  {scheduleMode ? <Clock size={16} className="text-warm-400 shrink-0" /> : <Send size={16} className="text-warm-400 shrink-0" />}
                 </button>
               ))}
             </div>

@@ -895,6 +895,7 @@ model LandingPageConfig {
   registrations       EventRegistration[]
   invitations         EventInvitation[]
   scanUsers           AdminUser[]
+  scheduledEmailJobs  ScheduledEmailJob[]
 }
 
 model EventRegistration {
@@ -974,15 +975,41 @@ model ContactTag {
 // ─── Email Templates ────────────────────────────────────────────────────
 
 model EmailTemplate {
-  id          String   @id @default(cuid())
-  name        String
-  subject     String   @db.Text
-  blocks      String   @db.MediumText
-  previewHtml String?  @db.MediumText
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String              @id @default(cuid())
+  name          String
+  subject       String              @db.Text
+  blocks        String              @db.MediumText
+  previewHtml   String?             @db.MediumText
+  isActive      Boolean             @default(true)
+  sortOrder     Int                 @default(0)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  scheduledJobs ScheduledEmailJob[]
+}
+
+// Scheduled bulk-email job — picked up by /api/scheduled-emails/process
+// (called every minute by a systemd timer).
+model ScheduledEmailJob {
+  id            String             @id @default(cuid())
+  templateId    String
+  template      EmailTemplate      @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  landingPageId String?
+  landingPage   LandingPageConfig? @relation(fields: [landingPageId], references: [id])
+  subscriberIds String             @db.MediumText // JSON array of NewsletterSubscriber IDs
+  totalCount    Int                @default(0)
+  scheduledAt   DateTime
+  status        String             @default("pending") // pending | processing | completed | failed | cancelled
+  startedAt     DateTime?
+  completedAt   DateTime?
+  sentCount     Int                @default(0)
+  failedCount   Int                @default(0)
+  errorMessage  String?            @db.Text
+  createdById   String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([scheduledAt])
+  @@index([status])
 }
 
 // ─── Store: Geography ──────────────────────────────────────────────────
