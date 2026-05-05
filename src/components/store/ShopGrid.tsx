@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import ProductCard, { type ProductCardData } from "./ProductCard";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 
+const PAGE_SIZE = 20;
+
 export default function ShopGrid({ products }: { products: ProductCardData[] }) {
   const { customer } = useCustomerAuth();
   const [favSet, setFavSet] = useState<Set<string>>(new Set());
+  const [shown, setShown] = useState(PAGE_SIZE);
 
   useEffect(() => {
     if (!customer) { setFavSet(new Set()); return; }
@@ -21,11 +24,21 @@ export default function ShopGrid({ products }: { products: ProductCardData[] }) 
       .catch(() => {});
   }, [customer]);
 
+  // Reset visible count when the input list changes (search/filter change)
+  useEffect(() => {
+    setShown(PAGE_SIZE);
+  }, [products]);
+
+  const visible = products.slice(0, shown);
+  const hasMore = shown < products.length;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div className="text-sm text-warm-600">
-          {products.length} prodott{products.length === 1 ? "o" : "i"}
+          {products.length === 0
+            ? "Nessun prodotto"
+            : <>Mostro <strong>{visible.length}</strong> di <strong>{products.length}</strong></>}
         </div>
       </div>
 
@@ -34,22 +47,35 @@ export default function ShopGrid({ products }: { products: ProductCardData[] }) 
           Nessun prodotto trovato. Prova a modificare i filtri.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-          {products.map((p) => (
-            <ProductCard
-              key={p.id}
-              p={p}
-              favorited={favSet.has(p.id)}
-              onFavoriteChange={(isFav) => {
-                setFavSet((prev) => {
-                  const next = new Set(prev);
-                  if (isFav) next.add(p.id); else next.delete(p.id);
-                  return next;
-                });
-              }}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            {visible.map((p) => (
+              <ProductCard
+                key={p.id}
+                p={p}
+                favorited={favSet.has(p.id)}
+                onFavoriteChange={(isFav) => {
+                  setFavSet((prev) => {
+                    const next = new Set(prev);
+                    if (isFav) next.add(p.id); else next.delete(p.id);
+                    return next;
+                  });
+                }}
+              />
+            ))}
+          </div>
+
+          {hasMore && (
+            <div className="flex justify-center mt-12">
+              <button
+                onClick={() => setShown((n) => n + PAGE_SIZE)}
+                className="px-8 py-3 border border-warm-900 text-warm-900 uppercase text-[12px] tracking-[0.18em] hover:bg-warm-900 hover:text-white transition-colors"
+              >
+                Carica altri ({Math.min(PAGE_SIZE, products.length - shown)})
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

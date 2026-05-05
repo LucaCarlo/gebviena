@@ -16,6 +16,8 @@ interface Props {
   buttonLabel?: string;
   privacyLabel?: string;
   fields?: FieldConfig[];
+  cardTitle?: string;
+  cardSubtitle?: string;
 }
 
 const REQUIRED_FIELDS = new Set(["firstName", "lastName", "email"]);
@@ -37,6 +39,8 @@ export default function SubscribeForm({
   buttonLabel = "Ottieni Accesso",
   privacyLabel = "Accetto l'informativa sulla privacy e il trattamento dei miei dati personali.",
   fields,
+  cardTitle = "Richiedi Accesso",
+  cardSubtitle = "Registrati per accedere alla vendita speciale online.",
 }: Props) {
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get("inv") || "";
@@ -128,8 +132,8 @@ export default function SubscribeForm({
 
   return (
     <div className="bg-warm-50/40 border border-warm-200 rounded-sm p-7 md:p-9">
-      <h2 className="text-2xl font-medium text-dark mb-1.5">Richiedi Accesso</h2>
-      <p className="text-sm text-warm-600 mb-6">Registrati per accedere alla vendita speciale online.</p>
+      <h2 className="text-2xl font-medium text-dark mb-1.5">{cardTitle}</h2>
+      <p className="text-sm text-warm-600 mb-6">{cardSubtitle}</p>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {enabledFields.map((f) => {

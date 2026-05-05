@@ -36,8 +36,14 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       product: {
         select: {
           id: true, name: true, slug: true, category: true, coverImage: true, imageUrl: true, galleryImages: true,
-          designer: { select: { name: true, slug: true } },
-          translations: { select: { languageCode: true, name: true, description: true } },
+          materials: true, dimensions: true,
+          designer: {
+            select: {
+              name: true, slug: true, bio: true, country: true, imageUrl: true,
+              translations: { select: { languageCode: true, name: true, bio: true } },
+            },
+          },
+          translations: { select: { languageCode: true, name: true, description: true, materials: true, dimensions: true } },
         },
       },
       translations: true,
@@ -72,6 +78,35 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
   const tr = sp.translations.find((t) => t.languageCode === lang) || sp.translations.find((t) => t.languageCode === "it");
   const productTr = sp.product.translations.find((t) => t.languageCode === lang);
+  const designer = sp.product.designer;
+  const designerTr = designer?.translations.find((t: { languageCode: string }) => t.languageCode === lang);
+
+  // Related projects (where this product was used)
+  const projectLinks = await prisma.projectProduct.findMany({
+    where: { productId: sp.product.id },
+    select: {
+      project: {
+        select: {
+          id: true, name: true, slug: true, type: true, country: true, city: true, year: true, imageUrl: true,
+          translations: { select: { languageCode: true, name: true, slug: true, description: true } },
+        },
+      },
+    },
+    take: 12,
+  });
+  const relatedProjects = projectLinks.map((pl) => {
+    const ptr = pl.project.translations.find((t: { languageCode: string }) => t.languageCode === lang);
+    return {
+      id: pl.project.id,
+      name: ptr?.name || pl.project.name,
+      slug: ptr?.slug || pl.project.slug,
+      type: pl.project.type,
+      country: pl.project.country,
+      city: pl.project.city,
+      year: pl.project.year,
+      imageUrl: pl.project.imageUrl,
+    };
+  });
 
   // Carica i DimensionBlock necessari per le varianti (labels JSON)
   const blockIds = Array.from(new Set(sp.variants.map((v) => v.dimensionBlockId).filter((x): x is string => !!x)));
@@ -103,7 +138,18 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
               || sp.storeCategory.slug,
           }
         : null,
-      designer: sp.product.designer,
+      materials: productTr?.materials || sp.product.materials || null,
+      dimensions: productTr?.dimensions || sp.product.dimensions || null,
+      designer: designer
+        ? {
+            name: designerTr?.name || designer.name,
+            slug: designer.slug,
+            bio: designerTr?.bio || designer.bio || null,
+            country: designer.country || null,
+            imageUrl: designer.imageUrl || null,
+          }
+        : null,
+      relatedProjects,
       variants: sp.variants.map((v) => ({
         id: v.id,
         sku: v.sku,
