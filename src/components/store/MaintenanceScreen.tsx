@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
 interface Props {
   title: string;
   message: string;
   openingDate: string | null; // ISO YYYY-MM-DD or empty
+  mainSiteUrl: string; // absolute URL of the main GTV site (no /store)
 }
 
 interface Countdown {
@@ -38,7 +38,8 @@ function formatItalianDate(iso: string): string {
   return `${d.getDate()} ${ITALIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-export default function MaintenanceScreen({ title, message, openingDate }: Props) {
+export default function MaintenanceScreen({ title, message, openingDate, mainSiteUrl }: Props) {
+  const baseUrl = mainSiteUrl.replace(/\/$/, "");
   const target = openingDate ? new Date(openingDate + "T00:00:00") : null;
   const [cd, setCd] = useState<Countdown | null>(target ? computeCountdown(target) : null);
 
@@ -51,9 +52,9 @@ export default function MaintenanceScreen({ title, message, openingDate }: Props
   return (
     <div className="min-h-screen flex flex-col bg-white text-dark font-sans">
       <header className="px-6 md:px-10 py-6 md:py-8">
-        <Link href="/" className="text-[13px] md:text-[14px] font-medium tracking-[0.18em] uppercase text-dark hover:opacity-70 transition-opacity">
+        <a href={baseUrl + "/"} className="text-[13px] md:text-[14px] font-medium tracking-[0.18em] uppercase text-dark hover:opacity-70 transition-opacity">
           Gebr&uuml;der Thonet Vienna
-        </Link>
+        </a>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6 md:px-10 py-16 md:py-24">
@@ -96,11 +97,11 @@ export default function MaintenanceScreen({ title, message, openingDate }: Props
           )}
 
           <div className="mt-16 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[12px] tracking-[0.16em] uppercase text-warm-600">
-            <Link href="/" className="hover:text-dark transition-colors">Sito principale</Link>
+            <a href={baseUrl + "/"} className="hover:text-dark transition-colors">Sito principale</a>
             <span className="text-warm-300">·</span>
-            <Link href="/contatti" className="hover:text-dark transition-colors">Contatti</Link>
+            <a href={baseUrl + "/contatti/richiesta-info"} className="hover:text-dark transition-colors">Contatti</a>
             <span className="text-warm-300">·</span>
-            <Link href="/prodotti" className="hover:text-dark transition-colors">Catalogo prodotti</Link>
+            <a href={baseUrl + "/prodotti"} className="hover:text-dark transition-colors">Catalogo prodotti</a>
           </div>
         </div>
       </main>

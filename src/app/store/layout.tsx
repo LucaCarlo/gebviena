@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Footer from "@/components/layout/Footer";
 import RecaptchaProvider from "@/components/providers/RecaptchaProvider";
 import { I18nProvider } from "@/contexts/I18nContext";
@@ -17,6 +18,14 @@ export const metadata: Metadata = {
 
 // Always re-evaluate maintenance flag; admins flip it from /admin/store/settings.
 export const dynamic = "force-dynamic";
+
+function getMainSiteUrl(): string {
+  const h = headers();
+  const host = (h.get("host") || "gebruederthonetvienna.com").toLowerCase();
+  const proto = h.get("x-forwarded-proto") || "https";
+  const mainHost = host.startsWith("store.") ? host.slice("store.".length) : host;
+  return `${proto}://${mainHost}`;
+}
 
 async function loadMaintenanceConfig() {
   try {
@@ -49,6 +58,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
           title={maintenance.title}
           message={maintenance.message}
           openingDate={maintenance.openingDate || null}
+          mainSiteUrl={getMainSiteUrl()}
         />
       </I18nProvider>
     );
