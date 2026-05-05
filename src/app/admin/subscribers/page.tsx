@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Search, Download, Trash2, CheckCircle2, XCircle, Users, Send, X, Mail,
   Tag, Plus, Loader2, Upload, FileText, Pencil, Eye, Building2,
@@ -40,7 +41,9 @@ const EMPTY_FORM = {
 /* ───── Component ───── */
 
 export default function AdminSubscribersPage() {
-  const [activeTab, setActiveTab] = useState("all");
+  const searchParams = useSearchParams();
+  const initialTag = searchParams.get("tag");
+  const [activeTab, setActiveTab] = useState(initialTag ? `tag:${initialTag}` : "all");
   const [search, setSearch] = useState("");
 
   const [tags, setTags] = useState<TagWithCount[]>([]);

@@ -23,21 +23,19 @@ export default function AccessoSvenditaGtvPage() {
         </nav>
       </header>
 
-      {/* ─── Banner placeholder ─── */}
-      <section className="px-6 md:px-10">
-        <div className="max-w-[1280px] mx-auto">
-          <div className="relative w-full aspect-[16/5] bg-warm-100/70 border border-warm-200 flex items-center justify-center">
-            <div className="text-center text-warm-400">
-              <p className="text-xs uppercase tracking-[0.18em] font-semibold mb-1">Banner</p>
-              <p className="text-[11px]">Spazio riservato all&apos;immagine prodotti</p>
-            </div>
+      {/* ─── Banner placeholder (full bleed) ─── */}
+      <section>
+        <div className="relative w-full aspect-[24/5] bg-warm-100/70 border-y border-warm-200 flex items-center justify-center">
+          <div className="text-center text-warm-400">
+            <p className="text-xs uppercase tracking-[0.18em] font-semibold mb-1">Banner</p>
+            <p className="text-[11px]">Spazio riservato all&apos;immagine prodotti</p>
           </div>
         </div>
       </section>
 
-      {/* ─── Content: 2-col ─── */}
+      {/* ─── Content: 2-col, 75% width ─── */}
       <section className="px-6 md:px-10 pt-12 md:pt-16 pb-16 md:pb-24">
-        <div className="max-w-[1280px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 lg:gap-20">
+        <div className="w-full md:w-3/4 max-w-[1500px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 lg:gap-20">
           {/* ── Left column ── */}
           <div>
             <p className="text-[11px] md:text-[12px] font-semibold uppercase tracking-[0.18em] text-warm-600 mb-5">
