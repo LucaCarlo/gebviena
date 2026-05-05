@@ -121,7 +121,9 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
         <div className="flex items-baseline justify-between gap-2">
           <div className="text-sm font-medium text-warm-900 truncate">{p.name}</div>
           <div className="text-sm font-mono text-warm-900 shrink-0">
-            {p.variantsCount > 1 ? "da " : ""}{eur(p.priceFromCents)}
+            {p.priceFromCents > 0
+              ? <>{p.variantsCount > 1 ? "da " : ""}{eur(p.priceFromCents)}</>
+              : <span className="text-warm-500 italic font-sans text-[12px]">Su richiesta</span>}
           </div>
         </div>
 
