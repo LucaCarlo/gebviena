@@ -402,13 +402,19 @@ export default function ProductDetail({ product }: { product: Product }) {
           <div className="mt-7 pt-6 border-t border-warm-200">
             <div className="flex items-baseline justify-between mb-1">
               <div className="text-[34px] font-light text-warm-900 tracking-tight">
-                {selectedVariant ? eur(selectedVariant.priceCents) : "—"}
+                {selectedVariant
+                  ? (selectedVariant.priceCents > 0 ? eur(selectedVariant.priceCents) : <span className="italic text-[24px] text-warm-700">Prezzo su richiesta</span>)
+                  : "—"}
               </div>
               {selectedVariant && (
                 <div className="text-[10px] text-warm-500 font-mono tracking-wide">SKU {selectedVariant.sku}</div>
               )}
             </div>
-            <div className="text-[11px] text-warm-500 mb-4">IVA inclusa · spedizione calcolata al checkout</div>
+            <div className="text-[11px] text-warm-500 mb-4">
+              {selectedVariant && selectedVariant.priceCents > 0
+                ? "IVA inclusa · spedizione calcolata al checkout"
+                : "Contattaci per un preventivo personalizzato"}
+            </div>
 
             <div className="flex items-center gap-1.5 mb-4 text-[12px]">
               {inStock ? (
@@ -425,13 +431,22 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
 
             <div className="flex gap-2">
-              <button
-                disabled={!inStock}
-                onClick={handleAddToCart}
-                className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 text-white uppercase text-[12px] tracking-[0.18em] disabled:bg-warm-300 disabled:cursor-not-allowed transition-colors ${justAdded ? "bg-emerald-600 hover:bg-emerald-700" : "bg-warm-900 hover:bg-warm-800"}`}
-              >
-                <ShoppingBag size={15} /> {justAdded ? "Aggiunto" : "Aggiungi al carrello"}
-              </button>
+              {selectedVariant && selectedVariant.priceCents > 0 ? (
+                <button
+                  disabled={!inStock}
+                  onClick={handleAddToCart}
+                  className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 text-white uppercase text-[12px] tracking-[0.18em] disabled:bg-warm-300 disabled:cursor-not-allowed transition-colors ${justAdded ? "bg-emerald-600 hover:bg-emerald-700" : "bg-warm-900 hover:bg-warm-800"}`}
+                >
+                  <ShoppingBag size={15} /> {justAdded ? "Aggiunto" : "Aggiungi al carrello"}
+                </button>
+              ) : (
+                <a
+                  href={`/contatti/richiesta-info?product=${encodeURIComponent(product.name)}`}
+                  className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 text-white uppercase text-[12px] tracking-[0.18em] bg-warm-900 hover:bg-warm-800 transition-colors"
+                >
+                  Richiedi un preventivo
+                </a>
+              )}
               <button
                 onClick={toggleFavorite}
                 disabled={favBusy}
