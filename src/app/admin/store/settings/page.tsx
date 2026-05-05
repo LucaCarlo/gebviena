@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon } from "lucide-react";
+import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon, PowerOff } from "lucide-react";
 
-type Group = "store_stripe" | "store_email" | "store_general";
+type Group = "store_stripe" | "store_email" | "store_general" | "store_maintenance";
 
 type SettingDef = {
   key: string;
@@ -11,7 +11,7 @@ type SettingDef = {
   label: string;
   placeholder?: string;
   secret?: boolean;
-  type?: "text" | "number" | "email";
+  type?: "text" | "number" | "email" | "boolean" | "date" | "textarea";
   hint?: string;
 };
 
@@ -95,6 +95,38 @@ const DEFINITIONS: SettingDef[] = [
     placeholder: "admin@gebruederthonetvienna.com",
     hint: "A questo indirizzo arrivano le notifiche di nuovi ordini.",
   },
+
+  // ── Maintenance / Coming soon ──
+  {
+    key: "store.maintenance.enabled",
+    group: "store_maintenance",
+    label: "Modalità offline attiva",
+    type: "boolean",
+    hint: "Quando attiva, lo store mostra una pagina 'arrivo presto' a tutti i visitatori. L'admin (/admin) resta accessibile.",
+  },
+  {
+    key: "store.maintenance.title",
+    group: "store_maintenance",
+    label: "Titolo pagina",
+    placeholder: "Stiamo arrivando",
+    hint: "Mostrato in grande sulla pagina di attesa.",
+  },
+  {
+    key: "store.maintenance.message",
+    group: "store_maintenance",
+    label: "Messaggio",
+    type: "textarea",
+    placeholder: "Lo store online sarà disponibile a breve. Resta aggiornato.",
+    hint: "Sottotitolo / messaggio mostrato sotto al titolo.",
+  },
+  {
+    key: "store.maintenance.opening_date",
+    group: "store_maintenance",
+    label: "Data di apertura",
+    type: "date",
+    placeholder: "2026-05-15",
+    hint: "Se valorizzata, viene mostrato un countdown alla data. Lascia vuoto per nasconderlo.",
+  },
 ];
 
 const GROUP_META: Record<Group, { title: string; subtitle: string; icon: typeof CreditCard }> = {
@@ -112,6 +144,11 @@ const GROUP_META: Record<Group, { title: string; subtitle: string; icon: typeof 
     title: "Email transazionali",
     subtitle: "Mittente e destinatari delle email dello store",
     icon: Mail,
+  },
+  store_maintenance: {
+    title: "Modalità offline (coming soon)",
+    subtitle: "Mette lo store in modalità 'arrivo presto' con countdown alla riapertura",
+    icon: PowerOff,
   },
 };
 
@@ -171,7 +208,7 @@ export default function StoreSettingsPage() {
     );
   }
 
-  const groups: Group[] = ["store_stripe", "store_general", "store_email"];
+  const groups: Group[] = ["store_maintenance", "store_stripe", "store_general", "store_email"];
 
   return (
     <div className="max-w-3xl">
@@ -201,6 +238,51 @@ export default function StoreSettingsPage() {
               <div className="p-6 space-y-4">
                 {defs.map((def) => {
                   const isRevealed = revealed[def.key];
+                  const v = values[def.key] ?? "";
+
+                  if (def.type === "boolean") {
+                    const checked = v === "true";
+                    return (
+                      <div key={def.key}>
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <button
+                            type="button"
+                            onClick={() => setValues((vs) => ({ ...vs, [def.key]: checked ? "false" : "true" }))}
+                            className={`relative w-10 h-6 rounded-full transition-colors ${checked ? "bg-warm-900" : "bg-warm-300"}`}
+                            aria-pressed={checked}
+                          >
+                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? "left-[18px]" : "left-0.5"}`} />
+                          </button>
+                          <span className="text-sm font-medium text-warm-800">{def.label}</span>
+                        </label>
+                        {def.hint && <div className="text-xs text-warm-500 mt-2 ml-[52px]">{def.hint}</div>}
+                      </div>
+                    );
+                  }
+
+                  if (def.type === "textarea") {
+                    return (
+                      <div key={def.key}>
+                        <label className="flex items-center gap-2 text-xs font-medium text-warm-600 mb-1">{def.label}</label>
+                        <textarea
+                          value={v}
+                          onChange={(e) => setValues((vs) => ({ ...vs, [def.key]: e.target.value }))}
+                          placeholder={def.placeholder}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
+                        />
+                        {def.hint && <div className="text-xs text-warm-500 mt-1">{def.hint}</div>}
+                      </div>
+                    );
+                  }
+
+                  const inputType =
+                    def.secret && !isRevealed ? "password" :
+                    def.type === "date" ? "date" :
+                    def.type === "number" ? "number" :
+                    def.type === "email" ? "email" :
+                    "text";
+
                   return (
                     <div key={def.key}>
                       <label className="flex items-center gap-2 text-xs font-medium text-warm-600 mb-1">
@@ -209,10 +291,10 @@ export default function StoreSettingsPage() {
                       </label>
                       <div className="flex gap-2">
                         <input
-                          type={def.secret && !isRevealed ? "password" : def.type ?? "text"}
-                          value={values[def.key] ?? ""}
+                          type={inputType}
+                          value={v}
                           onChange={(e) =>
-                            setValues((v) => ({ ...v, [def.key]: e.target.value }))
+                            setValues((vs) => ({ ...vs, [def.key]: e.target.value }))
                           }
                           placeholder={def.placeholder}
                           className="flex-1 px-3 py-2 border border-warm-200 rounded-lg text-sm font-mono"

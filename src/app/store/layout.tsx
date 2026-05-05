@@ -5,17 +5,55 @@ import RecaptchaProvider from "@/components/providers/RecaptchaProvider";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { getCurrentLang, loadAllUiTranslations, DEFAULT_LANG } from "@/lib/i18n";
 import StoreHeader from "@/components/store/StoreHeader";
+import MaintenanceScreen from "@/components/store/MaintenanceScreen";
 import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
   title: "Store — Gebrüder Thonet Vienna",
   description: "Acquista online sedute, tavoli e complementi Gebrüder Thonet Vienna.",
 };
 
+// Always re-evaluate maintenance flag; admins flip it from /admin/store/settings.
+export const dynamic = "force-dynamic";
+
+async function loadMaintenanceConfig() {
+  try {
+    const rows = await prisma.setting.findMany({ where: { group: "store_maintenance" } });
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+    return {
+      enabled: map.get("store.maintenance.enabled") === "true",
+      title: map.get("store.maintenance.title") || "",
+      message: map.get("store.maintenance.message") || "",
+      openingDate: map.get("store.maintenance.opening_date") || "",
+    };
+  } catch {
+    return { enabled: false, title: "", message: "", openingDate: "" };
+  }
+}
+
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
   const lang = getCurrentLang();
-  const overrides = await loadAllUiTranslations(lang);
+  const [overrides, maintenance] = await Promise.all([
+    loadAllUiTranslations(lang),
+    loadMaintenanceConfig(),
+  ]);
+
+  // Maintenance / coming-soon mode: bypass the entire store UI and show a static screen.
+  // Admin (/admin/*) is on a different layout, so it remains accessible.
+  if (maintenance.enabled) {
+    return (
+      <I18nProvider lang={lang} defaultLang={DEFAULT_LANG} overrides={overrides}>
+        <MaintenanceScreen
+          title={maintenance.title}
+          message={maintenance.message}
+          openingDate={maintenance.openingDate || null}
+        />
+      </I18nProvider>
+    );
+  }
+
   return (
     <I18nProvider lang={lang} defaultLang={DEFAULT_LANG} overrides={overrides}>
       <RecaptchaProvider>
