@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Globe, MapPin, Calendar } from "lucide-react";
-import SubscribeForm from "@/components/landing/accesso-svendita-gtv/SubscribeForm";
+import SubscribeForm, { type FieldConfig } from "@/components/landing/accesso-svendita-gtv/SubscribeForm";
+import { prisma } from "@/lib/prisma";
 
 export const metadata = {
   title: "Accesso Riservato — Vendita Speciale | Gebrüder Thonet Vienna",
@@ -9,7 +11,58 @@ export const metadata = {
     "Registrati per accedere alla Vendita Speciale Gebrüder Thonet Vienna. Sconti fino al 40% online e fino al 70% in showroom a Torino.",
 };
 
-export default function AccessoSvenditaGtvPage() {
+const PERMALINK = "accesso-svendita-gtv";
+
+const DEFAULT_HERO_TITLE = "Accesso Riservato alla Vendita Speciale Gebrüder Thonet Vienna";
+const DEFAULT_HERO_SUBTITLE =
+  "Due modalità di accesso, un'unica selezione: online su registrazione, in showroom per una scoperta esclusiva.";
+const DEFAULT_BUTTON_LABEL = "Ottieni Accesso";
+const DEFAULT_PRIVACY_LABEL =
+  "Accetto l'informativa sulla privacy e il trattamento dei miei dati personali.";
+
+const DEFAULT_FORM_FIELDS: FieldConfig[] = [
+  { key: "firstName", label: "Nome", width: "100", enabled: true, order: 0 },
+  { key: "lastName", label: "Cognome", width: "100", enabled: true, order: 1 },
+  { key: "email", label: "Email", width: "100", enabled: true, order: 2 },
+  { key: "company", label: "Azienda", width: "100", enabled: true, order: 3 },
+];
+
+async function loadConfig() {
+  try {
+    const cfg = await prisma.landingPageConfig.findUnique({ where: { permalink: PERMALINK } });
+    if (!cfg || !cfg.isActive) return null;
+    let formFields: FieldConfig[] = DEFAULT_FORM_FIELDS;
+    if (cfg.formFields) {
+      try {
+        const parsed = JSON.parse(cfg.formFields);
+        if (Array.isArray(parsed) && parsed.length > 0) formFields = parsed as FieldConfig[];
+      } catch {
+        /* keep defaults */
+      }
+    }
+    return {
+      heroTitle: cfg.heroTitle || DEFAULT_HERO_TITLE,
+      heroSubtitle: cfg.heroSubtitle || DEFAULT_HERO_SUBTITLE,
+      bannerImage: cfg.bannerImage || "",
+      buttonLabel: cfg.buttonLabel || DEFAULT_BUTTON_LABEL,
+      privacyLabel: cfg.privacyLabel || DEFAULT_PRIVACY_LABEL,
+      formFields,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export default async function AccessoSvenditaGtvPage() {
+  const config = (await loadConfig()) ?? {
+    heroTitle: DEFAULT_HERO_TITLE,
+    heroSubtitle: DEFAULT_HERO_SUBTITLE,
+    bannerImage: "",
+    buttonLabel: DEFAULT_BUTTON_LABEL,
+    privacyLabel: DEFAULT_PRIVACY_LABEL,
+    formFields: DEFAULT_FORM_FIELDS,
+  };
+
   return (
     <div className="font-sans bg-white text-dark">
       {/* ─── Header ─── */}
@@ -24,13 +77,26 @@ export default function AccessoSvenditaGtvPage() {
         </nav>
       </header>
 
-      {/* ─── Banner placeholder (full bleed) ─── */}
+      {/* ─── Banner (full bleed) ─── */}
       <section>
-        <div className="relative w-full aspect-[24/5] bg-warm-100/70 border-y border-warm-200 flex items-center justify-center">
-          <div className="text-center text-warm-400">
-            <p className="text-xs uppercase tracking-[0.18em] font-semibold mb-1">Banner</p>
-            <p className="text-[11px]">Spazio riservato all&apos;immagine prodotti</p>
-          </div>
+        <div className="relative w-full aspect-[24/5] bg-warm-100/70 border-y border-warm-200 overflow-hidden">
+          {config.bannerImage ? (
+            <Image
+              src={config.bannerImage}
+              alt="Vendita Speciale Gebrüder Thonet Vienna"
+              fill
+              priority
+              className="object-cover"
+              sizes="100vw"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-warm-400">
+                <p className="text-xs uppercase tracking-[0.18em] font-semibold mb-1">Banner</p>
+                <p className="text-[11px]">Spazio riservato all&apos;immagine prodotti</p>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -43,14 +109,13 @@ export default function AccessoSvenditaGtvPage() {
               Vendita Speciale
             </p>
             <h1 className="text-[34px] md:text-[44px] lg:text-[48px] font-semibold leading-[1.08] text-dark mb-6 tracking-[-0.01em]">
-              Accesso Riservato alla Vendita Speciale Gebr&uuml;der Thonet Vienna
+              {config.heroTitle}
             </h1>
-            <p className="text-[15px] md:text-[16px] text-warm-700 leading-[1.6] mb-10 max-w-[480px]">
-              Due modalit&agrave; di accesso, un&apos;unica selezione: online su registrazione,
-              in showroom per una scoperta esclusiva.
+            <p className="text-[15px] md:text-[16px] text-warm-700 leading-[1.6] mb-10 max-w-[480px] whitespace-pre-line">
+              {config.heroSubtitle}
             </p>
 
-            {/* ── Info blocks ── */}
+            {/* ── Info blocks (hardcoded layout) ── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-7 gap-x-8 mb-10 max-w-[520px]">
               <InfoBlock
                 icon={<Globe size={18} strokeWidth={1.6} />}
@@ -97,7 +162,11 @@ export default function AccessoSvenditaGtvPage() {
           <div className="md:pt-2">
             <div className="md:sticky md:top-8">
               <Suspense fallback={<div className="bg-warm-50/40 border border-warm-200 rounded-sm p-7 md:p-9 h-[400px]" />}>
-                <SubscribeForm />
+                <SubscribeForm
+                  buttonLabel={config.buttonLabel}
+                  privacyLabel={config.privacyLabel}
+                  fields={config.formFields}
+                />
               </Suspense>
               <p className="text-[11px] text-warm-500 leading-[1.7] mt-5 px-1">
                 L&apos;accesso online &egrave; riservato agli utenti registrati.

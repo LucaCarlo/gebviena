@@ -4,17 +4,50 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function SubscribeForm() {
+export interface FieldConfig {
+  key: string;
+  label: string;
+  width: "50" | "70" | "100";
+  enabled: boolean;
+  order: number;
+}
+
+interface Props {
+  buttonLabel?: string;
+  privacyLabel?: string;
+  fields?: FieldConfig[];
+}
+
+const REQUIRED_FIELDS = new Set(["firstName", "lastName", "email"]);
+
+const PLACEHOLDER_BY_KEY: Record<string, string> = {
+  firstName: "Inserisci il tuo nome",
+  lastName: "Inserisci il tuo cognome",
+  email: "Inserisci la tua email",
+  company: "Inserisci il nome della tua azienda",
+  phone: "Inserisci il tuo telefono",
+  city: "Città",
+  country: "Paese",
+  zipCode: "CAP",
+  state: "Provincia",
+  profile: "Profilo",
+};
+
+export default function SubscribeForm({
+  buttonLabel = "Ottieni Accesso",
+  privacyLabel = "Accetto l'informativa sulla privacy e il trattamento dei miei dati personali.",
+  fields,
+}: Props) {
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get("inv") || "";
   const tracked = useRef(false);
 
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    company: "",
-    privacyAccepted: false,
+  const enabledFields = (fields || []).filter((f) => f.enabled).sort((a, b) => a.order - b.order);
+
+  const [form, setForm] = useState<Record<string, string | boolean>>(() => {
+    const init: Record<string, string | boolean> = { privacyAccepted: false };
+    for (const f of enabledFields) init[f.key] = "";
+    return init;
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -34,17 +67,22 @@ export default function SubscribeForm() {
       .catch(() => {});
   }, [inviteToken]);
 
-  const update = (key: keyof typeof form, value: string | boolean) => {
+  const update = (key: string, value: string | boolean) => {
     setForm((p) => ({ ...p, [key]: value }));
     if (errors[key]) setErrors((p) => { const n = { ...p }; delete n[key]; return n; });
   };
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
-    if (!form.firstName.trim()) e.firstName = "Campo obbligatorio";
-    if (!form.lastName.trim()) e.lastName = "Campo obbligatorio";
-    if (!form.email.trim()) e.email = "Campo obbligatorio";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email non valida";
+    for (const f of enabledFields) {
+      if (REQUIRED_FIELDS.has(f.key)) {
+        const v = form[f.key];
+        if (!v || (typeof v === "string" && !v.trim())) e[f.key] = "Campo obbligatorio";
+      }
+    }
+    if (form.email && typeof form.email === "string" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      e.email = "Email non valida";
+    }
     if (!form.privacyAccepted) e.privacyAccepted = "Necessario per procedere";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -62,11 +100,8 @@ export default function SubscribeForm() {
         body: JSON.stringify({ ...form, inviteToken: inviteToken || undefined }),
       });
       const data = await res.json();
-      if (data.success) {
-        setSuccess(true);
-      } else {
-        setServerError(data.error || "Si è verificato un errore. Riprova.");
-      }
+      if (data.success) setSuccess(true);
+      else setServerError(data.error || "Si è verificato un errore. Riprova.");
     } catch {
       setServerError("Errore di connessione. Riprova.");
     } finally {
@@ -97,59 +132,35 @@ export default function SubscribeForm() {
       <p className="text-sm text-warm-600 mb-6">Registrati per accedere alla vendita speciale online.</p>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
-        <Field label="Nome" required error={errors.firstName}>
-          <input
-            type="text"
-            value={form.firstName}
-            onChange={(e) => update("firstName", e.target.value)}
-            placeholder="Inserisci il tuo nome"
-            className={inputCls(!!errors.firstName)}
-          />
-        </Field>
-
-        <Field label="Cognome" required error={errors.lastName}>
-          <input
-            type="text"
-            value={form.lastName}
-            onChange={(e) => update("lastName", e.target.value)}
-            placeholder="Inserisci il tuo cognome"
-            className={inputCls(!!errors.lastName)}
-          />
-        </Field>
-
-        <Field label="Email" required error={errors.email}>
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => update("email", e.target.value)}
-            placeholder="Inserisci la tua email"
-            className={inputCls(!!errors.email)}
-          />
-        </Field>
-
-        <Field label="Azienda" optional>
-          <input
-            type="text"
-            value={form.company}
-            onChange={(e) => update("company", e.target.value)}
-            placeholder="Inserisci il nome della tua azienda"
-            className={inputCls(false)}
-          />
-        </Field>
+        {enabledFields.map((f) => {
+          const isRequired = REQUIRED_FIELDS.has(f.key);
+          const inputType = f.key === "email" ? "email" : f.key === "phone" ? "tel" : "text";
+          const placeholder = PLACEHOLDER_BY_KEY[f.key] || f.label;
+          return (
+            <Field key={f.key} label={f.label} required={isRequired} optional={!isRequired} error={errors[f.key]}>
+              <input
+                type={inputType}
+                value={(form[f.key] as string) || ""}
+                onChange={(e) => update(f.key, e.target.value)}
+                placeholder={placeholder}
+                className={inputCls(!!errors[f.key])}
+              />
+            </Field>
+          );
+        })}
 
         <label className="flex items-start gap-3 pt-2 cursor-pointer">
           <input
             type="checkbox"
-            checked={form.privacyAccepted}
+            checked={form.privacyAccepted as boolean}
             onChange={(e) => update("privacyAccepted", e.target.checked)}
             className="mt-0.5 w-4 h-4 accent-dark shrink-0 cursor-pointer"
           />
           <span className={`text-xs leading-relaxed ${errors.privacyAccepted ? "text-red-600" : "text-warm-700"}`}>
-            Accetto{" "}
+            {privacyLabel}{" "}
             <Link href="/privacy-policy" target="_blank" className="underline hover:opacity-60">
-              l&apos;informativa sulla privacy
+              Privacy Policy
             </Link>
-            {" "}e il trattamento dei miei dati personali.
           </span>
         </label>
 
@@ -164,7 +175,7 @@ export default function SubscribeForm() {
           disabled={submitting}
           className="w-full bg-dark text-white py-3.5 text-sm font-semibold uppercase tracking-[0.18em] hover:opacity-85 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? "Invio..." : "Ottieni Accesso"}
+          {submitting ? "Invio..." : buttonLabel}
         </button>
       </form>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
@@ -83,9 +83,25 @@ export default function ReteVenditaPage() {
     const data = await res.json();
     const items: PointOfSale[] = data.data || [];
     setStores(items);
-    setResultCount(items.length);
     setLoading(false);
   }, [activeTab]);
+
+  // Client-side text filter on the loaded stores. Matches name, agent, address, city, country.
+  const filteredStores = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return stores;
+    return stores.filter((s) =>
+      s.name.toLowerCase().includes(q) ||
+      (s.agentName || "").toLowerCase().includes(q) ||
+      s.address.toLowerCase().includes(q) ||
+      s.city.toLowerCase().includes(q) ||
+      s.country.toLowerCase().includes(q)
+    );
+  }, [stores, searchQuery]);
+
+  useEffect(() => {
+    setResultCount(filteredStores.length);
+  }, [filteredStores]);
 
   useEffect(() => {
     fetchStores();
@@ -101,8 +117,13 @@ export default function ReteVenditaPage() {
   };
 
   const handleSearch = useCallback(() => {
-    if (!searchQuery.trim()) return;
-    mapApiRef.current?.searchAddress(searchQuery);
+    const q = searchQuery.trim();
+    if (!q) return;
+    // Center the map on the geocoded address (Google Maps lookup)
+    mapApiRef.current?.searchAddress(q);
+    // Always show the result-count banner with what the user typed,
+    // so the list filtering is visible even if geocoding fails / Google not configured.
+    setSearchLocation(q);
   }, [searchQuery]);
 
   const openContactModal = (store: PointOfSale) => {
@@ -272,10 +293,10 @@ export default function ReteVenditaPage() {
           <div className="lg:col-span-2 max-h-[700px] overflow-y-auto" style={{ borderRight: "1px solid #e8e6e3" }}>
             {loading ? (
               <div className="p-10 text-center text-base" style={{ color: "#666" }}>Caricamento...</div>
-            ) : stores.length === 0 ? (
+            ) : filteredStores.length === 0 ? (
               <div className="p-10 text-center text-base" style={{ color: "#666" }}>Nessun risultato</div>
             ) : (
-              stores.map((store) => (
+              filteredStores.map((store) => (
                 <div
                   key={store.id}
                   onClick={() => handleStoreClick(store)}
@@ -340,7 +361,7 @@ export default function ReteVenditaPage() {
           <div className="lg:col-span-3 min-h-[500px] lg:min-h-full">
             <MapView
               ref={mapApiRef}
-              stores={stores}
+              stores={filteredStores}
               searchInput={searchInputEl}
               onLocationFound={(addr) => setSearchLocation(addr)}
             />

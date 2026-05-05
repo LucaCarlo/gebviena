@@ -5,8 +5,9 @@ import { renderEmailTemplate, parseBlocks } from "@/lib/email-template-renderer"
 import { assignTagBySlug } from "@/lib/tags";
 
 const TEMPLATE_NAME = "Conferma pre-accesso svendita";
-const TAG_SLUG = "accesso-svendita-gtv";
-const TAG_NAME = "Accesso Svendita GTV";
+const PERMALINK = "accesso-svendita-gtv";
+const TAG_SLUG_FALLBACK = "accesso-svendita-gtv";
+const TAG_NAME_FALLBACK = "Accesso Svendita GTV";
 
 /**
  * Default blocks used to bootstrap the confirmation template the first time
@@ -74,6 +75,33 @@ async function ensureTemplate() {
   });
 }
 
+/**
+ * Resolve the confirmation email template + tag from the LandingPageConfig
+ * if present (so the admin can swap them without code changes), falling
+ * back to the auto-bootstrap template when no config exists.
+ */
+async function resolveConfig() {
+  const lp = await prisma.landingPageConfig.findUnique({
+    where: { permalink: PERMALINK },
+    select: { tagSlug: true, name: true, emailTemplateId: true },
+  });
+  const tagSlug = lp?.tagSlug || TAG_SLUG_FALLBACK;
+  const tagName = lp?.name || TAG_NAME_FALLBACK;
+
+  let template: { id: string; subject: string; blocks: string } | null = null;
+  if (lp?.emailTemplateId) {
+    template = await prisma.emailTemplate.findUnique({
+      where: { id: lp.emailTemplateId },
+      select: { id: true, subject: true, blocks: true },
+    });
+  }
+  if (!template) {
+    const t = await ensureTemplate();
+    template = { id: t.id, subject: t.subject, blocks: t.blocks };
+  }
+  return { tagSlug, tagName, template };
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -94,6 +122,7 @@ export async function POST(req: Request) {
     }
 
     const email = emailRaw.toLowerCase();
+    const { tagSlug, tagName, template } = await resolveConfig();
 
     // Save / update subscriber
     await prisma.newsletterSubscriber.upsert({
@@ -114,8 +143,8 @@ export async function POST(req: Request) {
       },
     });
 
-    // Assign segmentation tag (idempotent)
-    await assignTagBySlug(email, TAG_SLUG, TAG_NAME).catch((e) => {
+    // Assign segmentation tag (idempotent) — uses LandingPageConfig.tagSlug if set
+    await assignTagBySlug(email, tagSlug, tagName).catch((e) => {
       console.error("Tag assignment failed:", e);
     });
 
@@ -143,7 +172,6 @@ export async function POST(req: Request) {
     // Fire-and-forget confirmation email — do not block the response
     (async () => {
       try {
-        const template = await ensureTemplate();
         const html = renderEmailTemplate(parseBlocks(template.blocks), {
           firstName,
           lastName,
