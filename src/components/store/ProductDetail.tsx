@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Package, Ruler, ShoppingBag, Heart, Maximize2, X as XIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useCart } from "@/contexts/CartContext";
+import ProductCard, { type ProductCardData } from "./ProductCard";
 
 type AttrType = "MATERIAL" | "FINISH" | "COLOR" | "OTHER";
 
@@ -35,31 +36,6 @@ interface Variant {
   attributes: Attribute[];
 }
 
-interface RelatedProject {
-  id: string;
-  name: string;
-  slug: string;
-  type: string;
-  country: string;
-  city: string | null;
-  year: number | null;
-  imageUrl: string;
-}
-
-interface RelatedProduct {
-  id: string;
-  slug: string;
-  name: string;
-  shortDescription: string | null;
-  coverImage: string | null;
-  hoverImage: string | null;
-  priceFromCents: number;
-  variantsCount: number;
-  inStock: boolean;
-  category: { slug: string; name: string } | null;
-  colors: { id: string; code: string; hex: string | null }[];
-}
-
 interface Product {
   id: string;
   slug: string;
@@ -75,7 +51,6 @@ interface Product {
   category: { slug: string; name: string } | null;
   designer: { name: string; slug: string; bio: string | null; country: string | null; imageUrl: string | null } | null;
   variants: Variant[];
-  relatedProjects: RelatedProject[];
 }
 
 function parseList(s: string | null): string[] {
@@ -277,9 +252,10 @@ export default function ProductDetail({ product }: { product: Product }) {
   const onHeroMouseLeave = useCallback(() => setHoverPos(null), []);
 
   // ─── Related products fetch ───
-  const [related, setRelated] = useState<RelatedProduct[]>([]);
+  const [related, setRelated] = useState<ProductCardData[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(true);
   const [relatedShown, setRelatedShown] = useState(RELATED_PAGE_SIZE);
+  const [relatedFavSet, setRelatedFavSet] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const params = new URLSearchParams({ lang: "it" });
@@ -288,13 +264,26 @@ export default function ProductDetail({ product }: { product: Product }) {
       .then((r) => r.json())
       .then((d) => {
         if (d.success) {
-          const filtered = (d.data as RelatedProduct[]).filter((p) => p.id !== product.id);
+          const filtered = (d.data as ProductCardData[]).filter((p) => p.id !== product.id);
           setRelated(filtered);
         }
       })
       .catch(() => {})
       .finally(() => setRelatedLoading(false));
   }, [product.id, product.category?.slug]);
+
+  useEffect(() => {
+    if (!customer) { setRelatedFavSet(new Set()); return; }
+    fetch("/api/store/public/favorites?lang=it", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          const ids = new Set((d.data as { storeProductId: string }[]).map((f) => f.storeProductId));
+          setRelatedFavSet(ids);
+        }
+      })
+      .catch(() => {});
+  }, [customer]);
 
   return (
     <>
@@ -542,10 +531,10 @@ export default function ProductDetail({ product }: { product: Product }) {
         </section>
       )}
 
-      {/* ═══ Sezione Designer — stile sito (sfondo grigiastro, foto sx + info dx) ═══ */}
+      {/* ═══ Sezione Designer — 40/60 split, no full-bleed, no CTA ═══ */}
       {product.designer && (product.designer.bio || product.designer.imageUrl) && (
-        <section className="mt-20 -mx-4 lg:-mx-8" style={{ backgroundColor: "#f9f8f6" }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
+        <section className="mt-20" style={{ backgroundColor: "#f9f8f6" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] items-stretch">
             <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
               {product.designer.imageUrl ? (
                 <Image
@@ -553,7 +542,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                   alt={product.designer.name}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  sizes="(max-width: 1024px) 100vw, 40vw"
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-warm-400 text-sm">
@@ -561,8 +550,8 @@ export default function ProductDetail({ product }: { product: Product }) {
                 </div>
               )}
             </div>
-            <div className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:px-[80px] xl:px-[120px] py-16 lg:py-24">
-              <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">Designer</p>
+            <div className="flex flex-col justify-center px-6 sm:px-10 md:px-14 lg:px-16 xl:px-20 py-14 lg:py-20">
+              <p className="uppercase text-[14px] tracking-[0.03em] text-black font-light">Designer</p>
               <h2 className="font-sans text-[28px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-2">
                 {product.designer.name}
               </h2>
@@ -571,73 +560,26 @@ export default function ProductDetail({ product }: { product: Product }) {
               )}
               {product.designer.bio && (
                 <div
-                  className="text-[18px] md:text-[20px] text-black leading-snug font-light tracking-normal max-w-none mt-6 [&_p]:m-0 [&_p+p]:mt-4"
+                  className="text-[17px] md:text-[19px] text-black leading-snug font-light tracking-normal max-w-[700px] mt-5 [&_p]:m-0 [&_p+p]:mt-4"
                   dangerouslySetInnerHTML={{
                     __html: product.designer.bio.includes("<") ? product.designer.bio : `<p>${product.designer.bio.replace(/\n+/g, "</p><p>")}</p>`,
                   }}
                 />
               )}
-              <Link
-                href={`/designers/${product.designer.slug}`}
-                target="_blank"
-                className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline self-start"
-                style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
-              >
-                Scopri tutti i suoi progetti
-              </Link>
             </div>
           </div>
         </section>
       )}
 
-      {/* ═══ Sezione Progetti — stile sito /progetti (4-col, aspect 4:5) ═══ */}
-      {product.relatedProjects && product.relatedProjects.length > 0 && (
-        <section className="mt-20 pt-14 border-t border-warm-200">
-          <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-2">In questi progetti</p>
-          <h2 className="font-sans text-[28px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-12">
-            {product.name} nel mondo
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-12 md:gap-x-4 md:gap-y-16">
-            {product.relatedProjects.map((p) => (
-              <Link key={p.id} href={`/progetti/${p.slug}`} target="_blank" className="group block">
-                <div className="relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "4/5" }}>
-                  <Image
-                    src={p.imageUrl}
-                    alt={p.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                  />
-                </div>
-                <div className="mt-4">
-                  <p className="uppercase text-[14px] tracking-[0.01em] text-black font-light">
-                    {p.type}
-                    {p.year && <> · {p.year}</>}
-                  </p>
-                  <h3 className="font-sans text-[24px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-                    {p.name}
-                  </h3>
-                  {(p.city || p.country) && (
-                    <div className="mt-1 text-[12px] text-warm-500">
-                      {[p.city, p.country].filter(Boolean).join(", ")}
-                    </div>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ═══ Sezione Prodotti correlati ═══ */}
+      {/* ═══ Sezione Prodotti correlati — stesse card della pagina shop ═══ */}
       {(relatedLoading || related.length > 0) && (
         <section className="mt-20 pt-14 border-t border-warm-200">
-          <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-2">Prodotti correlati</p>
+          <p className="uppercase text-[14px] tracking-[0.03em] text-black font-light mb-2">Prodotti correlati</p>
           <h2 className="font-sans text-[28px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-12">
             {product.category?.name ? `Altro da ${product.category.name}` : "Altri prodotti dello shop"}
           </h2>
           {relatedLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-12 md:gap-x-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="bg-warm-100" style={{ aspectRatio: "4/5" }} />
@@ -648,49 +590,20 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-12 md:gap-x-4 md:gap-y-16">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {related.slice(0, relatedShown).map((p) => (
-                  <Link key={p.id} href={`/prodotti/${p.slug}`} className="group block">
-                    <div className="relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "4/5" }}>
-                      {p.coverImage && (
-                        <Image src={p.coverImage} alt={p.name} fill sizes="(max-width: 768px) 50vw, 25vw"
-                          className="object-cover transition-opacity duration-500 group-hover:opacity-0" />
-                      )}
-                      {p.hoverImage && (
-                        <Image src={p.hoverImage} alt="" fill sizes="(max-width: 768px) 50vw, 25vw"
-                          className="object-cover absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 scale-[1.02]" />
-                      )}
-                      {!p.inStock && (
-                        <div className="absolute top-3 left-3 bg-warm-900 text-white text-[10px] uppercase tracking-wider px-2 py-1">
-                          Esaurito
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-4">
-                      {p.category && (
-                        <p className="uppercase text-[14px] tracking-[0.01em] text-black font-light">
-                          {p.category.name}
-                        </p>
-                      )}
-                      <div className="flex items-baseline justify-between gap-3 mt-1">
-                        <h3 className="font-sans text-[20px] text-black leading-[1.15] font-light uppercase tracking-[inherit] truncate">
-                          {p.name}
-                        </h3>
-                        <div className="text-[14px] font-mono text-warm-900 shrink-0 whitespace-nowrap">
-                          {p.variantsCount > 1 ? "da " : ""}{eur(p.priceFromCents)}
-                        </div>
-                      </div>
-                      {p.colors.length > 0 && (
-                        <div className="flex items-center gap-1.5 mt-2">
-                          {p.colors.slice(0, 5).map((c) => (
-                            <span key={c.id} title={c.code}
-                              className="w-3 h-3 rounded-full border border-warm-200"
-                              style={{ backgroundColor: c.hex || "#ddd" }} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </Link>
+                  <ProductCard
+                    key={p.id}
+                    p={p}
+                    favorited={relatedFavSet.has(p.id)}
+                    onFavoriteChange={(isFav) => {
+                      setRelatedFavSet((prev) => {
+                        const next = new Set(prev);
+                        if (isFav) next.add(p.id); else next.delete(p.id);
+                        return next;
+                      });
+                    }}
+                  />
                 ))}
               </div>
               {related.length > relatedShown && (
@@ -699,7 +612,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                     onClick={() => setRelatedShown((n) => n + RELATED_PAGE_SIZE)}
                     className="px-8 py-3 border border-warm-900 text-warm-900 uppercase text-[12px] tracking-[0.18em] hover:bg-warm-900 hover:text-white transition-colors"
                   >
-                    Carica altri ({related.length - relatedShown})
+                    Carica altri ({Math.min(RELATED_PAGE_SIZE, related.length - relatedShown)})
                   </button>
                 </div>
               )}
