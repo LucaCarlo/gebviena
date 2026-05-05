@@ -145,7 +145,7 @@ const navSections: NavSection[] = [
     label: "Clienti",
     items: [
       { href: "/admin/subscribers", label: "Utenti", icon: Users, permission: "newsletter.view" },
-      { href: "/admin/email-templates", label: "Template Email", icon: FileText, permission: "email_templates.view" },
+      { href: "/admin/email-templates", label: "Email", icon: FileText, permission: "email_templates.view" },
       { href: "/admin/email-analytics", label: "Analitiche Evento", icon: BarChart3, permission: "newsletter.view" },
       { href: "/admin/landing-page", label: "Landing Page", icon: QrCode, permission: "landing_page.view" },
       { href: "/admin/forms", label: "Forms", icon: Settings, permission: "forms.view" },
