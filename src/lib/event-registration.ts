@@ -45,7 +45,7 @@ interface EmailFooterConfig {
   line3?: string;
 }
 
-function buildEmailFooterHtml(footer: EmailFooterConfig): string {
+export function buildEmailFooterHtml(footer: EmailFooterConfig): string {
   const siteUrl = getSiteUrl();
   const iconBase = `${siteUrl}/images/email-icons`;
   const iconSize = 22;
@@ -175,7 +175,7 @@ async function sendViaBrevoApi(
   return res.json();
 }
 
-function getEmailFooterConfig(emailFooterJson: string | null): EmailFooterConfig {
+export function getEmailFooterConfig(emailFooterJson: string | null): EmailFooterConfig {
   if (!emailFooterJson) return {};
   try { return JSON.parse(emailFooterJson); } catch { return {}; }
 }

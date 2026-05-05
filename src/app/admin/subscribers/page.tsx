@@ -456,7 +456,11 @@ export default function AdminSubscribersPage() {
               </InfoSection>
 
               <InfoSection title="Altro" icon={<StickyNote size={16} />}>
-                <InfoRow label="Origine" value={c.source === "entrambi" ? "Newsletter + Evento" : c.source === "newsletter" ? "Newsletter" : "Evento"} />
+                <InfoRow label="Origine" value={
+                  c.source === "entrambi" ? "Newsletter + Evento" :
+                  c.source === "newsletter" ? "Newsletter" :
+                  c.source === "evento" ? "Evento" : "Solo tag"
+                } />
                 <InfoRow label="Iscritto il" value={fmtDateFull(c.createdAt)} />
                 {c.updatedAt && <InfoRow label="Aggiornato" value={fmtDateFull(c.updatedAt)} />}
                 <InfoRow label="Privacy" value={c.subscriberId ? "Accettata" : "—"} />
@@ -487,9 +491,6 @@ export default function AdminSubscribersPage() {
       <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-warm-900">Utenti</h1>
-          <p className="text-sm text-warm-500 mt-1">
-            {contacts.length} contatti totali &middot; {eventRegs.length} registrazioni evento ({checkedInCount} check-in)
-          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {!isEventoDetail && selected.size > 0 ? (
@@ -529,7 +530,9 @@ export default function AdminSubscribersPage() {
             style={activeTab === tab.key ? { borderColor: tab.color, color: tab.color } : undefined}>
             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tab.color }} />
             {tab.label}
-            <span className="text-[10px] font-semibold bg-warm-100 text-warm-500 px-1.5 py-0.5 rounded-full">{tab.count}</span>
+            {tab.key !== "all" && (
+              <span className="text-[10px] font-semibold bg-warm-100 text-warm-500 px-1.5 py-0.5 rounded-full">{tab.count}</span>
+            )}
           </button>
         ))}
         <button onClick={() => setShowNewTag(true)} className="flex items-center px-3 py-3 text-warm-400 hover:text-warm-600 transition-colors border-b-2 border-transparent -mb-px shrink-0" title="Nuovo tag"><Plus size={14} /></button>
@@ -627,8 +630,15 @@ export default function AdminSubscribersPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${c.source === "entrambi" ? "bg-purple-100 text-purple-600" : c.source === "newsletter" ? "bg-blue-100 text-blue-600" : "bg-amber-100 text-amber-600"}`}>
-                        {c.source === "entrambi" ? "Newsletter + Evento" : c.source === "newsletter" ? "Newsletter" : "Evento"}
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${
+                        c.source === "entrambi" ? "bg-purple-100 text-purple-600" :
+                        c.source === "newsletter" ? "bg-blue-100 text-blue-600" :
+                        c.source === "evento" ? "bg-amber-100 text-amber-600" :
+                        "bg-warm-100 text-warm-600"
+                      }`}>
+                        {c.source === "entrambi" ? "Newsletter + Evento" :
+                          c.source === "newsletter" ? "Newsletter" :
+                          c.source === "evento" ? "Evento" : "Solo tag"}
                       </span>
                     </td>
                     <td className="px-4 py-3">

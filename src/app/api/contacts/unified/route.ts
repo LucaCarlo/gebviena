@@ -41,12 +41,18 @@ export async function GET(req: Request) {
   const tag = (searchParams.get("tag") || "").trim();
   const invited = (searchParams.get("invited") || "all").trim(); // "all" | "true" | "false"
 
-  // ─── 1. Load both data sources in parallel ───
-  const [subscribers, eventRegs] = await Promise.all([
+  // ─── 1. Load all sources in parallel ───
+  // ContactTag is a third source: contacts imported via CSV may have only tags
+  // (no NewsletterSubscriber / EventRegistration row). They still need to show up.
+  const [subscribers, eventRegs, taggedEmails] = await Promise.all([
     prisma.newsletterSubscriber.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.eventRegistration.findMany({
       orderBy: { createdAt: "desc" },
       select: { email: true, firstName: true, lastName: true, country: true, city: true, createdAt: true },
+    }),
+    prisma.contactTag.findMany({
+      select: { email: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -108,6 +114,32 @@ export async function GET(req: Request) {
         tags: [],
       });
     }
+  }
+
+  // Tag-only contacts (CSV-imported emails without subscriber/event row)
+  for (const t of taggedEmails) {
+    const key = t.email.toLowerCase().trim();
+    if (contactMap.has(key)) continue;
+    contactMap.set(key, {
+      email: t.email,
+      firstName: null,
+      lastName: null,
+      company: null,
+      phone: null,
+      profile: null,
+      address: null,
+      city: null,
+      zip: null,
+      province: null,
+      country: null,
+      website: null,
+      notes: null,
+      source: "tag",
+      subscriberId: null,
+      createdAt: t.createdAt.toISOString(),
+      updatedAt: null,
+      tags: [],
+    });
   }
 
   // ─── 3. Tag enrichment in batch ───

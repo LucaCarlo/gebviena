@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { renderEmailTemplate, parseBlocks } from "@/lib/email-template-renderer";
 import { assignTagBySlug } from "@/lib/tags";
+import { buildEmailFooterHtml, getEmailFooterConfig } from "@/lib/event-registration";
 
 const TEMPLATE_NAME = "Conferma pre-accesso svendita";
 const PERMALINK = "accesso-svendita-gtv";
@@ -76,17 +77,19 @@ async function ensureTemplate() {
 }
 
 /**
- * Resolve the confirmation email template + tag from the LandingPageConfig
- * if present (so the admin can swap them without code changes), falling
- * back to the auto-bootstrap template when no config exists.
+ * Resolve the confirmation email pieces from the LandingPageConfig
+ * (admin-editable: subject, template, footer, tag), falling back to
+ * the auto-bootstrap template when no config exists.
  */
 async function resolveConfig() {
   const lp = await prisma.landingPageConfig.findUnique({
     where: { permalink: PERMALINK },
-    select: { tagSlug: true, name: true, emailTemplateId: true },
+    select: { tagSlug: true, name: true, emailTemplateId: true, emailSubject: true, emailFooter: true },
   });
   const tagSlug = lp?.tagSlug || TAG_SLUG_FALLBACK;
   const tagName = lp?.name || TAG_NAME_FALLBACK;
+  const emailSubjectOverride = lp?.emailSubject?.trim() || "";
+  const emailFooterJson = lp?.emailFooter || null;
 
   let template: { id: string; subject: string; blocks: string } | null = null;
   if (lp?.emailTemplateId) {
@@ -99,7 +102,7 @@ async function resolveConfig() {
     const t = await ensureTemplate();
     template = { id: t.id, subject: t.subject, blocks: t.blocks };
   }
-  return { tagSlug, tagName, template };
+  return { tagSlug, tagName, template, emailSubjectOverride, emailFooterJson };
 }
 
 export async function POST(req: Request) {
@@ -122,7 +125,7 @@ export async function POST(req: Request) {
     }
 
     const email = emailRaw.toLowerCase();
-    const { tagSlug, tagName, template } = await resolveConfig();
+    const { tagSlug, tagName, template, emailSubjectOverride, emailFooterJson } = await resolveConfig();
 
     // Save / update subscriber
     await prisma.newsletterSubscriber.upsert({
@@ -172,13 +175,24 @@ export async function POST(req: Request) {
     // Fire-and-forget confirmation email — do not block the response
     (async () => {
       try {
-        const html = renderEmailTemplate(parseBlocks(template.blocks), {
+        let html = renderEmailTemplate(parseBlocks(template.blocks), {
           firstName,
           lastName,
           email,
           eventLink: "",
         });
-        await sendMail(email, template.subject || DEFAULT_SUBJECT, html);
+
+        // Inject configurable footer (social icons + lines) before </body>
+        const footerHtml = buildEmailFooterHtml(getEmailFooterConfig(emailFooterJson));
+        if (footerHtml) {
+          html = html.includes("</body>")
+            ? html.replace("</body>", `${footerHtml}</body>`)
+            : html + footerHtml;
+        }
+
+        // Prefer the LandingPageConfig override; fall back to template subject; then default
+        const subject = emailSubjectOverride || template.subject || DEFAULT_SUBJECT;
+        await sendMail(email, subject, html);
       } catch (e) {
         console.error("Confirmation email failed:", e);
       }
