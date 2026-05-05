@@ -293,7 +293,7 @@ export default function ProductDetail({ product }: { product: Product }) {
         <div className="space-y-3">
           <div
             ref={heroRef}
-            className="aspect-square bg-warm-100 relative overflow-hidden cursor-zoom-in group"
+            className="aspect-[4/5] bg-warm-100 relative overflow-hidden cursor-zoom-in group"
             onMouseMove={onHeroMouseMove}
             onMouseLeave={onHeroMouseLeave}
             onClick={() => setLightboxOpen(true)}
