@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { unstable_noStore as noStore } from "next/cache";
 import Footer from "@/components/layout/Footer";
 import RecaptchaProvider from "@/components/providers/RecaptchaProvider";
 import { I18nProvider } from "@/contexts/I18nContext";
@@ -28,6 +29,7 @@ function getMainSiteUrl(): string {
 }
 
 async function loadMaintenanceConfig() {
+  noStore();
   try {
     const rows = await prisma.setting.findMany({ where: { group: "store_maintenance" } });
     const map = new Map(rows.map((r) => [r.key, r.value]));
