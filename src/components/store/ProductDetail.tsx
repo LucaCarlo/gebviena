@@ -515,14 +515,12 @@ export default function ProductDetail({ product }: { product: Product }) {
                 ? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(product.marketingDescription) }} />
                 : <p className="text-warm-500 italic">Descrizione in arrivo.</p>}
             </div>
-            {/* Galleria "a cascata" — usa le immagini del catalogo prodotto del sito normale */}
+            {/* Galleria — 2 col, immagini quadrate piccole, max 6 (3 righe) per non andare oltre il testo */}
             {catalogGallery.length > 0 && (
-              <div className="space-y-4 lg:space-y-5">
-                {catalogGallery.map((img, i) => (
-                  <div key={i} className={`relative bg-warm-100 overflow-hidden ${
-                    i % 3 === 0 ? "aspect-[4/5]" : i % 3 === 1 ? "aspect-[4/3]" : "aspect-square"
-                  }`}>
-                    <Image src={img} alt={`${product.name} — ${i + 1}`} fill sizes="(max-width: 1024px) 100vw, 45vw" className="object-cover" />
+              <div className="grid grid-cols-2 gap-3 self-start">
+                {catalogGallery.slice(0, 6).map((img, i) => (
+                  <div key={i} className="relative aspect-square bg-warm-100 overflow-hidden">
+                    <Image src={img} alt={`${product.name} — ${i + 1}`} fill sizes="(max-width: 1024px) 50vw, 22vw" className="object-cover" />
                   </div>
                 ))}
               </div>
@@ -534,8 +532,8 @@ export default function ProductDetail({ product }: { product: Product }) {
       {/* ═══ Sezione Designer — 40/60 split, no full-bleed, no CTA ═══ */}
       {product.designer && (product.designer.bio || product.designer.imageUrl) && (
         <section className="mt-20" style={{ backgroundColor: "#f9f8f6" }}>
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] items-stretch">
-            <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 items-center">
+            <div className="relative w-full aspect-[4/5] lg:aspect-[3/4] overflow-hidden">
               {product.designer.imageUrl ? (
                 <Image
                   src={product.designer.imageUrl}
@@ -550,17 +548,17 @@ export default function ProductDetail({ product }: { product: Product }) {
                 </div>
               )}
             </div>
-            <div className="flex flex-col justify-center px-6 sm:px-10 md:px-14 lg:px-16 xl:px-20 py-14 lg:py-20">
-              <p className="uppercase text-[14px] tracking-[0.03em] text-black font-light">Designer</p>
-              <h2 className="font-sans text-[28px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-2">
+            <div className="px-8 sm:px-12 md:px-16 lg:pl-16 xl:pl-20 lg:pr-12 xl:pr-16 py-12 lg:py-16">
+              <p className="uppercase text-[13px] tracking-[0.03em] text-black font-light">Designer</p>
+              <h2 className="font-sans text-[26px] md:text-[30px] lg:text-[32px] text-black leading-[1.1] font-light uppercase tracking-[inherit] mt-2">
                 {product.designer.name}
               </h2>
               {product.designer.country && (
-                <p className="text-[14px] text-warm-500 mt-1">{product.designer.country}</p>
+                <p className="text-[13px] text-warm-500 mt-1">{product.designer.country}</p>
               )}
               {product.designer.bio && (
                 <div
-                  className="text-[17px] md:text-[19px] text-black leading-snug font-light tracking-normal max-w-[700px] mt-5 [&_p]:m-0 [&_p+p]:mt-4"
+                  className="text-[15px] md:text-[16px] text-black leading-[1.55] font-light max-w-[640px] mt-5 [&_p]:m-0 [&_p+p]:mt-3"
                   dangerouslySetInnerHTML={{
                     __html: product.designer.bio.includes("<") ? product.designer.bio : `<p>${product.designer.bio.replace(/\n+/g, "</p><p>")}</p>`,
                   }}

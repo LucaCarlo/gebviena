@@ -75,7 +75,44 @@ interface FormState {
   emailTemplateId: string;
   emailFooter: EmailFooterConfig;
   formFields: FieldConfig[];
+  customConfig: SvenditaCustomConfig;
 }
+
+// Testi specifici landing svendita — usato solo se permalink === "accesso-svendita-gtv"
+interface SvenditaCustomConfig {
+  navLabelActive: string;
+  navLabelShowroom: string;
+  navLabelContatti: string;
+  eyebrow: string;
+  block1Title: string; block1Lines: string; block1HighlightPrefix: string; block1HighlightStrong: string;
+  block2Title: string; block2Lines: string; block2HighlightPrefix: string; block2HighlightStrong: string;
+  block3Title: string; block3Lines: string;
+  longDescription: string;
+  formCardTitle: string;
+  formCardSubtitle: string;
+  disclaimer: string;
+}
+
+const EMPTY_SVENDITA: SvenditaCustomConfig = {
+  navLabelActive: "Vendita Speciale",
+  navLabelShowroom: "Showroom",
+  navLabelContatti: "Contatti",
+  eyebrow: "Vendita Speciale",
+  block1Title: "Online",
+  block1Lines: "Accesso su registrazione\nSelezione disponibile fino a esaurimento",
+  block1HighlightPrefix: "Sconti fino al ",
+  block1HighlightStrong: "40%",
+  block2Title: "Showroom Torino",
+  block2Lines: "Via Foggia 23H\nAccesso diretto in showroom\nPezzi unici da fine serie, shooting e fiere",
+  block2HighlightPrefix: "Sconti fino al ",
+  block2HighlightStrong: "70%",
+  block3Title: "Periodo",
+  block3Lines: "Dal 15 Maggio al 30 Giugno 2026",
+  longDescription: "La Vendita Speciale nasce da un processo di ottimizzazione...\n\nQuesto percorso ci permette di rendere disponibili una selezione di prodotti a condizioni dedicate, attraverso due esperienze distinte:\n\n- **online**, con articoli disponibili in quantità limitata\n- **offline**, con una selezione esclusiva di pezzi unici e fuori produzione\n\nDue modalità diverse, unite dalla stessa attenzione per qualità e ricerca.",
+  formCardTitle: "Richiedi Accesso",
+  formCardSubtitle: "Registrati per accedere alla vendita speciale online.",
+  disclaimer: "L'accesso online è riservato agli utenti registrati.\nI prodotti disponibili online e in showroom differiscono per tipologia e disponibilità.\nLa registrazione non garantisce disponibilità sugli articoli.",
+};
 
 interface EmailTpl { id: string; name: string; subject: string; previewHtml: string | null; }
 
@@ -102,6 +139,7 @@ export default function LandingPageDetailPage() {
     emailTemplateId: "",
     emailFooter: { ...EMPTY_FOOTER },
     formFields: [...DEFAULT_FORM_FIELDS],
+    customConfig: { ...EMPTY_SVENDITA },
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -159,6 +197,7 @@ export default function LandingPageDetailPage() {
           emailTemplateId: lp.emailTemplateId || "",
           emailFooter: lp.emailFooter ? (() => { try { return { ...EMPTY_FOOTER, ...JSON.parse(lp.emailFooter) }; } catch { return { ...EMPTY_FOOTER }; } })() : { ...EMPTY_FOOTER },
           formFields: parsedFields,
+          customConfig: lp.customConfig ? (() => { try { return { ...EMPTY_SVENDITA, ...JSON.parse(lp.customConfig) }; } catch { return { ...EMPTY_SVENDITA }; } })() : { ...EMPTY_SVENDITA },
         });
       }
       if (etRes.success) setEmailTemplates(etRes.data || []);
@@ -179,7 +218,8 @@ export default function LandingPageDetailPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { formFields, emailTemplateId, emailFooter, ...rest } = form;
+    const { formFields, emailTemplateId, emailFooter, customConfig, ...rest } = form;
+    const isSvendita = form.permalink === "accesso-svendita-gtv";
     const res = await fetch("/api/landing-page-config", {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -187,6 +227,7 @@ export default function LandingPageDetailPage() {
         formFields: JSON.stringify(formFields),
         emailTemplateId: emailTemplateId || null,
         emailFooter: JSON.stringify(emailFooter),
+        customConfig: isSvendita ? JSON.stringify(customConfig) : null,
       }),
     });
     const d = await res.json();
@@ -451,6 +492,105 @@ export default function LandingPageDetailPage() {
                 ))}
               </div>
             </div>
+            );
+          })()}
+
+          {/* 4c. Testi specifici landing "Accesso Svendita GTV" */}
+          {form.permalink === "accesso-svendita-gtv" && (() => {
+            const updateCustom = (key: keyof SvenditaCustomConfig, value: string) => {
+              setForm((p) => ({ ...p, customConfig: { ...p.customConfig, [key]: value } }));
+              setSaved(false);
+            };
+            const Field = ({ k, label, hint, multi }: { k: keyof SvenditaCustomConfig; label: string; hint?: string; multi?: boolean }) => (
+              <div>
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">{label}</label>
+                {multi ? (
+                  <textarea value={form.customConfig[k] as string} onChange={(e) => updateCustom(k, e.target.value)} rows={4}
+                    className="w-full border border-warm-200 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:border-warm-500" />
+                ) : (
+                  <input type="text" value={form.customConfig[k] as string} onChange={(e) => updateCustom(k, e.target.value)}
+                    className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500" />
+                )}
+                {hint && <p className="text-[10px] text-warm-500 mt-1">{hint}</p>}
+              </div>
+            );
+            return (
+              <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
+                <div className="flex items-center justify-between border-b border-warm-100 pb-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-warm-800">Testi landing — Accesso Svendita GTV</h3>
+                    <p className="text-xs text-warm-500 mt-0.5">Tutti i testi della pagina pubblica sono modificabili da qui.</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-1">Header / nav</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    <Field k="navLabelActive" label="Voce attiva" />
+                    <Field k="navLabelShowroom" label="Voce 'Showroom'" />
+                    <Field k="navLabelContatti" label="Voce 'Contatti'" />
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Eyebrow sopra il titolo</h4>
+                  <Field k="eyebrow" label="Eyebrow" hint="Etichetta in alto, sopra il grande titolo (es. 'Vendita Speciale')" />
+                </div>
+
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Blocco 1 — Online (icona globo)</h4>
+                  <div className="space-y-3">
+                    <Field k="block1Title" label="Titolo blocco" />
+                    <Field k="block1Lines" label="Righe" hint="Una per riga" multi />
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field k="block1HighlightPrefix" label="Highlight (prefisso)" hint="Es. 'Sconti fino al '" />
+                      <Field k="block1HighlightStrong" label="Highlight (in grassetto)" hint="Es. '40%' — lascia vuoto per nasconderlo" />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Blocco 2 — Showroom (icona pin)</h4>
+                  <div className="space-y-3">
+                    <Field k="block2Title" label="Titolo blocco" />
+                    <Field k="block2Lines" label="Righe" hint="Una per riga (indirizzo, modalità, etc.)" multi />
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field k="block2HighlightPrefix" label="Highlight (prefisso)" />
+                      <Field k="block2HighlightStrong" label="Highlight (in grassetto)" />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Blocco 3 — Periodo (icona calendario)</h4>
+                  <div className="space-y-3">
+                    <Field k="block3Title" label="Titolo blocco" />
+                    <Field k="block3Lines" label="Righe" hint="Una per riga (es. 'Dal 15 Maggio al 30 Giugno 2026')" multi />
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Descrizione lunga (sotto i 3 blocchi)</h4>
+                  <textarea value={form.customConfig.longDescription} onChange={(e) => updateCustom("longDescription", e.target.value)} rows={10}
+                    className="w-full border border-warm-200 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:border-warm-500" />
+                  <p className="text-[10px] text-warm-500 mt-1">Supporta markdown leggero: **grassetto**, righe vuote per paragrafi, `- ` per liste puntate.</p>
+                </div>
+
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Card del form (lato destro)</h4>
+                  <div className="space-y-3">
+                    <Field k="formCardTitle" label="Titolo card" />
+                    <Field k="formCardSubtitle" label="Sottotitolo card" />
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Disclaimer (sotto il form)</h4>
+                  <textarea value={form.customConfig.disclaimer} onChange={(e) => updateCustom("disclaimer", e.target.value)} rows={4}
+                    className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500" />
+                  <p className="text-[10px] text-warm-500 mt-1">Una riga per ogni capoverso. Mostrato in basso a destra, sotto al form.</p>
+                </div>
+              </div>
             );
           })()}
 
