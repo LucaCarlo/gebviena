@@ -40,19 +40,29 @@ const EMPTY_FORM = {
 
 /* ───── Component ───── */
 
+type InvitedFilter = "all" | "true" | "false";
+const PAGE_SIZE = 50;
+
 export default function AdminSubscribersPage() {
   const searchParams = useSearchParams();
   const initialTag = searchParams.get("tag");
   const [activeTab, setActiveTab] = useState(initialTag ? `tag:${initialTag}` : "all");
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // raw input
+  const [search, setSearch] = useState(""); // debounced, sent to API
 
   const [tags, setTags] = useState<TagWithCount[]>([]);
   const [showNewTag, setShowNewTag] = useState(false);
   const [newTagName, setNewTagName] = useState("");
 
-  // Unified contacts
+  // Unified contacts (paginated server-side)
   const [contacts, setContacts] = useState<UnifiedContact[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [hasLandingPage, setHasLandingPage] = useState(false);
+  const [invitedFilter, setInvitedFilter] = useState<InvitedFilter>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set()); // by email
 
   // Event registrations (for evento detail view)
@@ -90,11 +100,32 @@ export default function AdminSubscribersPage() {
     try { const r = await fetch("/api/tags"); const d = await r.json(); if (d.success) setTags(d.data || []); } catch {}
   }, []);
 
-  const fetchContacts = useCallback(async () => {
-    setContactsLoading(true);
-    try { const r = await fetch("/api/contacts/unified"); const d = await r.json(); if (d.success) setContacts(d.data || []); } catch {}
-    setContactsLoading(false);
-  }, []);
+  const isEventoDetail = activeTab === "tag:evento";
+
+  const fetchContacts = useCallback(async (opts: { append?: boolean; pageOverride?: number } = {}) => {
+    if (isEventoDetail) return; // event tab has its own data path
+    const targetPage = opts.pageOverride ?? (opts.append ? page + 1 : 1);
+    if (opts.append) setLoadingMore(true); else setContactsLoading(true);
+
+    const params = new URLSearchParams({ page: String(targetPage), pageSize: String(PAGE_SIZE) });
+    if (search) params.set("search", search);
+    if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
+    if (invitedFilter !== "all") params.set("invited", invitedFilter);
+
+    try {
+      const r = await fetch(`/api/contacts/unified?${params}`);
+      const d = await r.json();
+      if (d.success) {
+        setContacts((prev) => (opts.append ? [...prev, ...(d.data || [])] : (d.data || [])));
+        setTotalCount(d.totalCount || 0);
+        setHasMore(!!d.hasMore);
+        setHasLandingPage(!!d.hasLandingPage);
+        setPage(targetPage);
+      }
+    } catch {}
+
+    if (opts.append) setLoadingMore(false); else setContactsLoading(false);
+  }, [activeTab, search, invitedFilter, page, isEventoDetail]);
 
   const fetchEventRegs = useCallback(async () => {
     setEventLoading(true);
@@ -102,31 +133,31 @@ export default function AdminSubscribersPage() {
     setEventLoading(false);
   }, []);
 
-  useEffect(() => { fetchTags(); fetchContacts(); fetchEventRegs(); }, [fetchTags, fetchContacts, fetchEventRegs]);
+  // Initial load: tags + first contacts page + event regs
+  useEffect(() => { fetchTags(); fetchEventRegs(); }, [fetchTags, fetchEventRegs]);
 
-  /* ───── Filters ───── */
+  // Debounce searchInput → search
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
-  const isEventoDetail = activeTab === "tag:evento";
+  // Refetch on filter change (tab/search/invitedFilter) — always reset to page 1
+  useEffect(() => {
+    if (isEventoDetail) return;
+    fetchContacts({ pageOverride: 1 });
+    setSelected(new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, search, invitedFilter]);
 
-  const filteredContacts = useMemo(() => {
-    let list = contacts;
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((c) =>
-        c.email.toLowerCase().includes(q) ||
-        (c.firstName || "").toLowerCase().includes(q) ||
-        (c.lastName || "").toLowerCase().includes(q) ||
-        (c.company || "").toLowerCase().includes(q) ||
-        (c.city || "").toLowerCase().includes(q) ||
-        (c.country || "").toLowerCase().includes(q)
-      );
-    }
-    if (activeTab !== "all" && activeTab.startsWith("tag:") && !isEventoDetail) {
-      const slug = activeTab.replace("tag:", "");
-      list = list.filter((c) => c.tags.some((t) => t.slug === slug));
-    }
-    return list;
-  }, [contacts, search, activeTab, isEventoDetail]);
+  // Reset invited filter when leaving a tag-with-landing tab
+  useEffect(() => {
+    if (!hasLandingPage && invitedFilter !== "all") setInvitedFilter("all");
+  }, [hasLandingPage, invitedFilter]);
+
+  /* ───── Filters (server-side now, this is just an alias) ───── */
+
+  const filteredContacts = contacts;
 
   const filteredEvent = useMemo(() => {
     let list = eventRegs;
@@ -504,13 +535,30 @@ export default function AdminSubscribersPage() {
         <button onClick={() => setShowNewTag(true)} className="flex items-center px-3 py-3 text-warm-400 hover:text-warm-600 transition-colors border-b-2 border-transparent -mb-px shrink-0" title="Nuovo tag"><Plus size={14} /></button>
       </div>
 
-      {/* Search + event sub-filter */}
+      {/* Search + sub-filters */}
       <div className="mb-6 flex flex-wrap gap-3 items-center">
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cerca per nome, email, azienda, città..."
+          <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Cerca per nome, email, azienda, città..."
             className="w-full sm:w-80 pl-10 pr-4 py-2.5 border border-warm-300 rounded-lg text-sm focus:border-warm-800 focus:outline-none" />
         </div>
+        {!isEventoDetail && hasLandingPage && (
+          <select
+            value={invitedFilter}
+            onChange={(e) => setInvitedFilter(e.target.value as InvitedFilter)}
+            className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
+            title="Filtra per stato invito a questa landing"
+          >
+            <option value="all">Tutti</option>
+            <option value="true">Invitati</option>
+            <option value="false">Non invitati</option>
+          </select>
+        )}
+        {!isEventoDetail && (
+          <span className="text-xs text-warm-500 ml-auto">
+            {totalCount > 0 ? <>Mostro <strong>{contacts.length}</strong> di <strong>{totalCount}</strong></> : ""}
+          </span>
+        )}
         {isEventoDetail && (
           <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value as EventFilter)}
             className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white">
@@ -597,6 +645,20 @@ export default function AdminSubscribersPage() {
             </table>
           </div>
         )
+      )}
+
+      {/* "Carica altri" — only on the unified-contacts view, when more pages exist */}
+      {!isEventoDetail && hasMore && (
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={() => fetchContacts({ append: true })}
+            disabled={loadingMore}
+            className="flex items-center gap-2 bg-warm-100 text-warm-700 px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors disabled:opacity-50"
+          >
+            {loadingMore ? <Loader2 size={14} className="animate-spin" /> : null}
+            {loadingMore ? "Caricamento..." : `Carica altri ${Math.min(PAGE_SIZE, totalCount - contacts.length)}`}
+          </button>
+        </div>
       )}
 
       {/* ═══ Modals ═══ */}

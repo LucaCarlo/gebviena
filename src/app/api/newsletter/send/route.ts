@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 import { sendMail } from "@/lib/mail";
 import { renderEmailTemplate, parseBlocks } from "@/lib/email-template-renderer";
-import { assignTagBySlug } from "@/lib/tags";
 import crypto from "crypto";
 
 export async function POST(req: Request) {
@@ -115,13 +114,11 @@ export async function POST(req: Request) {
       const ok = await sendMail(sub.email, emailSubject, emailHtml);
       if (ok) {
         sent++;
-        // Assign "invitato" tag when tracking is enabled
-        if (enableTracking) {
-          await assignTagBySlug(sub.email.toLowerCase().trim(), "invitato", "Invitato").catch(() => {});
-        }
       } else {
         failed++;
       }
+      // Note: invitation tracking is recorded in EventInvitation per landingPageId,
+      // not via a generic "invitato" tag (which was ambiguous across landings).
     }
 
     return NextResponse.json({
