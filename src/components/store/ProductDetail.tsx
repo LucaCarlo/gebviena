@@ -512,7 +512,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               [&_blockquote]:border-l-2 [&_blockquote]:border-warm-300 [&_blockquote]:pl-5 [&_blockquote]:italic [&_blockquote]:text-warm-600 [&_blockquote]:my-6
               [&_strong]:font-semibold [&_strong]:text-warm-900`.replace(/\s+/g, " ")}>
               {product.marketingDescription
-                ? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(product.marketingDescription) }} />
+                ? <div dangerouslySetInnerHTML={{ __html: /<\/?(p|div|h[1-6]|ul|ol|li|strong|em|blockquote|br|a)\b/i.test(product.marketingDescription) ? product.marketingDescription : renderMarkdown(product.marketingDescription) }} />
                 : <p className="text-warm-500 italic">Descrizione in arrivo.</p>}
             </div>
             {/* Galleria — 2 col, immagini quadrate piccole, max 6 (3 righe) per non andare oltre il testo */}
