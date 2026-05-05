@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { Globe, MapPin, Calendar } from "lucide-react";
 import SubscribeForm from "@/components/landing/accesso-svendita-gtv/SubscribeForm";
@@ -95,7 +96,9 @@ export default function AccessoSvenditaGtvPage() {
           {/* ── Right column: form ── */}
           <div className="md:pt-2">
             <div className="md:sticky md:top-8">
-              <SubscribeForm />
+              <Suspense fallback={<div className="bg-warm-50/40 border border-warm-200 rounded-sm p-7 md:p-9 h-[400px]" />}>
+                <SubscribeForm />
+              </Suspense>
               <p className="text-[11px] text-warm-500 leading-[1.7] mt-5 px-1">
                 L&apos;accesso online &egrave; riservato agli utenti registrati.
                 <br />
