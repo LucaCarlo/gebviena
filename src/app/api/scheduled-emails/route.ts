@@ -91,7 +91,7 @@ export async function POST(req: Request) {
         totalCount: subscriberIds.length,
         scheduledAt,
         status: "pending",
-        createdById: auth.id || null,
+        createdById: auth.userId || null,
       },
     });
 

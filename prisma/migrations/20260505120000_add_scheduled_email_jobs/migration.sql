@@ -1,8 +1,10 @@
 -- CreateTable
+-- Note: templateId uses utf8mb4_general_ci to match EmailTemplate.id;
+-- landingPageId uses utf8mb4_unicode_ci to match LandingPageConfig.id.
 CREATE TABLE `ScheduledEmailJob` (
     `id` VARCHAR(191) NOT NULL,
-    `templateId` VARCHAR(191) NOT NULL,
-    `landingPageId` VARCHAR(191) NULL,
+    `templateId` VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+    `landingPageId` VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
     `subscriberIds` MEDIUMTEXT NOT NULL,
     `totalCount` INTEGER NOT NULL DEFAULT 0,
     `scheduledAt` DATETIME(3) NOT NULL,
