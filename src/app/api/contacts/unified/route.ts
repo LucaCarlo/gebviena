@@ -37,88 +37,25 @@ export async function GET(req: Request) {
     MAX_PAGE_SIZE,
     Math.max(1, parseInt(searchParams.get("pageSize") || String(DEFAULT_PAGE_SIZE), 10))
   );
-  const search = (searchParams.get("search") || "").trim();
+  const search = (searchParams.get("search") || "").trim().toLowerCase();
   const tag = (searchParams.get("tag") || "").trim();
   const invited = (searchParams.get("invited") || "all").trim(); // "all" | "true" | "false"
 
-  // Resolve tag → email allowlist + landing page (if linked)
-  let tagEmailWhitelist: string[] | null = null;
-  let landingPageIdForTag: string | null = null;
-  let hasLandingPage = false;
-
-  if (tag) {
-    const tagRecord = await prisma.tag.findUnique({ where: { slug: tag } });
-    if (!tagRecord) {
-      return NextResponse.json({
-        success: true, data: [], totalCount: 0, page, pageSize, hasMore: false, hasLandingPage: false,
-      });
-    }
-    const contactTags = await prisma.contactTag.findMany({
-      where: { tagId: tagRecord.id },
-      select: { email: true },
-    });
-    tagEmailWhitelist = Array.from(new Set(contactTags.map((c) => c.email.toLowerCase().trim())));
-
-    const lp = await prisma.landingPageConfig.findFirst({ where: { tagSlug: tag }, select: { id: true } });
-    if (lp) {
-      landingPageIdForTag = lp.id;
-      hasLandingPage = true;
-    }
-  }
-
-  // Apply invited filter (only meaningful inside a tag tab connected to a landing)
-  if (tag && invited !== "all" && landingPageIdForTag && tagEmailWhitelist) {
-    const invitations = await prisma.eventInvitation.findMany({
-      where: { landingPageId: landingPageIdForTag },
-      select: { email: true },
-    });
-    const invitedSet = new Set(invitations.map((i) => i.email.toLowerCase().trim()));
-    if (invited === "true") {
-      tagEmailWhitelist = tagEmailWhitelist.filter((e) => invitedSet.has(e));
-    } else if (invited === "false") {
-      tagEmailWhitelist = tagEmailWhitelist.filter((e) => !invitedSet.has(e));
-    }
-  }
-
-  // Build subscriber WHERE clause
-  const where: Record<string, unknown> = {};
-  if (tagEmailWhitelist !== null) {
-    where.email = { in: tagEmailWhitelist };
-  }
-  if (search) {
-    where.OR = [
-      { email: { contains: search } },
-      { firstName: { contains: search } },
-      { lastName: { contains: search } },
-      { company: { contains: search } },
-      { city: { contains: search } },
-      { country: { contains: search } },
-    ];
-  }
-
-  // Count + page
-  const totalCount = await prisma.newsletterSubscriber.count({ where });
-  const subscribers = await prisma.newsletterSubscriber.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    skip: (page - 1) * pageSize,
-    take: pageSize,
-  });
-
-  // Enrich
-  const emails = subscribers.map((s) => s.email);
-  const [tagsMap, eventRegs] = await Promise.all([
-    getTagsForEmails(emails),
+  // ─── 1. Load both data sources in parallel ───
+  const [subscribers, eventRegs] = await Promise.all([
+    prisma.newsletterSubscriber.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.eventRegistration.findMany({
-      where: { email: { in: emails } },
-      select: { email: true },
+      orderBy: { createdAt: "desc" },
+      select: { email: true, firstName: true, lastName: true, country: true, city: true, createdAt: true },
     }),
   ]);
-  const eventEmailSet = new Set(eventRegs.map((e) => e.email.toLowerCase().trim()));
 
-  const data: UnifiedContact[] = subscribers.map((s) => {
+  // ─── 2. Merge into a single map keyed by lowercase email ───
+  const contactMap = new Map<string, UnifiedContact>();
+
+  for (const s of subscribers) {
     const key = s.email.toLowerCase().trim();
-    return {
+    contactMap.set(key, {
       email: s.email,
       firstName: s.firstName,
       lastName: s.lastName,
@@ -132,17 +69,102 @@ export async function GET(req: Request) {
       country: s.country,
       website: s.website,
       notes: s.notes,
-      source: eventEmailSet.has(key) ? "entrambi" : "newsletter",
+      source: "newsletter",
       subscriberId: s.id,
       createdAt: s.createdAt.toISOString(),
       updatedAt: s.updatedAt?.toISOString() || null,
-      tags: tagsMap[key] || [],
-    };
-  });
+      tags: [],
+    });
+  }
+
+  for (const e of eventRegs) {
+    const key = e.email.toLowerCase().trim();
+    const existing = contactMap.get(key);
+    if (existing) {
+      existing.source = "entrambi";
+      if (!existing.firstName && e.firstName) existing.firstName = e.firstName;
+      if (!existing.lastName && e.lastName) existing.lastName = e.lastName;
+      if (!existing.country && e.country) existing.country = e.country;
+      if (!existing.city && e.city) existing.city = e.city;
+    } else {
+      contactMap.set(key, {
+        email: e.email,
+        firstName: e.firstName,
+        lastName: e.lastName,
+        company: null,
+        phone: null,
+        profile: null,
+        address: null,
+        city: e.city,
+        zip: null,
+        province: null,
+        country: e.country,
+        website: null,
+        notes: null,
+        source: "evento",
+        subscriberId: null,
+        createdAt: e.createdAt.toISOString(),
+        updatedAt: null,
+        tags: [],
+      });
+    }
+  }
+
+  // ─── 3. Tag enrichment in batch ───
+  const allEmails = Array.from(contactMap.keys());
+  const tagsMap = await getTagsForEmails(allEmails);
+  for (const [email, contact] of Array.from(contactMap.entries())) {
+    contact.tags = tagsMap[email] || [];
+  }
+
+  // ─── 4. Apply filters (tag → invited → search) ───
+  let contacts = Array.from(contactMap.values());
+
+  let hasLandingPage = false;
+  if (tag) {
+    contacts = contacts.filter((c) => c.tags.some((t) => t.slug === tag));
+
+    // Detect linked landing page (for the "invited" filter UI hint)
+    const lp = await prisma.landingPageConfig.findFirst({
+      where: { tagSlug: tag },
+      select: { id: true },
+    });
+    if (lp) {
+      hasLandingPage = true;
+      if (invited !== "all") {
+        const invitations = await prisma.eventInvitation.findMany({
+          where: { landingPageId: lp.id },
+          select: { email: true },
+        });
+        const invitedSet = new Set(invitations.map((i) => i.email.toLowerCase().trim()));
+        if (invited === "true") {
+          contacts = contacts.filter((c) => invitedSet.has(c.email.toLowerCase().trim()));
+        } else if (invited === "false") {
+          contacts = contacts.filter((c) => !invitedSet.has(c.email.toLowerCase().trim()));
+        }
+      }
+    }
+  }
+
+  if (search) {
+    contacts = contacts.filter((c) =>
+      c.email.toLowerCase().includes(search) ||
+      (c.firstName || "").toLowerCase().includes(search) ||
+      (c.lastName || "").toLowerCase().includes(search) ||
+      (c.company || "").toLowerCase().includes(search) ||
+      (c.city || "").toLowerCase().includes(search) ||
+      (c.country || "").toLowerCase().includes(search)
+    );
+  }
+
+  // ─── 5. Sort by createdAt desc, then paginate in memory ───
+  contacts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const totalCount = contacts.length;
+  const sliced = contacts.slice((page - 1) * pageSize, page * pageSize);
 
   return NextResponse.json({
     success: true,
-    data,
+    data: sliced,
     totalCount,
     page,
     pageSize,

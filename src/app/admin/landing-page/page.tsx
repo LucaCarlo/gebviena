@@ -2,26 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, QrCode, Globe, Trash2, Users, Eye, Code2, ExternalLink } from "lucide-react";
-
-// Landing pages whose layout/copy lives in code (not in the LandingPageConfig CMS).
-// Each entry shows up as an info card with quick links — content is edited
-// directly in the source files at the listed paths.
-const CUSTOM_LANDINGS: {
-  name: string;
-  permalink: string;
-  description: string;
-  tagSlug: string;
-  sourcePath: string;
-}[] = [
-  {
-    name: "Accesso Svendita GTV",
-    permalink: "accesso-svendita-gtv",
-    description: "Landing pre-registrazione vendita speciale. Layout/copy in codice.",
-    tagSlug: "accesso-svendita-gtv",
-    sourcePath: "src/app/(landing)/accesso-svendita-gtv/",
-  },
-];
+import { Plus, QrCode, Globe, Trash2, Users, Eye } from "lucide-react";
 
 interface LandingPage {
   id: string;
@@ -103,45 +84,6 @@ export default function LandingPagesListPage() {
           <Plus size={16} /> Nuova Landing Page
         </button>
       </div>
-
-      {/* ─── Custom landings (in code) ─── */}
-      {CUSTOM_LANDINGS.length > 0 && (
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-3">
-            <Code2 size={14} className="text-warm-500" />
-            <h2 className="text-xs font-semibold text-warm-600 uppercase tracking-wider">Landing personalizzate</h2>
-            <span className="text-[10px] text-warm-400">(layout in codice, copy non editabile dal CMS)</span>
-          </div>
-          <div className="space-y-3">
-            {CUSTOM_LANDINGS.map((lp) => (
-              <div key={lp.permalink} className="bg-warm-50/40 rounded-xl border border-dashed border-warm-300 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className="font-semibold text-warm-900 text-lg">{lp.name}</span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-warm-200 text-warm-700">In codice</span>
-                  </div>
-                  <p className="text-xs text-warm-500 mb-1">{lp.description}</p>
-                  <div className="flex items-center gap-4 text-xs text-warm-500 flex-wrap">
-                    <span className="font-mono">/{lp.permalink}</span>
-                    <span className="font-mono text-[11px] text-warm-400">{lp.sourcePath}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <a href={`/${lp.permalink}`} target="_blank" rel="noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200 transition-colors">
-                    <Eye size={14} /> Anteprima
-                  </a>
-                  <Link href={`/admin/subscribers?tag=${lp.tagSlug}`}
-                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-warm-800 rounded-lg hover:bg-warm-900 transition-colors">
-                    <Users size={14} /> Iscritti
-                    <ExternalLink size={11} className="opacity-70" />
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-warm-300 border-t-warm-800 rounded-full animate-spin" /></div>

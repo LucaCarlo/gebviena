@@ -11,6 +11,11 @@ export const metadata = {
     "Registrati per accedere alla Vendita Speciale Gebrüder Thonet Vienna. Sconti fino al 40% online e fino al 70% in showroom a Torino.",
 };
 
+// Always render against fresh DB state — admin edits in /admin/landing-page must
+// be reflected immediately without rebuilding.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const PERMALINK = "accesso-svendita-gtv";
 
 const DEFAULT_HERO_TITLE = "Accesso Riservato alla Vendita Speciale Gebrüder Thonet Vienna";
