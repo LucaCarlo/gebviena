@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 export default function SubscribeForm() {
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("inv") || "";
+  const tracked = useRef(false);
+
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -15,6 +20,19 @@ export default function SubscribeForm() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
+
+  useEffect(() => {
+    if (!inviteToken || tracked.current) return;
+    tracked.current = true;
+    fetch(`/api/event-invitations/track?token=${encodeURIComponent(inviteToken)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.data?.email) {
+          setForm((p) => ({ ...p, email: data.data.email }));
+        }
+      })
+      .catch(() => {});
+  }, [inviteToken]);
 
   const update = (key: keyof typeof form, value: string | boolean) => {
     setForm((p) => ({ ...p, [key]: value }));
@@ -41,7 +59,7 @@ export default function SubscribeForm() {
       const res = await fetch("/api/landing/accesso-svendita-gtv/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, inviteToken: inviteToken || undefined }),
       });
       const data = await res.json();
       if (data.success) {

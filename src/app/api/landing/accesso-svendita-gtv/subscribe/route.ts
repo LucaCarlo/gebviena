@@ -82,6 +82,7 @@ export async function POST(req: Request) {
     const emailRaw = String(body.email || "").trim();
     const company = String(body.company || "").trim();
     const privacyAccepted = !!body.privacyAccepted;
+    const inviteToken = body.inviteToken ? String(body.inviteToken).trim() : "";
 
     if (!firstName) return NextResponse.json({ success: false, error: "Nome obbligatorio" }, { status: 400 });
     if (!lastName) return NextResponse.json({ success: false, error: "Cognome obbligatorio" }, { status: 400 });
@@ -117,6 +118,27 @@ export async function POST(req: Request) {
     await assignTagBySlug(email, TAG_SLUG, TAG_NAME).catch((e) => {
       console.error("Tag assignment failed:", e);
     });
+
+    // Mark invitation as accepted (registered) when this submit comes from a tracked email
+    if (inviteToken) {
+      try {
+        const invitation = await prisma.eventInvitation.findUnique({
+          where: { token: inviteToken },
+          select: { id: true, registeredAt: true, clickedAt: true },
+        });
+        if (invitation && !invitation.registeredAt) {
+          await prisma.eventInvitation.update({
+            where: { id: invitation.id },
+            data: {
+              registeredAt: new Date(),
+              ...(invitation.clickedAt ? {} : { clickedAt: new Date() }),
+            },
+          });
+        }
+      } catch (e) {
+        console.error("Invitation accept failed:", e);
+      }
+    }
 
     // Fire-and-forget confirmation email — do not block the response
     (async () => {
