@@ -46,6 +46,20 @@ interface RelatedProject {
   imageUrl: string;
 }
 
+interface RelatedProduct {
+  id: string;
+  slug: string;
+  name: string;
+  shortDescription: string | null;
+  coverImage: string | null;
+  hoverImage: string | null;
+  priceFromCents: number;
+  variantsCount: number;
+  inStock: boolean;
+  category: { slug: string; name: string } | null;
+  colors: { id: string; code: string; hex: string | null }[];
+}
+
 interface Product {
   id: string;
   slug: string;
@@ -76,8 +90,6 @@ function parseList(s: string | null): string[] {
 const eur = (cents: number) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
 
-/* Convert markdown-ish text to safe HTML (very small subset).
-   Supports: # / ## / ### headings, **bold**, *italic*, lists, blockquotes, paragraphs. */
 function renderMarkdown(md: string): string {
   const lines = md.split(/\r?\n/);
   const out: string[] = [];
@@ -114,6 +126,8 @@ function renderMarkdown(md: string): string {
       .replace(/\*(.+?)\*/g, "<em>$1</em>");
   }
 }
+
+const RELATED_PAGE_SIZE = 4;
 
 export default function ProductDetail({ product }: { product: Product }) {
   const { customer } = useCustomerAuth();
@@ -183,7 +197,6 @@ export default function ProductDetail({ product }: { product: Product }) {
     } finally { setFavBusy(false); }
   }
 
-  // Group attributes by type for variant selector
   const attrByType = useMemo(() => {
     const map: Record<AttrType, Attribute[]> = { MATERIAL: [], FINISH: [], COLOR: [], OTHER: [] };
     const seen = new Set<string>();
@@ -224,12 +237,15 @@ export default function ProductDetail({ product }: { product: Product }) {
     return imgs;
   }, [product, selectedVariant]);
 
+  // Catalog gallery — usa esattamente la galleria del prodotto del sito normale
+  // (Product.galleryImages), togliendo solo quelle escluse dal CMS store.
+  // NON filtriamo per heroImages: l'utente vuole vedere tutte le foto del catalogo
+  // anche se alcune sono già nel hero (sono in posizioni diverse della pagina).
   const catalogGallery = useMemo(() => {
     const all = parseList(product.catalogGalleryImages);
     const excluded = new Set(parseList(product.excludedCatalogImages));
-    const heroSet = new Set(heroImages);
-    return all.filter((u) => !excluded.has(u) && !heroSet.has(u));
-  }, [product.catalogGalleryImages, product.excludedCatalogImages, heroImages]);
+    return all.filter((u) => !excluded.has(u));
+  }, [product.catalogGalleryImages, product.excludedCatalogImages]);
 
   useEffect(() => { setActiveImgIdx(0); }, [selectedVariantId]);
 
@@ -249,7 +265,7 @@ export default function ProductDetail({ product }: { product: Product }) {
     return () => window.removeEventListener("keydown", handler);
   }, [lightboxOpen, heroImages.length]);
 
-  // ─── Magnifier hover handlers ───
+  // ─── Magnifier ───
   const heroRef = useRef<HTMLDivElement | null>(null);
   const onHeroMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const el = heroRef.current; if (!el) return;
@@ -259,6 +275,26 @@ export default function ProductDetail({ product }: { product: Product }) {
     setHoverPos({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
   }, []);
   const onHeroMouseLeave = useCallback(() => setHoverPos(null), []);
+
+  // ─── Related products fetch ───
+  const [related, setRelated] = useState<RelatedProduct[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(true);
+  const [relatedShown, setRelatedShown] = useState(RELATED_PAGE_SIZE);
+
+  useEffect(() => {
+    const params = new URLSearchParams({ lang: "it" });
+    if (product.category?.slug) params.set("category", product.category.slug);
+    fetch(`/api/store/public/products?${params}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          const filtered = (d.data as RelatedProduct[]).filter((p) => p.id !== product.id);
+          setRelated(filtered);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setRelatedLoading(false));
+  }, [product.id, product.category?.slug]);
 
   return (
     <>
@@ -284,13 +320,10 @@ export default function ProductDetail({ product }: { product: Product }) {
                 style={hoverPos ? { transform: "scale(1.6)", transformOrigin: `${hoverPos.x}% ${hoverPos.y}%` } : undefined}
               />
             ) : null}
-
-            {/* Zoom icon */}
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
               className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-warm-900 shadow opacity-90 group-hover:opacity-100 hover:bg-white transition-all z-10"
-              title="Apri a tutto schermo"
               aria-label="Apri immagine a tutto schermo"
             >
               <Maximize2 size={16} />
@@ -327,7 +360,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             <p className="mt-5 text-[15px] text-warm-700 leading-[1.6]">{product.shortDescription}</p>
           )}
 
-          {/* Variant selector — by attributes if available, else fallback to dropdown by name */}
+          {/* Variant selector */}
           {hasAttributeVariants ? (
             <div className="mt-7 space-y-5 pt-6 border-t border-warm-200">
               {(["MATERIAL", "FINISH", "COLOR"] as AttrType[]).map((type) => {
@@ -427,48 +460,48 @@ export default function ProductDetail({ product }: { product: Product }) {
             )}
           </div>
 
-          {/* Specs (volume / peso / spedizione) */}
+          {/* ── Specs (volume / peso / spedizione) — più leggibili ── */}
           {selectedVariant && (
-            <div className="mt-6 pt-6 border-t border-warm-200 grid grid-cols-3 gap-4 text-[12px]">
-              <Spec icon={<Package size={11} />} label="Volume" value={`${selectedVariant.volumeM3.toFixed(3)} m³`} />
+            <div className="mt-7 pt-6 border-t border-warm-200 grid grid-cols-3 gap-x-4 gap-y-3">
+              <BigSpec icon={<Package size={14} />} label="Volume" value={`${selectedVariant.volumeM3.toFixed(3)} m³`} />
               {selectedVariant.weightKg !== null && (
-                <Spec label="Peso" value={`${selectedVariant.weightKg.toFixed(1)} kg`} />
+                <BigSpec label="Peso" value={`${selectedVariant.weightKg.toFixed(1)} kg`} />
               )}
-              <Spec icon={<Ruler size={11} />} label="Spedizione" value={selectedVariant.shippingClass === "QUOTE_ONLY" ? "Su preventivo" : "Standard"} />
+              <BigSpec icon={<Ruler size={14} />} label="Spedizione" value={selectedVariant.shippingClass === "QUOTE_ONLY" ? "Su preventivo" : "Standard"} />
             </div>
           )}
 
-          {/* Variant dimensions if configured */}
+          {/* Variant dimensions */}
           {selectedVariant?.dimensions && Object.keys(selectedVariant.dimensions.values).length > 0 && (
-            <div className="mt-5 pt-5 border-t border-warm-200">
-              <div className="text-[10px] uppercase tracking-[0.22em] text-warm-500 mb-3 inline-flex items-center gap-1">
-                <Ruler size={10} /> Dimensioni
-                <span className="normal-case tracking-normal text-warm-400 ml-1 text-[11px]">· {selectedVariant.dimensions.blockName}</span>
+            <div className="mt-6 pt-6 border-t border-warm-200">
+              <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-3 inline-flex items-center gap-1.5">
+                <Ruler size={12} /> Dimensioni
+                <span className="normal-case tracking-normal text-warm-400 ml-1 text-[12px]">· {selectedVariant.dimensions.blockName}</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-[12px]">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-[14px]">
                 {selectedVariant.dimensions.labels.filter((l) => selectedVariant.dimensions!.values[l]).map((l) => (
                   <div key={l}>
-                    <div className="text-[9px] uppercase tracking-[0.18em] text-warm-500">{l}</div>
-                    <div className="text-warm-900 font-mono">{selectedVariant.dimensions!.values[l]}</div>
+                    <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-0.5">{l}</div>
+                    <div className="text-warm-900 font-mono text-[15px]">{selectedVariant.dimensions!.values[l]}</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Materiali / Dimensioni del catalogo (se non c'è dimensione variante) */}
+          {/* Catalog materials/dimensions if no variant dimensions */}
           {(!selectedVariant?.dimensions || Object.keys(selectedVariant.dimensions.values).length === 0) && (product.materials || product.dimensions) && (
-            <div className="mt-6 pt-6 border-t border-warm-200 text-[13px] text-warm-700 space-y-3 leading-[1.55]">
+            <div className="mt-6 pt-6 border-t border-warm-200 space-y-5">
               {product.materials && (
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-warm-500 mb-1">Materiali</div>
-                  <p>{product.materials}</p>
+                  <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-2">Materiali</div>
+                  <p className="text-[15px] text-warm-700 leading-[1.55]">{product.materials}</p>
                 </div>
               )}
               {product.dimensions && (
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.22em] text-warm-500 mb-1">Dimensioni</div>
-                  <p className="font-mono text-[13px]">{product.dimensions}</p>
+                  <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-2">Dimensioni</div>
+                  <p className="font-mono text-[15px] text-warm-900">{product.dimensions}</p>
                 </div>
               )}
             </div>
@@ -476,7 +509,7 @@ export default function ProductDetail({ product }: { product: Product }) {
         </div>
       </div>
 
-      {/* ═══ Sezione Descrizione (2-col: testo + galleria) ═══ */}
+      {/* ═══ Sezione Descrizione (2-col: testo + galleria a cascata) ═══ */}
       {(product.marketingDescription || catalogGallery.length > 0) && (
         <section className="mt-20 pt-14 border-t border-warm-200">
           <div className="text-[10px] uppercase tracking-[0.28em] text-warm-500 mb-8">Descrizione</div>
@@ -493,11 +526,14 @@ export default function ProductDetail({ product }: { product: Product }) {
                 ? <div dangerouslySetInnerHTML={{ __html: renderMarkdown(product.marketingDescription) }} />
                 : <p className="text-warm-500 italic">Descrizione in arrivo.</p>}
             </div>
+            {/* Galleria "a cascata" — usa le immagini del catalogo prodotto del sito normale */}
             {catalogGallery.length > 0 && (
-              <div className="space-y-3">
-                {catalogGallery.slice(0, 4).map((img, i) => (
-                  <div key={i} className={`relative bg-warm-100 overflow-hidden ${i === 0 ? "aspect-[4/5]" : "aspect-[4/3]"}`}>
-                    <Image src={img} alt="" fill sizes="(max-width: 1024px) 100vw, 45vw" className="object-cover" />
+              <div className="space-y-4 lg:space-y-5">
+                {catalogGallery.map((img, i) => (
+                  <div key={i} className={`relative bg-warm-100 overflow-hidden ${
+                    i % 3 === 0 ? "aspect-[4/5]" : i % 3 === 1 ? "aspect-[4/3]" : "aspect-square"
+                  }`}>
+                    <Image src={img} alt={`${product.name} — ${i + 1}`} fill sizes="(max-width: 1024px) 100vw, 45vw" className="object-cover" />
                   </div>
                 ))}
               </div>
@@ -506,63 +542,169 @@ export default function ProductDetail({ product }: { product: Product }) {
         </section>
       )}
 
-      {/* ═══ Sezione Designer ═══ */}
+      {/* ═══ Sezione Designer — stile sito (sfondo grigiastro, foto sx + info dx) ═══ */}
       {product.designer && (product.designer.bio || product.designer.imageUrl) && (
-        <section className="mt-20 pt-14 border-t border-warm-200">
-          <div className="text-[10px] uppercase tracking-[0.28em] text-warm-500 mb-8">Designer</div>
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10 lg:gap-16">
-            {product.designer.imageUrl && (
-              <div className="relative aspect-[4/5] bg-warm-100 overflow-hidden max-w-[400px]">
-                <Image src={product.designer.imageUrl} alt={product.designer.name} fill sizes="(max-width: 1024px) 100vw, 33vw" className="object-cover" />
-              </div>
-            )}
-            <div className="max-w-[640px]">
-              <h2 className="font-serif text-[28px] md:text-[34px] text-warm-900 leading-[1.1] tracking-[-0.005em]">
+        <section className="mt-20 -mx-4 lg:-mx-8" style={{ backgroundColor: "#f9f8f6" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
+            <div className="relative overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
+              {product.designer.imageUrl ? (
+                <Image
+                  src={product.designer.imageUrl}
+                  alt={product.designer.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-warm-400 text-sm">
+                  (Foto designer non disponibile)
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:px-[80px] xl:px-[120px] py-16 lg:py-24">
+              <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">Designer</p>
+              <h2 className="font-sans text-[28px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-2">
                 {product.designer.name}
               </h2>
               {product.designer.country && (
-                <div className="mt-2 text-[12px] uppercase tracking-[0.2em] text-warm-500">{product.designer.country}</div>
+                <p className="text-[14px] text-warm-500 mt-1">{product.designer.country}</p>
               )}
               {product.designer.bio && (
-                <p className="mt-5 text-[14.5px] text-warm-700 leading-[1.7] whitespace-pre-line">{product.designer.bio}</p>
+                <div
+                  className="text-[18px] md:text-[20px] text-black leading-snug font-light tracking-normal max-w-none mt-6 [&_p]:m-0 [&_p+p]:mt-4"
+                  dangerouslySetInnerHTML={{
+                    __html: product.designer.bio.includes("<") ? product.designer.bio : `<p>${product.designer.bio.replace(/\n+/g, "</p><p>")}</p>`,
+                  }}
+                />
               )}
-              <Link href={`/designers/${product.designer.slug}`} target="_blank"
-                className="inline-flex items-center gap-2 mt-6 text-[12px] uppercase tracking-[0.18em] text-warm-900 hover:opacity-60 transition-opacity">
+              <Link
+                href={`/designers/${product.designer.slug}`}
+                target="_blank"
+                className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline self-start"
+                style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
+              >
                 Scopri tutti i suoi progetti
-                <ChevronRight size={14} />
               </Link>
             </div>
           </div>
         </section>
       )}
 
-      {/* ═══ Sezione Progetti che usano questo prodotto ═══ */}
+      {/* ═══ Sezione Progetti — stile sito /progetti (4-col, aspect 4:5) ═══ */}
       {product.relatedProjects && product.relatedProjects.length > 0 && (
         <section className="mt-20 pt-14 border-t border-warm-200">
-          <div className="text-[10px] uppercase tracking-[0.28em] text-warm-500 mb-8">In questi progetti</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-2">In questi progetti</p>
+          <h2 className="font-sans text-[28px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-12">
+            {product.name} nel mondo
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-12 md:gap-x-4 md:gap-y-16">
             {product.relatedProjects.map((p) => (
-              <Link key={p.id} href={`/progetti/${p.slug}`} target="_blank"
-                className="group block">
-                <div className="relative aspect-[4/3] bg-warm-100 overflow-hidden mb-4">
-                  <Image src={p.imageUrl} alt={p.name} fill sizes="(max-width: 640px) 100vw, 33vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+              <Link key={p.id} href={`/progetti/${p.slug}`} target="_blank" className="group block">
+                <div className="relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "4/5" }}>
+                  <Image
+                    src={p.imageUrl}
+                    alt={p.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                  />
                 </div>
-                <div className="text-[10px] uppercase tracking-[0.2em] text-warm-500 mb-1">
-                  {p.type}
-                  {p.year && <> · {p.year}</>}
+                <div className="mt-4">
+                  <p className="uppercase text-[14px] tracking-[0.01em] text-black font-light">
+                    {p.type}
+                    {p.year && <> · {p.year}</>}
+                  </p>
+                  <h3 className="font-sans text-[24px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                    {p.name}
+                  </h3>
+                  {(p.city || p.country) && (
+                    <div className="mt-1 text-[12px] text-warm-500">
+                      {[p.city, p.country].filter(Boolean).join(", ")}
+                    </div>
+                  )}
                 </div>
-                <h3 className="font-serif text-[20px] text-warm-900 leading-[1.15] group-hover:underline underline-offset-4 decoration-1">
-                  {p.name}
-                </h3>
-                {(p.city || p.country) && (
-                  <div className="mt-1 text-[12px] text-warm-500">
-                    {[p.city, p.country].filter(Boolean).join(", ")}
-                  </div>
-                )}
               </Link>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* ═══ Sezione Prodotti correlati ═══ */}
+      {(relatedLoading || related.length > 0) && (
+        <section className="mt-20 pt-14 border-t border-warm-200">
+          <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-2">Prodotti correlati</p>
+          <h2 className="font-sans text-[28px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-12">
+            {product.category?.name ? `Altro da ${product.category.name}` : "Altri prodotti dello shop"}
+          </h2>
+          {relatedLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-12 md:gap-x-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="bg-warm-100" style={{ aspectRatio: "4/5" }} />
+                  <div className="h-3 bg-warm-100 mt-4 w-20" />
+                  <div className="h-4 bg-warm-100 mt-2 w-32" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-12 md:gap-x-4 md:gap-y-16">
+                {related.slice(0, relatedShown).map((p) => (
+                  <Link key={p.id} href={`/prodotti/${p.slug}`} className="group block">
+                    <div className="relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "4/5" }}>
+                      {p.coverImage && (
+                        <Image src={p.coverImage} alt={p.name} fill sizes="(max-width: 768px) 50vw, 25vw"
+                          className="object-cover transition-opacity duration-500 group-hover:opacity-0" />
+                      )}
+                      {p.hoverImage && (
+                        <Image src={p.hoverImage} alt="" fill sizes="(max-width: 768px) 50vw, 25vw"
+                          className="object-cover absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 scale-[1.02]" />
+                      )}
+                      {!p.inStock && (
+                        <div className="absolute top-3 left-3 bg-warm-900 text-white text-[10px] uppercase tracking-wider px-2 py-1">
+                          Esaurito
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4">
+                      {p.category && (
+                        <p className="uppercase text-[14px] tracking-[0.01em] text-black font-light">
+                          {p.category.name}
+                        </p>
+                      )}
+                      <div className="flex items-baseline justify-between gap-3 mt-1">
+                        <h3 className="font-sans text-[20px] text-black leading-[1.15] font-light uppercase tracking-[inherit] truncate">
+                          {p.name}
+                        </h3>
+                        <div className="text-[14px] font-mono text-warm-900 shrink-0 whitespace-nowrap">
+                          {p.variantsCount > 1 ? "da " : ""}{eur(p.priceFromCents)}
+                        </div>
+                      </div>
+                      {p.colors.length > 0 && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                          {p.colors.slice(0, 5).map((c) => (
+                            <span key={c.id} title={c.code}
+                              className="w-3 h-3 rounded-full border border-warm-200"
+                              style={{ backgroundColor: c.hex || "#ddd" }} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              {related.length > relatedShown && (
+                <div className="flex justify-center mt-12">
+                  <button
+                    onClick={() => setRelatedShown((n) => n + RELATED_PAGE_SIZE)}
+                    className="px-8 py-3 border border-warm-900 text-warm-900 uppercase text-[12px] tracking-[0.18em] hover:bg-warm-900 hover:text-white transition-colors"
+                  >
+                    Carica altri ({related.length - relatedShown})
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </section>
       )}
 
@@ -597,13 +739,13 @@ export default function ProductDetail({ product }: { product: Product }) {
   );
 }
 
-function Spec({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
+function BigSpec({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
   return (
     <div>
-      <div className="text-[9px] uppercase tracking-[0.18em] text-warm-500 mb-1 inline-flex items-center gap-1">
+      <div className="text-[11px] uppercase tracking-[0.22em] text-warm-500 mb-1.5 inline-flex items-center gap-1.5">
         {icon} {label}
       </div>
-      <div className="text-warm-900 font-mono">{value}</div>
+      <div className="text-warm-900 font-mono text-[15px]">{value}</div>
     </div>
   );
 }
