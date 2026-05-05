@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 
 async function getProduct(slug: string) {
   try {
-    const res = await fetch(`http://127.0.0.1:3002/api/store/public/products/${encodeURIComponent(slug)}?lang=it`, {
+    const port = process.env.PORT || "3000";
+    const res = await fetch(`http://127.0.0.1:${port}/api/store/public/products/${encodeURIComponent(slug)}?lang=it`, {
       cache: "no-store",
     });
     if (!res.ok) return null;
