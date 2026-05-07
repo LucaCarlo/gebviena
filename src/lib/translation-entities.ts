@@ -213,6 +213,7 @@ export const TRANSLATION_ENTITIES: Record<string, TranslationEntityDef> = {
       { key: "formCardTitle", label: "Form — titolo card", type: "short" },
       { key: "formCardSubtitle", label: "Form — sottotitolo card", type: "long" },
       { key: "disclaimer", label: "Disclaimer", type: "long" },
+      { key: "formFieldLabels", label: "Etichette campi form (JSON)", type: "long" },
     ],
   },
 };

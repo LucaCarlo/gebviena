@@ -45,6 +45,17 @@ export default async function LandingDispatcher({ params }: PageProps) {
       : null;
 
   if (cfg.template === "svendita") {
+    // Applica override delle label dei form fields se la traduzione le ha
+    let formFieldsForTemplate = cfg.formFields;
+    if (translation?.formFieldLabels && cfg.formFields) {
+      try {
+        const labels = JSON.parse(translation.formFieldLabels) as Record<string, string>;
+        const fields = JSON.parse(cfg.formFields) as Array<{ key: string; label: string } & Record<string, unknown>>;
+        formFieldsForTemplate = JSON.stringify(
+          fields.map((f) => (labels[f.key] ? { ...f, label: labels[f.key] } : f))
+        );
+      } catch { /* fallback su IT */ }
+    }
     return (
       <SvenditaTemplate
         row={{
@@ -53,7 +64,7 @@ export default async function LandingDispatcher({ params }: PageProps) {
           bannerImage: cfg.bannerImage,
           buttonLabel: cfg.buttonLabel,
           privacyLabel: cfg.privacyLabel,
-          formFields: cfg.formFields,
+          formFields: formFieldsForTemplate,
           customConfig: cfg.customConfig,
         }}
         translation={translation}

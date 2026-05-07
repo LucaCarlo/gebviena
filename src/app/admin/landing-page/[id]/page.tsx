@@ -291,6 +291,20 @@ export default function LandingPageDetailPage() {
     return cfg[key] || "";
   };
 
+  // Helpers: parse/aggiorna formFieldLabels (JSON) all'interno della translation della lingua attiva
+  const parsedFormLabels: Record<string, string> = (() => {
+    try {
+      const raw = translations[tlang]?.formFieldLabels;
+      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    } catch { return {}; }
+  })();
+  const setFormLabel = (key: string, value: string) => {
+    if (!isT) return;
+    const next = { ...parsedFormLabels, [key]: value };
+    setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), formFieldLabels: JSON.stringify(next) } }));
+    setSaved(false);
+  };
+
   const TRANSLATABLE_KEYS: { key: string; label: string }[] = [
     { key: "heroTitle", label: "Titolo hero" },
     { key: "heroSubtitle", label: "Sottotitolo hero" },
@@ -338,6 +352,26 @@ export default function LandingPageDetailPage() {
         }
       } catch { /* ignore single failure */ }
     }
+
+    // Traduzione AI delle label dei form fields (memorizzate come JSON in formFieldLabels)
+    const labelsDraft: Record<string, string> = { ...parsedFormLabels };
+    let labelsChanged = false;
+    for (const f of form.formFields.filter((ff) => ff.enabled)) {
+      if (labelsDraft[f.key]?.trim()) continue; // non sovrascrive
+      if (!f.label?.trim()) continue;
+      try {
+        const res = await fetch("/api/admin/translate", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: f.label, fromLang: "it", toLang: tlang }),
+        });
+        const d = await res.json();
+        if (d.success) { labelsDraft[f.key] = d.translation; labelsChanged = true; }
+      } catch { /* ignore */ }
+    }
+    if (labelsChanged) {
+      setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), formFieldLabels: JSON.stringify(labelsDraft) } }));
+    }
+
     setTranslatingAll(false);
     setSaved(false);
     flashTToast(`Traduzione AI completata. Premi "Salva traduzione" per persistere.`);
@@ -812,6 +846,33 @@ export default function LandingPageDetailPage() {
                   className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500" />
                 <p className="text-[10px] text-warm-500 mt-1">Una riga per ogni capoverso. Mostrato in basso a destra, sotto al form.</p>
               </div>
+
+              {/* Etichette campi form (visibile solo quando si traduce) */}
+              {isT && (
+                <div className="border-t border-warm-200 pt-4">
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3">
+                    Etichette campi del form ({tlang.toUpperCase()})
+                  </h4>
+                  <p className="text-[10px] text-warm-500 mb-3">Traduci la label di ogni campo del form. La label IT è mostrata a sinistra come riferimento.</p>
+                  <div className="space-y-2">
+                    {form.formFields.filter((f) => f.enabled).sort((a, b) => a.order - b.order).map((f) => (
+                      <div key={f.key} className="grid grid-cols-[180px_1fr] gap-3 items-center">
+                        <div className="text-xs text-warm-500">
+                          <span className="font-mono text-[10px] text-warm-400">{f.key}</span>
+                          <div className="text-warm-700">{f.label}</div>
+                        </div>
+                        <input
+                          type="text"
+                          value={parsedFormLabels[f.key] || ""}
+                          onChange={(e) => setFormLabel(f.key, e.target.value)}
+                          placeholder={`Traduzione ${tlang.toUpperCase()}...`}
+                          className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
