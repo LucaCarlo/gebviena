@@ -36,7 +36,7 @@ CREATE TABLE `LandingPageConfigTranslation` (
     INDEX `LandingPageConfigTranslation_languageCode_idx`(`languageCode`),
     UNIQUE INDEX `LandingPageConfigTranslation_landingPageId_languageCode_key`(`landingPageId`, `languageCode`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+);
 
 -- AddForeignKey
 ALTER TABLE `LandingPageConfigTranslation` ADD CONSTRAINT `LandingPageConfigTranslation_landingPageId_fkey` FOREIGN KEY (`landingPageId`) REFERENCES `LandingPageConfig`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
