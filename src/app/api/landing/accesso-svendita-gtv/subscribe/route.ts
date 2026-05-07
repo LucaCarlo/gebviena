@@ -79,23 +79,46 @@ async function ensureTemplate() {
 
 /**
  * Resolve the confirmation email pieces from the LandingPageConfig
- * (admin-editable: subject, template, footer, tag), falling back to
- * the auto-bootstrap template when no config exists.
+ * (admin-editable: subject, template, footer, tag).
+ * Per la lingua dell'utente (lang), se esiste una LandingPageConfigTranslation
+ * con emailTemplateId/emailSubject popolato, quei valori hanno precedenza sul
+ * default IT. Falla back all'auto-bootstrap template quando manca tutto.
  */
-async function resolveConfig() {
+async function resolveConfig(lang: string) {
   const lp = await prisma.landingPageConfig.findUnique({
     where: { permalink: PERMALINK },
-    select: { tagSlug: true, name: true, emailTemplateId: true, emailSubject: true, emailFooter: true },
+    select: { id: true, tagSlug: true, name: true, emailTemplateId: true, emailSubject: true, emailFooter: true },
   });
   const tagSlug = lp?.tagSlug || TAG_SLUG_FALLBACK;
   const tagName = lp?.name || TAG_NAME_FALLBACK;
-  const emailSubjectOverride = lp?.emailSubject?.trim() || "";
   const emailFooterJson = lp?.emailFooter || null;
 
+  // Override per lingua: cerca la translation della lingua corrente
+  let trTemplateId: string | null = null;
+  let trEmailSubject = "";
+  let trEmailTitle = "";
+  let trEmailBody = "";
+  if (lp && lang !== "it") {
+    try {
+      const tr = await prisma.landingPageConfigTranslation.findUnique({
+        where: { landingPageId_languageCode: { landingPageId: lp.id, languageCode: lang } },
+        select: { emailTemplateId: true, emailSubject: true, emailTitle: true, emailBody: true },
+      });
+      trTemplateId = tr?.emailTemplateId?.trim() || null;
+      trEmailSubject = (tr?.emailSubject || "").trim();
+      trEmailTitle = (tr?.emailTitle || "").trim();
+      trEmailBody = (tr?.emailBody || "").trim();
+    } catch { /* fallback IT */ }
+  }
+
+  // Decidi l'ID del template da caricare: traduzione > default IT
+  const targetTemplateId = trTemplateId || lp?.emailTemplateId || null;
+  const emailSubjectOverride = trEmailSubject || lp?.emailSubject?.trim() || "";
+
   let template: { id: string; subject: string; blocks: string } | null = null;
-  if (lp?.emailTemplateId) {
+  if (targetTemplateId) {
     template = await prisma.emailTemplate.findUnique({
-      where: { id: lp.emailTemplateId },
+      where: { id: targetTemplateId },
       select: { id: true, subject: true, blocks: true },
     });
   }
@@ -103,7 +126,7 @@ async function resolveConfig() {
     const t = await ensureTemplate();
     template = { id: t.id, subject: t.subject, blocks: t.blocks };
   }
-  return { tagSlug, tagName, template, emailSubjectOverride, emailFooterJson };
+  return { tagSlug, tagName, template, emailSubjectOverride, emailFooterJson, trEmailTitle, trEmailBody };
 }
 
 export async function POST(req: Request) {
@@ -126,12 +149,13 @@ export async function POST(req: Request) {
     }
 
     const email = emailRaw.toLowerCase();
-    const { tagSlug, tagName, template, emailSubjectOverride, emailFooterJson } = await resolveConfig();
 
     // Lingua dell'utente (impostata dal middleware via x-gtv-lang header)
     const lang = (() => {
       try { return headers().get("x-gtv-lang") || "it"; } catch { return "it"; }
     })();
+
+    const { tagSlug, tagName, template, emailSubjectOverride, emailFooterJson, trEmailTitle, trEmailBody } = await resolveConfig(lang);
 
     // Save / update subscriber (con lingua)
     await prisma.newsletterSubscriber.upsert({
@@ -180,34 +204,16 @@ export async function POST(req: Request) {
       }
     }
 
-    // Cerca traduzioni email per la lingua dell'utente (se non IT)
-    let trEmailSubject = "";
-    let trEmailTitle = "";
-    let trEmailBody = "";
-    if (lang !== "it") {
-      try {
-        const lp = await prisma.landingPageConfig.findUnique({
-          where: { permalink: PERMALINK },
-          select: { id: true },
-        });
-        if (lp) {
-          const tr = await prisma.landingPageConfigTranslation.findUnique({
-            where: { landingPageId_languageCode: { landingPageId: lp.id, languageCode: lang } },
-            select: { emailSubject: true, emailTitle: true, emailBody: true },
-          });
-          trEmailSubject = (tr?.emailSubject || "").trim();
-          trEmailTitle = (tr?.emailTitle || "").trim();
-          trEmailBody = (tr?.emailBody || "").trim();
-        }
-      } catch { /* fallback su IT */ }
-    }
-
     // Fire-and-forget confirmation email — do not block the response
     (async () => {
       try {
+        // Render priorità:
+        // 1. Se la lingua ha un EmailTemplate dedicato (template caricato in resolveConfig) → usa quello
+        // 2. Se la lingua ha solo title/body tradotti → renderizza email semplificata
+        // 3. Altrimenti → template IT a blocchi (fallback)
         let html: string;
         if (trEmailTitle || trEmailBody) {
-          // Render email tradotta semplificata (no template blocks): titolo + corpo + footer
+          // Email tradotta inline (quando l'admin non ha scelto un template per questa lingua ma ha compilato i campi text)
           const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
           const renderText = (s: string) =>
             escape(s)
@@ -224,7 +230,7 @@ export async function POST(req: Request) {
 </td></tr></table>
 </body></html>`;
         } else {
-          // Fallback IT: usa il template a blocchi originale
+          // Template a blocchi (IT default oppure template specifico della lingua scelto in resolveConfig)
           html = renderEmailTemplate(parseBlocks(template.blocks), {
             firstName,
             lastName,
@@ -241,8 +247,8 @@ export async function POST(req: Request) {
             : html + footerHtml;
         }
 
-        // Subject: traduzione > LandingPageConfig override > template subject > default
-        const subject = trEmailSubject || emailSubjectOverride || template.subject || DEFAULT_SUBJECT;
+        // Subject: override (traduzione + IT) > template subject > default
+        const subject = emailSubjectOverride || template.subject || DEFAULT_SUBJECT;
         await sendMail(email, subject, html);
       } catch (e) {
         console.error("Confirmation email failed:", e);

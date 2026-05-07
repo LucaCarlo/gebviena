@@ -1007,26 +1007,41 @@ export default function LandingPageDetailPage() {
       {/* ═══ Email Tab ═══ */}
       {activeTab === "email" && (
         <div className="space-y-6">
-          {/* Template email */}
+          {/* Template email — uno per lingua */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-warm-800">Template Email</h3>
-            <p className="text-xs text-warm-500">Scegli il template che verr&agrave; inviato con il QR code dopo la registrazione.</p>
+            <h3 className="text-sm font-semibold text-warm-800">Template Email {isT && <span className="ml-2 text-amber-700 font-normal text-xs">— stai modificando la lingua {tlang.toUpperCase()}</span>}</h3>
+            <p className="text-xs text-warm-500">
+              Scegli il template che verr&agrave; inviato con il QR code dopo la registrazione.
+              {isT
+                ? <> Questo template viene usato quando il visitatore si iscrive in <strong>{tlang.toUpperCase()}</strong>. Se non scegli nulla qui, viene usato il template IT come fallback.</>
+                : <> Questo &egrave; il template di <strong>default (italiano)</strong>. Cambia lingua dal dropdown in cima al tab Configurazione per impostare un template diverso per ogni lingua.</>}
+            </p>
             <div>
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Template</label>
-              <select value={form.emailTemplateId} onChange={(e) => updateField("emailTemplateId", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none">
-                <option value="">-- Nessun template (usa titolo/corpo personalizzato) --</option>
+              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+                Template{isT ? ` (${tlang.toUpperCase()})` : ""}
+              </label>
+              <select
+                value={tval("emailTemplateId", form.emailTemplateId)}
+                onChange={(e) => tset("emailTemplateId", e.target.value, (v) => updateField("emailTemplateId", v))}
+                className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none"
+              >
+                <option value="">-- {isT ? `Usa il template IT come fallback` : `Nessun template (usa titolo/corpo personalizzato)`} --</option>
                 {emailTemplates.map(t => (
                   <option key={t.id} value={t.id}>{t.name} {t.subject ? `— ${t.subject}` : ""}</option>
                 ))}
               </select>
             </div>
 
-            {/* Preview del template selezionato */}
-            {form.emailTemplateId && (() => {
-              const tpl = emailTemplates.find(t => t.id === form.emailTemplateId);
+            {/* Preview del template attualmente selezionato (per la lingua attiva) */}
+            {(() => {
+              const currentId = isT ? (translations[tlang]?.emailTemplateId || "") : form.emailTemplateId;
+              if (!currentId) return null;
+              const tpl = emailTemplates.find(t => t.id === currentId);
               return tpl?.previewHtml ? (
                 <div className="border border-warm-200 rounded-lg overflow-hidden">
-                  <div className="px-4 py-2 bg-warm-50 text-xs text-warm-500 font-medium border-b border-warm-200">Anteprima template</div>
+                  <div className="px-4 py-2 bg-warm-50 text-xs text-warm-500 font-medium border-b border-warm-200">
+                    Anteprima template {isT ? `(${tlang.toUpperCase()})` : "(IT)"}
+                  </div>
                   <iframe srcDoc={tpl.previewHtml} className="w-full h-[300px] bg-white" title="Email preview" />
                 </div>
               ) : null;

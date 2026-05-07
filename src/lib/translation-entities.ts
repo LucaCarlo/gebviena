@@ -217,6 +217,7 @@ export const TRANSLATION_ENTITIES: Record<string, TranslationEntityDef> = {
       { key: "emailSubject", label: "Email — oggetto", type: "short" },
       { key: "emailTitle", label: "Email — titolo", type: "short" },
       { key: "emailBody", label: "Email — corpo", type: "long" },
+      { key: "emailTemplateId", label: "Email — template ID", type: "slug" },
     ],
   },
 };

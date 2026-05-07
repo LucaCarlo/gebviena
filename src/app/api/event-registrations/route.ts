@@ -141,25 +141,27 @@ export async function POST(req: Request) {
         select: { emailSubject: true, emailTitle: true, emailBody: true, bannerImage: true, emailTemplateId: true, emailFooter: true, signatureTemplateId: true, signatureUserData: true },
       });
       if (lp) {
-        // Override email fields con la traduzione se la lingua dell'utente non è IT
+        // Override email fields/template con la traduzione se la lingua dell'utente non è IT
         let trEmailSubject: string | null = null;
         let trEmailTitle: string | null = null;
         let trEmailBody: string | null = null;
+        let trEmailTemplateId: string | null = null;
         if (lang !== "it") {
           const tr = await prisma.landingPageConfigTranslation.findUnique({
             where: { landingPageId_languageCode: { landingPageId, languageCode: lang } },
-            select: { emailSubject: true, emailTitle: true, emailBody: true },
+            select: { emailSubject: true, emailTitle: true, emailBody: true, emailTemplateId: true },
           });
           trEmailSubject = tr?.emailSubject?.trim() || null;
           trEmailTitle = tr?.emailTitle?.trim() || null;
           trEmailBody = tr?.emailBody?.trim() || null;
+          trEmailTemplateId = tr?.emailTemplateId?.trim() || null;
         }
         emailConfig = {
           emailSubject: trEmailSubject || lp.emailSubject || "Your Event Registration",
           emailTitle: trEmailTitle || lp.emailTitle || "Registration Confirmed",
           emailBody: trEmailBody || lp.emailBody || "",
           bannerImage: lp.bannerImage || "",
-          emailTemplateId: lp.emailTemplateId || undefined,
+          emailTemplateId: trEmailTemplateId || lp.emailTemplateId || undefined,
           emailFooter: lp.emailFooter || undefined,
           signatureTemplateId: lp.signatureTemplateId || undefined,
           signatureUserData: lp.signatureUserData || undefined,
