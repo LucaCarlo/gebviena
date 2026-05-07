@@ -276,26 +276,6 @@ export default function LandingPageDetailPage() {
     }
   };
 
-  const translateField = async (key: string, sourceText: string) => {
-    if (!isT || !sourceText.trim()) return;
-    try {
-      const res = await fetch("/api/admin/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: sourceText, fromLang: "it", toLang: tlang }),
-      });
-      const d = await res.json();
-      if (d.success) {
-        setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), [key]: d.translation } }));
-        setSaved(false);
-      } else {
-        flashTToast(d.error || "Errore traduzione AI");
-      }
-    } catch {
-      flashTToast("Errore di connessione");
-    }
-  };
-
   // Source text utilizzato per la traduzione AI di un campo (in IT)
   const srcText = (key: string): string => {
     // I campi del form principale
