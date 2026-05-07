@@ -45,14 +45,19 @@ export default async function LandingDispatcher({ params }: PageProps) {
       : null;
 
   if (cfg.template === "svendita") {
-    // Applica override delle label dei form fields se la traduzione le ha
+    // Applica override delle label e placeholder dei form fields se la traduzione li ha
     let formFieldsForTemplate = cfg.formFields;
-    if (translation?.formFieldLabels && cfg.formFields) {
+    if ((translation?.formFieldLabels || translation?.formFieldPlaceholders) && cfg.formFields) {
       try {
-        const labels = JSON.parse(translation.formFieldLabels) as Record<string, string>;
-        const fields = JSON.parse(cfg.formFields) as Array<{ key: string; label: string } & Record<string, unknown>>;
+        const labels = translation?.formFieldLabels ? JSON.parse(translation.formFieldLabels) as Record<string, string> : {};
+        const placeholders = translation?.formFieldPlaceholders ? JSON.parse(translation.formFieldPlaceholders) as Record<string, string> : {};
+        const fields = JSON.parse(cfg.formFields) as Array<{ key: string; label: string; placeholder?: string } & Record<string, unknown>>;
         formFieldsForTemplate = JSON.stringify(
-          fields.map((f) => (labels[f.key] ? { ...f, label: labels[f.key] } : f))
+          fields.map((f) => ({
+            ...f,
+            ...(labels[f.key] ? { label: labels[f.key] } : {}),
+            ...(placeholders[f.key] ? { placeholder: placeholders[f.key] } : {}),
+          }))
         );
       } catch { /* fallback su IT */ }
     }

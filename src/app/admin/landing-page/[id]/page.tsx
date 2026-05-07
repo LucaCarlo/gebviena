@@ -395,6 +395,59 @@ export default function LandingPageDetailPage() {
     setSaved(false);
   };
 
+  // Helpers: parse/aggiorna formFieldPlaceholders (JSON) della lingua attiva
+  const parsedFormPlaceholders: Record<string, string> = (() => {
+    try {
+      const raw = translations[tlang]?.formFieldPlaceholders;
+      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    } catch { return {}; }
+  })();
+  const setFormPlaceholder = (key: string, value: string) => {
+    if (!isT) return;
+    const next = { ...parsedFormPlaceholders, [key]: value };
+    setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), formFieldPlaceholders: JSON.stringify(next) } }));
+    setSaved(false);
+  };
+
+  // Default placeholder italiani (sorgente da tradurre via AI)
+  const DEFAULT_PLACEHOLDERS: Record<string, string> = {
+    firstName: "Inserisci il tuo nome",
+    lastName: "Inserisci il tuo cognome",
+    email: "Inserisci la tua email",
+    company: "Inserisci il nome della tua azienda",
+    phone: "Inserisci il tuo telefono",
+    city: "Città",
+    country: "Paese",
+    zipCode: "CAP",
+    state: "Provincia",
+    profile: "Profilo",
+  };
+
+  const translateOneFormPlaceholder = async (fieldKey: string, sourcePlaceholder: string) => {
+    if (!isT || !sourcePlaceholder.trim()) return;
+    const aiKey = `__formPlaceholder_${fieldKey}`;
+    setAiBusyKey(aiKey);
+    try {
+      const res = await fetch("/api/admin/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: sourcePlaceholder, fromLang: "it", toLang: tlang }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        const next = { ...parsedFormPlaceholders, [fieldKey]: d.translation as string };
+        setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), formFieldPlaceholders: JSON.stringify(next) } }));
+        setSaved(false);
+      } else {
+        flashTToast(d.error || "Errore traduzione AI");
+      }
+    } catch {
+      flashTToast("Errore di connessione");
+    } finally {
+      setAiBusyKey("");
+    }
+  };
+
   const TRANSLATABLE_KEYS: { key: string; label: string }[] = [
     { key: "heroTitle", label: "Titolo hero" },
     { key: "heroSubtitle", label: "Sottotitolo hero" },
@@ -465,6 +518,26 @@ export default function LandingPageDetailPage() {
     }
     if (labelsChanged) {
       setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), formFieldLabels: JSON.stringify(labelsDraft) } }));
+    }
+
+    // Traduzione AI dei placeholder dei form fields (memorizzati come JSON in formFieldPlaceholders)
+    const placeholdersDraft: Record<string, string> = { ...parsedFormPlaceholders };
+    let placeholdersChanged = false;
+    for (const f of form.formFields.filter((ff) => ff.enabled)) {
+      if (placeholdersDraft[f.key]?.trim()) continue;
+      const sourcePlaceholder = DEFAULT_PLACEHOLDERS[f.key] || f.label;
+      if (!sourcePlaceholder?.trim()) continue;
+      try {
+        const res = await fetch("/api/admin/translate", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: sourcePlaceholder, fromLang: "it", toLang: tlang }),
+        });
+        const d = await res.json();
+        if (d.success) { placeholdersDraft[f.key] = d.translation; placeholdersChanged = true; }
+      } catch { /* ignore */ }
+    }
+    if (placeholdersChanged) {
+      setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), formFieldPlaceholders: JSON.stringify(placeholdersDraft) } }));
     }
 
     setTranslatingAll(false);
@@ -943,33 +1016,66 @@ export default function LandingPageDetailPage() {
                 <p className="text-[10px] text-warm-500 mt-1">Una riga per ogni capoverso. Mostrato in basso a destra, sotto al form.</p>
               </div>
 
-              {/* Etichette campi form (visibile solo quando si traduce) */}
+              {/* Etichette + placeholder campi form (visibile solo quando si traduce) */}
               {isT && (
-                <div className="border-t border-warm-200 pt-4">
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3">
-                    Etichette campi del form ({tlang.toUpperCase()})
-                  </h4>
-                  <p className="text-[10px] text-warm-500 mb-3">Traduci la label di ogni campo del form. La label IT è mostrata a sinistra come riferimento.</p>
-                  <div className="space-y-2">
-                    {form.formFields.filter((f) => f.enabled).sort((a, b) => a.order - b.order).map((f) => (
-                      <div key={f.key} className="grid grid-cols-[180px_1fr_auto] gap-3 items-center">
-                        <div className="text-xs text-warm-500">
-                          <span className="font-mono text-[10px] text-warm-400">{f.key}</span>
-                          <div className="text-warm-700">{f.label}</div>
+                <div className="border-t border-warm-200 pt-4 space-y-5">
+                  <div>
+                    <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3">
+                      Etichette campi del form ({tlang.toUpperCase()})
+                    </h4>
+                    <p className="text-[10px] text-warm-500 mb-3">Traduci la label di ogni campo del form. La label IT è mostrata a sinistra come riferimento.</p>
+                    <div className="space-y-2">
+                      {form.formFields.filter((f) => f.enabled).sort((a, b) => a.order - b.order).map((f) => (
+                        <div key={f.key} className="grid grid-cols-[180px_1fr_auto] gap-3 items-center">
+                          <div className="text-xs text-warm-500">
+                            <span className="font-mono text-[10px] text-warm-400">{f.key}</span>
+                            <div className="text-warm-700">{f.label}</div>
+                          </div>
+                          <input
+                            type="text"
+                            value={parsedFormLabels[f.key] || ""}
+                            onChange={(e) => setFormLabel(f.key, e.target.value)}
+                            placeholder={`Traduzione ${tlang.toUpperCase()}...`}
+                            className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500"
+                          />
+                          <AIButton
+                            busy={aiBusyKey === `__formLabel_${f.key}`}
+                            onClick={() => translateOneFormLabel(f.key, f.label)}
+                          />
                         </div>
-                        <input
-                          type="text"
-                          value={parsedFormLabels[f.key] || ""}
-                          onChange={(e) => setFormLabel(f.key, e.target.value)}
-                          placeholder={`Traduzione ${tlang.toUpperCase()}...`}
-                          className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500"
-                        />
-                        <AIButton
-                          busy={aiBusyKey === `__formLabel_${f.key}`}
-                          onClick={() => translateOneFormLabel(f.key, f.label)}
-                        />
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3">
+                      Placeholder campi del form ({tlang.toUpperCase()})
+                    </h4>
+                    <p className="text-[10px] text-warm-500 mb-3">Traduci il placeholder (testo in grigio dentro il campo) di ogni campo. La versione IT a sinistra è quella di default.</p>
+                    <div className="space-y-2">
+                      {form.formFields.filter((f) => f.enabled).sort((a, b) => a.order - b.order).map((f) => {
+                        const itPlaceholder = DEFAULT_PLACEHOLDERS[f.key] || f.label;
+                        return (
+                          <div key={f.key} className="grid grid-cols-[180px_1fr_auto] gap-3 items-center">
+                            <div className="text-xs text-warm-500">
+                              <span className="font-mono text-[10px] text-warm-400">{f.key}</span>
+                              <div className="text-warm-700">{itPlaceholder}</div>
+                            </div>
+                            <input
+                              type="text"
+                              value={parsedFormPlaceholders[f.key] || ""}
+                              onChange={(e) => setFormPlaceholder(f.key, e.target.value)}
+                              placeholder={`Traduzione ${tlang.toUpperCase()}...`}
+                              className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500"
+                            />
+                            <AIButton
+                              busy={aiBusyKey === `__formPlaceholder_${f.key}`}
+                              onClick={() => translateOneFormPlaceholder(f.key, itPlaceholder)}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}

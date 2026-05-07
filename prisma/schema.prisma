@@ -936,6 +936,7 @@ model LandingPageConfigTranslation {
   successCardMessage    String?           @db.Text // Messaggio sotto il titolo nella card di successo
   disclaimer            String?           @db.Text
   formFieldLabels       String?           @db.Text // JSON: { firstName: "First Name", lastName: "Last Name", ... }
+  formFieldPlaceholders String?           @db.Text // JSON: { firstName: "Enter your first name", ... }
   emailSubject          String?           @db.Text // Oggetto email di conferma (tradotto, fallback se non c'è un template specifico)
   emailTitle            String?           @db.Text // Titolo dentro l'email (tradotto, usato senza template)
   emailBody             String?           @db.Text // Corpo dell'email (tradotto, usato senza template)

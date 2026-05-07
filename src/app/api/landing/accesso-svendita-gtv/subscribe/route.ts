@@ -7,7 +7,10 @@ import { buildEmailFooterHtml, getEmailFooterConfig } from "@/lib/event-registra
 import { headers } from "next/headers";
 
 const TEMPLATE_NAME = "Conferma pre-accesso svendita";
-const PERMALINK = "accesso-svendita-gtv";
+// Permalink possibili della landing svendita: il vecchio era "accesso-svendita-gtv",
+// l'admin lo ha cambiato in "accesso-vendita-speciale-gtv". Cerchiamo per tagSlug
+// (stabile) con OR sui permalink come fallback, così cambi futuri non rompono l'API.
+const PERMALINK_CANDIDATES = ["accesso-svendita-gtv", "accesso-vendita-speciale-gtv"];
 const TAG_SLUG_FALLBACK = "accesso-svendita-gtv";
 const TAG_NAME_FALLBACK = "Accesso Svendita GTV";
 
@@ -85,8 +88,15 @@ async function ensureTemplate() {
  * default IT. Falla back all'auto-bootstrap template quando manca tutto.
  */
 async function resolveConfig(lang: string) {
-  const lp = await prisma.landingPageConfig.findUnique({
-    where: { permalink: PERMALINK },
+  // Identifichiamo la landing svendita in modo robusto: prima per tagSlug (stabile),
+  // poi per permalink corrente o storico (backward compat).
+  const lp = await prisma.landingPageConfig.findFirst({
+    where: {
+      OR: [
+        { tagSlug: TAG_SLUG_FALLBACK },
+        { permalink: { in: PERMALINK_CANDIDATES } },
+      ],
+    },
     select: { id: true, tagSlug: true, name: true, emailTemplateId: true, emailSubject: true, emailFooter: true },
   });
   const tagSlug = lp?.tagSlug || TAG_SLUG_FALLBACK;

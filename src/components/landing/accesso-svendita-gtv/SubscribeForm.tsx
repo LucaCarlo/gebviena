@@ -11,6 +11,7 @@ export interface FieldConfig {
   width: "50" | "70" | "100";
   enabled: boolean;
   order: number;
+  placeholder?: string;
 }
 
 interface Props {
@@ -144,7 +145,7 @@ export default function SubscribeForm({
         {enabledFields.map((f) => {
           const isRequired = REQUIRED_FIELDS.has(f.key);
           const inputType = f.key === "email" ? "email" : f.key === "phone" ? "tel" : "text";
-          const placeholder = PLACEHOLDER_BY_KEY[f.key] || f.label;
+          const placeholder = f.placeholder?.trim() || PLACEHOLDER_BY_KEY[f.key] || f.label;
           return (
             <Field key={f.key} label={f.label} required={isRequired} optional={!isRequired} error={errors[f.key]}>
               <input
