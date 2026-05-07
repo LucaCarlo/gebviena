@@ -1,8 +1,8 @@
 -- CreateTable
 CREATE TABLE `LandingPageConfigTranslation` (
     `id` VARCHAR(191) NOT NULL,
-    `landingPageId` VARCHAR(191) NOT NULL,
-    `languageCode` VARCHAR(16) NOT NULL,
+    `landingPageId` VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+    `languageCode` VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL,
     `heroTitle` TEXT NULL,
     `heroSubtitle` TEXT NULL,
     `buttonLabel` TEXT NULL,
