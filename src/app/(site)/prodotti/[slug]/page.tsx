@@ -189,6 +189,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+  const pconAutoOpenedRef = useRef(false);
   const [descExpanded, setDescExpanded] = useState(false);
   const [supportImg, setSupportImg] = useState("https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop&q=80");
   const [imageOrientations, setImageOrientations] = useState<Record<string, "h" | "v">>({});
@@ -209,6 +210,16 @@ export default function ProductDetailPage() {
       if (img?.imageUrl) setSupportImg(img.imageUrl);
     });
   }, [slug, lang]);
+
+  // Apre il toggle "Configuratore" di default se il prodotto ha un PCON disponibile
+  useEffect(() => {
+    if (pconAutoOpenedRef.current || !product) return;
+    const hasPcon = !!(product.pconBan || product.pconUrl);
+    if (hasPcon) {
+      setOpenAccordion("configuratore");
+      pconAutoOpenedRef.current = true;
+    }
+  }, [product]);
 
   // Manual orientation overrides from admin (galleryOrientations JSON: {url: "h"|"v"})
   const manualOrientations: Record<string, "h" | "v"> = useMemo(() => {
@@ -588,6 +599,57 @@ export default function ProductDetailPage() {
                 </AnimatePresence>
               </div>
 
+              {/* --- CONFIGURATORE (PCON 3D) --- */}
+              {(() => {
+                const pconSrc = product.pconBan
+                  ? buildPconUrl({
+                      moc: product.pconMoc,
+                      ban: product.pconBan,
+                      sid: product.pconSid,
+                      ovc: product.pconOvc,
+                    })
+                  : product.pconUrl || null;
+                if (!pconSrc) return null;
+                return (
+                  <div id="pcon">
+                    <button
+                      onClick={() => setOpenAccordion(openAccordion === "configuratore" ? null : "configuratore")}
+                      className="w-full flex items-center justify-between py-5 px-2 group"
+                    >
+                      <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
+                        Configuratore
+                      </span>
+                      <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
+                        {openAccordion === "configuratore" ? <Minus size={18} /> : <Plus size={18} />}
+                      </span>
+                    </button>
+                    <AnimatePresence>
+                      {openAccordion === "configuratore" && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-2 pb-8 pt-2">
+                            <iframe
+                              src={pconSrc}
+                              className="block w-full border-0"
+                              style={{ height: "640px" }}
+                              allowFullScreen
+                              allow="xr-spatial-tracking"
+                              loading="eager"
+                              title={`Visualizzatore 3D ${product.name}`}
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })()}
+
               {/* --- DOCUMENTAZIONE --- */}
               <div>
                 <button
@@ -647,31 +709,6 @@ export default function ProductDetailPage() {
                 </AnimatePresence>
               </div>
 
-              {/* --- PCON 3D VIEWER --- sempre visibile, stessa width dei divisor */}
-              {(() => {
-                const pconSrc = product.pconBan
-                  ? buildPconUrl({
-                      moc: product.pconMoc,
-                      ban: product.pconBan,
-                      sid: product.pconSid,
-                      ovc: product.pconOvc,
-                    })
-                  : product.pconUrl || null;
-                if (!pconSrc) return null;
-                return (
-                  <div id="pcon">
-                    <iframe
-                      src={pconSrc}
-                      className="block w-full border-0"
-                      style={{ height: "640px" }}
-                      allowFullScreen
-                      allow="xr-spatial-tracking"
-                      loading="eager"
-                      title={`Visualizzatore 3D ${product.name}`}
-                    />
-                  </div>
-                );
-              })()}
 
             </div>
           </motion.div>
