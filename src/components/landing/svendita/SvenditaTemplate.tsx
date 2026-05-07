@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Globe, MapPin, Calendar } from "lucide-react";
+import { Globe, MapPin } from "lucide-react";
 import SubscribeForm, { type FieldConfig } from "@/components/landing/accesso-svendita-gtv/SubscribeForm";
 
 const DEFAULTS = {
@@ -13,17 +13,19 @@ const DEFAULTS = {
   navLabelActive: "Vendita Speciale",
   navLabelShowroom: "Showroom",
   navLabelContatti: "Contatti",
+  navLinkShowroom: "/",
+  navLinkContatti: "/contatti/richiesta-info",
   eyebrow: "Vendita Speciale",
   block1Title: "Online",
   block1Lines: ["Accesso su registrazione", "Selezione disponibile fino a esaurimento"],
   block1HighlightPrefix: "Sconti fino al ",
   block1HighlightStrong: "40%",
+  block1Period: "Dal 15 Maggio al 30 Giugno 2026",
   block2Title: "Showroom Torino",
   block2Lines: ["Via Foggia 23H", "Accesso diretto in showroom", "Pezzi unici da fine serie, shooting e fiere"],
   block2HighlightPrefix: "Sconti fino al ",
   block2HighlightStrong: "70%",
-  block3Title: "Periodo",
-  block3Lines: ["Dal 15 Maggio al 30 Giugno 2026"],
+  block2Period: "Dal 15 Maggio al 30 Giugno 2026",
   longDescription: `La Vendita Speciale nasce da un processo di ottimizzazione della nostra logistica e supply chain, volto alla centralizzazione e all'efficientamento dei magazzini.
 
 Questo percorso ci permette di rendere disponibili una selezione di prodotti a condizioni dedicate, attraverso due esperienze distinte:
@@ -50,17 +52,19 @@ interface CustomCfg {
   navLabelActive?: string;
   navLabelShowroom?: string;
   navLabelContatti?: string;
+  navLinkShowroom?: string;
+  navLinkContatti?: string;
   eyebrow?: string;
   block1Title?: string;
   block1Lines?: string[] | string;
   block1HighlightPrefix?: string;
   block1HighlightStrong?: string;
+  block1Period?: string;
   block2Title?: string;
   block2Lines?: string[] | string;
   block2HighlightPrefix?: string;
   block2HighlightStrong?: string;
-  block3Title?: string;
-  block3Lines?: string[] | string;
+  block2Period?: string;
   longDescription?: string;
   formCardTitle?: string;
   formCardSubtitle?: string;
@@ -112,8 +116,8 @@ export default function SvenditaTemplate({ row }: SvenditaTemplateProps) {
         </Link>
         <nav className="hidden sm:flex items-center gap-7 text-[11px] md:text-[12px] font-semibold tracking-[0.14em] uppercase">
           <span className="text-dark border-b-2 border-dark pb-1">{c.navLabelActive}</span>
-          <Link href="/contatti" className="text-warm-600 hover:text-dark transition-colors">{c.navLabelShowroom}</Link>
-          <Link href="/contatti" className="text-warm-600 hover:text-dark transition-colors">{c.navLabelContatti}</Link>
+          <Link href={c.navLinkShowroom || DEFAULTS.navLinkShowroom} className="text-warm-600 hover:text-dark transition-colors">{c.navLabelShowroom}</Link>
+          <Link href={c.navLinkContatti || DEFAULTS.navLinkContatti} className="text-warm-600 hover:text-dark transition-colors">{c.navLabelContatti}</Link>
         </nav>
       </header>
 
@@ -154,24 +158,31 @@ export default function SvenditaTemplate({ row }: SvenditaTemplateProps) {
               {heroSubtitle}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-7 gap-x-8 mb-10 max-w-[520px]">
-              <InfoBlock
-                icon={<Globe size={18} strokeWidth={1.6} />}
-                title={c.block1Title || DEFAULTS.block1Title}
-                lines={pickArr(c.block1Lines, DEFAULTS.block1Lines)}
-                highlight={c.block1HighlightStrong ? [c.block1HighlightPrefix || "", c.block1HighlightStrong] : undefined}
-              />
-              <InfoBlock
-                icon={<MapPin size={18} strokeWidth={1.6} />}
-                title={c.block2Title || DEFAULTS.block2Title}
-                lines={pickArr(c.block2Lines, DEFAULTS.block2Lines)}
-                highlight={c.block2HighlightStrong ? [c.block2HighlightPrefix || "", c.block2HighlightStrong] : undefined}
-              />
-              <InfoBlock
-                icon={<Calendar size={18} strokeWidth={1.6} />}
-                title={c.block3Title || DEFAULTS.block3Title}
-                lines={pickArr(c.block3Lines, DEFAULTS.block3Lines)}
-              />
+            <div className="grid grid-cols-2 border border-warm-200 mb-10 max-w-[520px]">
+              <div className="p-4 border-r border-warm-200">
+                <InfoBlock
+                  icon={<Globe size={18} strokeWidth={1.6} />}
+                  title={c.block1Title || DEFAULTS.block1Title}
+                  lines={pickArr(c.block1Lines, DEFAULTS.block1Lines)}
+                  highlight={c.block1HighlightStrong ? [c.block1HighlightPrefix || "", c.block1HighlightStrong] : undefined}
+                />
+              </div>
+              <div className="p-4">
+                <InfoBlock
+                  icon={<MapPin size={18} strokeWidth={1.6} />}
+                  title={c.block2Title || DEFAULTS.block2Title}
+                  lines={pickArr(c.block2Lines, DEFAULTS.block2Lines)}
+                  highlight={c.block2HighlightStrong ? [c.block2HighlightPrefix || "", c.block2HighlightStrong] : undefined}
+                />
+              </div>
+              <div className="px-4 py-3 border-t border-r border-warm-200">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-500 mb-1">Periodo</p>
+                <p className="text-[13px] text-warm-700 leading-[1.55]">{c.block1Period || DEFAULTS.block1Period}</p>
+              </div>
+              <div className="px-4 py-3 border-t border-warm-200">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-500 mb-1">Periodo</p>
+                <p className="text-[13px] text-warm-700 leading-[1.55]">{c.block2Period || DEFAULTS.block2Period}</p>
+              </div>
             </div>
 
             <div className="text-[14px] md:text-[14.5px] text-warm-700 leading-[1.7] max-w-[520px]

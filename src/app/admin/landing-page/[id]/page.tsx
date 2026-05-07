@@ -83,10 +83,11 @@ interface SvenditaCustomConfig {
   navLabelActive: string;
   navLabelShowroom: string;
   navLabelContatti: string;
+  navLinkShowroom: string;
+  navLinkContatti: string;
   eyebrow: string;
-  block1Title: string; block1Lines: string; block1HighlightPrefix: string; block1HighlightStrong: string;
-  block2Title: string; block2Lines: string; block2HighlightPrefix: string; block2HighlightStrong: string;
-  block3Title: string; block3Lines: string;
+  block1Title: string; block1Lines: string; block1HighlightPrefix: string; block1HighlightStrong: string; block1Period: string;
+  block2Title: string; block2Lines: string; block2HighlightPrefix: string; block2HighlightStrong: string; block2Period: string;
   longDescription: string;
   formCardTitle: string;
   formCardSubtitle: string;
@@ -97,17 +98,19 @@ const EMPTY_SVENDITA: SvenditaCustomConfig = {
   navLabelActive: "Vendita Speciale",
   navLabelShowroom: "Showroom",
   navLabelContatti: "Contatti",
+  navLinkShowroom: "/",
+  navLinkContatti: "/contatti/richiesta-info",
   eyebrow: "Vendita Speciale",
   block1Title: "Online",
   block1Lines: "Accesso su registrazione\nSelezione disponibile fino a esaurimento",
   block1HighlightPrefix: "Sconti fino al ",
   block1HighlightStrong: "40%",
+  block1Period: "Dal 15 Maggio al 30 Giugno 2026",
   block2Title: "Showroom Torino",
   block2Lines: "Via Foggia 23H\nAccesso diretto in showroom\nPezzi unici da fine serie, shooting e fiere",
   block2HighlightPrefix: "Sconti fino al ",
   block2HighlightStrong: "70%",
-  block3Title: "Periodo",
-  block3Lines: "Dal 15 Maggio al 30 Giugno 2026",
+  block2Period: "Dal 15 Maggio al 30 Giugno 2026",
   longDescription: "La Vendita Speciale nasce da un processo di ottimizzazione...\n\nQuesto percorso ci permette di rendere disponibili una selezione di prodotti a condizioni dedicate, attraverso due esperienze distinte:\n\n- **online**, con articoli disponibili in quantità limitata\n- **offline**, con una selezione esclusiva di pezzi unici e fuori produzione\n\nDue modalità diverse, unite dalla stessa attenzione per qualità e ricerca.",
   formCardTitle: "Richiedi Accesso",
   formCardSubtitle: "Registrati per accedere alla vendita speciale online.",
@@ -541,6 +544,10 @@ export default function LandingPageDetailPage() {
                     <Field k="navLabelShowroom" label="Voce 'Showroom'" />
                     <Field k="navLabelContatti" label="Voce 'Contatti'" />
                   </div>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <Field k="navLinkShowroom" label="Link 'Showroom'" hint="URL o path (es. / per home, /showroom, https://...)" />
+                    <Field k="navLinkContatti" label="Link 'Contatti'" hint="URL o path (es. /contatti/richiesta-info)" />
+                  </div>
                 </div>
 
                 <div>
@@ -557,6 +564,7 @@ export default function LandingPageDetailPage() {
                       <Field k="block1HighlightPrefix" label="Highlight (prefisso)" hint="Es. 'Sconti fino al '" />
                       <Field k="block1HighlightStrong" label="Highlight (in grassetto)" hint="Es. '40%' — lascia vuoto per nasconderlo" />
                     </div>
+                    <Field k="block1Period" label="Periodo Online" hint="Mostrato sotto il blocco Online (es. 'Dal 15 Maggio al 30 Giugno 2026')" />
                   </div>
                 </div>
 
@@ -569,14 +577,7 @@ export default function LandingPageDetailPage() {
                       <Field k="block2HighlightPrefix" label="Highlight (prefisso)" />
                       <Field k="block2HighlightStrong" label="Highlight (in grassetto)" />
                     </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Blocco 3 — Periodo (icona calendario)</h4>
-                  <div className="space-y-3">
-                    <Field k="block3Title" label="Titolo blocco" />
-                    <Field k="block3Lines" label="Righe" hint="Una per riga (es. 'Dal 15 Maggio al 30 Giugno 2026')" multi />
+                    <Field k="block2Period" label="Periodo Showroom" hint="Mostrato sotto il blocco Showroom (es. 'Dal 1 Giugno al 31 Luglio 2026')" />
                   </div>
                 </div>
 
