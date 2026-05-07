@@ -342,6 +342,8 @@ model Language {
   storeAttributeValueTranslations StoreAttributeValueTranslation[]
   storeProductTranslations        StoreProductTranslation[]
   storeProductVariantTranslations StoreProductVariantTranslation[]
+
+  landingPageTranslations LandingPageConfigTranslation[]
 }
 
 model ContentCategoryTranslation {
@@ -898,6 +900,47 @@ model LandingPageConfig {
   invitations         EventInvitation[]
   scanUsers           AdminUser[]
   scheduledEmailJobs  ScheduledEmailJob[]
+  translations        LandingPageConfigTranslation[]
+}
+
+model LandingPageConfigTranslation {
+  id                    String            @id @default(cuid())
+  landingPageId         String
+  languageCode          String            @db.VarChar(16)
+  heroTitle             String?           @db.Text
+  heroSubtitle          String?           @db.Text
+  buttonLabel           String?           @db.Text
+  privacyLabel          String?           @db.Text
+  marketingLabel        String?           @db.Text
+  successTitle          String?           @db.Text
+  successMessage        String?           @db.Text
+  navLabelActive        String?           @db.Text
+  navLabelShowroom      String?           @db.Text
+  navLabelContatti      String?           @db.Text
+  eyebrow               String?           @db.Text
+  block1Title           String?           @db.Text
+  block1Lines           String?           @db.Text
+  block1HighlightPrefix String?           @db.Text
+  block1HighlightStrong String?           @db.Text
+  block1Period          String?           @db.Text
+  block2Title           String?           @db.Text
+  block2Lines           String?           @db.Text
+  block2HighlightPrefix String?           @db.Text
+  block2HighlightStrong String?           @db.Text
+  block2Period          String?           @db.Text
+  longDescription       String?           @db.Text
+  formCardTitle         String?           @db.Text
+  formCardSubtitle      String?           @db.Text
+  disclaimer            String?           @db.Text
+  status                String            @default("draft") @db.VarChar(16)
+  isPublished           Boolean           @default(false)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  landingPage           LandingPageConfig @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  language              Language          @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([landingPageId, languageCode])
+  @@index([languageCode])
 }
 
 model EventRegistration {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Globe, MapPin } from "lucide-react";
 import SubscribeForm, { type FieldConfig } from "@/components/landing/accesso-svendita-gtv/SubscribeForm";
+import HeaderLanguageSwitcher from "@/components/layout/HeaderLanguageSwitcher";
 
 const DEFAULTS = {
   heroTitle: "Accesso Riservato alla Vendita Speciale Gebrüder Thonet Vienna",
@@ -81,9 +82,39 @@ export interface SvenditaTemplateProps {
     formFields?: string | null;
     customConfig?: string | null;
   };
+  translation?: {
+    heroTitle?: string | null;
+    heroSubtitle?: string | null;
+    buttonLabel?: string | null;
+    privacyLabel?: string | null;
+    navLabelActive?: string | null;
+    navLabelShowroom?: string | null;
+    navLabelContatti?: string | null;
+    eyebrow?: string | null;
+    block1Title?: string | null;
+    block1Lines?: string | null;
+    block1HighlightPrefix?: string | null;
+    block1HighlightStrong?: string | null;
+    block1Period?: string | null;
+    block2Title?: string | null;
+    block2Lines?: string | null;
+    block2HighlightPrefix?: string | null;
+    block2HighlightStrong?: string | null;
+    block2Period?: string | null;
+    longDescription?: string | null;
+    formCardTitle?: string | null;
+    formCardSubtitle?: string | null;
+    disclaimer?: string | null;
+  } | null;
 }
 
-export default function SvenditaTemplate({ row }: SvenditaTemplateProps) {
+// Returns translation value if non-empty string, otherwise fallback
+function pick<T extends string | null | undefined>(t: T, fallback: string): string {
+  if (typeof t === "string" && t.trim().length > 0) return t;
+  return fallback;
+}
+
+export default function SvenditaTemplate({ row, translation }: SvenditaTemplateProps) {
   let formFields: FieldConfig[] = DEFAULT_FORM_FIELDS;
   if (row.formFields) {
     try {
@@ -99,26 +130,56 @@ export default function SvenditaTemplate({ row }: SvenditaTemplateProps) {
       if (parsed && typeof parsed === "object") custom = parsed as CustomCfg;
     } catch { /* defaults */ }
   }
-  const c = { ...DEFAULTS, ...custom } as typeof DEFAULTS;
+  const baseCustom = { ...DEFAULTS, ...custom } as typeof DEFAULTS;
 
-  const heroTitle = row.heroTitle || DEFAULTS.heroTitle;
-  const heroSubtitle = row.heroSubtitle || DEFAULTS.heroSubtitle;
+  // Merge translation: per ogni campo traducibile, usa la traduzione se presente; altrimenti fallback IT.
+  // I link (navLinkShowroom/Contatti) NON sono traducibili: restano dalla config IT.
+  const t = translation || {};
+  const c = {
+    ...baseCustom,
+    navLabelActive: pick(t.navLabelActive, baseCustom.navLabelActive),
+    navLabelShowroom: pick(t.navLabelShowroom, baseCustom.navLabelShowroom),
+    navLabelContatti: pick(t.navLabelContatti, baseCustom.navLabelContatti),
+    eyebrow: pick(t.eyebrow, baseCustom.eyebrow),
+    block1Title: pick(t.block1Title, baseCustom.block1Title),
+    block1Lines: t.block1Lines && t.block1Lines.trim().length > 0 ? t.block1Lines : baseCustom.block1Lines,
+    block1HighlightPrefix: pick(t.block1HighlightPrefix, baseCustom.block1HighlightPrefix),
+    block1HighlightStrong: pick(t.block1HighlightStrong, baseCustom.block1HighlightStrong),
+    block1Period: pick(t.block1Period, baseCustom.block1Period),
+    block2Title: pick(t.block2Title, baseCustom.block2Title),
+    block2Lines: t.block2Lines && t.block2Lines.trim().length > 0 ? t.block2Lines : baseCustom.block2Lines,
+    block2HighlightPrefix: pick(t.block2HighlightPrefix, baseCustom.block2HighlightPrefix),
+    block2HighlightStrong: pick(t.block2HighlightStrong, baseCustom.block2HighlightStrong),
+    block2Period: pick(t.block2Period, baseCustom.block2Period),
+    longDescription: pick(t.longDescription, baseCustom.longDescription),
+    formCardTitle: pick(t.formCardTitle, baseCustom.formCardTitle),
+    formCardSubtitle: pick(t.formCardSubtitle, baseCustom.formCardSubtitle),
+    disclaimer: pick(t.disclaimer, baseCustom.disclaimer),
+  };
+
+  const heroTitle = pick(t.heroTitle, row.heroTitle || DEFAULTS.heroTitle);
+  const heroSubtitle = pick(t.heroSubtitle, row.heroSubtitle || DEFAULTS.heroSubtitle);
   const bannerImage = row.bannerImage || "";
-  const buttonLabel = row.buttonLabel || DEFAULTS.buttonLabel;
-  const privacyLabel = row.privacyLabel || DEFAULTS.privacyLabel;
+  const buttonLabel = pick(t.buttonLabel, row.buttonLabel || DEFAULTS.buttonLabel);
+  const privacyLabel = pick(t.privacyLabel, row.privacyLabel || DEFAULTS.privacyLabel);
 
   return (
     <div className="font-sans bg-white text-dark">
       {/* ─── Header ─── */}
-      <header className="px-6 md:px-10 py-5 md:py-6 flex items-center justify-between">
+      <header className="px-6 md:px-10 py-5 md:py-6 flex items-center justify-between gap-4">
         <Link href="/" className="text-[13px] md:text-[14px] font-medium tracking-[0.18em] uppercase text-dark hover:opacity-70 transition-opacity">
           Gebr&uuml;der Thonet Vienna
         </Link>
-        <nav className="hidden sm:flex items-center gap-7 text-[11px] md:text-[12px] font-semibold tracking-[0.14em] uppercase">
-          <span className="text-dark border-b-2 border-dark pb-1">{c.navLabelActive}</span>
-          <Link href={c.navLinkShowroom || DEFAULTS.navLinkShowroom} className="text-warm-600 hover:text-dark transition-colors">{c.navLabelShowroom}</Link>
-          <Link href={c.navLinkContatti || DEFAULTS.navLinkContatti} className="text-warm-600 hover:text-dark transition-colors">{c.navLabelContatti}</Link>
-        </nav>
+        <div className="flex items-center gap-7">
+          <nav className="hidden sm:flex items-center gap-7 text-[11px] md:text-[12px] font-semibold tracking-[0.14em] uppercase">
+            <span className="text-dark border-b-2 border-dark pb-1">{c.navLabelActive}</span>
+            <Link href={c.navLinkShowroom || DEFAULTS.navLinkShowroom} className="text-warm-600 hover:text-dark transition-colors">{c.navLabelShowroom}</Link>
+            <Link href={c.navLinkContatti || DEFAULTS.navLinkContatti} className="text-warm-600 hover:text-dark transition-colors">{c.navLabelContatti}</Link>
+          </nav>
+          <div className="text-dark">
+            <HeaderLanguageSwitcher isScrolled={true} />
+          </div>
+        </div>
       </header>
 
       {/* ─── Banner ─── */}

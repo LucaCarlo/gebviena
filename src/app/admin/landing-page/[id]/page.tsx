@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Check, Send, Loader2, CheckCircle2, Settings2,
   Mail, ScanLine, Camera, AlertCircle, X, Save, Users, Download, Trash2,
-  XCircle, ExternalLink,
+  XCircle, ExternalLink, Globe, Sparkles,
 } from "lucide-react";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 
@@ -125,6 +125,45 @@ interface EventReg { id: string; firstName: string; lastName: string; email: str
 
 type Tab = "config" | "email" | "registrations" | "scanner";
 
+/* ───── Field svendita (top-level: stable identity, mantiene il focus) ───── */
+function SvenditaField({
+  label,
+  value,
+  onChange,
+  hint,
+  multi,
+  rows = 4,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  hint?: string;
+  multi?: boolean;
+  rows?: number;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">{label}</label>
+      {multi ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={rows}
+          className="w-full border border-warm-200 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:border-warm-500"
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500"
+        />
+      )}
+      {hint && <p className="text-[10px] text-warm-500 mt-1">{hint}</p>}
+    </div>
+  );
+}
+
 /* ───── Component ───── */
 
 export default function LandingPageDetailPage() {
@@ -168,6 +207,161 @@ export default function LandingPageDetailPage() {
   // Test email
   const [testEmail, setTestEmail] = useState("");
   const [sendingTest, setSendingTest] = useState(false);
+
+  // Traduzioni landing
+  const [tlang, setTlang] = useState("it");
+  const [languages, setLanguages] = useState<{ code: string; name: string; flag: string | null; isDefault: boolean; isActive: boolean }[]>([]);
+  const [translations, setTranslations] = useState<Record<string, Record<string, string>>>({});
+  const [savingT, setSavingT] = useState(false);
+  const [translatingAll, setTranslatingAll] = useState(false);
+  const [tToast, setTToast] = useState<string>("");
+  const isT = tlang !== "it";
+
+  // Carica lingue
+  useEffect(() => {
+    fetch("/api/languages").then(r => r.json()).then(d => {
+      if (d.success) setLanguages(d.data.filter((l: { isActive: boolean }) => l.isActive));
+    });
+  }, []);
+
+  // Carica translations esistenti
+  useEffect(() => {
+    if (!lpId) return;
+    fetch(`/api/admin/translations/landing/${lpId}`).then(r => r.json()).then(d => {
+      if (d.success) {
+        const next: Record<string, Record<string, string>> = {};
+        for (const t of d.data || []) {
+          const m: Record<string, string> = {};
+          for (const f of d.fields || []) {
+            const v = (t as Record<string, unknown>)[f.key];
+            m[f.key] = typeof v === "string" ? v : "";
+          }
+          next[t.languageCode] = m;
+        }
+        setTranslations(next);
+      }
+    });
+  }, [lpId]);
+
+  // Helper: legge il valore corrente in base alla lingua attiva
+  const tval = (key: string, defaultVal: string): string => {
+    if (!isT) return defaultVal;
+    const v = translations[tlang]?.[key];
+    return typeof v === "string" ? v : "";
+  };
+  // Helper: scrive il valore in base alla lingua attiva
+  const tset = (key: string, value: string, onDefault: (v: string) => void) => {
+    if (!isT) { onDefault(value); return; }
+    setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), [key]: value } }));
+    setSaved(false);
+  };
+
+  const flashTToast = (msg: string) => { setTToast(msg); setTimeout(() => setTToast(""), 3000); };
+
+  const saveTranslation = async () => {
+    if (!isT) return;
+    setSavingT(true);
+    try {
+      const draft = translations[tlang] || {};
+      const res = await fetch(`/api/admin/translations/landing/${lpId}/${tlang}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...draft, status: "translated", isPublished: true }),
+      });
+      const d = await res.json();
+      if (d.success) flashTToast(`Traduzione ${tlang.toUpperCase()} salvata`);
+      else flashTToast(d.error || "Errore salvataggio traduzione");
+    } finally {
+      setSavingT(false);
+    }
+  };
+
+  const translateField = async (key: string, sourceText: string) => {
+    if (!isT || !sourceText.trim()) return;
+    try {
+      const res = await fetch("/api/admin/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: sourceText, fromLang: "it", toLang: tlang }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), [key]: d.translation } }));
+        setSaved(false);
+      } else {
+        flashTToast(d.error || "Errore traduzione AI");
+      }
+    } catch {
+      flashTToast("Errore di connessione");
+    }
+  };
+
+  // Source text utilizzato per la traduzione AI di un campo (in IT)
+  const srcText = (key: string): string => {
+    // I campi del form principale
+    const formMap: Record<string, string | undefined> = {
+      heroTitle: form.heroTitle, heroSubtitle: form.heroSubtitle,
+      buttonLabel: form.buttonLabel, privacyLabel: form.privacyLabel,
+      marketingLabel: form.marketingLabel, successTitle: form.successTitle,
+      successMessage: form.successMessage,
+    };
+    if (key in formMap) return formMap[key] || "";
+    // Sotto-campi customConfig
+    const cfg = form.customConfig as unknown as Record<string, string | undefined>;
+    return cfg[key] || "";
+  };
+
+  const TRANSLATABLE_KEYS: { key: string; label: string }[] = [
+    { key: "heroTitle", label: "Titolo hero" },
+    { key: "heroSubtitle", label: "Sottotitolo hero" },
+    { key: "buttonLabel", label: "Testo bottone" },
+    { key: "privacyLabel", label: "Label privacy" },
+    { key: "marketingLabel", label: "Label marketing" },
+    { key: "successTitle", label: "Titolo successo" },
+    { key: "successMessage", label: "Messaggio successo" },
+    { key: "navLabelActive", label: "Nav attiva" },
+    { key: "navLabelShowroom", label: "Nav Showroom" },
+    { key: "navLabelContatti", label: "Nav Contatti" },
+    { key: "eyebrow", label: "Eyebrow" },
+    { key: "block1Title", label: "Blocco 1 — titolo" },
+    { key: "block1Lines", label: "Blocco 1 — righe" },
+    { key: "block1HighlightPrefix", label: "Blocco 1 — highlight prefisso" },
+    { key: "block1HighlightStrong", label: "Blocco 1 — highlight grassetto" },
+    { key: "block1Period", label: "Blocco 1 — periodo" },
+    { key: "block2Title", label: "Blocco 2 — titolo" },
+    { key: "block2Lines", label: "Blocco 2 — righe" },
+    { key: "block2HighlightPrefix", label: "Blocco 2 — highlight prefisso" },
+    { key: "block2HighlightStrong", label: "Blocco 2 — highlight grassetto" },
+    { key: "block2Period", label: "Blocco 2 — periodo" },
+    { key: "longDescription", label: "Descrizione lunga" },
+    { key: "formCardTitle", label: "Form titolo card" },
+    { key: "formCardSubtitle", label: "Form sottotitolo card" },
+    { key: "disclaimer", label: "Disclaimer" },
+  ];
+
+  const translateAll = async () => {
+    if (!isT) return;
+    setTranslatingAll(true);
+    for (const { key } of TRANSLATABLE_KEYS) {
+      const txt = srcText(key);
+      if (!txt.trim()) continue;
+      const existing = translations[tlang]?.[key];
+      if (existing && existing.trim()) continue; // non sovrascrive traduzioni esistenti
+      try {
+        const res = await fetch("/api/admin/translate", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: txt, fromLang: "it", toLang: tlang }),
+        });
+        const d = await res.json();
+        if (d.success) {
+          setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), [key]: d.translation } }));
+        }
+      } catch { /* ignore single failure */ }
+    }
+    setTranslatingAll(false);
+    setSaved(false);
+    flashTToast(`Traduzione AI completata. Premi "Salva traduzione" per persistere.`);
+  };
 
   useEffect(() => {
     Promise.all([
@@ -219,6 +413,10 @@ export default function LandingPageDetailPage() {
   useEffect(() => { if (activeTab === "registrations") fetchRegs(); }, [activeTab, lpId]);
 
   const updateField = (key: string, value: string | boolean) => { setForm((p) => ({ ...p, [key]: value })); setSaved(false); };
+  const updateCustom = (key: keyof SvenditaCustomConfig, value: string) => {
+    setForm((p) => ({ ...p, customConfig: { ...p.customConfig, [key]: value } }));
+    setSaved(false);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -378,6 +576,56 @@ export default function LandingPageDetailPage() {
       {/* ═══ Config Tab ═══ */}
       {activeTab === "config" && (
         <div className="space-y-6">
+          {/* Toolbar traduzioni */}
+          {languages.length > 1 && (
+            <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-4 flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-xs font-semibold text-warm-600 uppercase tracking-wider shrink-0">
+                <Globe size={14} /> Lingua
+              </div>
+              <select
+                value={tlang}
+                onChange={(e) => setTlang(e.target.value)}
+                className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none"
+              >
+                {languages.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.flag ? `${l.flag} ` : ""}{l.name}{l.isDefault ? " (principale)" : ""}
+                  </option>
+                ))}
+              </select>
+              {isT && (
+                <>
+                  <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded">
+                    Stai modificando la traduzione <strong>{tlang.toUpperCase()}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={translateAll}
+                    disabled={translatingAll}
+                    className="flex items-center gap-1.5 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1.5 rounded disabled:opacity-50"
+                  >
+                    {translatingAll ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    {translatingAll ? "Traduzione AI in corso..." : "Traduci tutto con AI"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveTranslation}
+                    disabled={savingT}
+                    className="flex items-center gap-1.5 text-xs bg-warm-800 hover:bg-warm-900 text-white px-3 py-1.5 rounded disabled:opacity-50"
+                  >
+                    {savingT ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                    Salva traduzione {tlang.toUpperCase()}
+                  </button>
+                </>
+              )}
+              {tToast && (
+                <span className="text-xs text-green-700 bg-green-50 border border-green-200 px-3 py-1 rounded">
+                  {tToast}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* 1. Impostazioni generali */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-warm-800">Impostazioni generali</h3>
@@ -421,8 +669,8 @@ export default function LandingPageDetailPage() {
           {/* 3. Contenuti Hero */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-warm-800">Contenuti Hero</h3>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo</label><input type="text" value={form.heroTitle} onChange={(e) => updateField("heroTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Sottotitolo</label><input type="text" value={form.heroSubtitle} onChange={(e) => updateField("heroSubtitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo</label><input type="text" value={tval("heroTitle", form.heroTitle)} onChange={(e) => tset("heroTitle", e.target.value, (v) => updateField("heroTitle", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Sottotitolo</label><input type="text" value={tval("heroSubtitle", form.heroSubtitle)} onChange={(e) => tset("heroSubtitle", e.target.value, (v) => updateField("heroSubtitle", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
             <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Location</label><textarea value={form.heroLocation} onChange={(e) => updateField("heroLocation", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
             <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Descrizione</label><textarea value={form.heroDescription} onChange={(e) => updateField("heroDescription", e.target.value)} rows={3} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
           </div>
@@ -510,110 +758,91 @@ export default function LandingPageDetailPage() {
           })()}
 
           {/* 4c. Testi specifici landing "Accesso Svendita GTV" */}
-          {form.template === "svendita" && (() => {
-            const updateCustom = (key: keyof SvenditaCustomConfig, value: string) => {
-              setForm((p) => ({ ...p, customConfig: { ...p.customConfig, [key]: value } }));
-              setSaved(false);
-            };
-            const Field = ({ k, label, hint, multi }: { k: keyof SvenditaCustomConfig; label: string; hint?: string; multi?: boolean }) => (
+          {form.template === "svendita" && (
+            <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-warm-100 pb-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-warm-800">Testi landing — Accesso Svendita GTV</h3>
+                  <p className="text-xs text-warm-500 mt-0.5">Tutti i testi della pagina pubblica sono modificabili da qui.</p>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">{label}</label>
-                {multi ? (
-                  <textarea value={form.customConfig[k] as string} onChange={(e) => updateCustom(k, e.target.value)} rows={4}
-                    className="w-full border border-warm-200 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:border-warm-500" />
-                ) : (
-                  <input type="text" value={form.customConfig[k] as string} onChange={(e) => updateCustom(k, e.target.value)}
-                    className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500" />
-                )}
-                {hint && <p className="text-[10px] text-warm-500 mt-1">{hint}</p>}
-              </div>
-            );
-            return (
-              <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
-                <div className="flex items-center justify-between border-b border-warm-100 pb-3">
-                  <div>
-                    <h3 className="text-sm font-semibold text-warm-800">Testi landing — Accesso Svendita GTV</h3>
-                    <p className="text-xs text-warm-500 mt-0.5">Tutti i testi della pagina pubblica sono modificabili da qui.</p>
-                  </div>
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-1">Header / nav</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <SvenditaField label="Voce attiva" value={tval("navLabelActive", form.customConfig.navLabelActive)} onChange={(v) => tset("navLabelActive", v, (vv) => updateCustom("navLabelActive", vv))} />
+                  <SvenditaField label="Voce 'Showroom'" value={tval("navLabelShowroom", form.customConfig.navLabelShowroom)} onChange={(v) => tset("navLabelShowroom", v, (vv) => updateCustom("navLabelShowroom", vv))} />
+                  <SvenditaField label="Voce 'Contatti'" value={tval("navLabelContatti", form.customConfig.navLabelContatti)} onChange={(v) => tset("navLabelContatti", v, (vv) => updateCustom("navLabelContatti", vv))} />
                 </div>
-
-                <div>
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-1">Header / nav</h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    <Field k="navLabelActive" label="Voce attiva" />
-                    <Field k="navLabelShowroom" label="Voce 'Showroom'" />
-                    <Field k="navLabelContatti" label="Voce 'Contatti'" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 mt-3">
-                    <Field k="navLinkShowroom" label="Link 'Showroom'" hint="URL o path (es. / per home, /showroom, https://...)" />
-                    <Field k="navLinkContatti" label="Link 'Contatti'" hint="URL o path (es. /contatti/richiesta-info)" />
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Eyebrow sopra il titolo</h4>
-                  <Field k="eyebrow" label="Eyebrow" hint="Etichetta in alto, sopra il grande titolo (es. 'Vendita Speciale')" />
-                </div>
-
-                <div>
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Blocco 1 — Online (icona globo)</h4>
-                  <div className="space-y-3">
-                    <Field k="block1Title" label="Titolo blocco" />
-                    <Field k="block1Lines" label="Righe" hint="Una per riga" multi />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field k="block1HighlightPrefix" label="Highlight (prefisso)" hint="Es. 'Sconti fino al '" />
-                      <Field k="block1HighlightStrong" label="Highlight (in grassetto)" hint="Es. '40%' — lascia vuoto per nasconderlo" />
-                    </div>
-                    <Field k="block1Period" label="Periodo Online" hint="Mostrato sotto il blocco Online (es. 'Dal 15 Maggio al 30 Giugno 2026')" />
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Blocco 2 — Showroom (icona pin)</h4>
-                  <div className="space-y-3">
-                    <Field k="block2Title" label="Titolo blocco" />
-                    <Field k="block2Lines" label="Righe" hint="Una per riga (indirizzo, modalità, etc.)" multi />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field k="block2HighlightPrefix" label="Highlight (prefisso)" />
-                      <Field k="block2HighlightStrong" label="Highlight (in grassetto)" />
-                    </div>
-                    <Field k="block2Period" label="Periodo Showroom" hint="Mostrato sotto il blocco Showroom (es. 'Dal 1 Giugno al 31 Luglio 2026')" />
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Descrizione lunga (sotto i 3 blocchi)</h4>
-                  <textarea value={form.customConfig.longDescription} onChange={(e) => updateCustom("longDescription", e.target.value)} rows={10}
-                    className="w-full border border-warm-200 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:border-warm-500" />
-                  <p className="text-[10px] text-warm-500 mt-1">Supporta markdown leggero: **grassetto**, righe vuote per paragrafi, `- ` per liste puntate.</p>
-                </div>
-
-                <div>
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Card del form (lato destro)</h4>
-                  <div className="space-y-3">
-                    <Field k="formCardTitle" label="Titolo card" />
-                    <Field k="formCardSubtitle" label="Sottotitolo card" />
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Disclaimer (sotto il form)</h4>
-                  <textarea value={form.customConfig.disclaimer} onChange={(e) => updateCustom("disclaimer", e.target.value)} rows={4}
-                    className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500" />
-                  <p className="text-[10px] text-warm-500 mt-1">Una riga per ogni capoverso. Mostrato in basso a destra, sotto al form.</p>
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <SvenditaField label="Link 'Showroom' (non traducibile)" hint="URL o path (es. / per home, /showroom, https://...)" value={form.customConfig.navLinkShowroom} onChange={(v) => updateCustom("navLinkShowroom", v)} />
+                  <SvenditaField label="Link 'Contatti' (non traducibile)" hint="URL o path (es. /contatti/richiesta-info)" value={form.customConfig.navLinkContatti} onChange={(v) => updateCustom("navLinkContatti", v)} />
                 </div>
               </div>
-            );
-          })()}
+
+              <div>
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Eyebrow sopra il titolo</h4>
+                <SvenditaField label="Eyebrow" hint="Etichetta in alto, sopra il grande titolo (es. 'Vendita Speciale')" value={tval("eyebrow", form.customConfig.eyebrow)} onChange={(v) => tset("eyebrow", v, (vv) => updateCustom("eyebrow", vv))} />
+              </div>
+
+              <div>
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Blocco 1 — Online (icona globo)</h4>
+                <div className="space-y-3">
+                  <SvenditaField label="Titolo blocco" value={tval("block1Title", form.customConfig.block1Title)} onChange={(v) => tset("block1Title", v, (vv) => updateCustom("block1Title", vv))} />
+                  <SvenditaField label="Righe" hint="Una per riga" multi value={tval("block1Lines", form.customConfig.block1Lines)} onChange={(v) => tset("block1Lines", v, (vv) => updateCustom("block1Lines", vv))} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <SvenditaField label="Highlight (prefisso)" hint="Es. 'Sconti fino al '" value={tval("block1HighlightPrefix", form.customConfig.block1HighlightPrefix)} onChange={(v) => tset("block1HighlightPrefix", v, (vv) => updateCustom("block1HighlightPrefix", vv))} />
+                    <SvenditaField label="Highlight (in grassetto)" hint="Es. '40%' — lascia vuoto per nasconderlo" value={tval("block1HighlightStrong", form.customConfig.block1HighlightStrong)} onChange={(v) => tset("block1HighlightStrong", v, (vv) => updateCustom("block1HighlightStrong", vv))} />
+                  </div>
+                  <SvenditaField label="Periodo Online" hint="Mostrato sotto il blocco Online (es. 'Dal 15 Maggio al 30 Giugno 2026')" value={tval("block1Period", form.customConfig.block1Period)} onChange={(v) => tset("block1Period", v, (vv) => updateCustom("block1Period", vv))} />
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Blocco 2 — Showroom (icona pin)</h4>
+                <div className="space-y-3">
+                  <SvenditaField label="Titolo blocco" value={tval("block2Title", form.customConfig.block2Title)} onChange={(v) => tset("block2Title", v, (vv) => updateCustom("block2Title", vv))} />
+                  <SvenditaField label="Righe" hint="Una per riga (indirizzo, modalità, etc.)" multi value={tval("block2Lines", form.customConfig.block2Lines)} onChange={(v) => tset("block2Lines", v, (vv) => updateCustom("block2Lines", vv))} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <SvenditaField label="Highlight (prefisso)" value={tval("block2HighlightPrefix", form.customConfig.block2HighlightPrefix)} onChange={(v) => tset("block2HighlightPrefix", v, (vv) => updateCustom("block2HighlightPrefix", vv))} />
+                    <SvenditaField label="Highlight (in grassetto)" value={tval("block2HighlightStrong", form.customConfig.block2HighlightStrong)} onChange={(v) => tset("block2HighlightStrong", v, (vv) => updateCustom("block2HighlightStrong", vv))} />
+                  </div>
+                  <SvenditaField label="Periodo Showroom" hint="Mostrato sotto il blocco Showroom (es. 'Dal 1 Giugno al 31 Luglio 2026')" value={tval("block2Period", form.customConfig.block2Period)} onChange={(v) => tset("block2Period", v, (vv) => updateCustom("block2Period", vv))} />
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Descrizione lunga (sotto i 3 blocchi)</h4>
+                <textarea value={tval("longDescription", form.customConfig.longDescription)} onChange={(e) => tset("longDescription", e.target.value, (v) => updateCustom("longDescription", v))} rows={10}
+                  className="w-full border border-warm-200 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:border-warm-500" />
+                <p className="text-[10px] text-warm-500 mt-1">Supporta markdown leggero: **grassetto**, righe vuote per paragrafi, `- ` per liste puntate.</p>
+              </div>
+
+              <div>
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Card del form (lato destro)</h4>
+                <div className="space-y-3">
+                  <SvenditaField label="Titolo card" value={tval("formCardTitle", form.customConfig.formCardTitle)} onChange={(v) => tset("formCardTitle", v, (vv) => updateCustom("formCardTitle", vv))} />
+                  <SvenditaField label="Sottotitolo card" value={tval("formCardSubtitle", form.customConfig.formCardSubtitle)} onChange={(v) => tset("formCardSubtitle", v, (vv) => updateCustom("formCardSubtitle", vv))} />
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Disclaimer (sotto il form)</h4>
+                <textarea value={tval("disclaimer", form.customConfig.disclaimer)} onChange={(e) => tset("disclaimer", e.target.value, (v) => updateCustom("disclaimer", v))} rows={4}
+                  className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500" />
+                <p className="text-[10px] text-warm-500 mt-1">Una riga per ogni capoverso. Mostrato in basso a destra, sotto al form.</p>
+              </div>
+            </div>
+          )}
 
           {/* 5. Successo */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-warm-800">Pagina di successo</h3>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo pulsante form</label><input type="text" value={form.buttonLabel} onChange={(e) => updateField("buttonLabel", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo successo</label><input type="text" value={form.successTitle} onChange={(e) => updateField("successTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Messaggio successo</label><textarea value={form.successMessage} onChange={(e) => updateField("successMessage", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" placeholder="Testo opzionale sotto il titolo" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Privacy label</label><textarea value={form.privacyLabel} onChange={(e) => updateField("privacyLabel", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Marketing label</label><input type="text" value={form.marketingLabel} onChange={(e) => updateField("marketingLabel", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo pulsante form</label><input type="text" value={tval("buttonLabel", form.buttonLabel)} onChange={(e) => tset("buttonLabel", e.target.value, (v) => updateField("buttonLabel", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo successo</label><input type="text" value={tval("successTitle", form.successTitle)} onChange={(e) => tset("successTitle", e.target.value, (v) => updateField("successTitle", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Messaggio successo</label><textarea value={tval("successMessage", form.successMessage)} onChange={(e) => tset("successMessage", e.target.value, (v) => updateField("successMessage", v))} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" placeholder="Testo opzionale sotto il titolo" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Privacy label</label><textarea value={tval("privacyLabel", form.privacyLabel)} onChange={(e) => tset("privacyLabel", e.target.value, (v) => updateField("privacyLabel", v))} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Marketing label</label><input type="text" value={tval("marketingLabel", form.marketingLabel)} onChange={(e) => tset("marketingLabel", e.target.value, (v) => updateField("marketingLabel", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
           </div>
         </div>
       )}

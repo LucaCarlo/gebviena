@@ -183,6 +183,38 @@ export const TRANSLATION_ENTITIES: Record<string, TranslationEntityDef> = {
       { key: "label", label: "Etichetta", type: "short" },
     ],
   },
+  landing: {
+    delegate: "landingPageConfigTranslation",
+    parentField: "landingPageId",
+    sourceDelegate: "landingPageConfig",
+    fields: [
+      { key: "heroTitle", label: "Titolo hero", type: "short" },
+      { key: "heroSubtitle", label: "Sottotitolo hero", type: "long" },
+      { key: "buttonLabel", label: "Testo bottone form", type: "short" },
+      { key: "privacyLabel", label: "Label privacy", type: "long" },
+      { key: "marketingLabel", label: "Label marketing", type: "long" },
+      { key: "successTitle", label: "Titolo successo", type: "short" },
+      { key: "successMessage", label: "Messaggio successo", type: "long" },
+      { key: "navLabelActive", label: "Nav — voce attiva", type: "short" },
+      { key: "navLabelShowroom", label: "Nav — voce 'Showroom'", type: "short" },
+      { key: "navLabelContatti", label: "Nav — voce 'Contatti'", type: "short" },
+      { key: "eyebrow", label: "Eyebrow", type: "short" },
+      { key: "block1Title", label: "Blocco 1 — titolo", type: "short" },
+      { key: "block1Lines", label: "Blocco 1 — righe", type: "long" },
+      { key: "block1HighlightPrefix", label: "Blocco 1 — highlight prefisso", type: "short" },
+      { key: "block1HighlightStrong", label: "Blocco 1 — highlight grassetto", type: "short" },
+      { key: "block1Period", label: "Blocco 1 — periodo", type: "short" },
+      { key: "block2Title", label: "Blocco 2 — titolo", type: "short" },
+      { key: "block2Lines", label: "Blocco 2 — righe", type: "long" },
+      { key: "block2HighlightPrefix", label: "Blocco 2 — highlight prefisso", type: "short" },
+      { key: "block2HighlightStrong", label: "Blocco 2 — highlight grassetto", type: "short" },
+      { key: "block2Period", label: "Blocco 2 — periodo", type: "short" },
+      { key: "longDescription", label: "Descrizione lunga", type: "long" },
+      { key: "formCardTitle", label: "Form — titolo card", type: "short" },
+      { key: "formCardSubtitle", label: "Form — sottotitolo card", type: "long" },
+      { key: "disclaimer", label: "Disclaimer", type: "long" },
+    ],
+  },
 };
 
 export function getEntityDef(entity: string): TranslationEntityDef | null {
@@ -269,5 +301,19 @@ export async function loadSourceText(entity: string, entityId: string) {
   }
 
   const delegate = (prisma as unknown as Record<string, AnyDelegate>)[def.sourceDelegate];
-  return delegate.findUnique({ where: { id: entityId } });
+  const row = await delegate.findUnique({ where: { id: entityId } });
+
+  // Per `landing`: i sotto-campi traducibili (eyebrow, block1Title, ...) vivono nel JSON
+  // `customConfig`. Esplodiamo il JSON al top-level del source object così l'AI può
+  // tradurli singolarmente come per qualunque altro field.
+  if (entity === "landing" && row && typeof (row as Record<string, unknown>).customConfig === "string") {
+    try {
+      const cfg = JSON.parse((row as Record<string, unknown>).customConfig as string);
+      if (cfg && typeof cfg === "object") {
+        return { ...(row as Record<string, unknown>), ...(cfg as Record<string, unknown>) };
+      }
+    } catch { /* fall through */ }
+  }
+
+  return row;
 }

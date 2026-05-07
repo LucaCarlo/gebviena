@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import SvenditaTemplate from "@/components/landing/svendita/SvenditaTemplate";
 import GenericLandingTemplate from "@/components/landing/generic/GenericLandingTemplate";
+import { getCurrentLang, DEFAULT_LANG } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -35,6 +36,14 @@ export default async function LandingDispatcher({ params }: PageProps) {
     );
   }
 
+  const lang = getCurrentLang();
+  const translation =
+    lang !== DEFAULT_LANG
+      ? await prisma.landingPageConfigTranslation.findUnique({
+          where: { landingPageId_languageCode: { landingPageId: cfg.id, languageCode: lang } },
+        })
+      : null;
+
   if (cfg.template === "svendita") {
     return (
       <SvenditaTemplate
@@ -47,6 +56,7 @@ export default async function LandingDispatcher({ params }: PageProps) {
           formFields: cfg.formFields,
           customConfig: cfg.customConfig,
         }}
+        translation={translation}
       />
     );
   }
@@ -55,15 +65,15 @@ export default async function LandingDispatcher({ params }: PageProps) {
     <GenericLandingTemplate
       config={{
         id: cfg.id,
-        heroTitle: cfg.heroTitle,
-        heroSubtitle: cfg.heroSubtitle,
+        heroTitle: translation?.heroTitle || cfg.heroTitle,
+        heroSubtitle: translation?.heroSubtitle ?? cfg.heroSubtitle,
         heroLocation: cfg.heroLocation,
         heroDescription: cfg.heroDescription,
-        successTitle: cfg.successTitle,
-        successMessage: cfg.successMessage,
-        privacyLabel: cfg.privacyLabel,
-        marketingLabel: cfg.marketingLabel,
-        buttonLabel: cfg.buttonLabel,
+        successTitle: translation?.successTitle || cfg.successTitle,
+        successMessage: translation?.successMessage ?? cfg.successMessage,
+        privacyLabel: translation?.privacyLabel || cfg.privacyLabel,
+        marketingLabel: translation?.marketingLabel ?? cfg.marketingLabel,
+        buttonLabel: translation?.buttonLabel || cfg.buttonLabel,
         bannerImage: cfg.bannerImage,
         logoImage: cfg.logoImage,
         formFields: cfg.formFields,
