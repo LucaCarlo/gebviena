@@ -4,6 +4,7 @@ import { sendMail } from "@/lib/mail";
 import { renderEmailTemplate, parseBlocks } from "@/lib/email-template-renderer";
 import { assignTagBySlug } from "@/lib/tags";
 import { buildEmailFooterHtml, getEmailFooterConfig } from "@/lib/event-registration";
+import { headers } from "next/headers";
 
 const TEMPLATE_NAME = "Conferma pre-accesso svendita";
 const PERMALINK = "accesso-svendita-gtv";
@@ -127,13 +128,19 @@ export async function POST(req: Request) {
     const email = emailRaw.toLowerCase();
     const { tagSlug, tagName, template, emailSubjectOverride, emailFooterJson } = await resolveConfig();
 
-    // Save / update subscriber
+    // Lingua dell'utente (impostata dal middleware via x-gtv-lang header)
+    const lang = (() => {
+      try { return headers().get("x-gtv-lang") || "it"; } catch { return "it"; }
+    })();
+
+    // Save / update subscriber (con lingua)
     await prisma.newsletterSubscriber.upsert({
       where: { email },
       update: {
         firstName,
         lastName,
         ...(company && { company }),
+        languageCode: lang,
         acceptsPrivacy: true,
       },
       create: {
@@ -141,6 +148,7 @@ export async function POST(req: Request) {
         firstName,
         lastName,
         company: company || null,
+        languageCode: lang,
         acceptsPrivacy: true,
         acceptsUpdates: false,
       },
@@ -172,15 +180,58 @@ export async function POST(req: Request) {
       }
     }
 
+    // Cerca traduzioni email per la lingua dell'utente (se non IT)
+    let trEmailSubject = "";
+    let trEmailTitle = "";
+    let trEmailBody = "";
+    if (lang !== "it") {
+      try {
+        const lp = await prisma.landingPageConfig.findUnique({
+          where: { permalink: PERMALINK },
+          select: { id: true },
+        });
+        if (lp) {
+          const tr = await prisma.landingPageConfigTranslation.findUnique({
+            where: { landingPageId_languageCode: { landingPageId: lp.id, languageCode: lang } },
+            select: { emailSubject: true, emailTitle: true, emailBody: true },
+          });
+          trEmailSubject = (tr?.emailSubject || "").trim();
+          trEmailTitle = (tr?.emailTitle || "").trim();
+          trEmailBody = (tr?.emailBody || "").trim();
+        }
+      } catch { /* fallback su IT */ }
+    }
+
     // Fire-and-forget confirmation email — do not block the response
     (async () => {
       try {
-        let html = renderEmailTemplate(parseBlocks(template.blocks), {
-          firstName,
-          lastName,
-          email,
-          eventLink: "",
-        });
+        let html: string;
+        if (trEmailTitle || trEmailBody) {
+          // Render email tradotta semplificata (no template blocks): titolo + corpo + footer
+          const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          const renderText = (s: string) =>
+            escape(s)
+              .replace(/\{\{firstName\}\}/g, escape(firstName))
+              .replace(/\{\{lastName\}\}/g, escape(lastName))
+              .replace(/\{\{email\}\}/g, escape(email))
+              .replace(/\n/g, "<br/>");
+          html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;color:#333;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f4;padding:24px 0;"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;max-width:600px;width:100%;">
+<tr><td style="padding:32px 32px 8px 32px;font-size:24px;font-weight:600;color:#1a1a1a;">${renderText(trEmailTitle || "")}</td></tr>
+<tr><td style="padding:8px 32px 32px 32px;font-size:15px;line-height:1.7;color:#333;">${renderText(trEmailBody || "")}</td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
+        } else {
+          // Fallback IT: usa il template a blocchi originale
+          html = renderEmailTemplate(parseBlocks(template.blocks), {
+            firstName,
+            lastName,
+            email,
+            eventLink: "",
+          });
+        }
 
         // Inject configurable footer (social icons + lines) before </body>
         const footerHtml = buildEmailFooterHtml(getEmailFooterConfig(emailFooterJson));
@@ -190,8 +241,8 @@ export async function POST(req: Request) {
             : html + footerHtml;
         }
 
-        // Prefer the LandingPageConfig override; fall back to template subject; then default
-        const subject = emailSubjectOverride || template.subject || DEFAULT_SUBJECT;
+        // Subject: traduzione > LandingPageConfig override > template subject > default
+        const subject = trEmailSubject || emailSubjectOverride || template.subject || DEFAULT_SUBJECT;
         await sendMail(email, subject, html);
       } catch (e) {
         console.error("Confirmation email failed:", e);

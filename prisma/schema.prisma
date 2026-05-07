@@ -694,6 +694,7 @@ model NewsletterSubscriber {
   notes          String?  @db.Text
   acceptsPrivacy Boolean  @default(false)
   acceptsUpdates Boolean  @default(false)
+  languageCode   String?  @db.VarChar(16) // lingua del visitatore al momento dell'iscrizione (it/en/de/fr/es)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 }
@@ -933,6 +934,9 @@ model LandingPageConfigTranslation {
   formCardSubtitle      String?           @db.Text
   disclaimer            String?           @db.Text
   formFieldLabels       String?           @db.Text // JSON: { firstName: "First Name", lastName: "Last Name", ... }
+  emailSubject          String?           @db.Text // Oggetto email di conferma (tradotto)
+  emailTitle            String?           @db.Text // Titolo dentro l'email (tradotto)
+  emailBody             String?           @db.Text // Corpo dell'email (tradotto)
   status                String            @default("draft") @db.VarChar(16)
   isPublished           Boolean           @default(false)
   createdAt             DateTime          @default(now())
@@ -965,6 +969,7 @@ model EventRegistration {
   checkedIn        Boolean            @default(false)
   checkedInAt      DateTime?
   source           String?            @db.VarChar(20) // "invite" | "direct"
+  languageCode     String?            @db.VarChar(16) // lingua del visitatore al momento della registrazione
   createdAt        DateTime           @default(now())
   invitation       EventInvitation?
 

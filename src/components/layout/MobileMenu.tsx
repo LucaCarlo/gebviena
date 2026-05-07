@@ -95,9 +95,9 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 </button>
               </div>
 
-              {/* Nav items */}
-              <nav className="flex items-start justify-center pt-10 md:pt-14 flex-1 min-h-0 overflow-y-auto">
-                <ul className="space-y-8 md:space-y-10">
+              {/* Nav items — su altezze piccole riduciamo solo lo spacing per dare aria all'immagine senza toccare le scritte */}
+              <nav className="flex items-start justify-center pt-10 md:pt-14 [@media(max-height:800px)]:pt-6 [@media(max-height:680px)]:pt-4 flex-1 min-h-0 overflow-y-auto">
+                <ul className="space-y-8 md:space-y-10 [@media(max-height:800px)]:!space-y-5 [@media(max-height:680px)]:!space-y-3">
                   {NAV_ITEMS.map((item) => {
                     const hasChildren = "children" in item && !!item.children;
                     const isActive = activeItem === item.label;
@@ -130,11 +130,11 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 </ul>
               </nav>
 
-              {/* Featured image — su altezze piccole si rimpicciolisce invece di sparire del tutto */}
+              {/* Featured image — aspect ratio fisso 1.3:1, riduciamo solo i margin per dare aria su altezze piccole */}
               <Link
                 href={localizePath("/mondo-gtv/gtv-experience", lang)}
                 onClick={onClose}
-                className="relative overflow-hidden hidden sm:block aspect-[1.3/1] mx-[30px] mt-10 mb-[30px] [@media(max-height:800px)]:mt-4 [@media(max-height:800px)]:mb-4 [@media(max-height:800px)]:mx-5 [@media(max-height:800px)]:aspect-[2/1] [@media(max-height:680px)]:mt-2 [@media(max-height:680px)]:mb-3 [@media(max-height:680px)]:aspect-[2.4/1] [@media(max-height:560px)]:hidden"
+                className="relative overflow-hidden hidden sm:block aspect-[1.3/1] mx-[30px] mt-10 mb-[30px] [@media(max-height:800px)]:mt-5 [@media(max-height:800px)]:mb-4 [@media(max-height:680px)]:mt-3 [@media(max-height:680px)]:mb-3 [@media(max-height:560px)]:hidden"
                 style={{ width: "calc(100% - 60px)" }}
               >
                 <Image

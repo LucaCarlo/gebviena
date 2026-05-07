@@ -19,6 +19,7 @@ interface UnifiedContact {
   address: string | null; city: string | null; zip: string | null;
   province: string | null; country: string | null; website: string | null;
   notes: string | null; source: string; subscriberId: string | null;
+  languageCode: string | null;
   createdAt: string; updatedAt: string | null; tags: TagInfo[];
 }
 
@@ -64,6 +65,8 @@ export default function AdminSubscribersPage() {
   const [hasLandingPage, setHasLandingPage] = useState(false);
   const [invitedFilter, setInvitedFilter] = useState<InvitedFilter>("all");
   const [checkinFilter, setCheckinFilter] = useState<"all" | "true" | "false">("all");
+  const [langFilter, setLangFilter] = useState<string>("all"); // "all" | codice lingua | "unknown"
+  const [availableLangs, setAvailableLangs] = useState<{ code: string; name: string; flag: string | null }[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set()); // by email
 
   // Event registrations (for evento detail view)
@@ -117,6 +120,7 @@ export default function AdminSubscribersPage() {
     if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
     if (invitedFilter !== "all") params.set("invited", invitedFilter);
     if (checkinFilter !== "all") params.set("checkedIn", checkinFilter);
+    if (langFilter !== "all") params.set("lang", langFilter);
 
     try {
       const r = await fetch(`/api/contacts/unified?${params}`);
@@ -131,7 +135,7 @@ export default function AdminSubscribersPage() {
     } catch {}
 
     if (opts.append) setLoadingMore(false); else setContactsLoading(false);
-  }, [activeTab, search, invitedFilter, checkinFilter, page, isEventoDetail]);
+  }, [activeTab, search, invitedFilter, checkinFilter, langFilter, page, isEventoDetail]);
 
   const fetchEventRegs = useCallback(async () => {
     setEventLoading(true);
@@ -148,13 +152,20 @@ export default function AdminSubscribersPage() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // Refetch on filter change (tab/search/invitedFilter/checkinFilter) — always reset to page 1
+  // Refetch on filter change — always reset to page 1
   useEffect(() => {
     if (isEventoDetail) return;
     fetchContacts({ pageOverride: 1 });
     setSelected(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, search, invitedFilter, checkinFilter]);
+  }, [activeTab, search, invitedFilter, checkinFilter, langFilter]);
+
+  // Load lingue disponibili per il filtro
+  useEffect(() => {
+    fetch("/api/languages").then(r => r.json()).then(d => {
+      if (d.success) setAvailableLangs((d.data || []).filter((l: { isActive: boolean }) => l.isActive));
+    }).catch(() => {});
+  }, []);
 
   // Reset invited filter when leaving a tag-with-landing tab
   useEffect(() => {
@@ -599,6 +610,20 @@ export default function AdminSubscribersPage() {
             <option value="false">Check-in: no</option>
           </select>
         )}
+        {!isEventoDetail && availableLangs.length > 0 && (
+          <select
+            value={langFilter}
+            onChange={(e) => setLangFilter(e.target.value)}
+            className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
+            title="Filtra per lingua del visitatore al momento dell'iscrizione"
+          >
+            <option value="all">Lingua: tutte</option>
+            {availableLangs.map((l) => (
+              <option key={l.code} value={l.code}>{l.flag ? `${l.flag} ` : ""}{l.name}</option>
+            ))}
+            <option value="unknown">Lingua: sconosciuta</option>
+          </select>
+        )}
         {!isEventoDetail && (
           <button
             onClick={() => {
@@ -607,6 +632,7 @@ export default function AdminSubscribersPage() {
               if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
               if (invitedFilter !== "all") params.set("invited", invitedFilter);
               if (checkinFilter !== "all") params.set("checkedIn", checkinFilter);
+              if (langFilter !== "all") params.set("lang", langFilter);
               window.open(`/api/contacts/unified?${params}`, "_blank");
             }}
             className="flex items-center gap-1.5 text-sm text-warm-600 hover:text-warm-800 border border-warm-300 rounded-lg px-3 py-2.5"

@@ -314,6 +314,7 @@ export default function LandingPageDetailPage() {
       buttonLabel: form.buttonLabel, privacyLabel: form.privacyLabel,
       marketingLabel: form.marketingLabel, successTitle: form.successTitle,
       successMessage: form.successMessage,
+      emailSubject: form.emailSubject, emailTitle: form.emailTitle, emailBody: form.emailBody,
     };
     if (key in formMap) return formMap[key] || "";
     // Sotto-campi customConfig
@@ -416,6 +417,9 @@ export default function LandingPageDetailPage() {
     { key: "formCardTitle", label: "Form titolo card" },
     { key: "formCardSubtitle", label: "Form sottotitolo card" },
     { key: "disclaimer", label: "Disclaimer" },
+    { key: "emailSubject", label: "Email — oggetto" },
+    { key: "emailTitle", label: "Email — titolo" },
+    { key: "emailBody", label: "Email — corpo" },
   ];
 
   const translateAll = async () => {
@@ -1033,16 +1037,34 @@ export default function LandingPageDetailPage() {
           {!form.emailTemplateId && (
             <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
               <h3 className="text-sm font-semibold text-warm-800">Contenuto email personalizzato</h3>
-              <p className="text-xs text-warm-500">Questi campi vengono usati solo se non selezioni un template sopra.</p>
-              <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo email</label><input type="text" value={form.emailTitle} onChange={(e) => updateField("emailTitle", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-              <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Corpo email</label><textarea value={form.emailBody} onChange={(e) => updateField("emailBody", e.target.value)} rows={5} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+              <p className="text-xs text-warm-500">Questi campi vengono usati solo se non selezioni un template sopra. {isT && <span className="text-amber-700 font-medium">Stai modificando la traduzione {tlang.toUpperCase()}.</span>}</p>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider">Titolo email</label>
+                  {isT && <AIButton busy={aiBusyKey === "emailTitle"} onClick={() => translateOne("emailTitle")} />}
+                </div>
+                <input type="text" value={tval("emailTitle", form.emailTitle)} onChange={(e) => tset("emailTitle", e.target.value, (v) => updateField("emailTitle", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider">Corpo email</label>
+                  {isT && <AIButton busy={aiBusyKey === "emailBody"} onClick={() => translateOne("emailBody")} />}
+                </div>
+                <textarea value={tval("emailBody", form.emailBody)} onChange={(e) => tset("emailBody", e.target.value, (v) => updateField("emailBody", v))} rows={5} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" />
+              </div>
             </div>
           )}
 
           {/* Oggetto email (sempre visibile) */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-warm-800">Oggetto email</h3>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Oggetto</label><input type="text" value={form.emailSubject} onChange={(e) => updateField("emailSubject", e.target.value)} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" placeholder="Es. Registrazione confermata — Milan Design Week 2026" /></div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider">Oggetto</label>
+                {isT && <AIButton busy={aiBusyKey === "emailSubject"} onClick={() => translateOne("emailSubject")} />}
+              </div>
+              <input type="text" value={tval("emailSubject", form.emailSubject)} onChange={(e) => tset("emailSubject", e.target.value, (v) => updateField("emailSubject", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" placeholder="Es. Registrazione confermata — Milan Design Week 2026" />
+            </div>
           </div>
 
           {/* Footer email */}

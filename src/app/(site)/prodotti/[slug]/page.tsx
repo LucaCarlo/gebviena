@@ -588,39 +588,6 @@ export default function ProductDetailPage() {
                 </AnimatePresence>
               </div>
 
-              {/* --- CONFIGURATORE (PCON 3D) — titolo come toggle ma sempre visibile --- */}
-              {(() => {
-                const pconSrc = product.pconBan
-                  ? buildPconUrl({
-                      moc: product.pconMoc,
-                      ban: product.pconBan,
-                      sid: product.pconSid,
-                      ovc: product.pconOvc,
-                    })
-                  : product.pconUrl || null;
-                if (!pconSrc) return null;
-                return (
-                  <div id="pcon">
-                    <div className="w-full flex items-center justify-between py-5 px-2">
-                      <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
-                        Configuratore
-                      </span>
-                    </div>
-                    <div className="px-2 pb-8 pt-2">
-                      <iframe
-                        src={pconSrc}
-                        className="block w-full border-0"
-                        style={{ height: "640px" }}
-                        allowFullScreen
-                        allow="xr-spatial-tracking"
-                        loading="eager"
-                        title={`Visualizzatore 3D ${product.name}`}
-                      />
-                    </div>
-                  </div>
-                );
-              })()}
-
               {/* --- DOCUMENTAZIONE --- */}
               <div>
                 <button
@@ -680,6 +647,38 @@ export default function ProductDetailPage() {
                 </AnimatePresence>
               </div>
 
+              {/* --- CONFIGURATORE (PCON 3D) — sempre visibile, in fondo --- */}
+              {(() => {
+                const pconSrc = product.pconBan
+                  ? buildPconUrl({
+                      moc: product.pconMoc,
+                      ban: product.pconBan,
+                      sid: product.pconSid,
+                      ovc: product.pconOvc,
+                    })
+                  : product.pconUrl || null;
+                if (!pconSrc) return null;
+                return (
+                  <div id="pcon">
+                    <div className="w-full flex items-center justify-between py-5 px-2">
+                      <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
+                        Configuratore
+                      </span>
+                    </div>
+                    <div className="px-2 pb-8 pt-2">
+                      <iframe
+                        src={pconSrc}
+                        className="block w-full border-0"
+                        style={{ height: "640px" }}
+                        allowFullScreen
+                        allow="xr-spatial-tracking"
+                        loading="eager"
+                        title={`Visualizzatore 3D ${product.name}`}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
 
             </div>
           </motion.div>

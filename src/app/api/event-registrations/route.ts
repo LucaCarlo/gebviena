@@ -7,6 +7,7 @@ import {
   getEmailConfig,
 } from "@/lib/event-registration";
 import { assignTagBySlug } from "@/lib/tags";
+import { headers } from "next/headers";
 
 function generateUUID(): string {
   return crypto.randomUUID();
@@ -80,6 +81,11 @@ export async function POST(req: Request) {
       if (invitation?.registrationId) invitation = null;
     }
 
+    // Lingua del visitatore (impostata dal middleware via x-gtv-lang header)
+    const userLang = (() => {
+      try { return headers().get("x-gtv-lang") || "it"; } catch { return "it"; }
+    })();
+
     const registration = await prisma.eventRegistration.create({
       data: {
         uuid,
@@ -98,6 +104,7 @@ export async function POST(req: Request) {
         qrCode,
         landingPageId: landingPageId || null,
         source: invitation ? "invite" : "direct",
+        languageCode: userLang,
       },
     });
 
@@ -123,6 +130,9 @@ export async function POST(req: Request) {
       assignTagBySlug(email, "evento", "Evento").catch(() => {});
     }
 
+    // Riusa la lingua già rilevata sopra per le traduzioni email
+    const lang = userLang;
+
     // Get email config from the specific landing page, fallback to default
     let emailConfig: { emailSubject: string; emailTitle: string; emailBody: string; bannerImage: string; emailTemplateId?: string; emailFooter?: string; signatureTemplateId?: string; signatureUserData?: string };
     if (landingPageId) {
@@ -131,10 +141,23 @@ export async function POST(req: Request) {
         select: { emailSubject: true, emailTitle: true, emailBody: true, bannerImage: true, emailTemplateId: true, emailFooter: true, signatureTemplateId: true, signatureUserData: true },
       });
       if (lp) {
+        // Override email fields con la traduzione se la lingua dell'utente non è IT
+        let trEmailSubject: string | null = null;
+        let trEmailTitle: string | null = null;
+        let trEmailBody: string | null = null;
+        if (lang !== "it") {
+          const tr = await prisma.landingPageConfigTranslation.findUnique({
+            where: { landingPageId_languageCode: { landingPageId, languageCode: lang } },
+            select: { emailSubject: true, emailTitle: true, emailBody: true },
+          });
+          trEmailSubject = tr?.emailSubject?.trim() || null;
+          trEmailTitle = tr?.emailTitle?.trim() || null;
+          trEmailBody = tr?.emailBody?.trim() || null;
+        }
         emailConfig = {
-          emailSubject: lp.emailSubject || "Your Event Registration",
-          emailTitle: lp.emailTitle || "Registration Confirmed",
-          emailBody: lp.emailBody || "",
+          emailSubject: trEmailSubject || lp.emailSubject || "Your Event Registration",
+          emailTitle: trEmailTitle || lp.emailTitle || "Registration Confirmed",
+          emailBody: trEmailBody || lp.emailBody || "",
           bannerImage: lp.bannerImage || "",
           emailTemplateId: lp.emailTemplateId || undefined,
           emailFooter: lp.emailFooter || undefined,

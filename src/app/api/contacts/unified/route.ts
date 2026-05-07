@@ -19,6 +19,7 @@ interface UnifiedContact {
   notes: string | null;
   source: string; // "newsletter" | "evento" | "entrambi"
   subscriberId: string | null;
+  languageCode: string | null; // lingua dell'utente al momento dell'iscrizione
   createdAt: string;
   updatedAt: string | null;
   tags: { id: string; name: string; slug: string; color: string }[];
@@ -42,6 +43,7 @@ export async function GET(req: Request) {
   const tag = (searchParams.get("tag") || "").trim();
   const invited = (searchParams.get("invited") || "all").trim(); // "all" | "true" | "false"
   const checkedIn = (searchParams.get("checkedIn") || "all").trim(); // "all" | "true" | "false"
+  const langFilter = (searchParams.get("lang") || "all").trim(); // "all" | codice lingua (it/en/de/fr/es/...)
 
   // ─── 1. Load all sources in parallel ───
   // ContactTag is a third source: contacts imported via CSV may have only tags
@@ -50,7 +52,7 @@ export async function GET(req: Request) {
     prisma.newsletterSubscriber.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.eventRegistration.findMany({
       orderBy: { createdAt: "desc" },
-      select: { email: true, firstName: true, lastName: true, country: true, city: true, createdAt: true },
+      select: { email: true, firstName: true, lastName: true, country: true, city: true, languageCode: true, createdAt: true },
     }),
     prisma.contactTag.findMany({
       select: { email: true, createdAt: true },
@@ -79,6 +81,7 @@ export async function GET(req: Request) {
       notes: s.notes,
       source: "newsletter",
       subscriberId: s.id,
+      languageCode: s.languageCode || null,
       createdAt: s.createdAt.toISOString(),
       updatedAt: s.updatedAt?.toISOString() || null,
       tags: [],
@@ -94,6 +97,7 @@ export async function GET(req: Request) {
       if (!existing.lastName && e.lastName) existing.lastName = e.lastName;
       if (!existing.country && e.country) existing.country = e.country;
       if (!existing.city && e.city) existing.city = e.city;
+      if (!existing.languageCode && e.languageCode) existing.languageCode = e.languageCode;
     } else {
       contactMap.set(key, {
         email: e.email,
@@ -111,6 +115,7 @@ export async function GET(req: Request) {
         notes: null,
         source: "evento",
         subscriberId: null,
+        languageCode: e.languageCode || null,
         createdAt: e.createdAt.toISOString(),
         updatedAt: null,
         tags: [],
@@ -138,6 +143,7 @@ export async function GET(req: Request) {
       notes: null,
       source: "tag",
       subscriberId: null,
+      languageCode: null,
       createdAt: t.createdAt.toISOString(),
       updatedAt: null,
       tags: [],
@@ -191,6 +197,15 @@ export async function GET(req: Request) {
     );
   }
 
+  // ─── 4a. Lingua filter ───
+  if (langFilter !== "all") {
+    if (langFilter === "unknown") {
+      contacts = contacts.filter((c) => !c.languageCode);
+    } else {
+      contacts = contacts.filter((c) => c.languageCode === langFilter);
+    }
+  }
+
   // ─── 4b. Check-in filter (per i contatti con EventRegistration) ───
   // Considera "checked-in" un contatto la cui email ha almeno una EventRegistration con checkedIn=true.
   let checkedInSet: Set<string> | null = null;
@@ -240,7 +255,7 @@ export async function GET(req: Request) {
     const header = [
       "Email", "Nome", "Cognome", "Azienda", "Telefono", "Profilo",
       "Indirizzo", "Citta", "CAP", "Provincia", "Paese",
-      "Sito", "Note", "Sorgente", "Tag", "Check-in", "Registrato il",
+      "Sito", "Note", "Sorgente", "Lingua", "Tag", "Check-in", "Registrato il",
     ].join(",");
     const rows = contacts.map((c) => [
       esc(c.email),
@@ -248,6 +263,7 @@ export async function GET(req: Request) {
       esc(c.address), esc(c.city), esc(c.zip), esc(c.province), esc(c.country),
       esc(c.website), esc(c.notes),
       esc(c.source),
+      esc(c.languageCode || ""),
       esc(c.tags.map((t) => t.name).join("; ")),
       esc(checkedInSet!.has(c.email.toLowerCase().trim()) ? "si" : "no"),
       esc(c.createdAt),
