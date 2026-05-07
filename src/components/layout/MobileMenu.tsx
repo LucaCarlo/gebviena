@@ -95,13 +95,12 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 </button>
               </div>
 
-              {/* Nav items — su altezze piccole rimpicciolisce font-size e spacing per fare spazio all'immagine */}
-              <nav className="flex items-start justify-center pt-10 md:pt-14 [@media(max-height:800px)]:pt-6 [@media(max-height:680px)]:pt-4 flex-1 min-h-0 overflow-y-auto">
-                <ul className="space-y-8 md:space-y-10 [@media(max-height:800px)]:!space-y-5 [@media(max-height:680px)]:!space-y-3">
+              {/* Nav items */}
+              <nav className="flex items-start justify-center pt-10 md:pt-14 flex-1 min-h-0 overflow-y-auto">
+                <ul className="space-y-8 md:space-y-10">
                   {NAV_ITEMS.map((item) => {
                     const hasChildren = "children" in item && !!item.children;
                     const isActive = activeItem === item.label;
-                    const navLinkClass = "block font-sans text-lg md:text-xl [@media(max-height:800px)]:!text-base [@media(max-height:680px)]:!text-sm uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap";
 
                     return (
                       <li key={item.label}>
@@ -109,7 +108,9 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                           <button
                             onClick={() => handleItemClick(item.label, true)}
                             style={{ color: "#000000" }}
-                            className={`${navLinkClass} ${isActive ? "underline underline-offset-[8px] decoration-[0.5px]" : ""}`}
+                            className={`block font-sans text-lg md:text-xl uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap ${
+                              isActive ? "underline underline-offset-[8px] decoration-[0.5px]" : ""
+                            }`}
                           >
                             {t(item.i18nKey)}
                           </button>
@@ -118,7 +119,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                             href={localizeHref(item.href, lang)}
                             onClick={onClose}
                             style={{ color: "#000000" }}
-                            className={navLinkClass}
+                            className="block font-sans text-lg md:text-xl uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap"
                           >
                             {t(item.i18nKey)}
                           </Link>
@@ -129,11 +130,11 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 </ul>
               </nav>
 
-              {/* Featured image — su altezze piccole si rimpicciolisce invece di sparire */}
+              {/* Featured image — su altezze piccole si rimpicciolisce invece di sparire del tutto */}
               <Link
                 href={localizePath("/mondo-gtv/gtv-experience", lang)}
                 onClick={onClose}
-                className="relative overflow-hidden hidden sm:block aspect-[1.3/1] mx-[30px] mt-10 mb-[30px] [@media(max-height:800px)]:!mt-4 [@media(max-height:800px)]:!mb-4 [@media(max-height:800px)]:!mx-5 [@media(max-height:800px)]:aspect-[2/1] [@media(max-height:680px)]:!mt-2 [@media(max-height:680px)]:!mb-3 [@media(max-height:680px)]:aspect-[2.4/1] [@media(max-height:560px)]:!hidden"
+                className="relative overflow-hidden hidden sm:block aspect-[1.3/1] mx-[30px] mt-10 mb-[30px] [@media(max-height:800px)]:mt-4 [@media(max-height:800px)]:mb-4 [@media(max-height:800px)]:mx-5 [@media(max-height:800px)]:aspect-[2/1] [@media(max-height:680px)]:mt-2 [@media(max-height:680px)]:mb-3 [@media(max-height:680px)]:aspect-[2.4/1] [@media(max-height:560px)]:hidden"
                 style={{ width: "calc(100% - 60px)" }}
               >
                 <Image
@@ -144,8 +145,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                   sizes="485px"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                <div className="absolute bottom-4 left-3 right-3 [@media(max-height:800px)]:bottom-2 [@media(max-height:800px)]:left-2.5 [@media(max-height:800px)]:right-2.5">
-                  <p className="text-white text-[18px] md:text-[20px] [@media(max-height:800px)]:!text-[14px] [@media(max-height:680px)]:!text-[12px] font-light uppercase tracking-[0.03em] leading-snug">
+                <div className="absolute bottom-4 left-3 right-3">
+                  <p className="text-white text-[18px] md:text-[20px] font-light uppercase tracking-[0.03em] leading-snug">
                     {t("common.menu_featured")}
                   </p>
                 </div>
