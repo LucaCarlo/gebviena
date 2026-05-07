@@ -3,18 +3,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Globe, MapPin, Calendar } from "lucide-react";
 import SubscribeForm, { type FieldConfig } from "@/components/landing/accesso-svendita-gtv/SubscribeForm";
-import { prisma } from "@/lib/prisma";
-
-export const metadata = {
-  title: "Accesso Riservato — Vendita Speciale | Gebrüder Thonet Vienna",
-  description:
-    "Registrati per accedere alla Vendita Speciale Gebrüder Thonet Vienna. Sconti fino al 40% online e fino al 70% in showroom a Torino.",
-};
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
-const PERMALINK = "accesso-svendita-gtv";
 
 const DEFAULTS = {
   heroTitle: "Accesso Riservato alla Vendita Speciale Gebrüder Thonet Vienna",
@@ -22,7 +10,6 @@ const DEFAULTS = {
     "Due modalità di accesso, un'unica selezione: online su registrazione, in showroom per una scoperta esclusiva.",
   buttonLabel: "Ottieni Accesso",
   privacyLabel: "Accetto l'informativa sulla privacy e il trattamento dei miei dati personali.",
-  // Custom config — testi specifici della landing svendita
   navLabelActive: "Vendita Speciale",
   navLabelShowroom: "Showroom",
   navLabelContatti: "Contatti",
@@ -80,62 +67,41 @@ interface CustomCfg {
   disclaimer?: string;
 }
 
-async function loadConfig() {
-  try {
-    const cfg = await prisma.landingPageConfig.findUnique({ where: { permalink: PERMALINK } });
-    if (!cfg || !cfg.isActive) return null;
-
-    let formFields: FieldConfig[] = DEFAULT_FORM_FIELDS;
-    if (cfg.formFields) {
-      try {
-        const parsed = JSON.parse(cfg.formFields);
-        if (Array.isArray(parsed) && parsed.length > 0) formFields = parsed as FieldConfig[];
-      } catch { /* defaults */ }
-    }
-
-    let custom: CustomCfg = {};
-    if (cfg.customConfig) {
-      try {
-        const parsed = JSON.parse(cfg.customConfig);
-        if (parsed && typeof parsed === "object") custom = parsed as CustomCfg;
-      } catch { /* defaults */ }
-    }
-
-    return {
-      heroTitle: cfg.heroTitle || DEFAULTS.heroTitle,
-      heroSubtitle: cfg.heroSubtitle || DEFAULTS.heroSubtitle,
-      bannerImage: cfg.bannerImage || "",
-      buttonLabel: cfg.buttonLabel || DEFAULTS.buttonLabel,
-      privacyLabel: cfg.privacyLabel || DEFAULTS.privacyLabel,
-      formFields,
-      custom: { ...DEFAULTS, ...custom } as typeof DEFAULTS,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function pickArr(v: string[] | string | undefined, fallback: string[]): string[] {
-  if (Array.isArray(v)) return v.length > 0 ? v : fallback;
-  if (typeof v === "string") {
-    const arr = v.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-    return arr.length > 0 ? arr : fallback;
-  }
-  return fallback;
-}
-
-export default async function AccessoSvenditaGtvPage() {
-  const loaded = await loadConfig();
-  const config = loaded ?? {
-    heroTitle: DEFAULTS.heroTitle,
-    heroSubtitle: DEFAULTS.heroSubtitle,
-    bannerImage: "",
-    buttonLabel: DEFAULTS.buttonLabel,
-    privacyLabel: DEFAULTS.privacyLabel,
-    formFields: DEFAULT_FORM_FIELDS,
-    custom: DEFAULTS,
+export interface SvenditaTemplateProps {
+  row: {
+    heroTitle?: string | null;
+    heroSubtitle?: string | null;
+    bannerImage?: string | null;
+    buttonLabel?: string | null;
+    privacyLabel?: string | null;
+    formFields?: string | null;
+    customConfig?: string | null;
   };
-  const c = config.custom;
+}
+
+export default function SvenditaTemplate({ row }: SvenditaTemplateProps) {
+  let formFields: FieldConfig[] = DEFAULT_FORM_FIELDS;
+  if (row.formFields) {
+    try {
+      const parsed = JSON.parse(row.formFields);
+      if (Array.isArray(parsed) && parsed.length > 0) formFields = parsed as FieldConfig[];
+    } catch { /* defaults */ }
+  }
+
+  let custom: CustomCfg = {};
+  if (row.customConfig) {
+    try {
+      const parsed = JSON.parse(row.customConfig);
+      if (parsed && typeof parsed === "object") custom = parsed as CustomCfg;
+    } catch { /* defaults */ }
+  }
+  const c = { ...DEFAULTS, ...custom } as typeof DEFAULTS;
+
+  const heroTitle = row.heroTitle || DEFAULTS.heroTitle;
+  const heroSubtitle = row.heroSubtitle || DEFAULTS.heroSubtitle;
+  const bannerImage = row.bannerImage || "";
+  const buttonLabel = row.buttonLabel || DEFAULTS.buttonLabel;
+  const privacyLabel = row.privacyLabel || DEFAULTS.privacyLabel;
 
   return (
     <div className="font-sans bg-white text-dark">
@@ -154,9 +120,9 @@ export default async function AccessoSvenditaGtvPage() {
       {/* ─── Banner ─── */}
       <section>
         <div className="relative w-full aspect-[24/5] bg-warm-100/70 border-y border-warm-200 overflow-hidden">
-          {config.bannerImage ? (
+          {bannerImage ? (
             <Image
-              src={config.bannerImage}
+              src={bannerImage}
               alt="Vendita Speciale Gebrüder Thonet Vienna"
               fill
               priority
@@ -182,10 +148,10 @@ export default async function AccessoSvenditaGtvPage() {
               {c.eyebrow}
             </p>
             <h1 className="text-[34px] md:text-[44px] lg:text-[48px] font-semibold leading-[1.08] text-dark mb-6 tracking-[-0.01em]">
-              {config.heroTitle}
+              {heroTitle}
             </h1>
             <p className="text-[15px] md:text-[16px] text-warm-700 leading-[1.6] mb-10 max-w-[480px] whitespace-pre-line">
-              {config.heroSubtitle}
+              {heroSubtitle}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-7 gap-x-8 mb-10 max-w-[520px]">
@@ -208,7 +174,6 @@ export default async function AccessoSvenditaGtvPage() {
               />
             </div>
 
-            {/* Long description (markdown subset) */}
             <div className="text-[14px] md:text-[14.5px] text-warm-700 leading-[1.7] max-w-[520px]
               [&_p]:mb-3 [&_p:last-child]:mb-0
               [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ul]:space-y-1.5 [&_ul]:marker:text-warm-400
@@ -221,9 +186,9 @@ export default async function AccessoSvenditaGtvPage() {
             <div className="md:sticky md:top-8">
               <Suspense fallback={<div className="bg-warm-50/40 border border-warm-200 rounded-sm p-7 md:p-9 h-[400px]" />}>
                 <SubscribeForm
-                  buttonLabel={config.buttonLabel}
-                  privacyLabel={config.privacyLabel}
-                  fields={config.formFields}
+                  buttonLabel={buttonLabel}
+                  privacyLabel={privacyLabel}
+                  fields={formFields}
                   cardTitle={c.formCardTitle}
                   cardSubtitle={c.formCardSubtitle}
                 />
@@ -268,7 +233,15 @@ function InfoBlock({
   );
 }
 
-/** Minimal markdown subset: `**bold**`, `- list item`, paragraphs */
+function pickArr(v: string[] | string | undefined, fallback: string[]): string[] {
+  if (Array.isArray(v)) return v.length > 0 ? v : fallback;
+  if (typeof v === "string") {
+    const arr = v.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    return arr.length > 0 ? arr : fallback;
+  }
+  return fallback;
+}
+
 function renderSimpleMarkdown(md: string): string {
   const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const lines = md.split(/\r?\n/);

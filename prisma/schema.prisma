@@ -869,6 +869,7 @@ model LandingPageConfig {
   name                String              @default("Landing Page") @db.Text
   permalink           String              @unique @default("evento")
   type                String              @default("evento") // evento, promo, custom
+  template            String              @default("default") // default | svendita — sceglie il layout della pagina pubblica indipendentemente dal permalink
   bannerImage         String?             @db.Text
   logoImage           String?             @db.Text
   heroTitle           String              @default("Milan Design Week 2026") @db.Text

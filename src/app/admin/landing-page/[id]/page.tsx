@@ -67,7 +67,7 @@ const DEFAULT_FORM_FIELDS: FieldConfig[] = [
 
 
 interface FormState {
-  name: string; permalink: string; type: string;
+  name: string; permalink: string; type: string; template: string;
   heroTitle: string; heroSubtitle: string; heroLocation: string; heroDescription: string;
   successTitle: string; successMessage: string; privacyLabel: string; marketingLabel: string;
   buttonLabel: string; bannerImage: string; logoImage: string;
@@ -78,7 +78,7 @@ interface FormState {
   customConfig: SvenditaCustomConfig;
 }
 
-// Testi specifici landing svendita — usato solo se permalink === "accesso-svendita-gtv"
+// Testi specifici landing svendita — usato solo se template === "svendita"
 interface SvenditaCustomConfig {
   navLabelActive: string;
   navLabelShowroom: string;
@@ -131,7 +131,7 @@ export default function LandingPageDetailPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>("config");
   const [form, setForm] = useState<FormState>({
-    name: "", permalink: "", type: "evento",
+    name: "", permalink: "", type: "evento", template: "default",
     heroTitle: "", heroSubtitle: "", heroLocation: "", heroDescription: "",
     successTitle: "", successMessage: "", privacyLabel: "", marketingLabel: "",
     buttonLabel: "Register", bannerImage: "", logoImage: "",
@@ -186,6 +186,7 @@ export default function LandingPageDetailPage() {
         }
         setForm({
           name: lp.name || "", permalink: lp.permalink || "", type: lp.type || "evento",
+          template: lp.template || "default",
           heroTitle: lp.heroTitle || "", heroSubtitle: lp.heroSubtitle || "",
           heroLocation: lp.heroLocation || "", heroDescription: lp.heroDescription || "",
           successTitle: lp.successTitle || "", successMessage: lp.successMessage || "",
@@ -219,7 +220,7 @@ export default function LandingPageDetailPage() {
   const handleSave = async () => {
     setSaving(true);
     const { formFields, emailTemplateId, emailFooter, customConfig, ...rest } = form;
-    const isSvendita = form.permalink === "accesso-svendita-gtv";
+    const isSvendita = form.template === "svendita";
     const res = await fetch("/api/landing-page-config", {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -387,11 +388,21 @@ export default function LandingPageDetailPage() {
                 <input type="text" value={form.permalink} onChange={(e) => updateField("permalink", e.target.value.toLowerCase().replace(/[^\w-]/g, ""))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none" />
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <select value={form.type} onChange={(e) => updateField("type", e.target.value)} className="border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none">
-                <option value="evento">Evento</option><option value="promo">Promozionale</option><option value="custom">Personalizzata</option>
-              </select>
-              <label className="flex items-center gap-2 text-sm text-warm-700 cursor-pointer">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div>
+                <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">Tipo</label>
+                <select value={form.type} onChange={(e) => updateField("type", e.target.value)} className="border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none">
+                  <option value="evento">Evento</option><option value="promo">Promozionale</option><option value="custom">Personalizzata</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-warm-500 uppercase tracking-wider mb-1">Layout pagina pubblica</label>
+                <select value={form.template} onChange={(e) => updateField("template", e.target.value)} className="border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none">
+                  <option value="default">Default (form QR)</option>
+                  <option value="svendita">Vendita Speciale (custom)</option>
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-warm-700 cursor-pointer self-end pb-2.5">
                 <input type="checkbox" checked={form.isActive} onChange={(e) => updateField("isActive", e.target.checked)} className="accent-warm-800" /> Attiva
               </label>
             </div>
@@ -496,7 +507,7 @@ export default function LandingPageDetailPage() {
           })()}
 
           {/* 4c. Testi specifici landing "Accesso Svendita GTV" */}
-          {form.permalink === "accesso-svendita-gtv" && (() => {
+          {form.template === "svendita" && (() => {
             const updateCustom = (key: keyof SvenditaCustomConfig, value: string) => {
               setForm((p) => ({ ...p, customConfig: { ...p.customConfig, [key]: value } }));
               setSaved(false);
