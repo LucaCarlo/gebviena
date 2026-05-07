@@ -91,6 +91,8 @@ interface SvenditaCustomConfig {
   longDescription: string;
   formCardTitle: string;
   formCardSubtitle: string;
+  successCardTitle: string;
+  successCardMessage: string;
   disclaimer: string;
 }
 
@@ -114,6 +116,8 @@ const EMPTY_SVENDITA: SvenditaCustomConfig = {
   longDescription: "La Vendita Speciale nasce da un processo di ottimizzazione...\n\nQuesto percorso ci permette di rendere disponibili una selezione di prodotti a condizioni dedicate, attraverso due esperienze distinte:\n\n- **online**, con articoli disponibili in quantità limitata\n- **offline**, con una selezione esclusiva di pezzi unici e fuori produzione\n\nDue modalità diverse, unite dalla stessa attenzione per qualità e ricerca.",
   formCardTitle: "Richiedi Accesso",
   formCardSubtitle: "Registrati per accedere alla vendita speciale online.",
+  successCardTitle: "Richiesta inviata",
+  successCardMessage: "Ti abbiamo inviato un'email di conferma all'indirizzo che ci hai fornito. A breve riceverai le istruzioni per accedere alla vendita speciale online.",
   disclaimer: "L'accesso online è riservato agli utenti registrati.\nI prodotti disponibili online e in showroom differiscono per tipologia e disponibilità.\nLa registrazione non garantisce disponibilità sugli articoli.",
 };
 
@@ -416,6 +420,8 @@ export default function LandingPageDetailPage() {
     { key: "longDescription", label: "Descrizione lunga" },
     { key: "formCardTitle", label: "Form titolo card" },
     { key: "formCardSubtitle", label: "Form sottotitolo card" },
+    { key: "successCardTitle", label: "Form titolo card successo" },
+    { key: "successCardMessage", label: "Form messaggio card successo" },
     { key: "disclaimer", label: "Disclaimer" },
     { key: "emailSubject", label: "Email — oggetto" },
     { key: "emailTitle", label: "Email — titolo" },
@@ -916,6 +922,14 @@ export default function LandingPageDetailPage() {
                 <div className="space-y-3">
                   <SvenditaField label="Titolo card" value={tval("formCardTitle", form.customConfig.formCardTitle)} onChange={(v) => tset("formCardTitle", v, (vv) => updateCustom("formCardTitle", vv))} aiVisible={isT} aiBusy={aiBusyKey === "formCardTitle"} onAI={() => translateOne("formCardTitle")} />
                   <SvenditaField label="Sottotitolo card" value={tval("formCardSubtitle", form.customConfig.formCardSubtitle)} onChange={(v) => tset("formCardSubtitle", v, (vv) => updateCustom("formCardSubtitle", vv))} aiVisible={isT} aiBusy={aiBusyKey === "formCardSubtitle"} onAI={() => translateOne("formCardSubtitle")} />
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Card di successo (mostrata dopo il submit)</h4>
+                <div className="space-y-3">
+                  <SvenditaField label="Titolo (es. 'Richiesta inviata')" value={tval("successCardTitle", form.customConfig.successCardTitle)} onChange={(v) => tset("successCardTitle", v, (vv) => updateCustom("successCardTitle", vv))} aiVisible={isT} aiBusy={aiBusyKey === "successCardTitle"} onAI={() => translateOne("successCardTitle")} />
+                  <SvenditaField label="Messaggio sotto il titolo" hint="Mostrato all'utente subito dopo aver inviato il form (prima dell'email)" multi value={tval("successCardMessage", form.customConfig.successCardMessage)} onChange={(v) => tset("successCardMessage", v, (vv) => updateCustom("successCardMessage", vv))} aiVisible={isT} aiBusy={aiBusyKey === "successCardMessage"} onAI={() => translateOne("successCardMessage")} />
                 </div>
               </div>
 

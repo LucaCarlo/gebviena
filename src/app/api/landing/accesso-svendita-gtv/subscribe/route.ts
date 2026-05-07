@@ -150,10 +150,15 @@ export async function POST(req: Request) {
 
     const email = emailRaw.toLowerCase();
 
-    // Lingua dell'utente (impostata dal middleware via x-gtv-lang header)
-    const lang = (() => {
-      try { return headers().get("x-gtv-lang") || "it"; } catch { return "it"; }
+    // Lingua dell'utente: il middleware skippa /api/* quindi NON setta l'header
+    // qui. Il client passa esplicitamente `lang` nel body (oppure header
+    // x-gtv-lang). Fallback "it".
+    const bodyLang = typeof body.lang === "string" ? body.lang.trim().toLowerCase() : "";
+    const headerLang = (() => {
+      try { return (headers().get("x-gtv-lang") || "").toLowerCase(); } catch { return ""; }
     })();
+    const KNOWN = new Set(["it", "en", "de", "fr", "es"]);
+    const lang = KNOWN.has(bodyLang) ? bodyLang : (KNOWN.has(headerLang) ? headerLang : "it");
 
     const { tagSlug, tagName, template, emailSubjectOverride, emailFooterJson, trEmailTitle, trEmailBody } = await resolveConfig(lang);
 

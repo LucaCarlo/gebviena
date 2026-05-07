@@ -81,10 +81,14 @@ export async function POST(req: Request) {
       if (invitation?.registrationId) invitation = null;
     }
 
-    // Lingua del visitatore (impostata dal middleware via x-gtv-lang header)
-    const userLang = (() => {
-      try { return headers().get("x-gtv-lang") || "it"; } catch { return "it"; }
+    // Lingua del visitatore: il middleware skippa /api/* quindi non setta
+    // l'header sulla request al backend. Il client passa la lingua nel body.
+    const bodyLang = typeof body.lang === "string" ? body.lang.trim().toLowerCase() : "";
+    const headerLang = (() => {
+      try { return (headers().get("x-gtv-lang") || "").toLowerCase(); } catch { return ""; }
     })();
+    const KNOWN = new Set(["it", "en", "de", "fr", "es"]);
+    const userLang = KNOWN.has(bodyLang) ? bodyLang : (KNOWN.has(headerLang) ? headerLang : "it");
 
     const registration = await prisma.eventRegistration.create({
       data: {

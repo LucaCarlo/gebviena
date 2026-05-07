@@ -37,6 +37,8 @@ Questo percorso ci permette di rendere disponibili una selezione di prodotti a c
 Due modalità diverse, unite dalla stessa attenzione per qualità e ricerca.`,
   formCardTitle: "Richiedi Accesso",
   formCardSubtitle: "Registrati per accedere alla vendita speciale online.",
+  successCardTitle: "Richiesta inviata",
+  successCardMessage: "Ti abbiamo inviato un'email di conferma all'indirizzo che ci hai fornito. A breve riceverai le istruzioni per accedere alla vendita speciale online.",
   disclaimer: `L'accesso online è riservato agli utenti registrati.
 I prodotti disponibili online e in showroom differiscono per tipologia e disponibilità.
 La registrazione non garantisce disponibilità sugli articoli.`,
@@ -69,6 +71,8 @@ interface CustomCfg {
   longDescription?: string;
   formCardTitle?: string;
   formCardSubtitle?: string;
+  successCardTitle?: string;
+  successCardMessage?: string;
   disclaimer?: string;
 }
 
@@ -104,6 +108,8 @@ export interface SvenditaTemplateProps {
     longDescription?: string | null;
     formCardTitle?: string | null;
     formCardSubtitle?: string | null;
+    successCardTitle?: string | null;
+    successCardMessage?: string | null;
     disclaimer?: string | null;
   } | null;
 }
@@ -154,6 +160,8 @@ export default function SvenditaTemplate({ row, translation }: SvenditaTemplateP
     longDescription: pick(t.longDescription, baseCustom.longDescription),
     formCardTitle: pick(t.formCardTitle, baseCustom.formCardTitle),
     formCardSubtitle: pick(t.formCardSubtitle, baseCustom.formCardSubtitle),
+    successCardTitle: pick(t.successCardTitle, baseCustom.successCardTitle),
+    successCardMessage: pick(t.successCardMessage, baseCustom.successCardMessage),
     disclaimer: pick(t.disclaimer, baseCustom.disclaimer),
   };
 
@@ -263,6 +271,8 @@ export default function SvenditaTemplate({ row, translation }: SvenditaTemplateP
                   fields={formFields}
                   cardTitle={c.formCardTitle}
                   cardSubtitle={c.formCardSubtitle}
+                  successTitle={c.successCardTitle}
+                  successMessage={c.successCardMessage}
                 />
               </Suspense>
               <p className="text-[11px] text-warm-500 leading-[1.7] mt-5 px-1 whitespace-pre-line">

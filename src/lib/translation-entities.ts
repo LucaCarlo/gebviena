@@ -212,6 +212,8 @@ export const TRANSLATION_ENTITIES: Record<string, TranslationEntityDef> = {
       { key: "longDescription", label: "Descrizione lunga", type: "long" },
       { key: "formCardTitle", label: "Form — titolo card", type: "short" },
       { key: "formCardSubtitle", label: "Form — sottotitolo card", type: "long" },
+      { key: "successCardTitle", label: "Form — titolo card successo", type: "short" },
+      { key: "successCardMessage", label: "Form — messaggio card successo", type: "long" },
       { key: "disclaimer", label: "Disclaimer", type: "long" },
       { key: "formFieldLabels", label: "Etichette campi form (JSON)", type: "long" },
       { key: "emailSubject", label: "Email — oggetto", type: "short" },

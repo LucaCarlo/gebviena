@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { useLang } from "@/contexts/I18nContext";
 
 const COUNTRIES = [
   "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria",
@@ -82,6 +83,7 @@ export interface GenericLandingTemplateProps {
 
 export default function GenericLandingTemplate({ config: rawConfig }: GenericLandingTemplateProps) {
   const searchParams = useSearchParams();
+  const lang = useLang();
   const inviteToken = searchParams.get("inv") || "";
   const trackedRef = useRef(false);
 
@@ -155,8 +157,8 @@ export default function GenericLandingTemplate({ config: rawConfig }: GenericLan
     try {
       const res = await fetch("/api/event-registrations", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, landingPageId: config.id, inviteToken: inviteToken || undefined }),
+        headers: { "Content-Type": "application/json", "x-gtv-lang": lang || "it" },
+        body: JSON.stringify({ ...form, landingPageId: config.id, inviteToken: inviteToken || undefined, lang: lang || "it" }),
       });
       const data = await res.json();
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useLang } from "@/contexts/I18nContext";
 
 export interface FieldConfig {
   key: string;
@@ -18,6 +19,8 @@ interface Props {
   fields?: FieldConfig[];
   cardTitle?: string;
   cardSubtitle?: string;
+  successTitle?: string;
+  successMessage?: string;
 }
 
 const REQUIRED_FIELDS = new Set(["firstName", "lastName", "email"]);
@@ -41,8 +44,11 @@ export default function SubscribeForm({
   fields,
   cardTitle = "Richiedi Accesso",
   cardSubtitle = "Registrati per accedere alla vendita speciale online.",
+  successTitle = "Richiesta inviata",
+  successMessage = "Ti abbiamo inviato un'email di conferma all'indirizzo che ci hai fornito. A breve riceverai le istruzioni per accedere alla vendita speciale online.",
 }: Props) {
   const searchParams = useSearchParams();
+  const lang = useLang();
   const inviteToken = searchParams.get("inv") || "";
   const tracked = useRef(false);
 
@@ -100,8 +106,8 @@ export default function SubscribeForm({
     try {
       const res = await fetch("/api/landing/accesso-svendita-gtv/subscribe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, inviteToken: inviteToken || undefined }),
+        headers: { "Content-Type": "application/json", "x-gtv-lang": lang || "it" },
+        body: JSON.stringify({ ...form, inviteToken: inviteToken || undefined, lang: lang || "it" }),
       });
       const data = await res.json();
       if (data.success) setSuccess(true);
@@ -121,10 +127,9 @@ export default function SubscribeForm({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="text-2xl font-medium text-dark mb-3">Richiesta inviata</h2>
-        <p className="text-sm text-warm-600 leading-relaxed">
-          Ti abbiamo inviato un&apos;email di conferma all&apos;indirizzo che ci hai fornito.
-          A breve riceverai le istruzioni per accedere alla vendita speciale online.
+        <h2 className="text-2xl font-medium text-dark mb-3">{successTitle}</h2>
+        <p className="text-sm text-warm-600 leading-relaxed whitespace-pre-line">
+          {successMessage}
         </p>
       </div>
     );
