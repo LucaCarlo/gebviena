@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Check, Send, Loader2, CheckCircle2, Settings2,
-  Mail, ScanLine, Camera, AlertCircle, X, Save, Users, Download, Trash2,
-  XCircle, ExternalLink, Globe, Sparkles,
+  Mail, ScanLine, Camera, AlertCircle, X, Save, Trash2,
+  ExternalLink, Globe, Sparkles,
 } from "lucide-react";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 
@@ -121,9 +121,23 @@ interface EmailTpl { id: string; name: string; subject: string; previewHtml: str
 
 interface ScanResult { success: boolean; alreadyCheckedIn?: boolean; error?: string; data?: { firstName: string; lastName: string; email: string; profile: string | null; checkedInAt: string | null; }; }
 
-interface EventReg { id: string; firstName: string; lastName: string; email: string; profile: string | null; country: string; city: string; qrCode: string; checkedIn: boolean; checkedInAt: string | null; createdAt: string; }
+type Tab = "config" | "email" | "scanner";
 
-type Tab = "config" | "email" | "registrations" | "scanner";
+/* ───── Bottone AI inline ───── */
+function AIButton({ busy, onClick, title }: { busy?: boolean; onClick: () => void; title?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy}
+      title={title || "Traduci questo campo con AI"}
+      className="flex items-center gap-1 text-[10px] text-amber-700 hover:text-amber-900 disabled:opacity-30"
+    >
+      {busy ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+      AI
+    </button>
+  );
+}
 
 /* ───── Field svendita (top-level: stable identity, mantiene il focus) ───── */
 function SvenditaField({
@@ -133,6 +147,9 @@ function SvenditaField({
   hint,
   multi,
   rows = 4,
+  aiVisible,
+  aiBusy,
+  onAI,
 }: {
   label: string;
   value: string;
@@ -140,10 +157,27 @@ function SvenditaField({
   hint?: string;
   multi?: boolean;
   rows?: number;
+  aiVisible?: boolean;
+  aiBusy?: boolean;
+  onAI?: () => void;
 }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">{label}</label>
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider">{label}</label>
+        {aiVisible && onAI && (
+          <button
+            type="button"
+            onClick={onAI}
+            disabled={aiBusy}
+            title="Traduci questo campo con AI"
+            className="flex items-center gap-1 text-[10px] text-amber-700 hover:text-amber-900 disabled:opacity-30"
+          >
+            {aiBusy ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+            AI
+          </button>
+        )}
+      </div>
       {multi ? (
         <textarea
           value={value}
@@ -192,10 +226,6 @@ export default function LandingPageDetailPage() {
 
 
   // Registrations
-  const [regs, setRegs] = useState<EventReg[]>([]);
-  const [regsLoading, setRegsLoading] = useState(false);
-  const [regFilter, setRegFilter] = useState<"all" | "checked" | "unchecked">("all");
-
   // Scanner
   const [scanning, setScanning] = useState(false);
   const [manualCode, setManualCode] = useState("");
@@ -289,6 +319,61 @@ export default function LandingPageDetailPage() {
     // Sotto-campi customConfig
     const cfg = form.customConfig as unknown as Record<string, string | undefined>;
     return cfg[key] || "";
+  };
+
+  // Stato bottone AI per-campo (solo uno alla volta busy per non saturare)
+  const [aiBusyKey, setAiBusyKey] = useState<string>("");
+
+  // Traduce un singolo campo via API AI e aggiorna i drafts della lingua attiva
+  const translateOne = async (key: string) => {
+    if (!isT) return;
+    const sourceText = srcText(key);
+    if (!sourceText.trim()) { flashTToast("Sorgente IT vuota"); return; }
+    setAiBusyKey(key);
+    try {
+      const res = await fetch("/api/admin/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: sourceText, fromLang: "it", toLang: tlang }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), [key]: d.translation } }));
+        setSaved(false);
+      } else {
+        flashTToast(d.error || "Errore traduzione AI");
+      }
+    } catch {
+      flashTToast("Errore di connessione");
+    } finally {
+      setAiBusyKey("");
+    }
+  };
+
+  // Traduce la label di un singolo campo del form (memorizzato in formFieldLabels JSON)
+  const translateOneFormLabel = async (fieldKey: string, sourceLabel: string) => {
+    if (!isT || !sourceLabel.trim()) return;
+    const aiKey = `__formLabel_${fieldKey}`;
+    setAiBusyKey(aiKey);
+    try {
+      const res = await fetch("/api/admin/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: sourceLabel, fromLang: "it", toLang: tlang }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        const next = { ...parsedFormLabels, [fieldKey]: d.translation as string };
+        setTranslations((p) => ({ ...p, [tlang]: { ...(p[tlang] || {}), formFieldLabels: JSON.stringify(next) } }));
+        setSaved(false);
+      } else {
+        flashTToast(d.error || "Errore traduzione AI");
+      }
+    } catch {
+      flashTToast("Errore di connessione");
+    } finally {
+      setAiBusyKey("");
+    }
   };
 
   // Helpers: parse/aggiorna formFieldLabels (JSON) all'interno della translation della lingua attiva
@@ -416,16 +501,6 @@ export default function LandingPageDetailPage() {
     }).finally(() => setLoading(false));
   }, [lpId]);
 
-  const fetchRegs = () => {
-    setRegsLoading(true);
-    fetch(`/api/event-registrations?landingPageId=${lpId}`)
-      .then((r) => r.json())
-      .then((d) => { if (d.success) setRegs(d.data || []); })
-      .finally(() => setRegsLoading(false));
-  };
-
-  useEffect(() => { if (activeTab === "registrations") fetchRegs(); }, [activeTab, lpId]);
-
   const updateField = (key: string, value: string | boolean) => { setForm((p) => ({ ...p, [key]: value })); setSaved(false); };
   const updateCustom = (key: keyof SvenditaCustomConfig, value: string) => {
     setForm((p) => ({ ...p, customConfig: { ...p.customConfig, [key]: value } }));
@@ -460,17 +535,6 @@ export default function LandingPageDetailPage() {
       body: JSON.stringify({ testEmail, emailSubject: form.emailSubject, emailTitle: form.emailTitle, emailBody: form.emailBody, bannerImage: form.bannerImage }),
     });
     setSendingTest(false);
-  };
-
-  // Check-in
-  const handleCheckIn = async (id: string, checkedIn: boolean) => {
-    await fetch(`/api/event-registrations/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ checkedIn }) });
-    fetchRegs();
-  };
-
-  const handleDeleteReg = async (id: string) => {
-    if (!confirm("Eliminare?")) return;
-    await fetch(`/api/event-registrations/${id}`, { method: "DELETE" }); fetchRegs();
   };
 
   // Scanner
@@ -544,15 +608,11 @@ export default function LandingPageDetailPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const filteredRegs = regFilter === "all" ? regs : regFilter === "checked" ? regs.filter((r) => r.checkedIn) : regs.filter((r) => !r.checkedIn);
-  const checkedCount = regs.filter((r) => r.checkedIn).length;
-
   if (loading) return <div className="p-8 flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-warm-300 border-t-warm-800 rounded-full animate-spin" /></div>;
 
   const TABS: { key: Tab; label: string; icon: typeof Settings2; badge?: number }[] = [
     { key: "config", label: "Configurazione", icon: Settings2 },
     { key: "email", label: "Email", icon: Mail },
-    { key: "registrations", label: "Registrazioni", icon: Users },
     { key: "scanner", label: "Scanner", icon: ScanLine },
   ];
 
@@ -683,8 +743,20 @@ export default function LandingPageDetailPage() {
           {/* 3. Contenuti Hero */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-warm-800">Contenuti Hero</h3>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo</label><input type="text" value={tval("heroTitle", form.heroTitle)} onChange={(e) => tset("heroTitle", e.target.value, (v) => updateField("heroTitle", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Sottotitolo</label><input type="text" value={tval("heroSubtitle", form.heroSubtitle)} onChange={(e) => tset("heroSubtitle", e.target.value, (v) => updateField("heroSubtitle", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider">Titolo</label>
+                {isT && <AIButton busy={aiBusyKey === "heroTitle"} onClick={() => translateOne("heroTitle")} />}
+              </div>
+              <input type="text" value={tval("heroTitle", form.heroTitle)} onChange={(e) => tset("heroTitle", e.target.value, (v) => updateField("heroTitle", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider">Sottotitolo</label>
+                {isT && <AIButton busy={aiBusyKey === "heroSubtitle"} onClick={() => translateOne("heroSubtitle")} />}
+              </div>
+              <input type="text" value={tval("heroSubtitle", form.heroSubtitle)} onChange={(e) => tset("heroSubtitle", e.target.value, (v) => updateField("heroSubtitle", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" />
+            </div>
             <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Location</label><textarea value={form.heroLocation} onChange={(e) => updateField("heroLocation", e.target.value)} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
             <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Descrizione</label><textarea value={form.heroDescription} onChange={(e) => updateField("heroDescription", e.target.value)} rows={3} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
           </div>
@@ -784,9 +856,9 @@ export default function LandingPageDetailPage() {
               <div>
                 <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-1">Header / nav</h4>
                 <div className="grid grid-cols-3 gap-3">
-                  <SvenditaField label="Voce attiva" value={tval("navLabelActive", form.customConfig.navLabelActive)} onChange={(v) => tset("navLabelActive", v, (vv) => updateCustom("navLabelActive", vv))} />
-                  <SvenditaField label="Voce 'Showroom'" value={tval("navLabelShowroom", form.customConfig.navLabelShowroom)} onChange={(v) => tset("navLabelShowroom", v, (vv) => updateCustom("navLabelShowroom", vv))} />
-                  <SvenditaField label="Voce 'Contatti'" value={tval("navLabelContatti", form.customConfig.navLabelContatti)} onChange={(v) => tset("navLabelContatti", v, (vv) => updateCustom("navLabelContatti", vv))} />
+                  <SvenditaField label="Voce attiva" value={tval("navLabelActive", form.customConfig.navLabelActive)} onChange={(v) => tset("navLabelActive", v, (vv) => updateCustom("navLabelActive", vv))} aiVisible={isT} aiBusy={aiBusyKey === "navLabelActive"} onAI={() => translateOne("navLabelActive")} />
+                  <SvenditaField label="Voce 'Showroom'" value={tval("navLabelShowroom", form.customConfig.navLabelShowroom)} onChange={(v) => tset("navLabelShowroom", v, (vv) => updateCustom("navLabelShowroom", vv))} aiVisible={isT} aiBusy={aiBusyKey === "navLabelShowroom"} onAI={() => translateOne("navLabelShowroom")} />
+                  <SvenditaField label="Voce 'Contatti'" value={tval("navLabelContatti", form.customConfig.navLabelContatti)} onChange={(v) => tset("navLabelContatti", v, (vv) => updateCustom("navLabelContatti", vv))} aiVisible={isT} aiBusy={aiBusyKey === "navLabelContatti"} onAI={() => translateOne("navLabelContatti")} />
                 </div>
                 <div className="grid grid-cols-2 gap-3 mt-3">
                   <SvenditaField label="Link 'Showroom' (non traducibile)" hint="URL o path (es. / per home, /showroom, https://...)" value={form.customConfig.navLinkShowroom} onChange={(v) => updateCustom("navLinkShowroom", v)} />
@@ -796,37 +868,40 @@ export default function LandingPageDetailPage() {
 
               <div>
                 <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Eyebrow sopra il titolo</h4>
-                <SvenditaField label="Eyebrow" hint="Etichetta in alto, sopra il grande titolo (es. 'Vendita Speciale')" value={tval("eyebrow", form.customConfig.eyebrow)} onChange={(v) => tset("eyebrow", v, (vv) => updateCustom("eyebrow", vv))} />
+                <SvenditaField label="Eyebrow" hint="Etichetta in alto, sopra il grande titolo (es. 'Vendita Speciale')" value={tval("eyebrow", form.customConfig.eyebrow)} onChange={(v) => tset("eyebrow", v, (vv) => updateCustom("eyebrow", vv))} aiVisible={isT} aiBusy={aiBusyKey === "eyebrow"} onAI={() => translateOne("eyebrow")} />
               </div>
 
               <div>
                 <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Blocco 1 — Online (icona globo)</h4>
                 <div className="space-y-3">
-                  <SvenditaField label="Titolo blocco" value={tval("block1Title", form.customConfig.block1Title)} onChange={(v) => tset("block1Title", v, (vv) => updateCustom("block1Title", vv))} />
-                  <SvenditaField label="Righe" hint="Una per riga" multi value={tval("block1Lines", form.customConfig.block1Lines)} onChange={(v) => tset("block1Lines", v, (vv) => updateCustom("block1Lines", vv))} />
+                  <SvenditaField label="Titolo blocco" value={tval("block1Title", form.customConfig.block1Title)} onChange={(v) => tset("block1Title", v, (vv) => updateCustom("block1Title", vv))} aiVisible={isT} aiBusy={aiBusyKey === "block1Title"} onAI={() => translateOne("block1Title")} />
+                  <SvenditaField label="Righe" hint="Una per riga" multi value={tval("block1Lines", form.customConfig.block1Lines)} onChange={(v) => tset("block1Lines", v, (vv) => updateCustom("block1Lines", vv))} aiVisible={isT} aiBusy={aiBusyKey === "block1Lines"} onAI={() => translateOne("block1Lines")} />
                   <div className="grid grid-cols-2 gap-3">
-                    <SvenditaField label="Highlight (prefisso)" hint="Es. 'Sconti fino al '" value={tval("block1HighlightPrefix", form.customConfig.block1HighlightPrefix)} onChange={(v) => tset("block1HighlightPrefix", v, (vv) => updateCustom("block1HighlightPrefix", vv))} />
-                    <SvenditaField label="Highlight (in grassetto)" hint="Es. '40%' — lascia vuoto per nasconderlo" value={tval("block1HighlightStrong", form.customConfig.block1HighlightStrong)} onChange={(v) => tset("block1HighlightStrong", v, (vv) => updateCustom("block1HighlightStrong", vv))} />
+                    <SvenditaField label="Highlight (prefisso)" hint="Es. 'Sconti fino al '" value={tval("block1HighlightPrefix", form.customConfig.block1HighlightPrefix)} onChange={(v) => tset("block1HighlightPrefix", v, (vv) => updateCustom("block1HighlightPrefix", vv))} aiVisible={isT} aiBusy={aiBusyKey === "block1HighlightPrefix"} onAI={() => translateOne("block1HighlightPrefix")} />
+                    <SvenditaField label="Highlight (in grassetto)" hint="Es. '40%' — lascia vuoto per nasconderlo" value={tval("block1HighlightStrong", form.customConfig.block1HighlightStrong)} onChange={(v) => tset("block1HighlightStrong", v, (vv) => updateCustom("block1HighlightStrong", vv))} aiVisible={isT} aiBusy={aiBusyKey === "block1HighlightStrong"} onAI={() => translateOne("block1HighlightStrong")} />
                   </div>
-                  <SvenditaField label="Periodo Online" hint="Mostrato sotto il blocco Online (es. 'Dal 15 Maggio al 30 Giugno 2026')" value={tval("block1Period", form.customConfig.block1Period)} onChange={(v) => tset("block1Period", v, (vv) => updateCustom("block1Period", vv))} />
+                  <SvenditaField label="Periodo Online" hint="Mostrato sotto il blocco Online (es. 'Dal 15 Maggio al 30 Giugno 2026')" value={tval("block1Period", form.customConfig.block1Period)} onChange={(v) => tset("block1Period", v, (vv) => updateCustom("block1Period", vv))} aiVisible={isT} aiBusy={aiBusyKey === "block1Period"} onAI={() => translateOne("block1Period")} />
                 </div>
               </div>
 
               <div>
                 <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Blocco 2 — Showroom (icona pin)</h4>
                 <div className="space-y-3">
-                  <SvenditaField label="Titolo blocco" value={tval("block2Title", form.customConfig.block2Title)} onChange={(v) => tset("block2Title", v, (vv) => updateCustom("block2Title", vv))} />
-                  <SvenditaField label="Righe" hint="Una per riga (indirizzo, modalità, etc.)" multi value={tval("block2Lines", form.customConfig.block2Lines)} onChange={(v) => tset("block2Lines", v, (vv) => updateCustom("block2Lines", vv))} />
+                  <SvenditaField label="Titolo blocco" value={tval("block2Title", form.customConfig.block2Title)} onChange={(v) => tset("block2Title", v, (vv) => updateCustom("block2Title", vv))} aiVisible={isT} aiBusy={aiBusyKey === "block2Title"} onAI={() => translateOne("block2Title")} />
+                  <SvenditaField label="Righe" hint="Una per riga (indirizzo, modalità, etc.)" multi value={tval("block2Lines", form.customConfig.block2Lines)} onChange={(v) => tset("block2Lines", v, (vv) => updateCustom("block2Lines", vv))} aiVisible={isT} aiBusy={aiBusyKey === "block2Lines"} onAI={() => translateOne("block2Lines")} />
                   <div className="grid grid-cols-2 gap-3">
-                    <SvenditaField label="Highlight (prefisso)" value={tval("block2HighlightPrefix", form.customConfig.block2HighlightPrefix)} onChange={(v) => tset("block2HighlightPrefix", v, (vv) => updateCustom("block2HighlightPrefix", vv))} />
-                    <SvenditaField label="Highlight (in grassetto)" value={tval("block2HighlightStrong", form.customConfig.block2HighlightStrong)} onChange={(v) => tset("block2HighlightStrong", v, (vv) => updateCustom("block2HighlightStrong", vv))} />
+                    <SvenditaField label="Highlight (prefisso)" value={tval("block2HighlightPrefix", form.customConfig.block2HighlightPrefix)} onChange={(v) => tset("block2HighlightPrefix", v, (vv) => updateCustom("block2HighlightPrefix", vv))} aiVisible={isT} aiBusy={aiBusyKey === "block2HighlightPrefix"} onAI={() => translateOne("block2HighlightPrefix")} />
+                    <SvenditaField label="Highlight (in grassetto)" value={tval("block2HighlightStrong", form.customConfig.block2HighlightStrong)} onChange={(v) => tset("block2HighlightStrong", v, (vv) => updateCustom("block2HighlightStrong", vv))} aiVisible={isT} aiBusy={aiBusyKey === "block2HighlightStrong"} onAI={() => translateOne("block2HighlightStrong")} />
                   </div>
-                  <SvenditaField label="Periodo Showroom" hint="Mostrato sotto il blocco Showroom (es. 'Dal 1 Giugno al 31 Luglio 2026')" value={tval("block2Period", form.customConfig.block2Period)} onChange={(v) => tset("block2Period", v, (vv) => updateCustom("block2Period", vv))} />
+                  <SvenditaField label="Periodo Showroom" hint="Mostrato sotto il blocco Showroom (es. 'Dal 1 Giugno al 31 Luglio 2026')" value={tval("block2Period", form.customConfig.block2Period)} onChange={(v) => tset("block2Period", v, (vv) => updateCustom("block2Period", vv))} aiVisible={isT} aiBusy={aiBusyKey === "block2Period"} onAI={() => translateOne("block2Period")} />
                 </div>
               </div>
 
               <div>
-                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Descrizione lunga (sotto i 3 blocchi)</h4>
+                <div className="flex items-center justify-between mb-3 mt-2">
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500">Descrizione lunga (sotto i 3 blocchi)</h4>
+                  {isT && <AIButton busy={aiBusyKey === "longDescription"} onClick={() => translateOne("longDescription")} />}
+                </div>
                 <textarea value={tval("longDescription", form.customConfig.longDescription)} onChange={(e) => tset("longDescription", e.target.value, (v) => updateCustom("longDescription", v))} rows={10}
                   className="w-full border border-warm-200 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:border-warm-500" />
                 <p className="text-[10px] text-warm-500 mt-1">Supporta markdown leggero: **grassetto**, righe vuote per paragrafi, `- ` per liste puntate.</p>
@@ -835,13 +910,16 @@ export default function LandingPageDetailPage() {
               <div>
                 <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Card del form (lato destro)</h4>
                 <div className="space-y-3">
-                  <SvenditaField label="Titolo card" value={tval("formCardTitle", form.customConfig.formCardTitle)} onChange={(v) => tset("formCardTitle", v, (vv) => updateCustom("formCardTitle", vv))} />
-                  <SvenditaField label="Sottotitolo card" value={tval("formCardSubtitle", form.customConfig.formCardSubtitle)} onChange={(v) => tset("formCardSubtitle", v, (vv) => updateCustom("formCardSubtitle", vv))} />
+                  <SvenditaField label="Titolo card" value={tval("formCardTitle", form.customConfig.formCardTitle)} onChange={(v) => tset("formCardTitle", v, (vv) => updateCustom("formCardTitle", vv))} aiVisible={isT} aiBusy={aiBusyKey === "formCardTitle"} onAI={() => translateOne("formCardTitle")} />
+                  <SvenditaField label="Sottotitolo card" value={tval("formCardSubtitle", form.customConfig.formCardSubtitle)} onChange={(v) => tset("formCardSubtitle", v, (vv) => updateCustom("formCardSubtitle", vv))} aiVisible={isT} aiBusy={aiBusyKey === "formCardSubtitle"} onAI={() => translateOne("formCardSubtitle")} />
                 </div>
               </div>
 
               <div>
-                <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 mb-3 mt-2">Disclaimer (sotto il form)</h4>
+                <div className="flex items-center justify-between mb-3 mt-2">
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-warm-500">Disclaimer (sotto il form)</h4>
+                  {isT && <AIButton busy={aiBusyKey === "disclaimer"} onClick={() => translateOne("disclaimer")} />}
+                </div>
                 <textarea value={tval("disclaimer", form.customConfig.disclaimer)} onChange={(e) => tset("disclaimer", e.target.value, (v) => updateCustom("disclaimer", v))} rows={4}
                   className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500" />
                 <p className="text-[10px] text-warm-500 mt-1">Una riga per ogni capoverso. Mostrato in basso a destra, sotto al form.</p>
@@ -856,7 +934,7 @@ export default function LandingPageDetailPage() {
                   <p className="text-[10px] text-warm-500 mb-3">Traduci la label di ogni campo del form. La label IT è mostrata a sinistra come riferimento.</p>
                   <div className="space-y-2">
                     {form.formFields.filter((f) => f.enabled).sort((a, b) => a.order - b.order).map((f) => (
-                      <div key={f.key} className="grid grid-cols-[180px_1fr] gap-3 items-center">
+                      <div key={f.key} className="grid grid-cols-[180px_1fr_auto] gap-3 items-center">
                         <div className="text-xs text-warm-500">
                           <span className="font-mono text-[10px] text-warm-400">{f.key}</span>
                           <div className="text-warm-700">{f.label}</div>
@@ -867,6 +945,10 @@ export default function LandingPageDetailPage() {
                           onChange={(e) => setFormLabel(f.key, e.target.value)}
                           placeholder={`Traduzione ${tlang.toUpperCase()}...`}
                           className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-warm-500"
+                        />
+                        <AIButton
+                          busy={aiBusyKey === `__formLabel_${f.key}`}
+                          onClick={() => translateOneFormLabel(f.key, f.label)}
                         />
                       </div>
                     ))}
@@ -879,11 +961,41 @@ export default function LandingPageDetailPage() {
           {/* 5. Successo */}
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5 space-y-4">
             <h3 className="text-sm font-semibold text-warm-800">Pagina di successo</h3>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo pulsante form</label><input type="text" value={tval("buttonLabel", form.buttonLabel)} onChange={(e) => tset("buttonLabel", e.target.value, (v) => updateField("buttonLabel", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo successo</label><input type="text" value={tval("successTitle", form.successTitle)} onChange={(e) => tset("successTitle", e.target.value, (v) => updateField("successTitle", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Messaggio successo</label><textarea value={tval("successMessage", form.successMessage)} onChange={(e) => tset("successMessage", e.target.value, (v) => updateField("successMessage", v))} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" placeholder="Testo opzionale sotto il titolo" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Privacy label</label><textarea value={tval("privacyLabel", form.privacyLabel)} onChange={(e) => tset("privacyLabel", e.target.value, (v) => updateField("privacyLabel", v))} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
-            <div><label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Marketing label</label><input type="text" value={tval("marketingLabel", form.marketingLabel)} onChange={(e) => tset("marketingLabel", e.target.value, (v) => updateField("marketingLabel", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" /></div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider">Testo pulsante form</label>
+                {isT && <AIButton busy={aiBusyKey === "buttonLabel"} onClick={() => translateOne("buttonLabel")} />}
+              </div>
+              <input type="text" value={tval("buttonLabel", form.buttonLabel)} onChange={(e) => tset("buttonLabel", e.target.value, (v) => updateField("buttonLabel", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider">Titolo successo</label>
+                {isT && <AIButton busy={aiBusyKey === "successTitle"} onClick={() => translateOne("successTitle")} />}
+              </div>
+              <input type="text" value={tval("successTitle", form.successTitle)} onChange={(e) => tset("successTitle", e.target.value, (v) => updateField("successTitle", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider">Messaggio successo</label>
+                {isT && <AIButton busy={aiBusyKey === "successMessage"} onClick={() => translateOne("successMessage")} />}
+              </div>
+              <textarea value={tval("successMessage", form.successMessage)} onChange={(e) => tset("successMessage", e.target.value, (v) => updateField("successMessage", v))} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" placeholder="Testo opzionale sotto il titolo" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider">Privacy label</label>
+                {isT && <AIButton busy={aiBusyKey === "privacyLabel"} onClick={() => translateOne("privacyLabel")} />}
+              </div>
+              <textarea value={tval("privacyLabel", form.privacyLabel)} onChange={(e) => tset("privacyLabel", e.target.value, (v) => updateField("privacyLabel", v))} rows={2} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider">Marketing label</label>
+                {isT && <AIButton busy={aiBusyKey === "marketingLabel"} onClick={() => translateOne("marketingLabel")} />}
+              </div>
+              <input type="text" value={tval("marketingLabel", form.marketingLabel)} onChange={(e) => tset("marketingLabel", e.target.value, (v) => updateField("marketingLabel", v))} className="w-full border border-warm-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none" />
+            </div>
           </div>
         </div>
       )}
@@ -998,54 +1110,6 @@ export default function LandingPageDetailPage() {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* ═══ Registrations Tab ═══ */}
-      {activeTab === "registrations" && (
-        <div>
-          <div className="flex flex-wrap gap-3 items-center mb-4">
-            <div className="flex gap-1">
-              {(["all", "checked", "unchecked"] as const).map((f) => (
-                <button key={f} onClick={() => setRegFilter(f)}
-                  className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${regFilter === f ? "bg-warm-800 text-white" : "bg-warm-100 text-warm-600 hover:bg-warm-200"}`}>
-                  {f === "all" ? `Tutti (${regs.length})` : f === "checked" ? `Check-in (${checkedCount})` : `Non check-in (${regs.length - checkedCount})`}
-                </button>
-              ))}
-            </div>
-            <button onClick={() => window.open(`/api/event-registrations?landingPageId=${lpId}&format=csv`, "_blank")} className="flex items-center gap-1.5 text-xs text-warm-600 hover:text-warm-800"><Download size={14} /> CSV</button>
-          </div>
-
-          {regsLoading ? <div className="py-10 text-center"><Loader2 size={20} className="animate-spin mx-auto text-warm-400" /></div> : filteredRegs.length === 0 ? (
-            <div className="text-center py-16 text-warm-500"><Users size={40} className="mx-auto mb-3 opacity-30" /><p className="text-sm">Nessuna registrazione</p></div>
-          ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b border-warm-200 bg-warm-50">
-                  <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase">Nome</th>
-                  <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase">Email</th>
-                  <th className="text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase hidden md:table-cell">Luogo</th>
-                  <th className="text-center px-4 py-3 font-semibold text-warm-600 text-xs uppercase">Check-in</th>
-                  <th className="w-12" />
-                </tr></thead>
-                <tbody className="divide-y divide-warm-100">
-                  {filteredRegs.map((r) => (
-                    <tr key={r.id} className="hover:bg-warm-50/50">
-                      <td className="px-4 py-3 font-medium text-warm-800">{r.firstName} {r.lastName}</td>
-                      <td className="px-4 py-3 text-warm-600 text-xs">{r.email}</td>
-                      <td className="px-4 py-3 text-warm-500 text-xs hidden md:table-cell">{r.city}, {r.country}</td>
-                      <td className="px-4 py-3 text-center">
-                        <button onClick={() => handleCheckIn(r.id, !r.checkedIn)}>
-                          {r.checkedIn ? <CheckCircle2 size={20} className="text-green-500 mx-auto" /> : <XCircle size={20} className="text-warm-300 hover:text-warm-500 mx-auto" />}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3"><button onClick={() => handleDeleteReg(r.id)} className="text-warm-400 hover:text-red-500"><Trash2 size={15} /></button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       )}
 

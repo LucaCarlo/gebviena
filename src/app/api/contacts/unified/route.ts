@@ -32,6 +32,7 @@ export async function GET(req: Request) {
   if (isErrorResponse(result)) return result;
 
   const { searchParams } = new URL(req.url);
+  const format = (searchParams.get("format") || "").trim().toLowerCase();
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const pageSize = Math.min(
     MAX_PAGE_SIZE,
@@ -40,6 +41,7 @@ export async function GET(req: Request) {
   const search = (searchParams.get("search") || "").trim().toLowerCase();
   const tag = (searchParams.get("tag") || "").trim();
   const invited = (searchParams.get("invited") || "all").trim(); // "all" | "true" | "false"
+  const checkedIn = (searchParams.get("checkedIn") || "all").trim(); // "all" | "true" | "false"
 
   // ─── 1. Load all sources in parallel ───
   // ContactTag is a third source: contacts imported via CSV may have only tags
@@ -189,9 +191,78 @@ export async function GET(req: Request) {
     );
   }
 
-  // ─── 5. Sort by createdAt desc, then paginate in memory ───
+  // ─── 4b. Check-in filter (per i contatti con EventRegistration) ───
+  // Considera "checked-in" un contatto la cui email ha almeno una EventRegistration con checkedIn=true.
+  let checkedInSet: Set<string> | null = null;
+  if (checkedIn !== "all") {
+    const eventEmails = contacts.filter((c) => c.source === "evento" || c.source === "entrambi").map((c) => c.email);
+    if (eventEmails.length > 0) {
+      const checkins = await prisma.eventRegistration.findMany({
+        where: { email: { in: eventEmails }, checkedIn: true },
+        select: { email: true },
+      });
+      checkedInSet = new Set(checkins.map((r) => r.email.toLowerCase().trim()));
+    } else {
+      checkedInSet = new Set();
+    }
+    if (checkedIn === "true") {
+      contacts = contacts.filter((c) => checkedInSet!.has(c.email.toLowerCase().trim()));
+    } else if (checkedIn === "false") {
+      contacts = contacts.filter((c) => !checkedInSet!.has(c.email.toLowerCase().trim()));
+    }
+  }
+
+  // ─── 5. Sort by createdAt desc ───
   contacts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const totalCount = contacts.length;
+
+  // ─── 6a. CSV export (no pagination) ───
+  if (format === "csv") {
+    // Per CSV serve sempre lo stato checkedIn (anche se non filtrato), così l'utente lo vede.
+    if (!checkedInSet) {
+      const eventEmails = contacts.filter((c) => c.source === "evento" || c.source === "entrambi").map((c) => c.email);
+      if (eventEmails.length > 0) {
+        const checkins = await prisma.eventRegistration.findMany({
+          where: { email: { in: eventEmails }, checkedIn: true },
+          select: { email: true },
+        });
+        checkedInSet = new Set(checkins.map((r) => r.email.toLowerCase().trim()));
+      } else {
+        checkedInSet = new Set();
+      }
+    }
+
+    const esc = (v: string | null | undefined) => {
+      const s = String(v ?? "");
+      if (/[",\n;]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    };
+    const header = [
+      "Email", "Nome", "Cognome", "Azienda", "Telefono", "Profilo",
+      "Indirizzo", "Citta", "CAP", "Provincia", "Paese",
+      "Sito", "Note", "Sorgente", "Tag", "Check-in", "Registrato il",
+    ].join(",");
+    const rows = contacts.map((c) => [
+      esc(c.email),
+      esc(c.firstName), esc(c.lastName), esc(c.company), esc(c.phone), esc(c.profile),
+      esc(c.address), esc(c.city), esc(c.zip), esc(c.province), esc(c.country),
+      esc(c.website), esc(c.notes),
+      esc(c.source),
+      esc(c.tags.map((t) => t.name).join("; ")),
+      esc(checkedInSet!.has(c.email.toLowerCase().trim()) ? "si" : "no"),
+      esc(c.createdAt),
+    ].join(","));
+    const csv = "﻿" + [header, ...rows].join("\n");
+    const filename = tag ? `contatti-${tag}-${new Date().toISOString().slice(0, 10)}.csv` : `contatti-${new Date().toISOString().slice(0, 10)}.csv`;
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
+    });
+  }
+
+  // ─── 6b. Paginate in memory (default) ───
   const sliced = contacts.slice((page - 1) * pageSize, page * pageSize);
 
   return NextResponse.json({

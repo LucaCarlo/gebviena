@@ -63,6 +63,7 @@ export default function AdminSubscribersPage() {
   const [hasMore, setHasMore] = useState(false);
   const [hasLandingPage, setHasLandingPage] = useState(false);
   const [invitedFilter, setInvitedFilter] = useState<InvitedFilter>("all");
+  const [checkinFilter, setCheckinFilter] = useState<"all" | "true" | "false">("all");
   const [selected, setSelected] = useState<Set<string>>(new Set()); // by email
 
   // Event registrations (for evento detail view)
@@ -115,6 +116,7 @@ export default function AdminSubscribersPage() {
     if (search) params.set("search", search);
     if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
     if (invitedFilter !== "all") params.set("invited", invitedFilter);
+    if (checkinFilter !== "all") params.set("checkedIn", checkinFilter);
 
     try {
       const r = await fetch(`/api/contacts/unified?${params}`);
@@ -129,7 +131,7 @@ export default function AdminSubscribersPage() {
     } catch {}
 
     if (opts.append) setLoadingMore(false); else setContactsLoading(false);
-  }, [activeTab, search, invitedFilter, page, isEventoDetail]);
+  }, [activeTab, search, invitedFilter, checkinFilter, page, isEventoDetail]);
 
   const fetchEventRegs = useCallback(async () => {
     setEventLoading(true);
@@ -146,13 +148,13 @@ export default function AdminSubscribersPage() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // Refetch on filter change (tab/search/invitedFilter) — always reset to page 1
+  // Refetch on filter change (tab/search/invitedFilter/checkinFilter) — always reset to page 1
   useEffect(() => {
     if (isEventoDetail) return;
     fetchContacts({ pageOverride: 1 });
     setSelected(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, search, invitedFilter]);
+  }, [activeTab, search, invitedFilter, checkinFilter]);
 
   // Reset invited filter when leaving a tag-with-landing tab
   useEffect(() => {
@@ -584,6 +586,34 @@ export default function AdminSubscribersPage() {
             <option value="true">Invitati</option>
             <option value="false">Non invitati</option>
           </select>
+        )}
+        {!isEventoDetail && (
+          <select
+            value={checkinFilter}
+            onChange={(e) => setCheckinFilter(e.target.value as "all" | "true" | "false")}
+            className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
+            title="Filtra per stato check-in evento"
+          >
+            <option value="all">Check-in: tutti</option>
+            <option value="true">Check-in: si</option>
+            <option value="false">Check-in: no</option>
+          </select>
+        )}
+        {!isEventoDetail && (
+          <button
+            onClick={() => {
+              const params = new URLSearchParams({ format: "csv" });
+              if (search) params.set("search", search);
+              if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
+              if (invitedFilter !== "all") params.set("invited", invitedFilter);
+              if (checkinFilter !== "all") params.set("checkedIn", checkinFilter);
+              window.open(`/api/contacts/unified?${params}`, "_blank");
+            }}
+            className="flex items-center gap-1.5 text-sm text-warm-600 hover:text-warm-800 border border-warm-300 rounded-lg px-3 py-2.5"
+            title="Esporta CSV con i filtri applicati"
+          >
+            <Download size={14} /> Esporta CSV
+          </button>
         )}
         {!isEventoDetail && (
           <span className="text-xs text-warm-500 ml-auto">
