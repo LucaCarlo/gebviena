@@ -17,9 +17,25 @@ interface ProductSheet {
   category: string | null;
 }
 
+interface FabricFile {
+  id: string;
+  name: string;
+  fileUrl: string;
+  fileSize: number | null;
+  mimeType: string | null;
+}
+
+interface FabricCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  files: FabricFile[];
+}
+
 const CATEGORY_ORDER = ["SEDUTE", "IMBOTTITI", "COMPLEMENTI", "TAVOLI", "OUTDOOR"];
 
-type Tab = "modelli" | "schede";
+type Tab = "modelli" | "schede" | "tessuti";
 
 interface TypologyItem { value: string; label: string }
 
@@ -27,6 +43,7 @@ export default function MaterialeTecnicoPage() {
   const t = useT();
   const lang = useLang();
   const [products, setProducts] = useState<ProductSheet[]>([]);
+  const [fabricCategories, setFabricCategories] = useState<FabricCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("schede");
@@ -39,6 +56,15 @@ export default function MaterialeTecnicoPage() {
         if (data.success) setProducts(data.data);
       })
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/fabric-finishes")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) setFabricCategories(data.data);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -80,7 +106,12 @@ export default function MaterialeTecnicoPage() {
   // Reset open accordion when tab changes
   useEffect(() => { setOpenCategory(null); }, [tab]);
 
-  const title = tab === "schede" ? t("materiale-tecnico.sheets.title") : t("materiale-tecnico.models.title");
+  const title =
+    tab === "schede"
+      ? t("materiale-tecnico.sheets.title")
+      : tab === "tessuti"
+      ? t("materiale-tecnico.fabrics.title")
+      : t("materiale-tecnico.models.title");
 
   return (
     <>
@@ -110,6 +141,14 @@ export default function MaterialeTecnicoPage() {
             >
               {t("materiale-tecnico.sheets.tab")}
             </button>
+            <button
+              onClick={() => setTab("tessuti")}
+              className={`px-2.5 py-1 rounded-full text-[16px] font-light uppercase tracking-[0.01em] transition-all ${
+                tab === "tessuti" ? "bg-dark text-white" : "bg-warm-100 text-dark hover:bg-warm-200"
+              }`}
+            >
+              {t("materiale-tecnico.fabrics.tab")}
+            </button>
           </div>
         </div>
       </section>
@@ -122,8 +161,80 @@ export default function MaterialeTecnicoPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            {loading ? (
+            {loading && tab !== "tessuti" ? (
               <div className="py-20 text-center text-warm-400 text-sm">{t("common.loading")}</div>
+            ) : tab === "tessuti" ? (
+              fabricCategories.length === 0 ? (
+                <div className="py-20 text-center text-warm-400 text-sm">{t("materiale-tecnico.fabrics.empty")}</div>
+              ) : (
+                <div className="divide-y divide-black border-t border-b border-black">
+                  {fabricCategories.map((fc) => {
+                    const isOpen = openCategory === fc.id;
+                    return (
+                      <div key={fc.id}>
+                        <button
+                          onClick={() => setOpenCategory(isOpen ? null : fc.id)}
+                          className="w-full flex items-center justify-between py-5 px-2 group"
+                        >
+                          <span className="uppercase text-[20px] tracking-[0.03em] text-black font-light">
+                            {fc.name}
+                          </span>
+                          <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
+                            {isOpen ? <Minus size={18} /> : <Plus size={18} />}
+                          </span>
+                        </button>
+                        <AnimatePresence>
+                          {isOpen && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.3 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="px-2 pb-8">
+                                {fc.description && (
+                                  <p className="text-[14px] text-warm-600 font-light mb-4">{fc.description}</p>
+                                )}
+                                {fc.files.length === 0 ? (
+                                  <div className="py-4 text-warm-400 text-sm">{t("materiale-tecnico.empty")}</div>
+                                ) : (
+                                  <div className="divide-y divide-warm-200">
+                                    {fc.files.map((f) => (
+                                      <div key={f.id} className="flex items-center justify-between py-4 gap-4 flex-wrap">
+                                        <div className="flex-1 min-w-0">
+                                          <span className="uppercase text-[14px] tracking-[0.05em] text-black font-light">
+                                            {f.name}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-5 flex-shrink-0">
+                                          <a
+                                            href={f.fileUrl}
+                                            download
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 uppercase text-[12px] tracking-[0.1em] text-black hover:text-accent transition-colors group"
+                                          >
+                                            {t("materiale-tecnico.download.label")}
+                                            <Download
+                                              size={14}
+                                              className="transition-transform group-hover:translate-y-0.5"
+                                            />
+                                          </a>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
             ) : filtered.length === 0 ? (
               <div className="py-20 text-center text-warm-400 text-sm">{t("materiale-tecnico.empty")}</div>
             ) : (

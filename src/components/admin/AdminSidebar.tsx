@@ -31,6 +31,7 @@ import {
   Shield,
   QrCode,
   FileText,
+  Layers,
   ShoppingBag,
   ShoppingCart,
   Truck,
@@ -102,6 +103,7 @@ const navSections: NavSection[] = [
       },
       { href: "/admin/awards", label: "Premi", icon: Trophy, permission: "awards.view" },
       { href: "/admin/catalogs", label: "Cataloghi", icon: FileDown, permission: "catalogs.view" },
+      { href: "/admin/fabric-finishes", label: "Tessuti e Finiture", icon: Layers, permission: "catalogs.view" },
       {
         href: "/admin/news",
         label: "News",

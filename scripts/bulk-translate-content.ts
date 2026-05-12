@@ -162,7 +162,7 @@ async function processEntity(entityKey: string, def: typeof TRANSLATION_ENTITIES
         }
 
         // Preserve JSON blobs untouched (so the row creation has them)
-        for (const k of JSON_FIELDS) {
+        for (const k of Array.from(JSON_FIELDS)) {
           if (source![k] !== undefined && payload[k] === undefined) {
             payload[k] = source![k];
           }

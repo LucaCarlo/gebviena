@@ -1507,3 +1507,31 @@ model OrderItem {
   @@index([orderId])
   @@index([variantId])
 }
+
+model FabricFinishCategory {
+  id          String             @id @default(cuid())
+  name        String
+  slug        String             @unique
+  description String?            @db.Text
+  sortOrder   Int                @default(0)
+  isPublished Boolean            @default(true)
+  files       FabricFinishFile[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model FabricFinishFile {
+  id          String               @id @default(cuid())
+  categoryId  String
+  name        String
+  fileUrl     String               @db.Text
+  fileSize    Int?
+  mimeType    String?              @db.VarChar(127)
+  sortOrder   Int                  @default(0)
+  isPublished Boolean              @default(true)
+  category    FabricFinishCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([categoryId])
+}

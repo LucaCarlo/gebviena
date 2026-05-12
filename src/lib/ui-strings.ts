@@ -422,9 +422,12 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
     strings: [
       { key: "materiale-tecnico.models.tab", defaultValue: "Modelli 2D e 3D" },
       { key: "materiale-tecnico.sheets.tab", defaultValue: "Schede Tecniche" },
+      { key: "materiale-tecnico.fabrics.tab", defaultValue: "Tessuti e Finiture" },
       { key: "materiale-tecnico.sheets.title", defaultValue: "Schede Tecniche" },
       { key: "materiale-tecnico.models.title", defaultValue: "Modelli 2D e 3D" },
+      { key: "materiale-tecnico.fabrics.title", defaultValue: "Tessuti e Finiture" },
       { key: "materiale-tecnico.empty", defaultValue: "Nessun file disponibile." },
+      { key: "materiale-tecnico.fabrics.empty", defaultValue: "Nessuna categoria disponibile." },
       { key: "materiale-tecnico.download.label", defaultValue: "Download" },
       { key: "materiale-tecnico.breadcrumb", defaultValue: "Materiale Tecnico" },
     ],
