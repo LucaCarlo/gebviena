@@ -20,9 +20,14 @@ interface IntentResponse {
   amountCents: number;
   subtotalCents: number;
   shippingCents: number;
+  unboxingFeeCents: number;
   taxCents: number;
   currency: string;
 }
+
+const FREE_SHIPPING_THRESHOLD_CENTS = 95000; // 950 EUR
+const SHIPPING_REMINDER_RANGE_CENTS = 20000; // mostra reminder se manca <= 200 EUR
+const UNBOXING_FEE_CENTS = 2000; // 20 EUR
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -44,6 +49,8 @@ export default function CheckoutPage() {
     province: "",
     postalCode: "",
     country: "IT",
+    shippingFloor: "0",
+    withUnboxingService: false,
     customerNotes: "",
   });
 
@@ -61,7 +68,7 @@ export default function CheckoutPage() {
       .catch(() => setError("Errore caricamento configurazione Stripe."));
   }, []);
 
-  const updateField = (k: keyof typeof form, v: string) => setForm((s) => ({ ...s, [k]: v }));
+  const updateField = (k: keyof typeof form, v: string | boolean) => setForm((s) => ({ ...s, [k]: v as never }));
 
   const submitAddress = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +107,8 @@ export default function CheckoutPage() {
             postalCode: form.postalCode,
             country: form.country,
           },
+          shippingFloor: Number(form.shippingFloor) || 0,
+          withUnboxingService: form.withUnboxingService === true,
           customerNotes: form.customerNotes,
         }),
       });
@@ -180,6 +189,55 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">Consegna</div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[13px] text-warm-700 mb-1.5">Piano dove scaricare il pacco</label>
+                  <select
+                    value={form.shippingFloor}
+                    onChange={(e) => updateField("shippingFloor", e.target.value)}
+                    className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none"
+                  >
+                    <option value="0">Piano terra</option>
+                    <option value="1">1° piano</option>
+                    <option value="2">2° piano</option>
+                    <option value="3">3° piano</option>
+                    <option value="4">4° piano</option>
+                    <option value="5">5° piano o oltre</option>
+                  </select>
+                </div>
+                <label className="flex items-start gap-2 pt-7 cursor-pointer text-[13px] text-warm-800">
+                  <input
+                    type="checkbox"
+                    checked={form.withUnboxingService}
+                    onChange={(e) => updateField("withUnboxingService", e.target.checked)}
+                    className="mt-1"
+                  />
+                  <span>Servizio disimballo e smaltimento imballi <span className="text-warm-500">(+{eur(UNBOXING_FEE_CENTS)})</span></span>
+                </label>
+              </div>
+
+              {/* Reminder spedizione gratuita (solo se mancano <= 200€ alla soglia) */}
+              {(() => {
+                const sub = subtotalCents;
+                const missing = FREE_SHIPPING_THRESHOLD_CENTS - sub;
+                if (sub >= FREE_SHIPPING_THRESHOLD_CENTS) {
+                  return (
+                    <div className="text-[13px] bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-800">
+                      🎉 Hai diritto alla <strong>spedizione gratuita</strong>!
+                    </div>
+                  );
+                }
+                if (missing > 0 && missing <= SHIPPING_REMINDER_RANGE_CENTS) {
+                  return (
+                    <div className="text-[13px] bg-amber-50 border border-amber-200 rounded p-3 text-amber-800">
+                      Aggiungi ancora <strong>{eur(missing)}</strong> al tuo ordine per ottenere la spedizione gratuita (soglia {eur(FREE_SHIPPING_THRESHOLD_CENTS)}).
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               <div className="pt-4 border-t border-warm-200">
                 <label className="block text-[13px] text-warm-700 mb-1.5">Note (opzionale)</label>
                 <textarea value={form.customerNotes} onChange={(e) => updateField("customerNotes", e.target.value)} rows={2} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm focus:border-warm-700 outline-none" />
@@ -219,7 +277,14 @@ export default function CheckoutPage() {
           </div>
           <div className="border-t border-warm-200 pt-3 space-y-1.5 text-sm">
             <Row label="Subtotale" value={eur(intent?.subtotalCents ?? subtotalCents)} />
-            <Row label="Spedizione" value={intent ? eur(intent.shippingCents) : "—"} subtle={!intent} />
+            <Row
+              label="Spedizione"
+              value={intent ? (intent.shippingCents === 0 ? "Gratuita" : eur(intent.shippingCents)) : "—"}
+              subtle={!intent}
+            />
+            {intent && intent.unboxingFeeCents > 0 && (
+              <Row label="Disimballo e smaltimento" value={eur(intent.unboxingFeeCents)} />
+            )}
             {intent && <Row label="(IVA inclusa)" value={eur(intent.taxCents)} subtle />}
           </div>
           <div className="border-t border-warm-200 pt-3 flex justify-between items-baseline">

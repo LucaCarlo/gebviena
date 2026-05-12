@@ -13,6 +13,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const body = await req.json();
     const sku = String(body.sku || "").trim();
     const priceCents = Number.isFinite(body.priceCents) ? Math.trunc(body.priceCents) : 0;
+    const salePriceCents = body.salePriceCents == null ? null : (Number.isFinite(body.salePriceCents) ? Math.trunc(body.salePriceCents) : null);
+    const priceWithVatCents = body.priceWithVatCents == null ? null : (Number.isFinite(body.priceWithVatCents) ? Math.trunc(body.priceWithVatCents) : null);
     const stockQty = body.stockQty === null || body.stockQty === undefined ? null : Math.max(0, Math.trunc(Number(body.stockQty)));
     const trackStock = body.trackStock === true;
     const volumeM3 = Number.isFinite(body.volumeM3) ? Number(body.volumeM3) : 0;
@@ -48,6 +50,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           storeProductId: params.id,
           sku,
           priceCents,
+          salePriceCents,
+          priceWithVatCents,
           stockQty,
           trackStock,
           volumeM3,

@@ -54,6 +54,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const excludedCatalogImages = body.excludedCatalogImages !== undefined ? (body.excludedCatalogImages ? String(body.excludedCatalogImages) : null) : undefined;
     const isPublished = typeof body.isPublished === "boolean" ? body.isPublished : undefined;
     const sortOrder = Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : undefined;
+    const productsPerBox = Number.isFinite(body.productsPerBox) ? Math.max(1, Math.trunc(body.productsPerBox)) : undefined;
     const translations: TranslationInput[] | undefined = Array.isArray(body.translations) ? body.translations : undefined;
 
     const data: Record<string, unknown> = {};
@@ -66,6 +67,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       if (isPublished) data.publishedAt = new Date();
     }
     if (sortOrder !== undefined) data.sortOrder = sortOrder;
+    if (productsPerBox !== undefined) data.productsPerBox = productsPerBox;
 
     const updated = await prisma.$transaction(async (tx) => {
       await tx.storeProduct.update({ where: { id: params.id }, data });

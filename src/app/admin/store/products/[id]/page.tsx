@@ -30,6 +30,8 @@ interface Variant {
   id: string;
   sku: string;
   priceCents: number;
+  salePriceCents: number | null;
+  priceWithVatCents: number | null;
   stockQty: number | null;
   trackStock: boolean;
   volumeM3: string | number;
@@ -59,6 +61,7 @@ interface StoreProductDetail {
   isPublished: boolean;
   publishedAt: string | null;
   sortOrder: number;
+  productsPerBox: number;
   coverImage: string | null;
   galleryImages: string | null;
   excludedCatalogImages: string | null;
@@ -321,6 +324,7 @@ function GeneralTab({
 }) {
   const [storeCategoryId, setStoreCategoryId] = useState(sp.storeCategoryId || "");
   const [sortOrder, setSortOrder] = useState(sp.sortOrder);
+  const [productsPerBox, setProductsPerBox] = useState(sp.productsPerBox ?? 1);
 
   const catPickerItems = useMemo(() => {
     const out: { id: string; label: string }[] = [];
@@ -372,11 +376,22 @@ function GeneralTab({
             className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
           />
         </div>
+        <div>
+          <label className="block text-xs font-medium text-warm-600 mb-1">Prodotti per scatola (spedizione)</label>
+          <input
+            type="number"
+            min={1}
+            value={productsPerBox}
+            onChange={(e) => setProductsPerBox(Math.max(1, parseInt(e.target.value, 10) || 1))}
+            className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
+          />
+          <p className="text-[11px] text-warm-500 mt-1">Quanti pezzi di questo prodotto stanno in una singola scatola. Usato per stimare il numero di colli e il costo di spedizione.</p>
+        </div>
       </div>
 
       <div className="pt-4 border-t border-warm-100 flex justify-end">
         <button
-          onClick={() => onSave({ storeCategoryId: storeCategoryId || null, sortOrder } as unknown as Partial<StoreProductDetail>)}
+          onClick={() => onSave({ storeCategoryId: storeCategoryId || null, sortOrder, productsPerBox } as unknown as Partial<StoreProductDetail>)}
           disabled={saving}
           className="px-4 py-2 bg-warm-900 text-white rounded-lg hover:bg-warm-800 disabled:opacity-50 text-sm"
         >
@@ -538,6 +553,8 @@ function VariantsTab({
         body: JSON.stringify({
           sku: variant.sku,
           priceCents: variant.priceCents,
+          salePriceCents: variant.salePriceCents,
+          priceWithVatCents: variant.priceWithVatCents,
           stockQty: variant.trackStock ? variant.stockQty : null,
           trackStock: variant.trackStock,
           volumeM3: Number(variant.volumeM3),
@@ -584,6 +601,8 @@ function VariantsTab({
     id: "",
     sku: "",
     priceCents: 0,
+    salePriceCents: null,
+    priceWithVatCents: null,
     stockQty: null,
     trackStock: false,
     volumeM3: 0,
@@ -799,7 +818,7 @@ function VariantModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-warm-600 mb-1">Prezzo (€)</label>
+              <label className="block text-xs font-medium text-warm-600 mb-1">Prezzo normale (€)</label>
               <input
                 type="number"
                 step="0.01"
@@ -807,6 +826,47 @@ function VariantModal({
                 onChange={(e) => update({ priceCents: Math.round(Number(e.target.value) * 100) || 0 })}
                 className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-warm-600 mb-1">
+                Prezzo scontato (€)
+                <span className="text-warm-400 font-normal"> — opzionale</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="—"
+                value={v.salePriceCents != null ? (v.salePriceCents / 100).toFixed(2) : ""}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") return update({ salePriceCents: null });
+                  update({ salePriceCents: Math.round(Number(raw) * 100) || null });
+                }}
+                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
+              />
+              <p className="text-[11px] text-warm-500 mt-1">Lascia vuoto per non applicare sconto. Se valorizzato, sostituisce il prezzo normale.</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-warm-600 mb-1">
+                Prezzo IVA inclusa (€)
+                <span className="text-warm-400 font-normal"> — opzionale</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="—"
+                value={v.priceWithVatCents != null ? (v.priceWithVatCents / 100).toFixed(2) : ""}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") return update({ priceWithVatCents: null });
+                  update({ priceWithVatCents: Math.round(Number(raw) * 100) || null });
+                }}
+                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
+              />
+              <p className="text-[11px] text-warm-500 mt-1">Prezzo finale con IVA per uso interno/B2B (non sostituisce il prezzo cliente).</p>
             </div>
           </div>
 

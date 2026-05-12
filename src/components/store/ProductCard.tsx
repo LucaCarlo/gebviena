@@ -15,6 +15,7 @@ export interface ProductCardData {
   hoverImage: string | null;
   colors: { id: string; code: string; hex: string | null }[];
   priceFromCents: number;
+  salePriceFromCents?: number | null;
   variantsCount: number;
   inStock: boolean;
   category: { slug: string; name: string } | null;
@@ -121,9 +122,18 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
         <div className="flex items-baseline justify-between gap-2">
           <div className="text-sm font-medium text-warm-900 truncate">{p.name}</div>
           <div className="text-sm font-mono text-warm-900 shrink-0">
-            {p.priceFromCents > 0
-              ? <>{p.variantsCount > 1 ? "da " : ""}{eur(p.priceFromCents)}</>
-              : <span className="text-warm-500 italic font-sans text-[12px]">Su richiesta</span>}
+            {p.priceFromCents > 0 ? (
+              p.salePriceFromCents != null && p.salePriceFromCents > 0 && p.salePriceFromCents < p.priceFromCents ? (
+                <span className="inline-flex items-baseline gap-1.5">
+                  <span className="text-warm-400 line-through text-[12px]">{eur(p.priceFromCents)}</span>
+                  <span className="text-red-700">{p.variantsCount > 1 ? "da " : ""}{eur(p.salePriceFromCents)}</span>
+                </span>
+              ) : (
+                <>{p.variantsCount > 1 ? "da " : ""}{eur(p.priceFromCents)}</>
+              )
+            ) : (
+              <span className="text-warm-500 italic font-sans text-[12px]">Su richiesta</span>
+            )}
           </div>
         </div>
 

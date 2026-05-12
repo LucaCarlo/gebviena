@@ -1242,6 +1242,7 @@ model StoreProduct {
   isPublished           Boolean   @default(false)
   publishedAt           DateTime?
   sortOrder             Int       @default(0)
+  productsPerBox        Int       @default(1)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -1281,11 +1282,13 @@ model StoreProductTranslation {
 }
 
 model StoreProductVariant {
-  id               String        @id @default(cuid())
-  storeProductId   String
-  sku              String        @unique @db.VarChar(64)
-  priceCents       Int
-  stockQty         Int?
+  id                 String        @id @default(cuid())
+  storeProductId     String
+  sku                String        @unique @db.VarChar(64)
+  priceCents         Int
+  salePriceCents     Int?
+  priceWithVatCents  Int?
+  stockQty           Int?
   trackStock       Boolean       @default(false)
   volumeM3         Decimal       @default(0) @db.Decimal(7, 3)
   weightKg         Decimal?      @db.Decimal(8, 2)
@@ -1445,9 +1448,12 @@ model Order {
   taxRateBp     Int    @default(2200) // basis points (22% = 2200)
 
   // Spedizione scelta
-  shippingService   ShippingService?
-  shippingZoneLabel String?          @db.VarChar(191)
-  trackingNumber    String?          @db.VarChar(128)
+  shippingService     ShippingService?
+  shippingZoneLabel   String?          @db.VarChar(191)
+  shippingFloor       Int?
+  withUnboxingService Boolean          @default(false)
+  unboxingFeeCents    Int              @default(0)
+  trackingNumber      String?          @db.VarChar(128)
   trackingCarrier   String?          @db.VarChar(64)
   trackingUrl       String?          @db.Text
   shippedAt         DateTime?

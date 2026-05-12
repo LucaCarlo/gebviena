@@ -254,6 +254,25 @@ export default function SvenditaTemplate({ row, translation }: SvenditaTemplateP
               </div>
             </div>
 
+            {/* Form duplicato per mobile: appare subito dopo la tabellina, prima della descrizione lunga.
+                Su md+ è nascosto perché la colonna destra (sticky) lo mostra. */}
+            <div className="md:hidden mb-10">
+              <Suspense fallback={<div className="bg-warm-50/40 border border-warm-200 rounded-sm p-7 h-[400px]" />}>
+                <SubscribeForm
+                  buttonLabel={buttonLabel}
+                  privacyLabel={privacyLabel}
+                  fields={formFields}
+                  cardTitle={c.formCardTitle}
+                  cardSubtitle={c.formCardSubtitle}
+                  successTitle={c.successCardTitle}
+                  successMessage={c.successCardMessage}
+                />
+              </Suspense>
+              <p className="text-[11px] text-warm-500 leading-[1.7] mt-5 px-1 whitespace-pre-line">
+                {c.disclaimer || DEFAULTS.disclaimer}
+              </p>
+            </div>
+
             <div className="text-[14px] md:text-[14.5px] text-warm-700 leading-[1.7] max-w-[520px]
               [&_p]:mb-3 [&_p:last-child]:mb-0
               [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ul]:space-y-1.5 [&_ul]:marker:text-warm-400
@@ -262,7 +281,8 @@ export default function SvenditaTemplate({ row, translation }: SvenditaTemplateP
             />
           </div>
 
-          <div className="md:pt-2">
+          {/* Colonna destra (form sticky) — solo da md in su; su mobile c'è la versione duplicata sopra */}
+          <div className="md:pt-2 hidden md:block">
             <div className="md:sticky md:top-8">
               <Suspense fallback={<div className="bg-warm-50/40 border border-warm-200 rounded-sm p-7 md:p-9 h-[400px]" />}>
                 <SubscribeForm

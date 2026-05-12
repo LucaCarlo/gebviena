@@ -12,12 +12,17 @@ export const dynamic = "force-dynamic";
  *     customer: { email, firstName, lastName, phone? },
  *     shippingAddress: { street, city, province, postalCode, country },
  *     billingAddress?: ... (default = shipping),
+ *     shippingFloor?: number (piano dove scaricare il pacco, 0 = piano terra),
+ *     withUnboxingService?: boolean (+20€ se true),
  *     customerNotes?: string,
  *     marketingOptIn?: boolean
  *   }
  *
- * Risposta: { clientSecret, orderId, orderNumber, amount }
+ * Risposta: { clientSecret, orderId, orderNumber, amount, shippingCents, unboxingFeeCents, ... }
  */
+const FREE_SHIPPING_THRESHOLD_CENTS = 95000; // 950 EUR — sopra è gratis
+const UNBOXING_FEE_CENTS = 2000; // 20 EUR
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -25,6 +30,8 @@ export async function POST(req: NextRequest) {
     const customer = body.customer || {};
     const shippingAddress = body.shippingAddress;
     const billingAddress = body.billingAddress || shippingAddress;
+    const shippingFloor = Number.isFinite(body.shippingFloor) ? Math.max(0, Math.trunc(body.shippingFloor)) : 0;
+    const withUnboxingService = body.withUnboxingService === true;
 
     if (!items.length) return NextResponse.json({ success: false, error: "Carrello vuoto" }, { status: 400 });
     if (!customer.email || !customer.firstName || !customer.lastName) {
@@ -52,7 +59,12 @@ export async function POST(req: NextRequest) {
         },
       },
     });
-    const vmap = new Map(variants.map((v) => [v.id, v]));
+    // include productsPerBox via storeProduct
+    const variantsWithBox = variants.map((v) => ({
+      ...v,
+      productsPerBox: v.storeProduct?.productsPerBox ?? 1,
+    }));
+    const vmap = new Map(variantsWithBox.map((v) => [v.id, v]));
 
     const orderItems: Array<{
       variantId: string;
@@ -68,7 +80,7 @@ export async function POST(req: NextRequest) {
     }> = [];
 
     let subtotalCents = 0;
-    let totalVolumeM3 = 0;
+    let totalBoxes = 0;
 
     for (const it of items) {
       const v = vmap.get(it.variantId);
@@ -80,9 +92,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: `Stock insufficiente per ${v.storeProduct.product.name}` }, { status: 400 });
       }
       const qty = Math.max(1, Math.floor(it.quantity));
-      const lineTotal = v.priceCents * qty;
+      // Prezzo effettivo: sale se presente e < normale, altrimenti normale
+      const unitPrice = v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents
+        ? v.salePriceCents
+        : v.priceCents;
+      const lineTotal = unitPrice * qty;
       subtotalCents += lineTotal;
-      totalVolumeM3 += Number(v.volumeM3) * qty;
+      // Scatole: ceil(qty / productsPerBox)
+      const perBox = Math.max(1, v.productsPerBox || 1);
+      totalBoxes += Math.ceil(qty / perBox);
 
       const productName = v.storeProduct.translations[0]?.name || v.storeProduct.product.name;
       const attrSnapshot = v.attributes
@@ -94,7 +112,7 @@ export async function POST(req: NextRequest) {
         productName,
         variantName: null,
         sku: v.sku,
-        unitPriceCents: v.priceCents,
+        unitPriceCents: unitPrice,
         quantity: qty,
         volumeM3: Number(v.volumeM3),
         weightKg: v.weightKg !== null ? Number(v.weightKg) : null,
@@ -103,18 +121,34 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Spedizione MVP: tariffa flat in base al paese
+    // Spedizione: tariffa flat per scatola, scalata per paese; gratuita sopra soglia
     const country = (shippingAddress.country || "IT").toUpperCase();
+    const boxes = Math.max(1, totalBoxes);
     let shippingCents = 0;
-    if (country === "IT") shippingCents = totalVolumeM3 < 0.1 ? 1500 : totalVolumeM3 < 0.5 ? 3500 : 7500;
-    else if (["FR", "DE", "AT", "CH", "ES", "BE", "NL", "PT", "LU", "SI", "DK", "SE", "FI", "IE", "PL"].includes(country)) shippingCents = totalVolumeM3 < 0.1 ? 4500 : totalVolumeM3 < 0.5 ? 9000 : 18000;
-    else shippingCents = totalVolumeM3 < 0.1 ? 9000 : totalVolumeM3 < 0.5 ? 18000 : 35000;
+    if (country === "IT") {
+      shippingCents = 1500 * boxes; // 15€ per scatola
+    } else if (["FR", "DE", "AT", "CH", "ES", "BE", "NL", "PT", "LU", "SI", "DK", "SE", "FI", "IE", "PL"].includes(country)) {
+      shippingCents = 4500 * boxes; // 45€ per scatola UE
+    } else {
+      shippingCents = 9000 * boxes; // 90€ per scatola RoW
+    }
+    // Surcharge per piano (oltre piano terra): +10€ a piano per ogni scatola, max 5
+    if (shippingFloor > 0) {
+      const floorSurcharge = Math.min(shippingFloor, 5) * 1000 * boxes;
+      shippingCents += floorSurcharge;
+    }
+    // Spedizione gratuita se subtotale >= soglia
+    if (subtotalCents >= FREE_SHIPPING_THRESHOLD_CENTS) {
+      shippingCents = 0;
+    }
+    // Fee disimballo e smaltimento
+    const unboxingFeeCents = withUnboxingService ? UNBOXING_FEE_CENTS : 0;
 
     const cfg = await getStoreGeneralConfig();
     // Prezzi IVA inclusa: tax è informativa, calcolata come "tax compresa"
     const taxRateBp = cfg.taxRateBp;
     const taxCents = Math.round((subtotalCents * taxRateBp) / (10000 + taxRateBp));
-    const totalCents = subtotalCents + shippingCents;
+    const totalCents = subtotalCents + shippingCents + unboxingFeeCents;
 
     // Genera orderNumber
     const orderNumber = "GTV-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -156,6 +190,9 @@ export async function POST(req: NextRequest) {
         billingAddress: JSON.stringify(billingAddress),
         subtotalCents,
         shippingCents,
+        shippingFloor,
+        withUnboxingService,
+        unboxingFeeCents,
         taxCents,
         totalCents,
         currency: cfg.currency,
@@ -176,6 +213,7 @@ export async function POST(req: NextRequest) {
         amountCents: totalCents,
         subtotalCents,
         shippingCents,
+        unboxingFeeCents,
         taxCents,
         currency: cfg.currency,
       },

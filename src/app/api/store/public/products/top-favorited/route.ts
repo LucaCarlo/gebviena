@@ -53,7 +53,7 @@ function projSelect(lang: string) {
     translations: { where: { languageCode: lang }, select: { name: true, slug: true } },
     variants: {
       where: { isPublished: true },
-      select: { priceCents: true },
+      select: { priceCents: true, salePriceCents: true },
       orderBy: { priceCents: "asc" as const },
       take: 1,
     },
@@ -65,16 +65,19 @@ type FetchedProduct = {
   coverImage: string | null;
   product: { name: string; coverImage: string | null; imageUrl: string | null };
   translations: { name: string | null; slug: string }[];
-  variants: { priceCents: number }[];
+  variants: { priceCents: number; salePriceCents: number | null }[];
 };
 
 function projMap(p: FetchedProduct) {
   const tr = p.translations[0];
+  const v = p.variants[0];
+  const salePrice = v?.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents ? v.salePriceCents : null;
   return {
     id: p.id,
     slug: tr?.slug || "",
     name: tr?.name || p.product.name,
     coverImage: p.coverImage || p.product.coverImage || p.product.imageUrl,
-    priceFromCents: p.variants[0]?.priceCents ?? 0,
+    priceFromCents: v?.priceCents ?? 0,
+    salePriceFromCents: salePrice,
   };
 }

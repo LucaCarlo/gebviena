@@ -77,7 +77,8 @@ export async function GET(req: NextRequest) {
       variants: {
         where: { isPublished: true },
         select: {
-          id: true, sku: true, priceCents: true, stockQty: true, trackStock: true,
+          id: true, sku: true, priceCents: true, salePriceCents: true, priceWithVatCents: true,
+          stockQty: true, trackStock: true,
           isDefault: true, coverImage: true,
           attributes: { select: { valueId: true, value: { select: { id: true, type: true, code: true, hexColor: true } } } },
         },
@@ -90,6 +91,12 @@ export async function GET(req: NextRequest) {
   const data = products.map((p) => {
     const tr = p.translations.find((t) => t.languageCode === lang) || p.translations.find((t) => t.languageCode === "it");
     const minPrice = p.variants.reduce((m, v) => Math.min(m, v.priceCents), Infinity);
+    // Prezzo "from" effettivamente pagato dal cliente: salePriceCents se presente, altrimenti priceCents
+    const effectivePrice = (v: { priceCents: number; salePriceCents: number | null }) =>
+      v.salePriceCents != null && v.salePriceCents > 0 ? v.salePriceCents : v.priceCents;
+    const minEffective = p.variants.reduce((m, v) => Math.min(m, effectivePrice(v)), Infinity);
+    // Se almeno una variante ha un sale price < priceCents, esponi la coppia prezzo-pieno + prezzo-scontato
+    const hasAnyDiscount = p.variants.some((v) => v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents);
     const hasStock = p.variants.some((v) => !v.trackStock || (v.stockQty ?? 0) > 0);
 
     // Hover image: prima immagine della gallery dello store, fallback cover di un'altra variante
@@ -123,6 +130,7 @@ export async function GET(req: NextRequest) {
       hoverImage,
       colors,
       priceFromCents: isFinite(minPrice) ? minPrice : 0,
+      salePriceFromCents: hasAnyDiscount && isFinite(minEffective) ? minEffective : null,
       variantsCount: p.variants.length,
       inStock: hasStock,
       category: p.storeCategory
@@ -136,11 +144,14 @@ export async function GET(req: NextRequest) {
     };
   });
 
+  // Per ordinamento usa il prezzo effettivamente pagato dal cliente (sale se presente, altrimenti regular)
+  const effective = (x: { priceFromCents: number; salePriceFromCents: number | null }) =>
+    x.salePriceFromCents != null ? x.salePriceFromCents : x.priceFromCents;
   let sorted = data;
   if (sort === "price-asc") {
-    sorted = [...data].sort((a, b) => a.priceFromCents - b.priceFromCents);
+    sorted = [...data].sort((a, b) => effective(a) - effective(b));
   } else if (sort === "price-desc") {
-    sorted = [...data].sort((a, b) => b.priceFromCents - a.priceFromCents);
+    sorted = [...data].sort((a, b) => effective(b) - effective(a));
   }
 
   return NextResponse.json({ success: true, data: sorted });

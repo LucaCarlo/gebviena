@@ -20,6 +20,8 @@ export async function PUT(
     const data: Record<string, unknown> = {};
     if (body.sku !== undefined) data.sku = String(body.sku).trim();
     if (body.priceCents !== undefined) data.priceCents = Math.trunc(Number(body.priceCents));
+    if (body.salePriceCents !== undefined) data.salePriceCents = body.salePriceCents === null ? null : Math.trunc(Number(body.salePriceCents));
+    if (body.priceWithVatCents !== undefined) data.priceWithVatCents = body.priceWithVatCents === null ? null : Math.trunc(Number(body.priceWithVatCents));
     if (body.stockQty !== undefined) data.stockQty = body.stockQty === null ? null : Math.max(0, Math.trunc(Number(body.stockQty)));
     if (body.trackStock !== undefined) data.trackStock = body.trackStock === true;
     if (body.volumeM3 !== undefined) data.volumeM3 = Number(body.volumeM3);
