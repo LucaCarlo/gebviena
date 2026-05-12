@@ -12,6 +12,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       where: { id: fileId },
       data: {
         name: typeof body.name === "string" ? body.name.trim() : undefined,
+        title: body.title !== undefined ? (typeof body.title === "string" && body.title.trim() ? body.title.trim() : null) : undefined,
         fileUrl: typeof body.fileUrl === "string" ? body.fileUrl.trim() : undefined,
         fileSize: body.fileSize !== undefined ? (Number.isFinite(body.fileSize) ? Number(body.fileSize) : null) : undefined,
         mimeType: body.mimeType !== undefined ? (body.mimeType ? String(body.mimeType) : null) : undefined,

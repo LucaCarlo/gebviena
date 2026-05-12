@@ -20,6 +20,7 @@ interface ProductSheet {
 interface FabricFile {
   id: string;
   name: string;
+  title: string | null;
   fileUrl: string;
   fileSize: number | null;
   mimeType: string | null;
@@ -204,7 +205,7 @@ export default function MaterialeTecnicoPage() {
                                       <div key={f.id} className="flex items-center justify-between py-4 gap-4 flex-wrap">
                                         <div className="flex-1 min-w-0">
                                           <span className="uppercase text-[14px] tracking-[0.05em] text-black font-light">
-                                            {f.name}
+                                            {f.title || f.name}
                                           </span>
                                         </div>
                                         <div className="flex items-center gap-5 flex-shrink-0">

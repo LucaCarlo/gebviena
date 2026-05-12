@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Upload, FileText, Eye,
 interface FabricFile {
   id: string;
   name: string;
+  title: string | null;
   fileUrl: string;
   fileSize: number | null;
   mimeType: string | null;
@@ -155,11 +156,23 @@ export default function AdminFabricFinishesPage() {
       const ext = file.name.split(".").pop()?.toLowerCase() || "";
       const mimeMap: Record<string, string> = { pdf: "application/pdf", zip: "application/zip", rar: "application/vnd.rar", dwg: "image/vnd.dwg", dxf: "application/dxf" };
       const mimeType = file.type || mimeMap[ext] || "application/octet-stream";
+
+      // Chiedi all'utente il titolo visibile sul sito (separato dal filename)
+      const fallbackTitle = uploaded.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
+      const title = window.prompt("Titolo del file (visibile sul sito pubblico):", fallbackTitle);
+      if (title === null) {
+        // Utente ha annullato → non salviamo il record, ma il file è già caricato.
+        // L'admin pu reimpostare il titolo riprovando l'upload o usando un record vuoto.
+        // Per semplicit, scartiamo l'upload (nessun record DB).
+        return;
+      }
+
       const fileRes = await fetch(`/api/admin/fabric-finishes/${categoryId}/files`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: uploaded.name,
+          title: title.trim() || fallbackTitle,
           fileUrl: uploaded.url,
           fileSize: uploaded.size,
           mimeType,
@@ -175,14 +188,26 @@ export default function AdminFabricFinishesPage() {
     }
   };
 
-  const deleteFile = async (categoryId: string, fileId: string, name: string) => {
-    if (!confirm(`Eliminare "${name}"?`)) return;
+  const deleteFile = async (categoryId: string, fileId: string, label: string) => {
+    if (!confirm(`Eliminare "${label}"?`)) return;
     await fetch(`/api/admin/fabric-finishes/${categoryId}/files/${fileId}`, { method: "DELETE" });
     fetchCategories();
   };
 
-  const renameFile = async (categoryId: string, file: FabricFile) => {
-    const newName = prompt("Nuovo nome del file:", file.name);
+  const editFileTitle = async (categoryId: string, file: FabricFile) => {
+    const current = file.title || "";
+    const newTitle = window.prompt("Titolo visibile sul sito:", current);
+    if (newTitle === null) return;
+    await fetch(`/api/admin/fabric-finishes/${categoryId}/files/${file.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: newTitle.trim() }),
+    });
+    fetchCategories();
+  };
+
+  const editFileName = async (categoryId: string, file: FabricFile) => {
+    const newName = window.prompt("Nome file interno (filename — non visibile sul sito):", file.name);
     if (!newName || newName.trim() === file.name) return;
     await fetch(`/api/admin/fabric-finishes/${categoryId}/files/${file.id}`, {
       method: "PUT",
@@ -274,22 +299,31 @@ export default function AdminFabricFinishesPage() {
                               <div className="flex items-center gap-3 min-w-0 flex-1">
                                 <FileText size={16} className="text-warm-500 flex-shrink-0" />
                                 <div className="min-w-0 flex-1">
-                                  <a
-                                    href={f.fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block text-sm text-warm-800 hover:text-blue-600 truncate"
-                                  >
-                                    {f.name}
-                                  </a>
-                                  <div className="text-xs text-warm-500">{formatBytes(f.fileSize)} • {f.mimeType || "—"}</div>
+                                  <div className="flex items-baseline gap-2">
+                                    <span className="text-sm font-medium text-warm-800 truncate">
+                                      {f.title || <em className="text-amber-700">(senza titolo)</em>}
+                                    </span>
+                                    <button
+                                      onClick={() => editFileTitle(c.id, f)}
+                                      className="text-[11px] text-blue-600 hover:underline flex-shrink-0"
+                                      title="Modifica titolo visibile sul sito"
+                                    >
+                                      modifica titolo
+                                    </button>
+                                  </div>
+                                  <div className="text-xs text-warm-500 truncate">
+                                    <a href={f.fileUrl} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">
+                                      {f.name}
+                                    </a>
+                                    {" "}• {formatBytes(f.fileSize)} • {f.mimeType || "—"}
+                                  </div>
                                 </div>
                               </div>
                               <div className="flex items-center gap-1">
-                                <button onClick={() => renameFile(c.id, f)} className="p-1.5 text-warm-600 hover:bg-warm-100 rounded" title="Rinomina">
+                                <button onClick={() => editFileName(c.id, f)} className="p-1.5 text-warm-600 hover:bg-warm-100 rounded" title="Rinomina filename interno">
                                   <Pencil size={14} />
                                 </button>
-                                <button onClick={() => deleteFile(c.id, f.id, f.name)} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Elimina">
+                                <button onClick={() => deleteFile(c.id, f.id, f.title || f.name)} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Elimina">
                                   <Trash2 size={14} />
                                 </button>
                               </div>

@@ -17,6 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       data: {
         categoryId,
         name,
+        title: typeof body.title === "string" && body.title.trim() ? body.title.trim() : null,
         fileUrl,
         fileSize: Number.isFinite(body.fileSize) ? Number(body.fileSize) : null,
         mimeType: body.mimeType ? String(body.mimeType) : null,

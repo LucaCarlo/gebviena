@@ -1524,6 +1524,7 @@ model FabricFinishFile {
   id          String               @id @default(cuid())
   categoryId  String
   name        String
+  title       String?
   fileUrl     String               @db.Text
   fileSize    Int?
   mimeType    String?              @db.VarChar(127)
