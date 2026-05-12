@@ -122,6 +122,14 @@ export default function AdminContactsPage() {
     setSendResult(null);
   };
 
+  const buildMailtoHref = (c: ContactSubmission) => {
+    const subject = c.subject ? `Re: ${c.subject}` : "Re: La tua richiesta";
+    const dateStr = new Date(c.createdAt).toLocaleString("it-IT");
+    const quoted = c.message.split("\n").map((l) => `> ${l}`).join("\n");
+    const body = `\n\n\n--- Messaggio originale ---\nDa: ${c.name} <${c.email}>\nData: ${dateStr}\n\n${quoted}`;
+    return `mailto:${c.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
   const handleSendReply = async () => {
     if (!replyTo || !replySubject.trim() || !replyBody.trim()) return;
     setSending(true);
@@ -248,11 +256,19 @@ export default function AdminContactsPage() {
                   <button
                     onClick={() => openReply(c)}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100 transition-colors"
-                    title="Rispondi via email"
+                    title="Rispondi nel sistema (mittente: rsvp@gebruederthonetvienna.com)"
                   >
                     <Reply size={14} />
-                    Rispondi
+                    Rispondi qui
                   </button>
+                  <a
+                    href={buildMailtoHref(c)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 rounded hover:bg-emerald-100 transition-colors"
+                    title="Apri nel tuo client email (Gmail/Outlook/Mail) con destinatario, oggetto e citazione precompilati"
+                  >
+                    <Mail size={14} />
+                    Rispondi via email
+                  </a>
                   {!c.isRead && (
                     <button
                       onClick={() => markAsRead(c.id)}
