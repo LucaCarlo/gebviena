@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Upload, FileText, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Upload, FileText, Eye, EyeOff, Loader2, ArrowUp, ArrowDown } from "lucide-react";
 
 interface FabricFile {
   id: string;
@@ -217,6 +217,34 @@ export default function AdminFabricFinishesPage() {
     fetchCategories();
   };
 
+  const moveFile = async (categoryId: string, fileIndex: number, direction: -1 | 1) => {
+    const cat = categories.find((c) => c.id === categoryId);
+    if (!cat) return;
+    const newIdx = fileIndex + direction;
+    if (newIdx < 0 || newIdx >= cat.files.length) return;
+    const reordered = [...cat.files];
+    [reordered[fileIndex], reordered[newIdx]] = [reordered[newIdx], reordered[fileIndex]];
+
+    // Optimistic UI update
+    setCategories((prev) =>
+      prev.map((c) => (c.id === categoryId ? { ...c, files: reordered.map((f, i) => ({ ...f, sortOrder: i })) } : c)),
+    );
+
+    // Normalizza sortOrder = posizione finale per ogni file della categoria
+    await Promise.all(
+      reordered.map((f, i) =>
+        f.sortOrder === i
+          ? null
+          : fetch(`/api/admin/fabric-finishes/${categoryId}/files/${f.id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ sortOrder: i }),
+            }),
+      ).filter(Boolean) as Promise<Response>[],
+    );
+    fetchCategories();
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -294,9 +322,27 @@ export default function AdminFabricFinishesPage() {
                         <div className="py-6 text-center text-warm-400 text-sm">Nessun file caricato.</div>
                       ) : (
                         <div className="bg-white rounded border border-warm-200 divide-y divide-warm-100">
-                          {c.files.map((f) => (
+                          {c.files.map((f, idx) => (
                             <div key={f.id} className="flex items-center justify-between px-3 py-2 hover:bg-warm-50">
-                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <div className="flex flex-col flex-shrink-0">
+                                  <button
+                                    onClick={() => moveFile(c.id, idx, -1)}
+                                    disabled={idx === 0}
+                                    className="p-0.5 text-warm-500 hover:bg-warm-100 rounded disabled:opacity-25 disabled:cursor-not-allowed"
+                                    title="Sposta su"
+                                  >
+                                    <ArrowUp size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => moveFile(c.id, idx, 1)}
+                                    disabled={idx === c.files.length - 1}
+                                    className="p-0.5 text-warm-500 hover:bg-warm-100 rounded disabled:opacity-25 disabled:cursor-not-allowed"
+                                    title="Sposta giù"
+                                  >
+                                    <ArrowDown size={12} />
+                                  </button>
+                                </div>
                                 <FileText size={16} className="text-warm-500 flex-shrink-0" />
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-baseline gap-2">
