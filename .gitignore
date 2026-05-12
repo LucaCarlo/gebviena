@@ -46,3 +46,4 @@ backups/
 # user-uploaded media (managed via admin UI, not source control)
 public/uploads/
 
+logs/
