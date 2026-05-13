@@ -9,7 +9,30 @@ import { useCart } from "@/contexts/CartContext";
 import GallerySlideshow from "@/components/site/GallerySlideshow";
 import ProductCard, { type ProductCardData } from "./ProductCard";
 
-type AttrType = "MATERIAL" | "FINISH" | "COLOR" | "OTHER";
+type AttrType =
+  | "MATERIAL"
+  | "FINISH"
+  | "COLOR"
+  | "STRUCTURE"
+  | "SEAT"
+  | "UPHOLSTERY"
+  | "INSERT"
+  | "CONFIGURATION"
+  | "OTHER";
+
+// Ordine di rendering + label visibile per ogni tipo attributo.
+const ATTR_TYPE_ORDER: AttrType[] = ["STRUCTURE", "SEAT", "COLOR", "MATERIAL", "FINISH", "UPHOLSTERY", "INSERT", "CONFIGURATION", "OTHER"];
+const ATTR_TYPE_LABEL: Record<AttrType, string> = {
+  MATERIAL: "Materiale",
+  FINISH: "Finitura",
+  COLOR: "Colore",
+  STRUCTURE: "Struttura",
+  SEAT: "Seduta",
+  UPHOLSTERY: "Imbottitura",
+  INSERT: "Inserti",
+  CONFIGURATION: "Variante",
+  OTHER: "Opzione",
+};
 
 interface Attribute {
   id: string;
@@ -183,12 +206,22 @@ export default function ProductDetail({ product }: { product: Product }) {
     } finally { setFavBusy(false); }
   }
 
+  // Tutti i valori attributo disponibili per il prodotto, raggruppati per tipo
+  // (dedup tra varianti).
   const attrByType = useMemo(() => {
-    const map: Record<AttrType, Attribute[]> = { MATERIAL: [], FINISH: [], COLOR: [], OTHER: [] };
+    const map: Record<AttrType, Attribute[]> = {
+      MATERIAL: [], FINISH: [], COLOR: [],
+      STRUCTURE: [], SEAT: [], UPHOLSTERY: [], INSERT: [], CONFIGURATION: [],
+      OTHER: [],
+    };
     const seen = new Set<string>();
     for (const v of product.variants) {
       for (const a of v.attributes) {
-        if (!seen.has(a.id)) { seen.add(a.id); map[a.type].push(a); }
+        if (!seen.has(a.id)) {
+          seen.add(a.id);
+          if (map[a.type]) map[a.type].push(a);
+          else map[a.type] = [a];
+        }
       }
     }
     return map;
@@ -199,20 +232,71 @@ export default function ProductDetail({ product }: { product: Product }) {
     [attrByType]
   );
 
+  // ─── Soft selection ────────────────────────────────────────────────────
+  // userChoices è la selezione "umana" per ogni tipo (1 valore per tipo).
+  // Quando l'utente clicca un attributo:
+  //   - se clicca lo stesso valore già selezionato → deseleziona (null)
+  //   - altrimenti imposta quel valore
+  // Dopo ogni cambio, cerchiamo la variante che soddisfa TUTTE le scelte;
+  // se trovata, la selezioniamo (cambia prezzo/sku). Se nessuna variante
+  // matcha, restiamo sulla variante corrente — la scelta dell'utente resta
+  // visibile come "richiesta di configurazione".
+  const [userChoices, setUserChoices] = useState<Partial<Record<AttrType, string | null>>>({});
+
+  // Inizializza/aggiorna userChoices in base alla variante selezionata.
+  // Per ogni tipo, se la variante ha un solo valore di quel tipo, lo selezioniamo
+  // come default. Se la variante ha più valori dello stesso tipo (es. tutte le
+  // strutture disponibili), lasciamo null (l'utente deve scegliere).
+  useEffect(() => {
+    if (!selectedVariant) return;
+    const byType: Partial<Record<AttrType, string[]>> = {};
+    for (const a of selectedVariant.attributes) {
+      const list = byType[a.type] || [];
+      list.push(a.id);
+      byType[a.type] = list;
+    }
+    setUserChoices((prev) => {
+      const next: Partial<Record<AttrType, string | null>> = { ...prev };
+      for (const t of ATTR_TYPE_ORDER) {
+        const list = byType[t];
+        if (!list || list.length === 0) {
+          // Tipo non presente sulla variante → mantieni eventuale scelta utente
+          continue;
+        }
+        if (list.length === 1) {
+          // Default automatico: unico valore
+          if (!next[t]) next[t] = list[0];
+        } else {
+          // Più valori: se la scelta corrente non è tra questi, resetta a null
+          if (next[t] && !list.includes(next[t]!)) next[t] = null;
+        }
+      }
+      return next;
+    });
+  }, [selectedVariant?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const selectAttr = (type: AttrType, attrId: string) => {
-    const current = selectedVariant;
-    if (!current) return;
-    const otherAttrs = current.attributes.filter((a) => a.type !== type).map((a) => a.id);
-    const match = product.variants.find((v) =>
-      v.attributes.some((a) => a.id === attrId) &&
-      otherAttrs.every((oid) => v.attributes.some((a) => a.id === oid))
-    );
-    if (match) { setSelectedVariantId(match.id); return; }
-    const fallback = product.variants.find((v) => v.attributes.some((a) => a.id === attrId));
-    if (fallback) setSelectedVariantId(fallback.id);
+    setUserChoices((prev) => ({
+      ...prev,
+      [type]: prev[type] === attrId ? null : attrId,
+    }));
   };
 
-  const selectedAttrIds = new Set(selectedVariant?.attributes.map((a) => a.id));
+  // Dopo che userChoices cambia, cerca la variante migliore.
+  useEffect(() => {
+    const chosen = Object.values(userChoices).filter((v): v is string => !!v);
+    if (chosen.length === 0) return;
+    const candidates = product.variants.filter((v) =>
+      chosen.every((id) => v.attributes.some((a) => a.id === id))
+    );
+    if (candidates.length === 0) return; // niente match → lasciamo la variante corrente
+    // Preferisci match più specifico: variante con meno attributi extra
+    const best = candidates.slice().sort((a, b) => a.attributes.length - b.attributes.length)[0];
+    if (best.id !== selectedVariantId) setSelectedVariantId(best.id);
+  }, [userChoices, product.variants, selectedVariantId]);
+
+  // Set delle scelte attuali (per highlight nei button)
+  const selectedAttrIds = new Set(Object.values(userChoices).filter(Boolean) as string[]);
 
   // Galleria hero unificata:
   // 1. PRIMA tutte le immagini del prodotto (cover + gallery store, deduplicate)
@@ -440,37 +524,46 @@ export default function ProductDetail({ product }: { product: Product }) {
             <p className="mt-5 text-[15px] text-warm-700 leading-[1.6]">{product.shortDescription}</p>
           )}
 
-          {/* Variant selector */}
+          {/* Variant selector — attributi cliccabili (soft-selection) */}
           {hasAttributeVariants ? (
             <div className="mt-7 space-y-5 pt-6 border-t border-warm-200">
-              {(["MATERIAL", "FINISH", "COLOR", "OTHER"] as AttrType[]).map((type) => {
+              {ATTR_TYPE_ORDER.map((type) => {
                 const available = attrByType[type];
-                if (available.length === 0) return null;
-                const current = selectedVariant?.attributes.find((a) => a.type === type);
-                const typeLabel =
-                  type === "MATERIAL" ? "Materiale" :
-                  type === "FINISH" ? "Finitura" :
-                  type === "COLOR" ? "Colore" :
-                  "Opzione";
+                if (!available || available.length === 0) return null;
+                const chosenId = userChoices[type];
+                const chosenLabel = available.find((a) => a.id === chosenId)?.label;
                 return (
                   <div key={type}>
                     <div className="text-[10px] uppercase tracking-[0.22em] text-warm-500 mb-2.5">
-                      {typeLabel}
-                      {current && <span className="ml-2 text-warm-900 normal-case tracking-normal text-[12px]">· {current.label}</span>}
+                      {ATTR_TYPE_LABEL[type]}
+                      {chosenLabel && (
+                        <span className="ml-2 text-warm-900 normal-case tracking-normal text-[12px]">· {chosenLabel}</span>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {available.map((a) => {
                         const isSel = selectedAttrIds.has(a.id);
                         if (type === "COLOR") {
                           return (
-                            <button key={a.id} onClick={() => selectAttr(type, a.id)} title={a.label}
+                            <button
+                              key={a.id}
+                              onClick={() => selectAttr(type, a.id)}
+                              title={a.label}
                               className={`w-9 h-9 rounded-full border-2 transition-all ${isSel ? "border-warm-900 scale-110" : "border-warm-200 hover:border-warm-400"}`}
-                              style={{ backgroundColor: a.hexColor || "#ccc" }} />
+                              style={{ backgroundColor: a.hexColor || "#ccc" }}
+                            />
                           );
                         }
                         return (
-                          <button key={a.id} onClick={() => selectAttr(type, a.id)}
-                            className={`px-3 py-1.5 text-[12px] tracking-[0.04em] border transition-colors ${isSel ? "border-warm-900 bg-warm-900 text-white" : "border-warm-200 text-warm-700 hover:border-warm-500"}`}>
+                          <button
+                            key={a.id}
+                            onClick={() => selectAttr(type, a.id)}
+                            className={`px-3 py-1.5 text-[12px] tracking-[0.04em] border transition-colors ${
+                              isSel
+                                ? "border-warm-900 bg-warm-900 text-white"
+                                : "border-warm-200 text-warm-700 hover:border-warm-500"
+                            }`}
+                          >
                             {a.label}
                           </button>
                         );
@@ -853,12 +946,19 @@ function BigSpec({ icon, label, value }: { icon?: React.ReactNode; label: string
 // Mostra le dimensioni di una variante su una sola riga usando codici
 // abbreviati (W, H, D, SH). L'icona "i" mostra la legenda al hover/click.
 const DIMENSION_ABBREVIATIONS: { match: RegExp; abbr: string; full: string }[] = [
+  // Abbreviazioni già usate nei DimensionBlock: vanno matchate per prime cosi'
+  // un label gia' abbreviato come "SH" non passa al fallback charAt(0) -> "S".
+  { match: /^(SH|S\.?H\.?)$/i, abbr: "SH", full: "altezza seduta" },
+  { match: /^W$/i, abbr: "W", full: "larghezza" },
+  { match: /^H$/i, abbr: "H", full: "altezza" },
+  { match: /^D$/i, abbr: "D", full: "profondità" },
+  { match: /^L$/i, abbr: "L", full: "lunghezza" },
+  { match: /^(Ø|O)$/i, abbr: "Ø", full: "diametro" },
+  // Forme estese multilingua (SH prima di H!)
+  { match: /^(altezza seduta|seat height|sitzh[oö]he|hauteur d['’]?assise|altura (del )?asiento|altura asiento)$/i, abbr: "SH", full: "altezza seduta" },
   { match: /^(larghezza|width|breite|largeur|anchura|ancho)$/i, abbr: "W", full: "larghezza" },
   { match: /^(profondit[aà]|depth|tiefe|profondeur|profundidad)$/i, abbr: "D", full: "profondità" },
-  // Importante: l'altezza seduta va matchata PRIMA dell'altezza generica
-  { match: /^(altezza seduta|seat height|sitzh[oö]he|hauteur d['’]?assise|altura (del )?asiento|altura asiento)$/i, abbr: "SH", full: "altezza seduta" },
   { match: /^(altezza|height|h[oö]he|hauteur|altura)$/i, abbr: "H", full: "altezza" },
-  // Altri codici comuni in cataloghi mobile (diametro, lunghezza, ecc.)
   { match: /^(diametro|diameter|durchmesser|diam[èe]tre|di[áa]metro)$/i, abbr: "Ø", full: "diametro" },
   { match: /^(lunghezza|length|l[aä]nge|longueur|longitud)$/i, abbr: "L", full: "lunghezza" },
 ];

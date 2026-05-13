@@ -1151,6 +1151,11 @@ enum StoreAttributeType {
   MATERIAL
   FINISH
   COLOR
+  STRUCTURE       // Struttura del telaio (es. Legno tinto, Metallo verniciato)
+  SEAT            // Seduta (es. Legno, Imbottita, Paglia di Vienna)
+  UPHOLSTERY      // Imbottitura (es. Chiara, Scura)
+  INSERT          // Inserti decorativi (es. Paglia di Vienna, Piedini in ottone)
+  CONFIGURATION   // Configurazione/variante (es. Gambaletto faggio naturale)
   OTHER
 }
 
