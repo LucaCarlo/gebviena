@@ -120,7 +120,7 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
             const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);
             if (pct < 1) return null;
             return (
-              <div className="absolute top-3 left-3 bg-red-700 text-white text-[11px] font-semibold uppercase tracking-wider px-2 py-1 shadow-sm">
+              <div className="absolute top-3 left-3 bg-warm-900 text-white text-[11px] font-semibold uppercase tracking-wider px-2 py-1 shadow-sm">
                 -{pct}%
               </div>
             );
@@ -140,9 +140,9 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
                 return (
                   <span className="inline-flex items-baseline gap-1.5 flex-wrap justify-end">
                     <span className="text-warm-400 line-through text-[12px]">{eur(p.priceFromCents)}</span>
-                    <span className="text-red-700 font-semibold">{p.variantsCount > 1 ? "da " : ""}{eur(p.salePriceFromCents)}</span>
+                    <span className="text-warm-900 font-semibold">{p.variantsCount > 1 ? "da " : ""}{eur(p.salePriceFromCents)}</span>
                     {pct >= 1 && (
-                      <span className="text-[10px] uppercase tracking-wider bg-red-100 text-red-700 px-1.5 py-0.5 rounded-sm font-sans font-semibold">
+                      <span className="text-[10px] uppercase tracking-wider bg-warm-100 text-warm-900 px-1.5 py-0.5 rounded-sm font-sans font-semibold">
                         -{pct}%
                       </span>
                     )}

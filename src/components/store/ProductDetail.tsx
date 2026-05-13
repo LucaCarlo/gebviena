@@ -458,11 +458,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                 <div className="text-[34px] font-light text-warm-900 tracking-tight">
                   {selectedVariant ? (
                     selectedVariant.priceCents > 0 ? (
-                      hasDiscount(selectedVariant) ? (
-                        <span className="text-red-700">{eur(effectivePriceCents(selectedVariant))}</span>
-                      ) : (
-                        eur(selectedVariant.priceCents)
-                      )
+                      eur(effectivePriceCents(selectedVariant))
                     ) : (
                       <span className="italic text-[24px] text-warm-700">Prezzo su richiesta</span>
                     )
@@ -473,7 +469,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                     <span className="text-warm-400 line-through text-[18px]">
                       {eur(selectedVariant.priceCents)}
                     </span>
-                    <span className="text-[12px] uppercase tracking-wider bg-red-100 text-red-700 px-2 py-1 rounded-sm font-semibold">
+                    <span className="text-[12px] uppercase tracking-wider bg-warm-100 text-warm-900 px-2 py-1 rounded-sm font-semibold">
                       -{Math.round((1 - effectivePriceCents(selectedVariant) / selectedVariant.priceCents) * 100)}%
                     </span>
                   </>
