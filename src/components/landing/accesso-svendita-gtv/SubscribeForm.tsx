@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useLang } from "@/contexts/I18nContext";
 
@@ -49,6 +49,8 @@ export default function SubscribeForm({
   successMessage = "Ti abbiamo inviato un'email di conferma all'indirizzo che ci hai fornito. A breve riceverai le istruzioni per accedere alla vendita speciale online.",
 }: Props) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const lang = useLang();
   const inviteToken = searchParams.get("inv") || "";
   const tracked = useRef(false);
@@ -111,8 +113,18 @@ export default function SubscribeForm({
         body: JSON.stringify({ ...form, inviteToken: inviteToken || undefined, lang: lang || "it" }),
       });
       const data = await res.json();
-      if (data.success) setSuccess(true);
-      else setServerError(data.error || "Si è verificato un errore. Riprova.");
+      if (data.success) {
+        // Naviga a una thank-you page con permalink dedicato: lì viene tracciato
+        // l'evento Meta Pixel `CompleteRegistration` (vedi (landing)/[permalink]/grazie).
+        // Fallback: se per qualche motivo non posso navigare, mostro il success card inline.
+        const cleanPath = (pathname || "/").replace(/\/$/, "");
+        const target = `${cleanPath}/grazie`;
+        try {
+          router.push(target);
+        } catch {
+          setSuccess(true);
+        }
+      } else setServerError(data.error || "Si è verificato un errore. Riprova.");
     } catch {
       setServerError("Errore di connessione. Riprova.");
     } finally {

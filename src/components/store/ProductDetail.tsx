@@ -216,8 +216,10 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   // Galleria hero unificata:
   // 1. PRIMA tutte le immagini del prodotto (cover + gallery store, deduplicate)
-  // 2. POI tutte le immagini di TUTTE le varianti (cover + gallery), in ordine di variante
-  // Così sono sempre visibili contemporaneamente; cliccando una variante salto al suo indice.
+  // 2. POI le immagini delle varianti NON default (cover + gallery), in ordine
+  // La variante default NON contribuisce con immagini proprie: si rifà alla prima
+  // immagine del prodotto. Così sono sempre tutte visibili contemporaneamente;
+  // cliccando una variante salto al suo indice nella griglia.
   const heroImages = useMemo(() => {
     const imgs: string[] = [];
     const seen = new Set<string>();
@@ -227,20 +229,22 @@ export default function ProductDetail({ product }: { product: Product }) {
     // Step 1: immagini prodotto
     add(product.coverImage);
     for (const u of parseList(product.galleryImages)) add(u);
-    // Step 2: immagini di TUTTE le varianti (non solo quella selezionata)
+    // Step 2: immagini delle varianti NON default
     for (const v of product.variants) {
+      if (v.isDefault) continue; // la default usa la prima immagine prodotto
       add(v.coverImage);
       for (const u of parseList(v.galleryImages)) add(u);
     }
     return imgs;
   }, [product]);
 
-  // Mappa variantId → indice della prima immagine di quella variante in heroImages.
-  // Se la variante non ha immagini proprie (es. variante di default) cade su 0 (= primo
-  // immagine prodotto).
+  // Mappa variantId → indice in heroImages.
+  // - Variante default → 0 (prima immagine prodotto)
+  // - Variante non default → indice della sua prima immagine, oppure 0 come fallback
   const variantImageIndex = useMemo(() => {
     const map: Record<string, number> = {};
     for (const v of product.variants) {
+      if (v.isDefault) { map[v.id] = 0; continue; }
       const firstVariantImg = v.coverImage || parseList(v.galleryImages)[0] || null;
       const idx = firstVariantImg ? heroImages.indexOf(firstVariantImg) : -1;
       map[v.id] = idx >= 0 ? idx : 0;

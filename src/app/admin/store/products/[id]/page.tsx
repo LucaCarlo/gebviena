@@ -1011,19 +1011,27 @@ function VariantModal({
           {/* Immagini */}
           <div className="space-y-3">
             <div className="text-xs font-medium text-warm-600 uppercase tracking-wider">Foto della variante (opz.)</div>
-            <p className="text-xs text-warm-500">
-              Questa foto sostituisce la cover del prodotto quando il cliente seleziona questa variante.
-            </p>
-            <ImageUploadField
-              label=""
-              value={v.coverImage || ""}
-              onChange={(url) => update({ coverImage: url || null })}
-              onRemove={() => update({ coverImage: null })}
-              folder="store-variants"
-              purpose="variant-cover"
-              recommendedSize="1600 × 2000 px (rapporto 4:5)"
-              helpText="Carica direttamente: nessun ritaglio. Usa formato verticale 4:5 per evitare tagli."
-            />
+            {v.isDefault ? (
+              <p className="text-xs text-warm-500 italic bg-warm-50 border border-warm-200 rounded p-3">
+                La variante di default usa automaticamente la <strong>prima immagine del prodotto</strong> (sezione &ldquo;Cover Store&rdquo; in alto). Non serve caricare un&apos;immagine qui.
+              </p>
+            ) : (
+              <>
+                <p className="text-xs text-warm-500">
+                  Questa foto rappresenta questa variante nella galleria pagina prodotto. Cliccando la variante l&apos;hero salter&agrave; a questa immagine.
+                </p>
+                <ImageUploadField
+                  label=""
+                  value={v.coverImage || ""}
+                  onChange={(url) => update({ coverImage: url || null })}
+                  onRemove={() => update({ coverImage: null })}
+                  folder="store-variants"
+                  purpose="variant-cover"
+                  recommendedSize="1600 × 2000 px (rapporto 4:5)"
+                  helpText="Carica direttamente: nessun ritaglio. Usa formato verticale 4:5 per evitare tagli."
+                />
+              </>
+            )}
           </div>
 
           {/* Flags */}
