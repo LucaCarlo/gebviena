@@ -11,7 +11,26 @@ import GalleryUploadField from "@/components/admin/GalleryUploadField";
 import StoreTranslationsPanel from "@/components/admin/StoreTranslationsPanel";
 
 type ShippingClass = "STANDARD" | "FRAGILE" | "OVERSIZED" | "QUOTE_ONLY";
-type AttrType = "MATERIAL" | "FINISH" | "COLOR" | "OTHER";
+type AttrType =
+  | "MATERIAL"
+  | "FINISH"
+  | "COLOR"
+  | "STRUCTURE"
+  | "SEAT"
+  | "UPHOLSTERY"
+  | "INSERT"
+  | "CONFIGURATION"
+  | "OTHER";
+
+const ATTR_TYPES_ORDER: AttrType[] = [
+  "STRUCTURE", "SEAT", "COLOR", "MATERIAL", "FINISH",
+  "UPHOLSTERY", "INSERT", "CONFIGURATION", "OTHER",
+];
+const ATTR_TYPE_LABEL_ADMIN: Record<AttrType, string> = {
+  MATERIAL: "Materiale", FINISH: "Finitura", COLOR: "Colore",
+  STRUCTURE: "Struttura", SEAT: "Seduta", UPHOLSTERY: "Imbottitura",
+  INSERT: "Inserti", CONFIGURATION: "Variante", OTHER: "Altro",
+};
 
 interface AttrValue {
   id: string;
@@ -792,8 +811,12 @@ function VariantModal({
   };
 
   const byType = useMemo(() => {
-    const out: Record<AttrType, AttrValue[]> = { MATERIAL: [], FINISH: [], COLOR: [], OTHER: [] };
-    for (const a of attributes) if (a) out[a.type].push(a);
+    const out: Record<AttrType, AttrValue[]> = {
+      MATERIAL: [], FINISH: [], COLOR: [],
+      STRUCTURE: [], SEAT: [], UPHOLSTERY: [], INSERT: [], CONFIGURATION: [],
+      OTHER: [],
+    };
+    for (const a of attributes) if (a && out[a.type]) out[a.type].push(a);
     return out;
   }, [attributes]);
 
@@ -928,14 +951,14 @@ function VariantModal({
           {/* Attributi */}
           <div>
             <div className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-2">Attributi variante</div>
-            {(["MATERIAL", "FINISH", "COLOR", "OTHER"] as AttrType[]).map((type) => {
+            {ATTR_TYPES_ORDER.map((type) => {
               const vals = byType[type];
               if (vals.length === 0) return null;
               const selected = v.attributes.find((a) => a.value.type === type);
               return (
                 <div key={type} className="mb-3">
                   <div className="text-xs text-warm-500 mb-1 capitalize">
-                    {type === "MATERIAL" ? "Materiale" : type === "FINISH" ? "Finitura" : type === "COLOR" ? "Colore" : "Altro"}
+                    {ATTR_TYPE_LABEL_ADMIN[type]}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {vals.map((val) => {

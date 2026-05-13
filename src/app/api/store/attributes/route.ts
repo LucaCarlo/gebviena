@@ -3,7 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { StoreAttributeType, Prisma } from "@prisma/client";
 
-const VALID_TYPES: StoreAttributeType[] = ["MATERIAL", "FINISH", "COLOR", "OTHER"];
+const VALID_TYPES: StoreAttributeType[] = [
+  "MATERIAL", "FINISH", "COLOR",
+  "STRUCTURE", "SEAT", "UPHOLSTERY", "INSERT", "CONFIGURATION",
+  "OTHER",
+];
 
 export async function GET(req: NextRequest) {
   const result = await requirePermission("store_attributes", "view");

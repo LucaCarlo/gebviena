@@ -6,7 +6,16 @@ import { ChevronDown, X, Search as SearchIcon } from "lucide-react";
 
 interface AttrValue {
   id: string;
-  type: "MATERIAL" | "FINISH" | "COLOR" | "OTHER";
+  type:
+    | "MATERIAL"
+    | "FINISH"
+    | "COLOR"
+    | "STRUCTURE"
+    | "SEAT"
+    | "UPHOLSTERY"
+    | "INSERT"
+    | "CONFIGURATION"
+    | "OTHER";
   code: string;
   hexColor: string | null;
   translations: { languageCode: string; label: string }[];
@@ -23,8 +32,17 @@ const TYPE_LABEL: Record<AttrValue["type"], string> = {
   MATERIAL: "Materiale",
   FINISH: "Finitura",
   COLOR: "Colore",
+  STRUCTURE: "Struttura",
+  SEAT: "Seduta",
+  UPHOLSTERY: "Imbottitura",
+  INSERT: "Inserti",
+  CONFIGURATION: "Variante",
   OTHER: "Altro",
 };
+const SHOP_FILTER_TYPES: AttrValue["type"][] = [
+  "STRUCTURE", "SEAT", "COLOR", "MATERIAL", "FINISH",
+  "UPHOLSTERY", "INSERT", "CONFIGURATION",
+];
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Novità" },
@@ -40,7 +58,9 @@ export default function ShopFilters() {
   const [attrs, setAttrs] = useState<AttrValue[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
-    category: true, price: true, availability: true, MATERIAL: true, FINISH: true, COLOR: true,
+    category: true, price: true, availability: true,
+    STRUCTURE: true, SEAT: true, COLOR: true,
+    MATERIAL: true, FINISH: true, UPHOLSTERY: true, INSERT: true, CONFIGURATION: true,
   });
 
   // Query state locale (per debouncing)
@@ -222,7 +242,7 @@ export default function ShopFilters() {
       </FilterGroup>
 
       {/* Attributi per tipo */}
-      {(["MATERIAL", "FINISH", "COLOR"] as AttrValue["type"][]).map((t) => {
+      {SHOP_FILTER_TYPES.map((t) => {
         const vals = byType(t);
         if (vals.length === 0) return null;
         return (

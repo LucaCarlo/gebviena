@@ -3,7 +3,28 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, Check, X, Loader2, AlertCircle } from "lucide-react";
 
-type AttrType = "MATERIAL" | "FINISH" | "COLOR" | "OTHER";
+type AttrType =
+  | "MATERIAL"
+  | "FINISH"
+  | "COLOR"
+  | "STRUCTURE"
+  | "SEAT"
+  | "UPHOLSTERY"
+  | "INSERT"
+  | "CONFIGURATION"
+  | "OTHER";
+
+const ATTR_TYPES_ORDER: AttrType[] = [
+  "STRUCTURE",
+  "SEAT",
+  "COLOR",
+  "MATERIAL",
+  "FINISH",
+  "UPHOLSTERY",
+  "INSERT",
+  "CONFIGURATION",
+  "OTHER",
+];
 
 interface AttrTranslation {
   id?: string;
@@ -33,11 +54,16 @@ const TYPE_LABELS: Record<AttrType, string> = {
   MATERIAL: "Materiali",
   FINISH: "Finiture",
   COLOR: "Colori",
+  STRUCTURE: "Struttura",
+  SEAT: "Seduta",
+  UPHOLSTERY: "Imbottitura",
+  INSERT: "Inserti",
+  CONFIGURATION: "Variante",
   OTHER: "Altro",
 };
 
 const EMPTY_FORM: Omit<AttrValue, "id"> = {
-  type: "MATERIAL",
+  type: "STRUCTURE",
   code: "",
   hexColor: null,
   sortOrder: 0,
@@ -48,7 +74,7 @@ const EMPTY_FORM: Omit<AttrValue, "id"> = {
 export default function StoreAttributesPage() {
   const [values, setValues] = useState<AttrValue[]>([]);
   const [languages, setLanguages] = useState<Language[]>([]);
-  const [activeTab, setActiveTab] = useState<AttrType>("MATERIAL");
+  const [activeTab, setActiveTab] = useState<AttrType>("STRUCTURE");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<AttrValue | null>(null);
   const [showNew, setShowNew] = useState(false);
@@ -183,7 +209,7 @@ export default function StoreAttributesPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-warm-200 mb-6">
-        {(Object.keys(TYPE_LABELS) as AttrType[]).map((t) => (
+        {ATTR_TYPES_ORDER.map((t) => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
@@ -374,10 +400,9 @@ function AttrModal({
               onChange={(e) => onChange({ type: e.target.value as AttrType })}
               className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
             >
-              <option value="MATERIAL">Materiale</option>
-              <option value="FINISH">Finitura</option>
-              <option value="COLOR">Colore</option>
-              <option value="OTHER">Altro</option>
+              {ATTR_TYPES_ORDER.map((t) => (
+                <option key={t} value={t}>{TYPE_LABELS[t]}</option>
+              ))}
             </select>
           </div>
 
