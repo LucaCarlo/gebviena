@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { Ruler, ShoppingBag, Heart, Maximize2, X as XIcon, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useCart } from "@/contexts/CartContext";
