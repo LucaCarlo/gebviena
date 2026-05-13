@@ -452,8 +452,8 @@ function ImagesTab({
           onRemove={() => setCover("")}
           folder="store-products"
           purpose="cover"
-          recommendedSize="1200 × 900 px (4:3)"
-          aspectRatio={4 / 3}
+          recommendedSize="1600 × 2000 px (rapporto 4:5)"
+          helpText="Carica direttamente: nessun ritaglio. Per evitare tagli sulla card prepara l'immagine in formato verticale 4:5."
         />
       </section>
 
@@ -1021,8 +1021,8 @@ function VariantModal({
               onRemove={() => update({ coverImage: null })}
               folder="store-variants"
               purpose="variant-cover"
-              recommendedSize="1200 × 900 px (4:3)"
-              aspectRatio={4 / 3}
+              recommendedSize="1600 × 2000 px (rapporto 4:5)"
+              helpText="Carica direttamente: nessun ritaglio. Usa formato verticale 4:5 per evitare tagli."
             />
           </div>
 
