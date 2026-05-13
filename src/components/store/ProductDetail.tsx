@@ -44,6 +44,7 @@ interface Product {
   name: string;
   shortDescription: string | null;
   marketingDescription: string | null;
+  deliveryLeadTime?: string;
   coverImage: string | null;
   galleryImages: string | null;
   excludedCatalogImages: string | null;
@@ -540,7 +541,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               {selectedVariant.weightKg !== null && (
                 <BigSpec label="Peso" value={`${selectedVariant.weightKg.toFixed(1)} kg`} />
               )}
-              <BigSpec icon={<Ruler size={14} />} label="Spedizione" value={selectedVariant.shippingClass === "QUOTE_ONLY" ? "Su preventivo" : "Standard"} />
+              <BigSpec icon={<Ruler size={14} />} label="Consegna" value={selectedVariant.shippingClass === "QUOTE_ONLY" ? "Su preventivo" : (product.deliveryLeadTime || "4–6 settimane")} />
             </div>
           )}
 

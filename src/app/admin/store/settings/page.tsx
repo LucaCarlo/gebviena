@@ -71,6 +71,13 @@ const DEFINITIONS: SettingDef[] = [
     placeholder: "IT",
     hint: "Codice ISO 3166-1 alpha-2.",
   },
+  {
+    key: "store.delivery_lead_time",
+    group: "store_general",
+    label: "Tempi di consegna",
+    placeholder: "4–6 settimane",
+    hint: "Mostrato sulla pagina prodotto sotto Volume/Peso. Testo libero (es. \"4–6 settimane\", \"Pronta consegna\", \"Su ordinazione\"). Vale per tutti i prodotti.",
+  },
 
   // ── Email ──
   {

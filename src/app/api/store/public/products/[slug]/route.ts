@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getStoreGeneralConfig } from "@/lib/stripe-config";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -115,6 +116,9 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     : [];
   const blockMap = new Map(blocks.map((b) => [b.id, b]));
 
+  // Tempi di consegna globali (admin setting)
+  const generalCfg = await getStoreGeneralConfig();
+
   return NextResponse.json({
     success: true,
     data: {
@@ -125,6 +129,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       marketingDescription: tr?.marketingDescription || productTr?.description || null,
       seoTitle: tr?.seoTitle || null,
       seoDescription: tr?.seoDescription || null,
+      deliveryLeadTime: generalCfg.deliveryLeadTime,
       coverImage: sp.coverImage || sp.product.coverImage || sp.product.imageUrl,
       galleryImages: sp.galleryImages,
       excludedCatalogImages: sp.excludedCatalogImages,
