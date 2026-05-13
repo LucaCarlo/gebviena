@@ -513,10 +513,7 @@ export default function ProductDetail({ product }: { product: Product }) {
           </h1>
           {product.designer && (
             <div className="mt-2 text-[12px] text-warm-500 tracking-[0.06em]">
-              design by{" "}
-              <Link href={`/designers/${product.designer.slug}`} className="text-warm-800 hover:underline underline-offset-2">
-                {product.designer.name}
-              </Link>
+              design by <span className="text-warm-800">{product.designer.name}</span>
             </div>
           )}
 

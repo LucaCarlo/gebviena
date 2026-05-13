@@ -235,17 +235,25 @@ async function upsertTranslation(storeProductId: string, groupName: string, mark
       },
     });
   } else {
-    // Aggiorna nome / descrizioni / pubblicazione (slug invariato per non rompere URL)
+    // Aggiorna nome / pubblicazione, MA preserva marketingDescription/shortDescription
+    // se sono state arricchite manualmente (più lunghe della versione Excel).
+    // Questo evita che un re-run dell'import sovrascriva le descrizioni editoriali
+    // scritte dallo script enrich-store-descriptions.
+    const exMarketing = existingForThis.marketingDescription || "";
+    const exShort = existingForThis.shortDescription || "";
+    const excelTrimmed = marketing || "";
+    const useExistingMarketing = exMarketing.length > excelTrimmed.length;
+    const useExistingShort = exShort.length > 50; // se c'è già una short curata, non sovrascrivere
     await prisma.storeProductTranslation.update({
       where: { id: existingForThis.id },
       data: {
         name: groupName,
-        shortDescription: marketing
-          ? marketing.length > 280
-            ? marketing.slice(0, 277) + "…"
-            : marketing
-          : existingForThis.shortDescription,
-        marketingDescription: marketing || existingForThis.marketingDescription,
+        shortDescription: useExistingShort
+          ? exShort
+          : excelTrimmed.length > 280
+            ? excelTrimmed.slice(0, 277) + "…"
+            : excelTrimmed || exShort,
+        marketingDescription: useExistingMarketing ? exMarketing : (excelTrimmed || exMarketing),
         status: publish ? "published" : existingForThis.status,
         isPublished: publish || existingForThis.isPublished,
       },
