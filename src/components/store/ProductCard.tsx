@@ -113,6 +113,18 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
             Esaurito
           </div>
         )}
+
+        {/* Badge percentuale sconto (top-left) */}
+        {p.inStock && p.priceFromCents > 0 && p.salePriceFromCents != null
+          && p.salePriceFromCents > 0 && p.salePriceFromCents < p.priceFromCents && (() => {
+            const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);
+            if (pct < 1) return null;
+            return (
+              <div className="absolute top-3 left-3 bg-red-700 text-white text-[11px] font-semibold uppercase tracking-wider px-2 py-1 shadow-sm">
+                -{pct}%
+              </div>
+            );
+          })()}
       </div>
 
       <div className="mt-3 space-y-1">
@@ -123,12 +135,20 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
           <div className="text-sm font-medium text-warm-900 truncate">{p.name}</div>
           <div className="text-sm font-mono text-warm-900 shrink-0">
             {p.priceFromCents > 0 ? (
-              p.salePriceFromCents != null && p.salePriceFromCents > 0 && p.salePriceFromCents < p.priceFromCents ? (
-                <span className="inline-flex items-baseline gap-1.5">
-                  <span className="text-warm-400 line-through text-[12px]">{eur(p.priceFromCents)}</span>
-                  <span className="text-red-700">{p.variantsCount > 1 ? "da " : ""}{eur(p.salePriceFromCents)}</span>
-                </span>
-              ) : (
+              p.salePriceFromCents != null && p.salePriceFromCents > 0 && p.salePriceFromCents < p.priceFromCents ? (() => {
+                const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);
+                return (
+                  <span className="inline-flex items-baseline gap-1.5 flex-wrap justify-end">
+                    <span className="text-warm-400 line-through text-[12px]">{eur(p.priceFromCents)}</span>
+                    <span className="text-red-700 font-semibold">{p.variantsCount > 1 ? "da " : ""}{eur(p.salePriceFromCents)}</span>
+                    {pct >= 1 && (
+                      <span className="text-[10px] uppercase tracking-wider bg-red-100 text-red-700 px-1.5 py-0.5 rounded-sm font-sans font-semibold">
+                        -{pct}%
+                      </span>
+                    )}
+                  </span>
+                );
+              })() : (
                 <>{p.variantsCount > 1 ? "da " : ""}{eur(p.priceFromCents)}</>
               )
             ) : (

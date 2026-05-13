@@ -51,7 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
         where: { isPublished: true },
         orderBy: [{ isDefault: "desc" }, { sortOrder: "asc" }],
         select: {
-          id: true, sku: true, priceCents: true, stockQty: true, trackStock: true,
+          id: true, sku: true, priceCents: true, salePriceCents: true, stockQty: true, trackStock: true,
           volumeM3: true, weightKg: true, shippingClass: true,
           coverImage: true, galleryImages: true, isDefault: true,
           dimensionBlockId: true, dimensionValues: true,
@@ -154,6 +154,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
         id: v.id,
         sku: v.sku,
         priceCents: v.priceCents,
+        salePriceCents: v.salePriceCents,
         stockQty: v.stockQty,
         trackStock: v.trackStock,
         volumeM3: Number(v.volumeM3),

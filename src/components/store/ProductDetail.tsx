@@ -23,6 +23,7 @@ interface Variant {
   id: string;
   sku: string;
   priceCents: number;
+  salePriceCents: number | null;
   stockQty: number | null;
   trackStock: boolean;
   volumeM3: number;
@@ -124,6 +125,14 @@ export default function ProductDetail({ product }: { product: Product }) {
     [product.variants, selectedVariantId]
   );
 
+  // Prezzo effettivamente pagato (sale se presente e < listino, altrimenti listino)
+  const effectivePriceCents = (v: Variant): number =>
+    v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents
+      ? v.salePriceCents
+      : v.priceCents;
+  const hasDiscount = (v: Variant): boolean =>
+    v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents;
+
   const handleAddToCart = () => {
     if (!selectedVariant) return;
     const attrLabels = selectedVariant.attributes.map((a) => a.label).join(" · ");
@@ -134,7 +143,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       variantName: selectedVariant.name,
       variantAttributes: attrLabels,
       sku: selectedVariant.sku,
-      priceCents: selectedVariant.priceCents,
+      priceCents: effectivePriceCents(selectedVariant),
       coverImage: selectedVariant.coverImage || product.coverImage,
       volumeM3: selectedVariant.volumeM3,
       weightKg: selectedVariant.weightKg,
@@ -444,11 +453,31 @@ export default function ProductDetail({ product }: { product: Product }) {
 
           {/* Price + CTA */}
           <div className="mt-7 pt-6 border-t border-warm-200">
-            <div className="flex items-baseline justify-between mb-1">
-              <div className="text-[34px] font-light text-warm-900 tracking-tight">
-                {selectedVariant
-                  ? (selectedVariant.priceCents > 0 ? eur(selectedVariant.priceCents) : <span className="italic text-[24px] text-warm-700">Prezzo su richiesta</span>)
-                  : "—"}
+            <div className="flex items-baseline justify-between mb-1 gap-3 flex-wrap">
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <div className="text-[34px] font-light text-warm-900 tracking-tight">
+                  {selectedVariant ? (
+                    selectedVariant.priceCents > 0 ? (
+                      hasDiscount(selectedVariant) ? (
+                        <span className="text-red-700">{eur(effectivePriceCents(selectedVariant))}</span>
+                      ) : (
+                        eur(selectedVariant.priceCents)
+                      )
+                    ) : (
+                      <span className="italic text-[24px] text-warm-700">Prezzo su richiesta</span>
+                    )
+                  ) : "—"}
+                </div>
+                {selectedVariant && hasDiscount(selectedVariant) && (
+                  <>
+                    <span className="text-warm-400 line-through text-[18px]">
+                      {eur(selectedVariant.priceCents)}
+                    </span>
+                    <span className="text-[12px] uppercase tracking-wider bg-red-100 text-red-700 px-2 py-1 rounded-sm font-semibold">
+                      -{Math.round((1 - effectivePriceCents(selectedVariant) / selectedVariant.priceCents) * 100)}%
+                    </span>
+                  </>
+                )}
               </div>
               {selectedVariant && (
                 <div className="text-[10px] text-warm-500 font-mono tracking-wide">SKU {selectedVariant.sku}</div>

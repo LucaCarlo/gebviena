@@ -208,7 +208,19 @@ async function upsertVariant(
 ) {
   // SKU = codice Excel, troncato a 64 (vincolo schema)
   const sku = row.code.slice(0, 64);
-  const priceCents = row.finalPrice !== null ? Math.round(row.finalPrice * 100) : 0;
+
+  // Mapping prezzi:
+  // - priceCents          = "prezzo ivato" (prezzo pieno IVA inclusa, mostrato barrato sulla card)
+  // - salePriceCents      = "prezzo finale scontato (40%) e ivato (22%)" (quello che il cliente paga)
+  // - priceWithVatCents   = stesso valore di salePriceCents per coerenza con il pannello admin
+  //                         che usa questo campo come "prezzo finale IVA inclusa" interno.
+  const fullPriceCents = row.vatPrice !== null && row.vatPrice > 0
+    ? Math.round(row.vatPrice * 100)
+    : (row.finalPrice !== null ? Math.round(row.finalPrice * 100) : 0);
+  const finalCents = row.finalPrice !== null ? Math.round(row.finalPrice * 100) : fullPriceCents;
+  // Solo se c'è effettivamente uno sconto popoliamo salePriceCents.
+  const hasDiscount = finalCents > 0 && finalCents < fullPriceCents;
+  const salePriceCents = hasDiscount ? finalCents : null;
   // Stima volume da maxPerBox (1 = 0.10, 2 = 0.05, ecc.); fallback 0.05.
   const maxBox = row.maxPerBox && row.maxPerBox > 0 ? row.maxPerBox : 2;
   const volumeM3 = Math.max(0.01, Math.min(0.5, 0.1 / maxBox));
@@ -221,7 +233,9 @@ async function upsertVariant(
       where: { id: existing.id },
       data: {
         storeProductId, // riassocia se il SKU era stato collegato altrove
-        priceCents,
+        priceCents: fullPriceCents,
+        salePriceCents,
+        priceWithVatCents: hasDiscount ? finalCents : null,
         volumeM3,
         trackStock: false,
         stockQty: null,
@@ -256,7 +270,9 @@ async function upsertVariant(
     data: {
       storeProductId,
       sku,
-      priceCents,
+      priceCents: fullPriceCents,
+      salePriceCents,
+      priceWithVatCents: hasDiscount ? finalCents : null,
       stockQty: null,
       trackStock: false,
       volumeM3,
