@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Package, Ruler, ShoppingBag, Heart, Maximize2, X as XIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useCart } from "@/contexts/CartContext";
+import GallerySlideshow from "@/components/site/GallerySlideshow";
 import ProductCard, { type ProductCardData } from "./ProductCard";
 
 type AttrType = "MATERIAL" | "FINISH" | "COLOR" | "OTHER";
@@ -221,6 +222,49 @@ export default function ProductDetail({ product }: { product: Product }) {
     const excluded = new Set(parseList(product.excludedCatalogImages));
     return all.filter((u) => !excluded.has(u));
   }, [product.catalogGalleryImages, product.excludedCatalogImages]);
+
+  // Auto-detect orientation per dividere verticali (per la sezione descrizione)
+  // dalle orizzontali (per lo slideshow tipo sito principale).
+  const [imageOrientations, setImageOrientations] = useState<Record<string, "h" | "v">>({});
+  useEffect(() => {
+    if (catalogGallery.length === 0) return;
+    let cancelled = false;
+    catalogGallery.forEach((url) => {
+      if (imageOrientations[url]) return;
+      const img = new window.Image();
+      img.onload = () => {
+        if (cancelled) return;
+        const orient: "h" | "v" = img.naturalWidth >= img.naturalHeight ? "h" : "v";
+        setImageOrientations((prev) => (prev[url] ? prev : { ...prev, [url]: orient }));
+      };
+      img.src = url;
+    });
+    return () => { cancelled = true; };
+  }, [catalogGallery, imageOrientations]);
+
+  // Per la colonna destra della descrizione preferiamo immagini verticali.
+  // Se non ce ne sono (ancora misurate), usiamo comunque le prime 1-2 della galleria.
+  const verticalCatalog = useMemo(
+    () => catalogGallery.filter((u) => imageOrientations[u] === "v"),
+    [catalogGallery, imageOrientations]
+  );
+  const descriptionSideImages = useMemo(() => {
+    const pool = verticalCatalog.length > 0 ? verticalCatalog : catalogGallery;
+    return pool.slice(0, 2);
+  }, [verticalCatalog, catalogGallery]);
+
+  // Per lo slideshow "Ispirazione" usiamo tutte le immagini rimanenti.
+  // Preferiamo le orizzontali; se mancano, usiamo le rimanenti dopo quelle a fianco descrizione.
+  const sideSet = useMemo(() => new Set(descriptionSideImages), [descriptionSideImages]);
+  const horizontalCatalog = useMemo(
+    () => catalogGallery.filter((u) => imageOrientations[u] !== "v" && !sideSet.has(u)),
+    [catalogGallery, imageOrientations, sideSet]
+  );
+  const slideshowImages = useMemo(() => {
+    if (horizontalCatalog.length > 0) return horizontalCatalog;
+    // Fallback: tutto ciò che non è già a fianco descrizione
+    return catalogGallery.filter((u) => !sideSet.has(u));
+  }, [horizontalCatalog, catalogGallery, sideSet]);
 
   useEffect(() => { setActiveImgIdx(0); }, [selectedVariantId]);
 
@@ -513,11 +557,11 @@ export default function ProductDetail({ product }: { product: Product }) {
         </div>
       </div>
 
-      {/* ═══ Sezione Descrizione (2-col: testo + galleria a cascata) ═══ */}
-      {(product.marketingDescription || catalogGallery.length > 0) && (
+      {/* ═══ Sezione Descrizione (2-col: testo a sinistra + 1-2 immagini grandi a destra) ═══ */}
+      {(product.marketingDescription || descriptionSideImages.length > 0) && (
         <section className="mt-20 pt-14 border-t border-warm-200">
           <div className="text-[10px] uppercase tracking-[0.28em] text-warm-500 mb-8">Descrizione</div>
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-10 lg:gap-16">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-10 lg:gap-16 items-start">
             <div className={`text-[15px] text-warm-700 leading-[1.75] max-w-[640px]
               [&_h1]:font-serif [&_h1]:text-[30px] [&_h1]:text-warm-900 [&_h1]:mt-8 [&_h1]:mb-4 [&_h1]:tracking-[-0.005em]
               [&_h2]:font-serif [&_h2]:text-[26px] [&_h2]:text-warm-900 [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:tracking-[-0.005em]
@@ -530,17 +574,35 @@ export default function ProductDetail({ product }: { product: Product }) {
                 ? <div dangerouslySetInnerHTML={{ __html: /<\/?(p|div|h[1-6]|ul|ol|li|strong|em|blockquote|br|a)\b/i.test(product.marketingDescription) ? product.marketingDescription : renderMarkdown(product.marketingDescription) }} />
                 : <p className="text-warm-500 italic">Descrizione in arrivo.</p>}
             </div>
-            {/* Galleria — 2 col, immagini quadrate piccole, max 6 (3 righe) per non andare oltre il testo */}
-            {catalogGallery.length > 0 && (
-              <div className="grid grid-cols-2 gap-3 self-start">
-                {catalogGallery.slice(0, 6).map((img, i) => (
-                  <div key={i} className="relative aspect-square bg-warm-100 overflow-hidden">
-                    <Image src={img} alt={`${product.name} — ${i + 1}`} fill sizes="(max-width: 1024px) 50vw, 22vw" className="object-cover" />
+            {/* Galleria descrizione: 1 immagine grande (3/4) o 2 stacked verticali */}
+            {descriptionSideImages.length > 0 && (
+              <div className={descriptionSideImages.length === 1 ? "" : "grid grid-cols-1 gap-4"}>
+                {descriptionSideImages.map((img, i) => (
+                  <div
+                    key={i}
+                    className="relative bg-warm-100 overflow-hidden"
+                    style={{ aspectRatio: descriptionSideImages.length === 1 ? "3 / 4" : "4 / 3" }}
+                  >
+                    <Image
+                      src={img}
+                      alt={`${product.name} — ${i + 1}`}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 45vw"
+                      className="object-cover"
+                    />
                   </div>
                 ))}
               </div>
             )}
           </div>
+        </section>
+      )}
+
+      {/* ═══ Sezione Ispirazione — slideshow orizzontale full-width (stessa logica del sito principale) ═══ */}
+      {slideshowImages.length > 0 && (
+        <section className="mt-16 lg:mt-20">
+          <div className="text-[10px] uppercase tracking-[0.28em] text-warm-500 mb-6 text-center">Ispirazione</div>
+          <GallerySlideshow images={slideshowImages} name={product.name} />
         </section>
       )}
 

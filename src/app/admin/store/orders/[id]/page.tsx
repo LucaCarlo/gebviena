@@ -379,12 +379,12 @@ export default function OrderDetailPage() {
         <div className="space-y-6">
           <section className="bg-white rounded-lg border border-warm-200 p-4">
             <h3 className="font-medium text-warm-900 mb-2 text-sm">Indirizzo spedizione</h3>
-            <AddressView addr={shipAddr} />
+            <AddressView addr={shipAddr} firstName={order.firstName} lastName={order.lastName} phone={order.phone} />
           </section>
 
           <section className="bg-white rounded-lg border border-warm-200 p-4">
             <h3 className="font-medium text-warm-900 mb-2 text-sm">Indirizzo fatturazione</h3>
-            <AddressView addr={billAddr} />
+            <AddressView addr={billAddr} firstName={order.firstName} lastName={order.lastName} phone={order.phone} />
           </section>
 
           <section className="bg-white rounded-lg border border-warm-200 p-4 text-sm">
@@ -470,18 +470,39 @@ export default function OrderDetailPage() {
   );
 }
 
-function AddressView({ addr }: { addr: Record<string, string> }) {
-  if (!addr || Object.keys(addr).length === 0) {
+function AddressView({
+  addr,
+  firstName,
+  lastName,
+  phone,
+}: {
+  addr: Record<string, string>;
+  firstName?: string;
+  lastName?: string;
+  phone?: string | null;
+}) {
+  const street = addr.street || addr.street1 || "";
+  const street2 = addr.street2 || "";
+  const city = addr.city || "";
+  const postalCode = addr.postalCode || addr.zip || "";
+  const province = addr.province || addr.provinceCode || "";
+  const country = addr.country || addr.countryCode || "";
+  const phoneFinal = addr.phone || phone || "";
+  const has = !!(street || city || postalCode);
+
+  if (!has) {
     return <div className="text-xs text-warm-400 italic">Non disponibile</div>;
   }
   return (
     <div className="text-sm text-warm-700 space-y-0.5">
-      <div>{addr.firstName} {addr.lastName}</div>
+      <div className="text-warm-900 font-medium">
+        {(addr.firstName || firstName) || ""} {(addr.lastName || lastName) || ""}
+      </div>
       {addr.company && <div className="text-warm-500 text-xs">{addr.company}</div>}
-      <div>{addr.street1}{addr.street2 ? `, ${addr.street2}` : ""}</div>
-      <div>{addr.zip} {addr.city} {addr.provinceCode ? `(${addr.provinceCode})` : ""}</div>
-      <div className="text-warm-500 text-xs">{addr.countryCode}</div>
-      {addr.phone && <div className="text-warm-500 text-xs">☎ {addr.phone}</div>}
+      <div>{street}{street2 ? `, ${street2}` : ""}</div>
+      <div>{postalCode} {city} {province ? `(${province.toUpperCase()})` : ""}</div>
+      {country && <div className="text-warm-500 text-xs">{country.toUpperCase()}</div>}
+      {phoneFinal && <div className="text-warm-500 text-xs">☎ {phoneFinal}</div>}
     </div>
   );
 }

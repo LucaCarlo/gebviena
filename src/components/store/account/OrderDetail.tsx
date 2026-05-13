@@ -209,8 +209,18 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
 
       {/* Indirizzi */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AddressCard title="Indirizzo di spedizione" addr={shipping} />
-        <AddressCard title="Indirizzo di fatturazione" addr={billing} />
+        <AddressCard
+          title="Indirizzo di spedizione"
+          addr={shipping}
+          recipient={`${order.firstName} ${order.lastName}`.trim()}
+          phone={order.phone}
+        />
+        <AddressCard
+          title="Indirizzo di fatturazione"
+          addr={billing}
+          recipient={`${order.firstName} ${order.lastName}`.trim()}
+          phone={order.phone}
+        />
       </div>
     </div>
   );
@@ -225,20 +235,55 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
   );
 }
 
-function AddressCard({ title, addr }: { title: string; addr: Record<string, string> }) {
-  const has = Object.keys(addr).length > 0;
+// Mappa il nome del paese da codice ISO (basata sulle opzioni del checkout)
+const COUNTRY_NAMES: Record<string, string> = {
+  IT: "Italia", FR: "Francia", DE: "Germania", AT: "Austria", CH: "Svizzera",
+  ES: "Spagna", NL: "Paesi Bassi", BE: "Belgio", PT: "Portogallo", LU: "Lussemburgo",
+  GB: "Regno Unito", US: "Stati Uniti", IE: "Irlanda", SE: "Svezia", DK: "Danimarca",
+  FI: "Finlandia", PL: "Polonia", SI: "Slovenia",
+};
+
+function countryLabel(code: string | undefined): string {
+  if (!code) return "";
+  return COUNTRY_NAMES[code.toUpperCase()] || code;
+}
+
+function AddressCard({
+  title,
+  addr,
+  recipient,
+  phone,
+}: {
+  title: string;
+  addr: Record<string, string>;
+  recipient?: string;
+  phone?: string | null;
+}) {
+  // L'address è salvato dal checkout come { street, city, province, postalCode, country }.
+  // Manteniamo retrocompatibilità con un eventuale formato precedente { street1, zip, ... }.
+  const street = addr.street || addr.street1 || "";
+  const street2 = addr.street2 || "";
+  const city = addr.city || "";
+  const postalCode = addr.postalCode || addr.zip || "";
+  const province = addr.province || addr.provinceCode || "";
+  const country = addr.country || addr.countryCode || "";
+  const has = !!(street || city || postalCode);
+
   return (
     <div className="border border-warm-200 p-5">
       <div className="text-xs uppercase tracking-[0.2em] text-warm-500 mb-3">{title}</div>
       {has ? (
         <div className="text-sm text-warm-800 leading-relaxed space-y-0.5">
-          <div>{[addr.firstName, addr.lastName].filter(Boolean).join(" ")}</div>
+          {recipient && <div className="font-medium text-warm-900">{recipient}</div>}
           {addr.company && <div>{addr.company}</div>}
-          <div>{addr.street1}</div>
-          {addr.street2 && <div>{addr.street2}</div>}
-          <div>{[addr.zip, addr.city].filter(Boolean).join(" ")}{addr.provinceCode ? ` (${addr.provinceCode})` : ""}</div>
-          <div>{addr.countryCode}</div>
-          {addr.phone && <div className="text-warm-500 text-xs mt-2">{addr.phone}</div>}
+          {street && <div>{street}</div>}
+          {street2 && <div>{street2}</div>}
+          <div>
+            {[postalCode, city].filter(Boolean).join(" ")}
+            {province ? ` (${province.toUpperCase()})` : ""}
+          </div>
+          {country && <div>{countryLabel(country)}</div>}
+          {phone && <div className="text-warm-500 text-xs mt-2">Tel. {phone}</div>}
         </div>
       ) : (
         <div className="text-sm text-warm-500 italic">Non disponibile</div>

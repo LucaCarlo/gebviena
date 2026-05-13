@@ -160,12 +160,26 @@ export async function POST(req: NextRequest) {
       customerId = existingCustomer.id;
     }
 
-    // Crea Stripe PaymentIntent
+    // Crea Stripe PaymentIntent.
+    // Usiamo automatic_payment_methods + allow_redirects:'always' per abilitare
+    // tutti i metodi configurati nel Dashboard Stripe (card, Klarna, PayPal, Amazon Pay, ecc.).
+    // L'attivazione di ogni singolo metodo va fatta dal Dashboard Stripe (Settings → Payment methods).
     const stripe = await getStripe();
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalCents,
       currency: cfg.currency.toLowerCase(),
-      automatic_payment_methods: { enabled: true },
+      automatic_payment_methods: { enabled: true, allow_redirects: "always" },
+      shipping: {
+        name: `${customer.firstName} ${customer.lastName}`.trim(),
+        phone: customer.phone || undefined,
+        address: {
+          line1: shippingAddress.street,
+          city: shippingAddress.city,
+          state: shippingAddress.province || undefined,
+          postal_code: shippingAddress.postalCode,
+          country: (shippingAddress.country || "IT").toUpperCase(),
+        },
+      },
       metadata: {
         orderNumber,
         items: orderItems.length.toString(),

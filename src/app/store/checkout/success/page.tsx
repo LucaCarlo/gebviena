@@ -52,12 +52,13 @@ function SuccessInner() {
     let cancelled = false;
     const fetchOrder = async () => {
       try {
-        const res = await fetch(`/api/store/public/orders/${orderId}`);
+        // Endpoint pubblico: fa anche fallback Stripe lookup se l'ordine è ancora PENDING.
+        const res = await fetch(`/api/store/public/checkout/order-status/${orderId}`, { cache: "no-store" });
         const data = await res.json();
         if (!cancelled && data.success) {
           setOrder(data.data);
-          if (data.data.status === "PENDING" && pollCount < 6) {
-            setTimeout(() => setPollCount((n) => n + 1), 5000);
+          if (data.data.status === "PENDING" && pollCount < 8) {
+            setTimeout(() => setPollCount((n) => n + 1), 2500);
           }
         }
       } catch {
