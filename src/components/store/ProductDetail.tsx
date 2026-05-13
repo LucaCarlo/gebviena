@@ -214,14 +214,39 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   const selectedAttrIds = new Set(selectedVariant?.attributes.map((a) => a.id));
 
+  // Galleria hero unificata:
+  // 1. PRIMA tutte le immagini del prodotto (cover + gallery store, deduplicate)
+  // 2. POI tutte le immagini di TUTTE le varianti (cover + gallery), in ordine di variante
+  // Così sono sempre visibili contemporaneamente; cliccando una variante salto al suo indice.
   const heroImages = useMemo(() => {
     const imgs: string[] = [];
-    if (selectedVariant?.coverImage) imgs.push(selectedVariant.coverImage);
-    imgs.push(...parseList(selectedVariant?.galleryImages || null));
-    if (product.coverImage && !imgs.includes(product.coverImage)) imgs.push(product.coverImage);
-    imgs.push(...parseList(product.galleryImages).filter((u) => !imgs.includes(u)));
+    const seen = new Set<string>();
+    const add = (u: string | null | undefined) => {
+      if (u && !seen.has(u)) { seen.add(u); imgs.push(u); }
+    };
+    // Step 1: immagini prodotto
+    add(product.coverImage);
+    for (const u of parseList(product.galleryImages)) add(u);
+    // Step 2: immagini di TUTTE le varianti (non solo quella selezionata)
+    for (const v of product.variants) {
+      add(v.coverImage);
+      for (const u of parseList(v.galleryImages)) add(u);
+    }
     return imgs;
-  }, [product, selectedVariant]);
+  }, [product]);
+
+  // Mappa variantId → indice della prima immagine di quella variante in heroImages.
+  // Se la variante non ha immagini proprie (es. variante di default) cade su 0 (= primo
+  // immagine prodotto).
+  const variantImageIndex = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const v of product.variants) {
+      const firstVariantImg = v.coverImage || parseList(v.galleryImages)[0] || null;
+      const idx = firstVariantImg ? heroImages.indexOf(firstVariantImg) : -1;
+      map[v.id] = idx >= 0 ? idx : 0;
+    }
+    return map;
+  }, [product.variants, heroImages]);
 
   // Catalog gallery — usa esattamente la galleria del prodotto del sito normale
   // (Product.galleryImages), togliendo solo quelle escluse dal CMS store.
@@ -276,7 +301,12 @@ export default function ProductDetail({ product }: { product: Product }) {
     return catalogGallery.filter((u) => !sideSet.has(u));
   }, [horizontalCatalog, catalogGallery, sideSet]);
 
-  useEffect(() => { setActiveImgIdx(0); }, [selectedVariantId]);
+  // Quando cambia la variante selezionata salta all'immagine di quella variante
+  // (se la variante non ha immagini proprie, va alla prima del prodotto).
+  useEffect(() => {
+    const idx = variantImageIndex[selectedVariantId];
+    setActiveImgIdx(idx !== undefined && idx >= 0 ? idx : 0);
+  }, [selectedVariantId, variantImageIndex]);
 
   const inStock = selectedVariant
     ? !selectedVariant.trackStock || (selectedVariant.stockQty ?? 0) > 0

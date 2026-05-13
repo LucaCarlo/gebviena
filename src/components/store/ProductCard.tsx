@@ -114,13 +114,13 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
           </div>
         )}
 
-        {/* Badge percentuale sconto (top-left) */}
+        {/* Badge percentuale sconto (top-left) — tono soft, semi-trasparente */}
         {p.inStock && p.priceFromCents > 0 && p.salePriceFromCents != null
           && p.salePriceFromCents > 0 && p.salePriceFromCents < p.priceFromCents && (() => {
             const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);
             if (pct < 1) return null;
             return (
-              <div className="absolute top-3 left-3 bg-warm-900 text-white text-[11px] font-semibold uppercase tracking-wider px-2 py-1 shadow-sm">
+              <div className="absolute top-3 left-3 bg-warm-700/55 text-white text-[11px] font-medium uppercase tracking-wider px-2 py-1 backdrop-blur-sm">
                 -{pct}%
               </div>
             );
