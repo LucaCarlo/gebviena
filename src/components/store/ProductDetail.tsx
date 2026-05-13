@@ -942,15 +942,20 @@ function BigSpec({ icon, label, value }: { icon?: React.ReactNode; label: string
 // Mostra le dimensioni di una variante su una sola riga usando codici
 // abbreviati (W, H, D, SH). L'icona "i" mostra la legenda al hover/click.
 const DIMENSION_ABBREVIATIONS: { match: RegExp; abbr: string; full: string }[] = [
-  // Abbreviazioni già usate nei DimensionBlock: vanno matchate per prime cosi'
-  // un label gia' abbreviato come "SH" non passa al fallback charAt(0) -> "S".
+  // Abbreviazioni già usate nei DimensionBlock: vanno matchate per prime così
+  // un label già abbreviato come "SH" non passa al fallback charAt(0) → "S".
+  // SHH e AH prima di SH/H per evitare match parziali su stringhe più lunghe.
+  { match: /^(SHH|S\.?H\.?H\.?)$/i, abbr: "SHH", full: "altezza impilamento" },
   { match: /^(SH|S\.?H\.?)$/i, abbr: "SH", full: "altezza seduta" },
+  { match: /^(AH|A\.?H\.?)$/i, abbr: "AH", full: "altezza bracciolo" },
   { match: /^W$/i, abbr: "W", full: "larghezza" },
   { match: /^H$/i, abbr: "H", full: "altezza" },
   { match: /^D$/i, abbr: "D", full: "profondità" },
   { match: /^L$/i, abbr: "L", full: "lunghezza" },
   { match: /^(Ø|O)$/i, abbr: "Ø", full: "diametro" },
-  // Forme estese multilingua (SH prima di H!)
+  // Forme estese multilingua (più specifiche prima delle generiche)
+  { match: /^(altezza impilamento|altezza in pila|stacking height|stapelh[oö]he)$/i, abbr: "SHH", full: "altezza impilamento" },
+  { match: /^(altezza bracciolo|arm height|armh[oö]he|hauteur (d['’]?)?accoudoir|altura (del )?brazo)$/i, abbr: "AH", full: "altezza bracciolo" },
   { match: /^(altezza seduta|seat height|sitzh[oö]he|hauteur d['’]?assise|altura (del )?asiento|altura asiento)$/i, abbr: "SH", full: "altezza seduta" },
   { match: /^(larghezza|width|breite|largeur|anchura|ancho)$/i, abbr: "W", full: "larghezza" },
   { match: /^(profondit[aà]|depth|tiefe|profondeur|profundidad)$/i, abbr: "D", full: "profondità" },
@@ -1002,10 +1007,12 @@ function DimensionsRow({
           </button>
           {legendOpen && (
             <span className="absolute left-5 top-1/2 -translate-y-1/2 z-20 bg-white border border-warm-200 shadow-md rounded px-3 py-2 normal-case tracking-normal text-warm-800 whitespace-nowrap text-[11px] leading-[1.7]">
-              <span className="block"><strong className="font-semibold">W</strong> · larghezza</span>
               <span className="block"><strong className="font-semibold">H</strong> · altezza</span>
+              <span className="block"><strong className="font-semibold">W</strong> · larghezza</span>
               <span className="block"><strong className="font-semibold">D</strong> · profondità</span>
               <span className="block"><strong className="font-semibold">SH</strong> · altezza seduta</span>
+              <span className="block"><strong className="font-semibold">AH</strong> · altezza bracciolo</span>
+              <span className="block"><strong className="font-semibold">SHH</strong> · altezza impilamento</span>
             </span>
           )}
         </span>
