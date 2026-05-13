@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Package, Ruler, ShoppingBag, Heart, Maximize2, X as XIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Ruler, ShoppingBag, Heart, Maximize2, X as XIcon, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useCart } from "@/contexts/CartContext";
 import GallerySlideshow from "@/components/site/GallerySlideshow";
@@ -428,8 +428,11 @@ export default function ProductDetail({ product }: { product: Product }) {
             {product.name}
           </h1>
           {product.designer && (
-            <div className="mt-2 text-[13px] text-warm-500 tracking-[0.06em]">
-              design <Link href={`/designers/${product.designer.slug}`} className="text-warm-800 hover:underline underline-offset-2">{product.designer.name}</Link>
+            <div className="mt-2 text-[12px] text-warm-500 tracking-[0.06em]">
+              design by{" "}
+              <Link href={`/designers/${product.designer.slug}`} className="text-warm-800 hover:underline underline-offset-2">
+                {product.designer.name}
+              </Link>
             </div>
           )}
 
@@ -568,33 +571,24 @@ export default function ProductDetail({ product }: { product: Product }) {
             )}
           </div>
 
-          {/* ── Specs (volume / peso / spedizione) — più leggibili ── */}
+          {/* ── Tempo di consegna ── */}
           {selectedVariant && (
-            <div className="mt-7 pt-6 border-t border-warm-200 grid grid-cols-3 gap-x-4 gap-y-3">
-              <BigSpec icon={<Package size={14} />} label="Volume" value={`${selectedVariant.volumeM3.toFixed(3)} m³`} />
-              {selectedVariant.weightKg !== null && (
-                <BigSpec label="Peso" value={`${selectedVariant.weightKg.toFixed(1)} kg`} />
-              )}
-              <BigSpec icon={<Ruler size={14} />} label="Consegna" value={selectedVariant.shippingClass === "QUOTE_ONLY" ? "Su preventivo" : (product.deliveryLeadTime || "4–6 settimane")} />
+            <div className="mt-7 pt-6 border-t border-warm-200">
+              <BigSpec
+                icon={<Ruler size={14} />}
+                label="Consegna"
+                value={selectedVariant.shippingClass === "QUOTE_ONLY" ? "Su preventivo" : (product.deliveryLeadTime || "4–6 settimane")}
+              />
             </div>
           )}
 
-          {/* Variant dimensions */}
+          {/* Variant dimensions — singola riga con codici W H D SH e tooltip legenda */}
           {selectedVariant?.dimensions && Object.keys(selectedVariant.dimensions.values).length > 0 && (
-            <div className="mt-6 pt-6 border-t border-warm-200">
-              <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-3 inline-flex items-center gap-1.5">
-                <Ruler size={12} /> Dimensioni
-                <span className="normal-case tracking-normal text-warm-400 ml-1 text-[12px]">· {selectedVariant.dimensions.blockName}</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-[14px]">
-                {selectedVariant.dimensions.labels.filter((l) => selectedVariant.dimensions!.values[l]).map((l) => (
-                  <div key={l}>
-                    <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-0.5">{l}</div>
-                    <div className="text-warm-900 font-mono text-[15px]">{selectedVariant.dimensions!.values[l]}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <DimensionsRow
+              labels={selectedVariant.dimensions.labels}
+              values={selectedVariant.dimensions.values}
+              blockName={selectedVariant.dimensions.blockName}
+            />
           )}
 
           {/* Catalog materials/dimensions if no variant dimensions */}
@@ -794,6 +788,84 @@ function BigSpec({ icon, label, value }: { icon?: React.ReactNode; label: string
         {icon} {label}
       </div>
       <div className="text-warm-900 font-mono text-[15px]">{value}</div>
+    </div>
+  );
+}
+
+// ─── DimensionsRow ──────────────────────────────────────────────────────
+// Mostra le dimensioni di una variante su una sola riga usando codici
+// abbreviati (W, H, D, SH). L'icona "i" mostra la legenda al hover/click.
+const DIMENSION_ABBREVIATIONS: { match: RegExp; abbr: string; full: string }[] = [
+  { match: /^(larghezza|width|breite|largeur|anchura|ancho)$/i, abbr: "W", full: "larghezza" },
+  { match: /^(profondit[aà]|depth|tiefe|profondeur|profundidad)$/i, abbr: "D", full: "profondità" },
+  // Importante: l'altezza seduta va matchata PRIMA dell'altezza generica
+  { match: /^(altezza seduta|seat height|sitzh[oö]he|hauteur d['’]?assise|altura (del )?asiento|altura asiento)$/i, abbr: "SH", full: "altezza seduta" },
+  { match: /^(altezza|height|h[oö]he|hauteur|altura)$/i, abbr: "H", full: "altezza" },
+  // Altri codici comuni in cataloghi mobile (diametro, lunghezza, ecc.)
+  { match: /^(diametro|diameter|durchmesser|diam[èe]tre|di[áa]metro)$/i, abbr: "Ø", full: "diametro" },
+  { match: /^(lunghezza|length|l[aä]nge|longueur|longitud)$/i, abbr: "L", full: "lunghezza" },
+];
+
+function abbreviateLabel(label: string): { abbr: string; full: string } {
+  const norm = label.trim();
+  for (const rule of DIMENSION_ABBREVIATIONS) {
+    if (rule.match.test(norm)) return { abbr: rule.abbr, full: rule.full };
+  }
+  // Fallback: prima lettera maiuscola
+  return { abbr: norm.charAt(0).toUpperCase(), full: norm.toLowerCase() };
+}
+
+function DimensionsRow({
+  labels,
+  values,
+  blockName,
+}: {
+  labels: string[];
+  values: Record<string, string>;
+  blockName: string;
+}) {
+  const [legendOpen, setLegendOpen] = useState(false);
+  const entries = labels
+    .filter((l) => values[l])
+    .map((l) => ({ ...abbreviateLabel(l), original: l, value: values[l] }));
+
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="mt-6 pt-6 border-t border-warm-200">
+      <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-3 inline-flex items-center gap-1.5">
+        <Ruler size={12} /> Dimensioni
+        <span className="normal-case tracking-normal text-warm-400 ml-1 text-[12px]">· {blockName}</span>
+        <span className="relative inline-flex">
+          <button
+            type="button"
+            onClick={() => setLegendOpen((v) => !v)}
+            onMouseEnter={() => setLegendOpen(true)}
+            onMouseLeave={() => setLegendOpen(false)}
+            className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-warm-400 hover:text-warm-900"
+            aria-label="Legenda dimensioni"
+          >
+            <Info size={13} />
+          </button>
+          {legendOpen && (
+            <span className="absolute left-5 top-1/2 -translate-y-1/2 z-20 bg-white border border-warm-200 shadow-md rounded px-3 py-2 normal-case tracking-normal text-warm-800 whitespace-nowrap text-[11px] leading-[1.7]">
+              <span className="block"><strong className="font-semibold">W</strong> · larghezza</span>
+              <span className="block"><strong className="font-semibold">H</strong> · altezza</span>
+              <span className="block"><strong className="font-semibold">D</strong> · profondità</span>
+              <span className="block"><strong className="font-semibold">SH</strong> · altezza seduta</span>
+            </span>
+          )}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2 text-[14px]">
+        {entries.map((e, i) => (
+          <span key={e.original} className="inline-flex items-baseline gap-1.5">
+            <span className="text-[11px] uppercase tracking-[0.18em] text-warm-500">{e.abbr}</span>
+            <span className="text-warm-900 font-mono text-[15px]">{e.value}</span>
+            {i < entries.length - 1 && <span className="text-warm-300 ml-1">·</span>}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
