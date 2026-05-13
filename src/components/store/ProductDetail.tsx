@@ -443,14 +443,19 @@ export default function ProductDetail({ product }: { product: Product }) {
           {/* Variant selector */}
           {hasAttributeVariants ? (
             <div className="mt-7 space-y-5 pt-6 border-t border-warm-200">
-              {(["MATERIAL", "FINISH", "COLOR"] as AttrType[]).map((type) => {
+              {(["MATERIAL", "FINISH", "COLOR", "OTHER"] as AttrType[]).map((type) => {
                 const available = attrByType[type];
                 if (available.length === 0) return null;
                 const current = selectedVariant?.attributes.find((a) => a.type === type);
+                const typeLabel =
+                  type === "MATERIAL" ? "Materiale" :
+                  type === "FINISH" ? "Finitura" :
+                  type === "COLOR" ? "Colore" :
+                  "Opzione";
                 return (
                   <div key={type}>
                     <div className="text-[10px] uppercase tracking-[0.22em] text-warm-500 mb-2.5">
-                      {type === "MATERIAL" ? "Materiale" : type === "FINISH" ? "Finitura" : "Colore"}
+                      {typeLabel}
                       {current && <span className="ml-2 text-warm-900 normal-case tracking-normal text-[12px]">· {current.label}</span>}
                     </div>
                     <div className="flex flex-wrap gap-2">
