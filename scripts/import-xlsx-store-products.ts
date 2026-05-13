@@ -125,14 +125,23 @@ async function findOrCreateProduct(groupName: string, marketingDescription: stri
   return created.id;
 }
 
-async function upsertStoreProduct(productId: string, publish: boolean): Promise<string> {
+async function upsertStoreProduct(
+  productId: string,
+  productsPerBox: number,
+  publish: boolean,
+): Promise<string> {
   const existing = await prisma.storeProduct.findUnique({ where: { productId } });
   if (existing) {
+    const updates: { isPublished?: boolean; publishedAt?: Date | null; productsPerBox?: number } = {};
     if (publish && !existing.isPublished) {
-      await prisma.storeProduct.update({
-        where: { id: existing.id },
-        data: { isPublished: true, publishedAt: existing.publishedAt || new Date() },
-      });
+      updates.isPublished = true;
+      updates.publishedAt = existing.publishedAt || new Date();
+    }
+    if (productsPerBox > 0 && existing.productsPerBox !== productsPerBox) {
+      updates.productsPerBox = productsPerBox;
+    }
+    if (Object.keys(updates).length > 0) {
+      await prisma.storeProduct.update({ where: { id: existing.id }, data: updates });
     }
     return existing.id;
   }
@@ -142,6 +151,7 @@ async function upsertStoreProduct(productId: string, publish: boolean): Promise<
       isPublished: publish,
       publishedAt: publish ? new Date() : null,
       sortOrder: 0,
+      productsPerBox: productsPerBox > 0 ? productsPerBox : 1,
     },
   });
   return created.id;
@@ -302,7 +312,14 @@ async function main() {
   let updatedVariants = 0;
 
   for (const [groupName, groupRows] of Array.from(groups.entries())) {
-    const marketingDesc = (groupRows as ExcelRow[]).find((r: ExcelRow) => r.marketingDescription)?.marketingDescription || "";
+    const typedRows = groupRows as ExcelRow[];
+    const marketingDesc = typedRows.find((r: ExcelRow) => r.marketingDescription)?.marketingDescription || "";
+    // productsPerBox: prendi il MAX maxPerBox tra le varianti del raggruppamento
+    // (rappresenta quanti pezzi entrano in una scatola — è una proprietà del prodotto)
+    const productsPerBox = typedRows.reduce((max: number, r: ExcelRow) => {
+      const v = r.maxPerBox && r.maxPerBox > 0 ? Math.floor(r.maxPerBox) : 0;
+      return v > max ? v : max;
+    }, 0);
 
     const beforeProductCount = await prisma.product.count();
     const productId = await findOrCreateProduct(groupName, marketingDesc);
@@ -311,7 +328,7 @@ async function main() {
     else reusedProducts++;
 
     const beforeStore = await prisma.storeProduct.count();
-    const storeProductId = await upsertStoreProduct(productId, publish);
+    const storeProductId = await upsertStoreProduct(productId, productsPerBox, publish);
     const afterStore = await prisma.storeProduct.count();
     if (afterStore > beforeStore) createdStoreProducts++;
 
@@ -326,7 +343,7 @@ async function main() {
     }
 
     console.log(
-      `  • ${groupName.padEnd(36)} → ${groupRows.length} variant${groupRows.length === 1 ? "" : "i"} (${
+      `  • ${groupName.padEnd(36)} → ${groupRows.length} variant${groupRows.length === 1 ? "" : "i"}  · ${productsPerBox || 1}/scatola  (${
         publish ? "pubblicato" : "draft"
       })`
     );
