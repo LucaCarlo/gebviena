@@ -24,15 +24,34 @@ export async function GET(req: NextRequest) {
 
   const variantsFilter: Prisma.StoreProductVariantWhereInput = { isPublished: true };
   if (attrs.length > 0) variantsFilter.attributes = { some: { valueId: { in: attrs } } };
-  if (minPrice > 0) variantsFilter.priceCents = { ...(variantsFilter.priceCents as object || {}), gte: Math.round(minPrice * 100) };
-  if (maxPrice > 0) variantsFilter.priceCents = { ...(variantsFilter.priceCents as object || {}), lte: Math.round(maxPrice * 100) };
-  if (onlyAvailable) {
-    // Solo varianti con stock > 0 oppure che non tracciano lo stock
-    variantsFilter.OR = [
-      { trackStock: false },
-      { trackStock: true, stockQty: { gt: 0 } },
-    ];
+  // Componiamo i filtri (prezzo, disponibilità) come AND di clausole, ciascuna
+  // delle quali può a sua volta essere un OR. Così possono coesistere.
+  const andClauses: Prisma.StoreProductVariantWhereInput[] = [];
+  // Filtro prezzo sul prezzo EFFETTIVO (sale se presente e > 0, altrimenti priceCents).
+  if (minPrice > 0 || maxPrice > 0) {
+    const minCents = minPrice > 0 ? Math.round(minPrice * 100) : undefined;
+    const maxCents = maxPrice > 0 ? Math.round(maxPrice * 100) : undefined;
+    const range: Prisma.IntFilter = {};
+    if (minCents !== undefined) range.gte = minCents;
+    if (maxCents !== undefined) range.lte = maxCents;
+    andClauses.push({
+      OR: [
+        // Variante in saldo: filtra su salePriceCents
+        { salePriceCents: { gt: 0, ...range } },
+        // Variante senza sconto: filtra su priceCents
+        { AND: [{ OR: [{ salePriceCents: null }, { salePriceCents: { lte: 0 } }] }, { priceCents: range }] },
+      ],
+    });
   }
+  if (onlyAvailable) {
+    andClauses.push({
+      OR: [
+        { trackStock: false },
+        { trackStock: true, stockQty: { gt: 0 } },
+      ],
+    });
+  }
+  if (andClauses.length > 0) variantsFilter.AND = andClauses;
 
   const where: Prisma.StoreProductWhereInput = {
     isPublished: true,

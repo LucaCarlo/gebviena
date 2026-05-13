@@ -125,20 +125,72 @@ async function findOrCreateProduct(groupName: string, marketingDescription: stri
   return created.id;
 }
 
+// Mappa "Raggruppamento" Excel → slug categoria (per popolare storeCategoryId).
+// Slug usati: sedie-e-poltroncine, sgabelli-e-panche, contenitori-e-librerie,
+// tavoli-e-tavolini, complementi.
+const GROUP_CATEGORY: Record<string, string> = {
+  "ARCH CLOTHES VALET": "complementi",
+  "CAFESTUHL": "sedie-e-poltroncine",
+  "CZECH": "sedie-e-poltroncine",
+  "LADDER": "sedie-e-poltroncine",
+  "LOOP INDIA MAHDAVI": "sedie-e-poltroncine",
+  "MAGISTRETTI 0301": "sedie-e-poltroncine",
+  "MAJORDOMO": "complementi",
+  "MOS CABINET": "contenitori-e-librerie",
+  "MOS CONSOLE": "contenitori-e-librerie",
+  "MOS BOOKCASE": "contenitori-e-librerie",
+  "MOS BENCH (senza cuscino)": "sgabelli-e-panche",
+  "MOS BENCH (con cuscino corto)": "sgabelli-e-panche",
+  "MOS BENCH (con cuscino lungo)": "sgabelli-e-panche",
+  "MOS SIDE TABLE": "tavoli-e-tavolini",
+  "N.14": "sedie-e-poltroncine",
+  "N.18": "sedie-e-poltroncine",
+  "N.200": "sedie-e-poltroncine",
+  "N.811": "sedie-e-poltroncine",
+  "PEERS": "sedie-e-poltroncine",
+  "RADETZKY": "sedie-e-poltroncine",
+  "SOLDEN": "sedie-e-poltroncine",
+  "SUGILOO": "sedie-e-poltroncine",
+  "TRIO": "sgabelli-e-panche",
+  "VIENNA 144": "sgabelli-e-panche",
+  "YOU CHAIR": "sedie-e-poltroncine",
+};
+
+const _categoryIdCache = new Map<string, string | null>();
+async function getCategoryIdBySlug(slug: string): Promise<string | null> {
+  if (_categoryIdCache.has(slug)) return _categoryIdCache.get(slug) ?? null;
+  const cat = await prisma.storeCategory.findUnique({ where: { slug }, select: { id: true } });
+  _categoryIdCache.set(slug, cat?.id ?? null);
+  return cat?.id ?? null;
+}
+
 async function upsertStoreProduct(
   productId: string,
   productsPerBox: number,
+  groupName: string,
   publish: boolean,
 ): Promise<string> {
+  const categorySlug = GROUP_CATEGORY[groupName];
+  const categoryId = categorySlug ? await getCategoryIdBySlug(categorySlug) : null;
+
   const existing = await prisma.storeProduct.findUnique({ where: { productId } });
   if (existing) {
-    const updates: { isPublished?: boolean; publishedAt?: Date | null; productsPerBox?: number } = {};
+    const updates: {
+      isPublished?: boolean;
+      publishedAt?: Date | null;
+      productsPerBox?: number;
+      storeCategoryId?: string | null;
+    } = {};
     if (publish && !existing.isPublished) {
       updates.isPublished = true;
       updates.publishedAt = existing.publishedAt || new Date();
     }
     if (productsPerBox > 0 && existing.productsPerBox !== productsPerBox) {
       updates.productsPerBox = productsPerBox;
+    }
+    // Imposta la categoria SOLO se non ne ha già una (non sovrascrive scelte manuali)
+    if (categoryId && !existing.storeCategoryId) {
+      updates.storeCategoryId = categoryId;
     }
     if (Object.keys(updates).length > 0) {
       await prisma.storeProduct.update({ where: { id: existing.id }, data: updates });
@@ -152,6 +204,7 @@ async function upsertStoreProduct(
       publishedAt: publish ? new Date() : null,
       sortOrder: 0,
       productsPerBox: productsPerBox > 0 ? productsPerBox : 1,
+      storeCategoryId: categoryId,
     },
   });
   return created.id;
@@ -344,7 +397,7 @@ async function main() {
     else reusedProducts++;
 
     const beforeStore = await prisma.storeProduct.count();
-    const storeProductId = await upsertStoreProduct(productId, productsPerBox, publish);
+    const storeProductId = await upsertStoreProduct(productId, productsPerBox, groupName, publish);
     const afterStore = await prisma.storeProduct.count();
     if (afterStore > beforeStore) createdStoreProducts++;
 

@@ -67,7 +67,8 @@ export default function ShopFilters() {
       else params.set(k, v);
     }
     const qs = params.toString();
-    router.push(qs ? `/?${qs}` : "/");
+    // scroll: false — non riportare l'utente in cima quando cambia un filtro
+    router.push(qs ? `/?${qs}` : "/", { scroll: false });
   };
 
   // Debounce ricerca testuale (400ms)
@@ -100,7 +101,7 @@ export default function ShopFilters() {
 
   const resetAll = () => {
     setQInput(""); setMinPriceInput(""); setMaxPriceInput("");
-    router.push("/");
+    router.push("/", { scroll: false });
   };
 
   return (
