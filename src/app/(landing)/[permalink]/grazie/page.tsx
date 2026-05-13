@@ -4,6 +4,7 @@ import Image from "next/image";
 import Script from "next/script";
 import Link from "next/link";
 import { getCurrentLang, DEFAULT_LANG } from "@/lib/i18n";
+import { pixelRegistrationParams } from "@/lib/pixel-params";
 import { CheckCircle2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -60,11 +61,15 @@ export default async function LandingThankYouPage({ params }: PageProps) {
   const heroTitle = translation?.heroTitle || cfg.heroTitle || "Grazie";
   const bannerImage = cfg.bannerImage;
 
+  const registrationParams = pixelRegistrationParams(lang, cfg.template);
+
   return (
     <>
-      {/* Meta Pixel — evento CompleteRegistration solo su questa thank-you page */}
-      <Script id="fb-pixel-complete-registration" strategy="afterInteractive">
-        {`if (typeof window !== "undefined" && typeof window.fbq === "function") { window.fbq("track", "CompleteRegistration"); }`}
+      {/* Meta Pixel — evento CompleteRegistration con parametri di segmentazione
+          (language, country_market, registration_type). Pixel base PageView resta
+          attivo dal root layout. */}
+      <Script id={`fb-pixel-complete-registration-${cfg.id}`} strategy="afterInteractive">
+        {`if (typeof window !== "undefined" && typeof window.fbq === "function") { window.fbq("track", "CompleteRegistration", ${JSON.stringify(registrationParams)}); }`}
       </Script>
 
       <div className="min-h-[80vh] bg-white">

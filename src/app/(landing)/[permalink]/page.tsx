@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import Script from "next/script";
 import SvenditaTemplate from "@/components/landing/svendita/SvenditaTemplate";
 import GenericLandingTemplate from "@/components/landing/generic/GenericLandingTemplate";
 import { getCurrentLang, DEFAULT_LANG } from "@/lib/i18n";
+import { pixelLandingParams } from "@/lib/pixel-params";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -44,6 +46,14 @@ export default async function LandingDispatcher({ params }: PageProps) {
         })
       : null;
 
+  // Meta Pixel: evento custom LandingView con language/market/page_type
+  const landingParams = pixelLandingParams(lang, cfg.template);
+  const pixelScript = (
+    <Script id={`fb-pixel-landing-view-${cfg.id}`} strategy="afterInteractive">
+      {`if (typeof window !== "undefined" && typeof window.fbq === "function") { window.fbq("trackCustom", "LandingView", ${JSON.stringify(landingParams)}); }`}
+    </Script>
+  );
+
   if (cfg.template === "svendita") {
     // Applica override delle label e placeholder dei form fields se la traduzione li ha
     let formFieldsForTemplate = cfg.formFields;
@@ -62,39 +72,45 @@ export default async function LandingDispatcher({ params }: PageProps) {
       } catch { /* fallback su IT */ }
     }
     return (
-      <SvenditaTemplate
-        row={{
-          heroTitle: cfg.heroTitle,
-          heroSubtitle: cfg.heroSubtitle,
-          bannerImage: cfg.bannerImage,
-          buttonLabel: cfg.buttonLabel,
-          privacyLabel: cfg.privacyLabel,
-          formFields: formFieldsForTemplate,
-          customConfig: cfg.customConfig,
-        }}
-        translation={translation}
-      />
+      <>
+        {pixelScript}
+        <SvenditaTemplate
+          row={{
+            heroTitle: cfg.heroTitle,
+            heroSubtitle: cfg.heroSubtitle,
+            bannerImage: cfg.bannerImage,
+            buttonLabel: cfg.buttonLabel,
+            privacyLabel: cfg.privacyLabel,
+            formFields: formFieldsForTemplate,
+            customConfig: cfg.customConfig,
+          }}
+          translation={translation}
+        />
+      </>
     );
   }
 
   return (
-    <GenericLandingTemplate
-      config={{
-        id: cfg.id,
-        heroTitle: translation?.heroTitle || cfg.heroTitle,
-        heroSubtitle: translation?.heroSubtitle ?? cfg.heroSubtitle,
-        heroLocation: cfg.heroLocation,
-        heroDescription: cfg.heroDescription,
-        successTitle: translation?.successTitle || cfg.successTitle,
-        successMessage: translation?.successMessage ?? cfg.successMessage,
-        privacyLabel: translation?.privacyLabel || cfg.privacyLabel,
-        marketingLabel: translation?.marketingLabel ?? cfg.marketingLabel,
-        buttonLabel: translation?.buttonLabel || cfg.buttonLabel,
-        bannerImage: cfg.bannerImage,
-        logoImage: cfg.logoImage,
-        formFields: cfg.formFields,
-        isActive: cfg.isActive,
-      }}
-    />
+    <>
+      {pixelScript}
+      <GenericLandingTemplate
+        config={{
+          id: cfg.id,
+          heroTitle: translation?.heroTitle || cfg.heroTitle,
+          heroSubtitle: translation?.heroSubtitle ?? cfg.heroSubtitle,
+          heroLocation: cfg.heroLocation,
+          heroDescription: cfg.heroDescription,
+          successTitle: translation?.successTitle || cfg.successTitle,
+          successMessage: translation?.successMessage ?? cfg.successMessage,
+          privacyLabel: translation?.privacyLabel || cfg.privacyLabel,
+          marketingLabel: translation?.marketingLabel ?? cfg.marketingLabel,
+          buttonLabel: translation?.buttonLabel || cfg.buttonLabel,
+          bannerImage: cfg.bannerImage,
+          logoImage: cfg.logoImage,
+          formFields: cfg.formFields,
+          isActive: cfg.isActive,
+        }}
+      />
+    </>
   );
 }
