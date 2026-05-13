@@ -477,14 +477,40 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
           ) : product.variants.length > 1 ? (
             <div className="mt-7 pt-6 border-t border-warm-200">
-              <div className="text-[10px] uppercase tracking-[0.22em] text-warm-500 mb-2.5">Variante</div>
-              <div className="flex flex-wrap gap-2">
-                {product.variants.map((v) => (
-                  <button key={v.id} onClick={() => setSelectedVariantId(v.id)}
-                    className={`px-4 py-2 text-[12px] tracking-[0.04em] border transition-colors ${v.id === selectedVariantId ? "border-warm-900 bg-warm-900 text-white" : "border-warm-200 text-warm-700 hover:border-warm-500"}`}>
-                    {v.name || v.sku}
-                  </button>
-                ))}
+              <div className="text-[10px] uppercase tracking-[0.22em] text-warm-500 mb-2.5">
+                Variante <span className="text-warm-400 normal-case tracking-normal">({product.variants.length} opzioni)</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {product.variants.map((v) => {
+                  const shortName = shortenVariantLabel(v.name, product.name) || v.sku;
+                  const isSel = v.id === selectedVariantId;
+                  const vPrice = v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents ? v.salePriceCents : v.priceCents;
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => setSelectedVariantId(v.id)}
+                      className={`w-full text-left px-4 py-3 border transition-colors flex items-center justify-between gap-3 ${
+                        isSel
+                          ? "border-warm-900 bg-warm-900 text-white"
+                          : "border-warm-200 text-warm-700 hover:border-warm-500"
+                      }`}
+                    >
+                      <span className="flex items-center gap-3 min-w-0">
+                        <span
+                          className={`shrink-0 w-3.5 h-3.5 rounded-full border-2 ${
+                            isSel ? "border-white bg-white" : "border-warm-400"
+                          }`}
+                        />
+                        <span className="text-[13px] tracking-[0.02em] truncate">{shortName}</span>
+                      </span>
+                      {vPrice > 0 && (
+                        <span className={`text-[12px] font-mono shrink-0 ${isSel ? "text-white/80" : "text-warm-500"}`}>
+                          {eur(vPrice)}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ) : null}
@@ -779,6 +805,32 @@ export default function ProductDetail({ product }: { product: Product }) {
       )}
     </>
   );
+}
+
+// Accorcia il nome della variante per il selettore: rimuove boilerplate come
+// "Fusto grezzo", "*** FSC 100% ***", il nome del prodotto e parole non utili,
+// lasciando la parte distintiva (es. "Seduta imbottita", "altezza 200 cm").
+function shortenVariantLabel(rawName: string | null, productName: string): string {
+  if (!rawName) return "";
+  let s = rawName;
+  // Rimuovi marker FSC / asterischi
+  s = s.replace(/\*+\s*FSC[^*]*\*+/gi, "");
+  s = s.replace(/\*{2,}/g, "");
+  // Rimuovi prefissi tecnici comuni
+  s = s.replace(/^\s*(fusto|telaio)\s+grezzo\b/gi, "");
+  // Rimuovi il nome del prodotto (case-insensitive)
+  if (productName) {
+    const escaped = productName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    s = s.replace(new RegExp(`\\b${escaped}\\b`, "gi"), "");
+  }
+  // Anche le forme "Cafe stuhl" senza accento o varianti con spazio
+  s = s.replace(/\bCafe ?stuhl\b/gi, "");
+  // Pulizia spazi e punteggiatura residua
+  s = s.replace(/\s{2,}/g, " ").trim();
+  s = s.replace(/^[\s\-—·,.;:]+/, "").replace(/[\s\-—·,.;:]+$/, "");
+  if (!s) return "";
+  // Maiuscola iniziale
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function BigSpec({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
