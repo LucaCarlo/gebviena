@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Loader2, Check, X, Image as ImageIcon, Trash2, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Search, Loader2, Check, X, Image as ImageIcon, Trash2, Eye, EyeOff, AlertCircle, Copy } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Variant {
   id: string;
@@ -42,6 +43,7 @@ function formatPriceRange(variants: Variant[]): string {
 }
 
 export default function StoreProductsListPage() {
+  const router = useRouter();
   const [items, setItems] = useState<StoreProduct[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +52,7 @@ export default function StoreProductsListPage() {
   const [pubFilter, setPubFilter] = useState<"" | "true" | "false">("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const showToast = (msg: string, ok: boolean) => {
@@ -114,6 +117,26 @@ export default function StoreProductsListPage() {
       else next.add(id);
       return next;
     });
+  };
+
+  const duplicateProduct = async (spId: string) => {
+    if (duplicatingId) return;
+    if (!confirm("Duplicare questo prodotto con tutte le sue varianti? Il nuovo prodotto partirà come bozza e gli SKU verranno generati casualmente.")) return;
+    setDuplicatingId(spId);
+    try {
+      const res = await fetch(`/api/store/products/${spId}/duplicate`, { method: "POST" });
+      const data = await res.json();
+      if (data.success && data.data?.newStoreProductId) {
+        showToast("Prodotto duplicato. Apro la copia.", true);
+        router.push(`/admin/store/products/${data.data.newStoreProductId}`);
+      } else {
+        showToast(data.error || "Errore duplicazione", false);
+      }
+    } catch {
+      showToast("Errore di rete in duplicazione", false);
+    } finally {
+      setDuplicatingId(null);
+    }
   };
 
   const runBulk = async (action: "publish" | "unpublish" | "delete") => {
@@ -257,6 +280,7 @@ export default function StoreProductsListPage() {
                 <th className="px-4 py-3 text-left">Prezzo</th>
                 <th className="px-4 py-3 text-left">Stock</th>
                 <th className="px-4 py-3 text-left">Pubblicato</th>
+                <th className="px-4 py-3 text-right">Azioni</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
@@ -309,6 +333,22 @@ export default function StoreProductsListPage() {
                           <X size={12} /> Bozza
                         </span>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => duplicateProduct(sp.id)}
+                        disabled={duplicatingId === sp.id}
+                        className="inline-flex items-center gap-1.5 text-xs text-warm-700 hover:text-warm-900 hover:bg-warm-100 px-2 py-1 rounded disabled:opacity-50"
+                        title="Duplica prodotto"
+                      >
+                        {duplicatingId === sp.id ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : (
+                          <Copy size={13} />
+                        )}
+                        Duplica
+                      </button>
                     </td>
                   </tr>
                 );
