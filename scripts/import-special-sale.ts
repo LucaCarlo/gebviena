@@ -279,6 +279,7 @@ async function main() {
   let createdVariants = 0, updatedVariants = 0;
   let createdAttrValues = 0;
   let createdStoreProducts = 0;
+  let orphansDisabled = 0;
 
   const dimensionBlockId = apply ? await ensureDimensionBlock() : "";
 
@@ -515,7 +516,25 @@ async function main() {
         attrCount++;
       }
 
-      console.log(`  · ${r.sku.padEnd(15)} prezzo=${(priceCents/100).toFixed(2)} sale=${salePriceCents ? (salePriceCents/100).toFixed(2) : "—"} attrs=${attrCount} dim=${Object.keys(dimValues).length}`);
+      console.log(`  · ${r.sku.padEnd(18)} prezzo=${(priceCents/100).toFixed(2)} sale=${salePriceCents ? (salePriceCents/100).toFixed(2) : "—"} attrs=${attrCount} dim=${Object.keys(dimValues).length}`);
+    }
+
+    // 5) Disattiva varianti orfane: quelle dello storeProduct il cui SKU NON è
+    //    presente nell'Excel di questo gruppo (residui di import precedenti).
+    if (apply && storeProductId) {
+      const excelSkus = new Set((groupRows as ExcelRow[]).map((r) => r.sku));
+      const orphans = await prisma.storeProductVariant.findMany({
+        where: { storeProductId, isPublished: true, sku: { notIn: Array.from(excelSkus) } },
+        select: { id: true, sku: true },
+      });
+      for (const o of orphans) {
+        await prisma.storeProductVariant.update({
+          where: { id: o.id },
+          data: { isPublished: false },
+        });
+        console.log(`    ↪ Disattivata variante orfana: ${o.sku}`);
+        orphansDisabled++;
+      }
     }
   }
 
@@ -525,6 +544,7 @@ async function main() {
   console.log(`  Product creati: ${createdProducts}, riusati: ${reusedProducts}`);
   console.log(`  StoreProduct creati: ${createdStoreProducts}`);
   console.log(`  Varianti create: ${createdVariants}, aggiornate: ${updatedVariants}`);
+  console.log(`  Varianti orfane disattivate: ${orphansDisabled}`);
   console.log(`  StoreAttributeValue creati: ${createdAttrValues}`);
   console.log(`  ${apply ? "✓ Scritto" : "⚠ DRY-RUN — nulla scritto"}`);
   console.log("════════════════════════════════════════════════════");
