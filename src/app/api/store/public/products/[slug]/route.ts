@@ -61,7 +61,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
               valueId: true,
               value: {
                 select: {
-                  id: true, type: true, code: true, hexColor: true,
+                  id: true, type: true, code: true, hexColor: true, imageUrl: true,
                   translations: { select: { languageCode: true, label: true } },
                 },
               },
@@ -189,6 +189,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
             type: a.value.type,
             code: a.value.code,
             hexColor: a.value.hexColor,
+            imageUrl: a.value.imageUrl,
             label: trans.find((t) => t.languageCode === lang)?.label
               || trans.find((t) => t.languageCode === "it")?.label
               || a.value.code,

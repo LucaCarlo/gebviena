@@ -1164,6 +1164,7 @@ model StoreAttributeValue {
   type      StoreAttributeType
   code      String             @unique @db.VarChar(64)
   hexColor  String?            @db.VarChar(9)
+  imageUrl  String?            @db.Text          // Immagine swatch (es. campione tessuto/imbottitura)
   sortOrder Int                @default(0)
   isActive  Boolean            @default(true)
   createdAt DateTime           @default(now())

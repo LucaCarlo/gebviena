@@ -30,6 +30,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const type = body.type as StoreAttributeType | undefined;
     const code = body.code !== undefined ? String(body.code).trim().toLowerCase() : undefined;
     const hexColor = body.hexColor !== undefined ? (body.hexColor ? String(body.hexColor).trim() : null) : undefined;
+    const imageUrl = body.imageUrl !== undefined ? (body.imageUrl ? String(body.imageUrl).trim() : null) : undefined;
     const sortOrder = Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : undefined;
     const isActive = typeof body.isActive === "boolean" ? body.isActive : undefined;
     const translations: Array<{ languageCode: string; label: string }> | undefined = Array.isArray(body.translations)
@@ -49,7 +50,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const updated = await prisma.$transaction(async (tx) => {
       await tx.storeAttributeValue.update({
         where: { id: params.id },
-        data: { type, code, hexColor, sortOrder, isActive },
+        data: { type, code, hexColor, imageUrl, sortOrder, isActive },
       });
 
       if (translations) {

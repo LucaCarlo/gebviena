@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
     const type = body.type as StoreAttributeType;
     const code = String(body.code || "").trim().toLowerCase();
     const hexColor = body.hexColor ? String(body.hexColor).trim() : null;
+    const imageUrl = body.imageUrl ? String(body.imageUrl).trim() : null;
     const sortOrder = Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 0;
     const isActive = body.isActive !== false;
     const translations: Array<{ languageCode: string; label: string }> = Array.isArray(body.translations) ? body.translations : [];
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
         type,
         code,
         hexColor,
+        imageUrl,
         sortOrder,
         isActive,
         translations: translations.length

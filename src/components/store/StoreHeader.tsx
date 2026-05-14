@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ShoppingBag, User, Menu, X, Heart } from "lucide-react";
 import { useLang } from "@/contexts/I18nContext";
+import { useCart } from "@/contexts/CartContext";
 
 interface Category {
   id: string;
@@ -20,6 +21,7 @@ const HEADER_TOP_N = 5;
 export default function StoreHeader() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { count: cartCount } = useCart();
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -92,8 +94,16 @@ export default function StoreHeader() {
               <Link href="/account" title="Area riservata" className="p-1 hover:text-neutral-900 transition-colors">
                 <User size={20} strokeWidth={1.6} />
               </Link>
-              <Link href="/carrello" title="Carrello" className="p-1 hover:text-neutral-900 transition-colors">
+              <Link href="/carrello" title="Carrello" className="relative p-1 hover:text-neutral-900 transition-colors">
                 <ShoppingBag size={20} strokeWidth={1.6} />
+                {cartCount > 0 && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-warm-900 text-white text-[10px] font-semibold flex items-center justify-center leading-none"
+                    aria-label={`${cartCount} articoli nel carrello`}
+                  >
+                    {cartCount > 99 ? "99+" : cartCount}
+                  </span>
+                )}
               </Link>
               <button
                 onClick={() => setMobileOpen(true)}

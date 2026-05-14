@@ -37,6 +37,7 @@ interface AttrValue {
   type: AttrType;
   code: string;
   hexColor: string | null;
+  imageUrl: string | null;
   sortOrder: number;
   isActive: boolean;
   translations: AttrTranslation[];
@@ -66,6 +67,7 @@ const EMPTY_FORM: Omit<AttrValue, "id"> = {
   type: "STRUCTURE",
   code: "",
   hexColor: null,
+  imageUrl: null,
   sortOrder: 0,
   isActive: true,
   translations: [],
@@ -156,6 +158,7 @@ export default function StoreAttributesPage() {
           type: editing.type,
           code: editing.code,
           hexColor: editing.hexColor,
+          imageUrl: editing.imageUrl,
           sortOrder: editing.sortOrder,
           isActive: editing.isActive,
           translations: editing.translations.filter((t) => t.label.trim()),
@@ -437,6 +440,48 @@ function AttrModal({
               </div>
             </div>
           )}
+
+          {/* Image swatch — visibile per qualsiasi tipo (utile su UPHOLSTERY, FINISH, MATERIAL, COLOR) */}
+          <div>
+            <label className="block text-xs font-medium text-warm-600 mb-1">
+              Immagine swatch (opzionale)
+              <span className="text-warm-400 font-normal"> — mostrata come cerchio nel frontend al posto del testo</span>
+            </label>
+            <div className="flex items-center gap-3">
+              {value.imageUrl ? (
+                <div className="w-14 h-14 rounded-full border border-warm-200 bg-cover bg-center" style={{ backgroundImage: `url(${value.imageUrl})` }} />
+              ) : (
+                <div className="w-14 h-14 rounded-full border border-warm-200 bg-warm-100 flex items-center justify-center text-warm-400 text-[10px]">—</div>
+              )}
+              <div className="flex-1 space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    const fd = new FormData();
+                    fd.append("file", f);
+                    fd.append("purpose", "attribute-swatch");
+                    fd.append("folder", "attribute-swatches");
+                    const res = await fetch("/api/upload", { method: "POST", body: fd }).then((r) => r.json());
+                    if (res.success && res.data?.url) onChange({ imageUrl: res.data.url });
+                  }}
+                  className="text-xs text-warm-600"
+                />
+                {value.imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => onChange({ imageUrl: null })}
+                    className="text-[11px] text-red-600 hover:underline"
+                  >
+                    Rimuovi immagine
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
 
           <div className="grid grid-cols-2 gap-4">
             <div>

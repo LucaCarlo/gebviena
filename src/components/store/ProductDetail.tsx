@@ -38,6 +38,7 @@ interface Attribute {
   type: AttrType;
   code: string;
   hexColor: string | null;
+  imageUrl: string | null;
   label: string;
 }
 
@@ -133,6 +134,7 @@ export default function ProductDetail({ product }: { product: Product }) {
   const { customer } = useCustomerAuth();
   const { addItem, count: cartCount } = useCart();
   const [justAdded, setJustAdded] = useState(false);
+  const [showAddedModal, setShowAddedModal] = useState(false);
 
   const [selectedVariantId, setSelectedVariantId] = useState<string>(
     product.variants.find((v) => v.isDefault)?.id ?? product.variants[0]?.id ?? ""
@@ -173,6 +175,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       shippingClass: selectedVariant.shippingClass,
     }, 1);
     setJustAdded(true);
+    setShowAddedModal(true);
     setTimeout(() => setJustAdded(false), 1800);
   };
 
@@ -447,29 +450,21 @@ export default function ProductDetail({ product }: { product: Product }) {
     return () => { cancelled = true; };
   }, [catalogGallery, imageOrientations]);
 
-  // Per la colonna destra della descrizione preferiamo immagini verticali.
-  // Se non ce ne sono (ancora misurate), usiamo comunque le prime 1-2 della galleria.
+  // Split immagini catalogo: verticali (per slideshow accanto descrizione) +
+  // orizzontali (per slideshow Ispirazione sotto). Fino a che orientations non
+  // sono misurate, default = orizzontale.
   const verticalCatalog = useMemo(
     () => catalogGallery.filter((u) => imageOrientations[u] === "v"),
     [catalogGallery, imageOrientations]
   );
-  const descriptionSideImages = useMemo(() => {
-    const pool = verticalCatalog.length > 0 ? verticalCatalog : catalogGallery;
-    return pool.slice(0, 2);
-  }, [verticalCatalog, catalogGallery]);
-
-  // Per lo slideshow "Ispirazione" usiamo tutte le immagini rimanenti.
-  // Preferiamo le orizzontali; se mancano, usiamo le rimanenti dopo quelle a fianco descrizione.
-  const sideSet = useMemo(() => new Set(descriptionSideImages), [descriptionSideImages]);
   const horizontalCatalog = useMemo(
-    () => catalogGallery.filter((u) => imageOrientations[u] !== "v" && !sideSet.has(u)),
-    [catalogGallery, imageOrientations, sideSet]
+    () => catalogGallery.filter((u) => imageOrientations[u] !== "v"),
+    [catalogGallery, imageOrientations]
   );
-  const slideshowImages = useMemo(() => {
-    if (horizontalCatalog.length > 0) return horizontalCatalog;
-    // Fallback: tutto ciò che non è già a fianco descrizione
-    return catalogGallery.filter((u) => !sideSet.has(u));
-  }, [horizontalCatalog, catalogGallery, sideSet]);
+
+  // Slideshow verticale accanto alla descrizione (1 immagine alla volta)
+  const [descrSlideIdx, setDescrSlideIdx] = useState(0);
+  useEffect(() => { setDescrSlideIdx(0); }, [verticalCatalog.length]);
 
   // Quando cambia la variante selezionata salta all'immagine di quella variante
   // (se la variante non ha immagini proprie, va alla prima del prodotto).
@@ -547,7 +542,7 @@ export default function ProductDetail({ product }: { product: Product }) {
         <div className="space-y-3">
           <div
             ref={heroRef}
-            className="aspect-[4/5] bg-warm-100 relative overflow-hidden cursor-zoom-in group"
+            className="aspect-[4/5] bg-warm-50 relative overflow-hidden cursor-zoom-in group"
             onMouseMove={onHeroMouseMove}
             onMouseLeave={onHeroMouseLeave}
             onClick={() => setLightboxOpen(true)}
@@ -559,7 +554,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 55vw"
-                className="object-cover transition-transform duration-200 ease-out"
+                className="object-contain transition-transform duration-200 ease-out"
                 style={hoverPos ? { transform: "scale(1.6)", transformOrigin: `${hoverPos.x}% ${hoverPos.y}%` } : undefined}
               />
             ) : null}
@@ -628,6 +623,20 @@ export default function ProductDetail({ product }: { product: Product }) {
                     <div className="flex flex-wrap gap-2">
                       {available.map((a) => {
                         const isSel = selectedAttrIds.has(a.id);
+                        // Cerchio swatch: usato per COLOR e per qualsiasi valore
+                        // con imageUrl (es. Imbottitura caricata come campione).
+                        if (a.imageUrl) {
+                          return (
+                            <button
+                              key={a.id}
+                              onClick={() => selectAttr(type, a.id)}
+                              title={a.label}
+                              aria-label={a.label}
+                              className={`w-10 h-10 rounded-full border-2 bg-cover bg-center transition-all ${isSel ? "border-warm-900 scale-110" : "border-warm-200 hover:border-warm-400"}`}
+                              style={{ backgroundImage: `url(${a.imageUrl})` }}
+                            />
+                          );
+                        }
                         if (type === "COLOR") {
                           return (
                             <button
@@ -820,11 +829,17 @@ export default function ProductDetail({ product }: { product: Product }) {
         </div>
       </div>
 
-      {/* ═══ Sezione Descrizione (2-col: testo a sinistra + 1-2 immagini grandi a destra) ═══ */}
-      {(product.marketingDescription || descriptionSideImages.length > 0) && (
+      {/* ═══ Sezione Ispirazione: titolo grande + testo descrizione a sinistra +
+              slideshow verticale a destra (1 foto alla volta, niente crop) +
+              slideshow orizzontale sotto, full-width (object-contain) ═══ */}
+      {(product.marketingDescription || verticalCatalog.length > 0 || horizontalCatalog.length > 0) && (
         <section className="mt-20 pt-14 border-t border-warm-200">
-          <div className="text-[10px] uppercase tracking-[0.28em] text-warm-500 mb-8">Descrizione</div>
+          <h2 className="font-serif text-[34px] md:text-[42px] leading-[1.05] text-warm-900 tracking-[-0.005em] mb-8 lg:mb-10">
+            Ispirazione
+          </h2>
+
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-10 lg:gap-16 items-start">
+            {/* Testo descrizione (sinistra) */}
             <div className={`text-[15px] text-warm-700 leading-[1.75] max-w-[640px]
               [&_h1]:font-serif [&_h1]:text-[30px] [&_h1]:text-warm-900 [&_h1]:mt-8 [&_h1]:mb-4 [&_h1]:tracking-[-0.005em]
               [&_h2]:font-serif [&_h2]:text-[26px] [&_h2]:text-warm-900 [&_h2]:mt-8 [&_h2]:mb-4 [&_h2]:tracking-[-0.005em]
@@ -837,35 +852,54 @@ export default function ProductDetail({ product }: { product: Product }) {
                 ? <div dangerouslySetInnerHTML={{ __html: /<\/?(p|div|h[1-6]|ul|ol|li|strong|em|blockquote|br|a)\b/i.test(product.marketingDescription) ? product.marketingDescription : renderMarkdown(product.marketingDescription) }} />
                 : <p className="text-warm-500 italic">Descrizione in arrivo.</p>}
             </div>
-            {/* Galleria descrizione: 1 immagine grande (3/4) o 2 stacked verticali */}
-            {descriptionSideImages.length > 0 && (
-              <div className={descriptionSideImages.length === 1 ? "" : "grid grid-cols-1 gap-4"}>
-                {descriptionSideImages.map((img, i) => (
-                  <div
-                    key={i}
-                    className="relative bg-warm-100 overflow-hidden"
-                    style={{ aspectRatio: descriptionSideImages.length === 1 ? "3 / 4" : "4 / 3" }}
-                  >
-                    <Image
-                      src={img}
-                      alt={`${product.name} — ${i + 1}`}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 45vw"
-                      className="object-cover"
-                    />
-                  </div>
-                ))}
+
+            {/* Slideshow VERTICALE a destra — 1 foto alla volta, aspect 3/4
+                con object-contain → niente taglio. Frecce + indicatore. */}
+            {verticalCatalog.length > 0 && (
+              <div className="self-start">
+                <div className="relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "3 / 4" }}>
+                  <Image
+                    src={verticalCatalog[descrSlideIdx % verticalCatalog.length]}
+                    alt={`${product.name} — ${descrSlideIdx + 1}`}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 45vw"
+                    className="object-contain"
+                    priority
+                  />
+                  {verticalCatalog.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setDescrSlideIdx((i) => (i - 1 + verticalCatalog.length) % verticalCatalog.length)}
+                        aria-label="Immagine precedente"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-warm-900 flex items-center justify-center shadow-sm transition"
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDescrSlideIdx((i) => (i + 1) % verticalCatalog.length)}
+                        aria-label="Immagine successiva"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-warm-900 flex items-center justify-center shadow-sm transition"
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] tracking-wider text-warm-700 bg-white/85 px-2.5 py-0.5 rounded-full">
+                        {descrSlideIdx + 1} / {verticalCatalog.length}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </div>
-        </section>
-      )}
 
-      {/* ═══ Sezione Ispirazione — slideshow orizzontale full-width (stessa logica del sito principale) ═══ */}
-      {slideshowImages.length > 0 && (
-        <section className="mt-16 lg:mt-20">
-          <div className="text-[10px] uppercase tracking-[0.28em] text-warm-500 mb-6 text-center">Ispirazione</div>
-          <GallerySlideshow images={slideshowImages} name={product.name} />
+          {/* Slideshow ORIZZONTALE sotto (full-width) — object-contain via GallerySlideshow */}
+          {horizontalCatalog.length > 0 && (
+            <div className="mt-14 lg:mt-20 -mx-4 lg:-mx-8">
+              <GallerySlideshow images={horizontalCatalog} name={product.name} />
+            </div>
+          )}
         </section>
       )}
 
@@ -960,6 +994,71 @@ export default function ProductDetail({ product }: { product: Product }) {
       )}
 
       {/* ═══ Lightbox modal ═══ */}
+      {/* ═══ Popup conferma aggiunta al carrello ═══ */}
+      {showAddedModal && selectedVariant && (
+        <div
+          className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
+          onClick={() => setShowAddedModal(false)}
+        >
+          <div
+            className="bg-white max-w-md w-full p-7 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              {(selectedVariant.coverImage || product.coverImage) && (
+                <div className="relative w-20 h-24 bg-warm-50 flex-shrink-0 overflow-hidden">
+                  <Image
+                    src={selectedVariant.coverImage || product.coverImage!}
+                    alt={product.name}
+                    fill
+                    sizes="80px"
+                    className="object-contain"
+                  />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-700 font-semibold mb-1.5 inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Aggiunto al carrello
+                </div>
+                <div className="text-warm-900 text-[15px] font-medium leading-tight">{product.name}</div>
+                {selectedVariant.attributes.length > 0 && (
+                  <div className="text-warm-500 text-[12px] mt-1">
+                    {selectedVariant.attributes.map((a) => a.label).join(" · ")}
+                  </div>
+                )}
+                <div className="text-warm-900 font-mono text-[14px] mt-1.5">
+                  {eur(effectivePriceCents(selectedVariant))}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddedModal(false)}
+                className="text-warm-400 hover:text-warm-900 -mr-2 -mt-2 p-2"
+                aria-label="Chiudi"
+              >
+                <XIcon size={18} />
+              </button>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAddedModal(false)}
+                className="w-full inline-flex items-center justify-center gap-2 py-3 border border-warm-300 text-warm-900 uppercase text-[12px] tracking-[0.18em] hover:bg-warm-50"
+              >
+                Continua shopping
+              </button>
+              <a
+                href="/carrello"
+                className="w-full inline-flex items-center justify-center gap-2 py-3 bg-warm-900 text-white uppercase text-[12px] tracking-[0.18em] hover:bg-warm-800"
+              >
+                <ShoppingBag size={14} /> Vai al carrello ({cartCount})
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {lightboxOpen && heroImages.length > 0 && (
         <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
           <button onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
