@@ -413,6 +413,7 @@ async function main() {
     // 4) Loop varianti
     for (let i = 0; i < (groupRows as ExcelRow[]).length; i++) {
       const r = (groupRows as ExcelRow[])[i];
+      const listPriceCents = r.priceList !== null && r.priceList > 0 ? Math.round(r.priceList * 100) : null;
       const priceCents = r.priceVat !== null && r.priceVat > 0 ? Math.round(r.priceVat * 100) : 0;
       const finalCents = r.priceFinal !== null && r.priceFinal > 0 ? Math.round(r.priceFinal * 100) : 0;
       const hasDiscount = finalCents > 0 && finalCents < priceCents;
@@ -432,6 +433,7 @@ async function main() {
       const baseData = {
         storeProductId,
         sku: r.sku,
+        listPriceCents,
         priceCents,
         salePriceCents,
         priceWithVatCents: hasDiscount ? finalCents : null,

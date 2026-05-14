@@ -1290,9 +1290,10 @@ model StoreProductVariant {
   id                 String        @id @default(cuid())
   storeProductId     String
   sku                String        @unique @db.VarChar(64)
-  priceCents         Int
-  salePriceCents     Int?
-  priceWithVatCents  Int?
+  listPriceCents     Int?    // Prezzo di listino (no IVA) — informativo
+  priceCents         Int     // Prezzo IVA inclusa (listino + IVA) — barrato sulla card
+  salePriceCents     Int?    // Prezzo scontato IVA inclusa — quello pagato
+  priceWithVatCents  Int?    // Legacy: duplicato di salePriceCents (B2B)
   stockQty           Int?
   trackStock       Boolean       @default(false)
   volumeM3         Decimal       @default(0) @db.Decimal(7, 3)

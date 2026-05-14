@@ -12,6 +12,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   try {
     const body = await req.json();
     const sku = String(body.sku || "").trim();
+    const listPriceCents = body.listPriceCents == null ? null : (Number.isFinite(body.listPriceCents) ? Math.trunc(body.listPriceCents) : null);
     const priceCents = Number.isFinite(body.priceCents) ? Math.trunc(body.priceCents) : 0;
     const salePriceCents = body.salePriceCents == null ? null : (Number.isFinite(body.salePriceCents) ? Math.trunc(body.salePriceCents) : null);
     const priceWithVatCents = body.priceWithVatCents == null ? null : (Number.isFinite(body.priceWithVatCents) ? Math.trunc(body.priceWithVatCents) : null);
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         data: {
           storeProductId: params.id,
           sku,
+          listPriceCents,
           priceCents,
           salePriceCents,
           priceWithVatCents,

@@ -19,6 +19,7 @@ export async function PUT(
 
     const data: Record<string, unknown> = {};
     if (body.sku !== undefined) data.sku = String(body.sku).trim();
+    if (body.listPriceCents !== undefined) data.listPriceCents = body.listPriceCents === null ? null : Math.trunc(Number(body.listPriceCents));
     if (body.priceCents !== undefined) data.priceCents = Math.trunc(Number(body.priceCents));
     if (body.salePriceCents !== undefined) data.salePriceCents = body.salePriceCents === null ? null : Math.trunc(Number(body.salePriceCents));
     if (body.priceWithVatCents !== undefined) data.priceWithVatCents = body.priceWithVatCents === null ? null : Math.trunc(Number(body.priceWithVatCents));

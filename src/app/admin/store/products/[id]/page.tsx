@@ -48,6 +48,7 @@ interface VariantAttribute {
 interface Variant {
   id: string;
   sku: string;
+  listPriceCents: number | null;
   priceCents: number;
   salePriceCents: number | null;
   priceWithVatCents: number | null;
@@ -571,6 +572,7 @@ function VariantsTab({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sku: variant.sku,
+          listPriceCents: variant.listPriceCents,
           priceCents: variant.priceCents,
           salePriceCents: variant.salePriceCents,
           priceWithVatCents: variant.priceWithVatCents,
@@ -619,6 +621,7 @@ function VariantsTab({
   const emptyVariant: Variant = {
     id: "",
     sku: "",
+    listPriceCents: null,
     priceCents: 0,
     salePriceCents: null,
     priceWithVatCents: null,
@@ -840,57 +843,100 @@ function VariantModal({
                 className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm font-mono"
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-warm-600 mb-1">Prezzo normale (€)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={(v.priceCents / 100).toFixed(2)}
-                onChange={(e) => update({ priceCents: Math.round(Number(e.target.value) * 100) || 0 })}
-                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-              />
+            <div className="text-xs text-warm-500 self-end pb-2">
+              SKU = codice variante (univoco). Es. <code className="bg-warm-100 px-1">SDCAFELGN</code>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-warm-600 mb-1">
-                Prezzo scontato (€)
-                <span className="text-warm-400 font-normal"> — opzionale</span>
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="—"
-                value={v.salePriceCents != null ? (v.salePriceCents / 100).toFixed(2) : ""}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (raw === "") return update({ salePriceCents: null });
-                  update({ salePriceCents: Math.round(Number(raw) * 100) || null });
-                }}
-                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-              />
-              <p className="text-[11px] text-warm-500 mt-1">Lascia vuoto per non applicare sconto. Se valorizzato, sostituisce il prezzo normale.</p>
+          {/* Prezzi: 3 campi chiari */}
+          <div className="bg-warm-50 rounded-lg p-4 space-y-4">
+            <div className="text-xs font-medium text-warm-600 uppercase tracking-wider">Prezzi (in EUR)</div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-warm-600 mb-1">
+                  Listino <span className="text-warm-400 font-normal">(no IVA)</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="—"
+                  value={v.listPriceCents != null ? (v.listPriceCents / 100).toFixed(2) : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") return update({ listPriceCents: null });
+                    update({ listPriceCents: Math.round(Number(raw) * 100) || null });
+                  }}
+                  className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
+                />
+                <p className="text-[10px] text-warm-500 mt-1">Prezzo di catalogo senza IVA.</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-warm-600 mb-1">
+                  IVA inclusa <span className="text-warm-400 font-normal">★</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={(v.priceCents / 100).toFixed(2)}
+                  onChange={(e) => update({ priceCents: Math.round(Number(e.target.value) * 100) || 0 })}
+                  className="w-full px-3 py-2 border border-warm-300 rounded-lg text-sm bg-white font-medium"
+                />
+                <p className="text-[10px] text-warm-500 mt-1">Mostrato <strong>barrato</strong> sulla card. Base sconto.</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-warm-600 mb-1">
+                  Scontato (IVA inclusa)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="—"
+                  value={v.salePriceCents != null ? (v.salePriceCents / 100).toFixed(2) : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") return update({ salePriceCents: null });
+                    update({ salePriceCents: Math.round(Number(raw) * 100) || null });
+                  }}
+                  className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
+                />
+                <p className="text-[10px] text-warm-500 mt-1">Quello pagato dal cliente. Se vuoto = no sconto.</p>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-warm-600 mb-1">
-                Prezzo IVA inclusa (€)
-                <span className="text-warm-400 font-normal"> — opzionale</span>
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="—"
-                value={v.priceWithVatCents != null ? (v.priceWithVatCents / 100).toFixed(2) : ""}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (raw === "") return update({ priceWithVatCents: null });
-                  update({ priceWithVatCents: Math.round(Number(raw) * 100) || null });
-                }}
-                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-              />
-              <p className="text-[11px] text-warm-500 mt-1">Prezzo finale con IVA per uso interno/B2B (non sostituisce il prezzo cliente).</p>
-            </div>
+            {v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents && (
+              <div className="text-[11px] text-warm-700 bg-white border border-warm-200 rounded px-3 py-2">
+                Sconto applicato: <strong>{Math.round((1 - v.salePriceCents / v.priceCents) * 100)}%</strong>
+                {" "}rispetto al prezzo IVA inclusa.
+              </div>
+            )}
+          </div>
+
+          {/* Descrizione variante */}
+          <div>
+            <label className="block text-xs font-medium text-warm-600 mb-1">
+              Descrizione breve della variante <span className="text-warm-400 font-normal">(testo per rete vendita)</span>
+            </label>
+            <textarea
+              rows={3}
+              value={(v.translations || []).find((t) => t.languageCode === "it")?.description || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                const translations = [...(v.translations || [])];
+                const idx = translations.findIndex((t) => t.languageCode === "it");
+                const variantName = (value || "").split(".")[0].slice(0, 180) || v.sku;
+                if (idx >= 0) {
+                  translations[idx] = { ...translations[idx], description: value || null, name: variantName };
+                } else {
+                  translations.push({ languageCode: "it", name: variantName, description: value || null });
+                }
+                update({ translations });
+              }}
+              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
+              placeholder="Es. 'Sedia in faggio curvato con seduta imbottita. Linee morbide ideali per dining e contract.'"
+            />
+            <p className="text-[10px] text-warm-500 mt-1">
+              Mostrata sotto il titolo del prodotto quando il cliente seleziona questa variante.
+              Lasciala vuota per usare la descrizione del prodotto.
+            </p>
           </div>
 
           {/* Stock */}
