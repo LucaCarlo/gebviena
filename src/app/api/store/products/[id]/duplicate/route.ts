@@ -74,11 +74,14 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     }
 
     const newId = await prisma.$transaction(async (tx) => {
-      // 1) Duplica Product (con slug univoco)
+      // 1) Duplica Product (con slug univoco).
+      //    Manteniamo lo stesso nome catalogo — il rinomina è in admin.
+      //    (In passato suffissavamo " (copia)" ricorsivamente, producendo
+      //    "(copia) (copia) (copia)" su doppie/triple duplicazioni.)
       const newProductSlug = await uniqueSlug(sp.product.slug);
       const newProduct = await tx.product.create({
         data: {
-          name: `${sp.product.name} (copia)`,
+          name: sp.product.name,
           slug: newProductSlug,
           designerId: sp.product.designerId,
           designerName: sp.product.designerName,

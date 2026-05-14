@@ -1,0 +1,146 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { computeShipping, FREE_STANDARD_SHIPPING_THRESHOLD_CENTS } from "@/lib/shipping-rates";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * Quote spedizione live (senza creare Order né Stripe PaymentIntent).
+ *
+ * Usato dal checkout per ricalcolare subtotale + spedizione mentre l'utente
+ * digita l'indirizzo e cambia i servizi aggiuntivi, senza dover premere
+ * "Continua al pagamento".
+ *
+ * Body:
+ *   {
+ *     items: [{ variantId, quantity }],
+ *     country: "IT"|"FR"|...,
+ *     postalCode: "...",
+ *     province: "MI"|...,
+ *     shippingFloor: 0|1|2|...,
+ *     withUnboxingService: boolean
+ *   }
+ *
+ * Risposta sempre 200 con success=true; in caso di carrello vuoto o address
+ * mancante restituisce un quote "neutro" così il frontend può mostrare
+ * placeholder senza dover gestire errori intermedi durante la digitazione.
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const items = (body.items as Array<{ variantId: string; quantity: number }>) || [];
+    const country = String(body.country || "IT").toUpperCase();
+    const postalCode = String(body.postalCode || "").trim();
+    const province = String(body.province || "").trim();
+    const shippingFloor = Number.isFinite(body.shippingFloor) ? Math.max(0, Math.trunc(body.shippingFloor)) : 0;
+    const withUnboxingService = body.withUnboxingService === true;
+
+    if (!items.length) {
+      return NextResponse.json({
+        success: true,
+        data: emptyQuote(country),
+      });
+    }
+
+    const variantIds = items.map((i) => i.variantId);
+    const variants = await prisma.storeProductVariant.findMany({
+      where: { id: { in: variantIds }, isPublished: true },
+      select: { id: true, priceCents: true, salePriceCents: true, volumeM3: true, storeProduct: { select: { productsPerBox: true } } },
+    });
+    const vmap = new Map(variants.map((v) => [v.id, v]));
+
+    let subtotalCents = 0;
+    let totalBoxes = 0;
+    let totalVolumeM3 = 0;
+
+    for (const it of items) {
+      const v = vmap.get(it.variantId);
+      if (!v) continue; // ignora silenziosamente: è solo un quote
+      const qty = Math.max(1, Math.floor(it.quantity));
+      const unitPrice = v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents
+        ? v.salePriceCents
+        : v.priceCents;
+      subtotalCents += unitPrice * qty;
+      const perBox = Math.max(1, v.storeProduct?.productsPerBox || 1);
+      totalBoxes += Math.ceil(qty / perBox);
+      totalVolumeM3 += Number(v.volumeM3) * qty;
+    }
+
+    // Se l'indirizzo non è ancora utilizzabile (no CAP e no provincia per IT,
+    // no CAP per FR) → mostriamo un quote "incompleto" che lato UI verrà
+    // mostrato come "—" o "in attesa indirizzo".
+    const addressUsable =
+      country === "IT" ? (postalCode.length >= 2 || province.length >= 2)
+      : country === "FR" ? postalCode.length >= 2
+      : true;
+
+    if (!addressUsable) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          ...emptyQuote(country),
+          subtotalCents,
+          totalVolumeM3,
+          totalBoxes,
+          ready: false,
+          missing: country === "IT" ? "provincia o CAP" : "CAP",
+        },
+      });
+    }
+
+    const result = computeShipping({
+      country,
+      postalCode,
+      province,
+      totalVolumeM3,
+      totalBoxes,
+      subtotalCents,
+      shippingFloor,
+      withUnboxingService,
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        ready: true,
+        country,
+        subtotalCents,
+        totalVolumeM3,
+        billableVolumeM3: Math.max(1, Math.ceil(totalVolumeM3)),
+        totalBoxes,
+        standardShippingCents: result.standardShippingCents,
+        floorDeliveryCents: result.floorDeliveryCents,
+        unboxingFeeCents: result.unboxingFeeCents,
+        totalShippingCents: result.totalShippingCents,
+        freeShippingApplied: result.freeShippingApplied,
+        freeShippingThresholdCents: FREE_STANDARD_SHIPPING_THRESHOLD_CENTS,
+        resolvedRegion: result.resolvedRegion,
+        notes: result.notes,
+        totalCents: subtotalCents + result.totalShippingCents,
+      },
+    });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
+  }
+}
+
+function emptyQuote(country: string) {
+  return {
+    ready: false,
+    country,
+    subtotalCents: 0,
+    totalVolumeM3: 0,
+    billableVolumeM3: 1,
+    totalBoxes: 0,
+    standardShippingCents: 0,
+    floorDeliveryCents: 0,
+    unboxingFeeCents: 0,
+    totalShippingCents: 0,
+    freeShippingApplied: false,
+    freeShippingThresholdCents: FREE_STANDARD_SHIPPING_THRESHOLD_CENTS,
+    resolvedRegion: null as string | null,
+    notes: [] as string[],
+    totalCents: 0,
+  };
+}

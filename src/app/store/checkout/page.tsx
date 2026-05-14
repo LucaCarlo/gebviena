@@ -29,6 +29,21 @@ interface IntentResponse {
   currency: string;
 }
 
+interface LiveQuote {
+  ready: boolean;
+  subtotalCents: number;
+  standardShippingCents: number;
+  floorDeliveryCents: number;
+  unboxingFeeCents: number;
+  totalShippingCents: number;
+  totalCents: number;
+  freeShippingApplied: boolean;
+  resolvedRegion: string | null;
+  billableVolumeM3?: number;
+  totalVolumeM3?: number;
+  missing?: string;
+}
+
 const FREE_SHIPPING_THRESHOLD_CENTS = 95000; // 950 EUR
 const SHIPPING_REMINDER_RANGE_CENTS = 20000; // mostra reminder se manca <= 200 EUR
 
@@ -41,6 +56,8 @@ export default function CheckoutPage() {
   const [phase, setPhase] = useState<"address" | "payment">("address");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quote, setQuote] = useState<LiveQuote | null>(null);
+  const [quoting, setQuoting] = useState(false);
 
   const [form, setForm] = useState({
     email: "",
@@ -72,6 +89,41 @@ export default function CheckoutPage() {
   }, []);
 
   const updateField = (k: keyof typeof form, v: string | boolean) => setForm((s) => ({ ...s, [k]: v as never }));
+
+  // Fingerprint del carrello (variantId × quantity) per evitare loop di refetch
+  // dovuti al fatto che `items` è una nuova reference ad ogni render.
+  const itemsFingerprint = items.map((i) => `${i.variantId}:${i.quantity}`).join("|");
+
+  // Quote spedizione live: ricalcola appena cambiano country/CAP/provincia/
+  // piano/disimballo o il contenuto del carrello. Debounced 350ms per non
+  // martellare l'endpoint mentre l'utente digita. Niente bottone richiesto.
+  useEffect(() => {
+    if (phase !== "address") return;
+    if (items.length === 0) { setQuote(null); return; }
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      setQuoting(true);
+      fetch("/api/store/public/shipping/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+          country: form.country,
+          postalCode: form.postalCode,
+          province: form.province,
+          shippingFloor: Number(form.shippingFloor) || 0,
+          withUnboxingService: form.withUnboxingService === true,
+        }),
+        signal: ctrl.signal,
+      })
+        .then((r) => r.json())
+        .then((d) => { if (d.success) setQuote(d.data); })
+        .catch(() => { /* abort/network — ignora silenziosamente */ })
+        .finally(() => setQuoting(false));
+    }, 350);
+    return () => { clearTimeout(t); ctrl.abort(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, itemsFingerprint, form.country, form.postalCode, form.province, form.shippingFloor, form.withUnboxingService]);
 
   const submitAddress = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -283,7 +335,7 @@ export default function CheckoutPage() {
             ))}
           </div>
           <div className="border-t border-warm-200 pt-3 space-y-1.5 text-sm">
-            <Row label="Subtotale" value={eur(intent?.subtotalCents ?? subtotalCents)} />
+            <Row label="Subtotale" value={eur(intent?.subtotalCents ?? quote?.subtotalCents ?? subtotalCents)} />
             {intent ? (
               <>
                 <Row
@@ -300,13 +352,42 @@ export default function CheckoutPage() {
                 )}
                 <Row label="(IVA inclusa)" value={eur(intent.taxCents)} subtle />
               </>
+            ) : quote && quote.ready ? (
+              <>
+                <Row
+                  label={`Spedizione standard${quote.resolvedRegion ? ` · ${quote.resolvedRegion}` : ""}`}
+                  value={quote.freeShippingApplied ? "Gratuita" : eur(quote.standardShippingCents)}
+                />
+                {quote.floorDeliveryCents > 0 && (
+                  <Row label="Consegna al piano" value={eur(quote.floorDeliveryCents)} />
+                )}
+                {quote.unboxingFeeCents > 0 && (
+                  <Row label="Disimballo e smaltimento" value={eur(quote.unboxingFeeCents)} />
+                )}
+                {(quote.billableVolumeM3 ?? 0) > 0 && (quote.totalVolumeM3 ?? 0) > 0 && (
+                  <Row
+                    label="Volume fatturato"
+                    value={`${quote.billableVolumeM3} m³ (reali ${(quote.totalVolumeM3 ?? 0).toFixed(2)} m³)`}
+                    subtle
+                  />
+                )}
+              </>
             ) : (
-              <Row label="Spedizione" value="calcolata a checkout" subtle />
+              <Row
+                label="Spedizione"
+                value={quote && !quote.ready && quote.missing
+                  ? `inserisci ${quote.missing}`
+                  : (quoting ? "calcolo…" : "inserisci indirizzo")}
+                subtle
+              />
             )}
           </div>
           <div className="border-t border-warm-200 pt-3 flex justify-between items-baseline">
             <span className="text-warm-900 font-medium">Totale</span>
-            <span className="text-2xl font-light text-warm-900">{eur(intent?.amountCents ?? subtotalCents)}</span>
+            <span className="text-2xl font-light text-warm-900 inline-flex items-center gap-2">
+              {quoting && !intent && <Loader2 size={14} className="animate-spin text-warm-400" />}
+              {eur(intent?.amountCents ?? quote?.totalCents ?? subtotalCents)}
+            </span>
           </div>
         </aside>
       </div>

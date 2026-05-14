@@ -221,7 +221,8 @@ export default function StoreProductDetailPage() {
     );
   }
 
-  const productLabel = sp.product.translations.find((t) => t.languageCode === "it")?.name || sp.product.name;
+  const itTrName = sp.translations.find((t) => t.languageCode === "it")?.name || null;
+  const productLabel = itTrName || sp.product.translations.find((t) => t.languageCode === "it")?.name || sp.product.name;
 
   return (
     <div>
@@ -232,8 +233,14 @@ export default function StoreProductDetailPage() {
       </div>
 
       <header className="flex items-start justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-warm-900">{productLabel}</h1>
+        <div className="flex-1 min-w-0">
+          <ProductNameEditor
+            current={productLabel}
+            onSave={async (newName) => {
+              await saveProduct({ productName: newName } as never);
+            }}
+            saving={saving}
+          />
           <div className="flex items-center gap-3 mt-1 text-sm">
             <span className="text-warm-500 font-mono">{sp.product.slug}</span>
             <span className="text-warm-300">·</span>
@@ -1223,6 +1230,79 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }
     <div className="mb-3">
       <h2 className="text-lg font-semibold text-warm-900">{title}</h2>
       {subtitle && <p className="text-sm text-warm-500 mt-0.5">{subtitle}</p>}
+    </div>
+  );
+}
+
+function ProductNameEditor({
+  current, onSave, saving,
+}: {
+  current: string;
+  onSave: (name: string) => Promise<void>;
+  saving: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(current);
+
+  useEffect(() => {
+    if (!editing) setDraft(current);
+  }, [current, editing]);
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-2 group">
+        <h1 className="text-2xl font-semibold text-warm-900 break-words">{current}</h1>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          title="Rinomina prodotto"
+          className="p-1.5 rounded text-warm-400 hover:text-warm-900 hover:bg-warm-100 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+        >
+          <Pencil size={14} />
+        </button>
+      </div>
+    );
+  }
+
+  const commit = async () => {
+    const trimmed = draft.trim();
+    if (!trimmed || trimmed === current) {
+      setEditing(false);
+      setDraft(current);
+      return;
+    }
+    await onSave(trimmed);
+    setEditing(false);
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); commit(); }
+          if (e.key === "Escape") { setEditing(false); setDraft(current); }
+        }}
+        className="text-2xl font-semibold text-warm-900 border-b-2 border-warm-900 outline-none bg-transparent flex-1 min-w-[16rem] py-0.5"
+      />
+      <button
+        type="button"
+        onClick={commit}
+        disabled={saving}
+        className="px-3 py-1.5 bg-warm-900 text-white text-sm rounded hover:bg-warm-800 disabled:opacity-50 inline-flex items-center gap-1.5"
+      >
+        {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+        Salva
+      </button>
+      <button
+        type="button"
+        onClick={() => { setEditing(false); setDraft(current); }}
+        className="px-3 py-1.5 bg-warm-100 text-warm-700 text-sm rounded hover:bg-warm-200"
+      >
+        Annulla
+      </button>
     </div>
   );
 }

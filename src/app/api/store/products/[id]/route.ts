@@ -56,6 +56,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const sortOrder = Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : undefined;
     const productsPerBox = Number.isFinite(body.productsPerBox) ? Math.max(1, Math.trunc(body.productsPerBox)) : undefined;
     const translations: TranslationInput[] | undefined = Array.isArray(body.translations) ? body.translations : undefined;
+    // productName: rinomina diretta del Product catalogo (sorgente per header
+    // admin + storefront fallback). Allinea anche la translation IT del
+    // StoreProduct così override mostrato al cliente è coerente.
+    const productName: string | undefined = typeof body.productName === "string" && body.productName.trim().length > 0
+      ? body.productName.trim().slice(0, 255)
+      : undefined;
 
     const data: Record<string, unknown> = {};
     if (storeCategoryId !== undefined) data.storeCategoryId = storeCategoryId;
@@ -71,6 +77,21 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     const updated = await prisma.$transaction(async (tx) => {
       await tx.storeProduct.update({ where: { id: params.id }, data });
+
+      if (productName) {
+        const sp = await tx.storeProduct.findUnique({ where: { id: params.id }, select: { productId: true } });
+        if (sp) {
+          await tx.product.update({ where: { id: sp.productId }, data: { name: productName } });
+          // Allinea anche la translation IT (override storefront)
+          const itTr = await tx.storeProductTranslation.findFirst({
+            where: { storeProductId: params.id, languageCode: "it" },
+            select: { id: true },
+          });
+          if (itTr) {
+            await tx.storeProductTranslation.update({ where: { id: itTr.id }, data: { name: productName } });
+          }
+        }
+      }
 
       if (translations) {
         await tx.storeProductTranslation.deleteMany({ where: { storeProductId: params.id } });
