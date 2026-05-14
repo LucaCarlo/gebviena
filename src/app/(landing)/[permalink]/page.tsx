@@ -2,8 +2,13 @@ import { prisma } from "@/lib/prisma";
 import Script from "next/script";
 import SvenditaTemplate from "@/components/landing/svendita/SvenditaTemplate";
 import GenericLandingTemplate from "@/components/landing/generic/GenericLandingTemplate";
-import { getCurrentLang, DEFAULT_LANG } from "@/lib/i18n";
+import { I18nProvider } from "@/contexts/I18nContext";
+import { getCurrentLang, loadAllUiTranslations, DEFAULT_LANG } from "@/lib/i18n";
 import { pixelLandingParams } from "@/lib/pixel-params";
+
+// Lingue ammesse sui template "svendita": qualunque altra lingua viene
+// forzata a IT (sia rendering che switcher).
+const SVENDITA_ALLOWED_LANGS = new Set(["it", "fr"]);
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -38,7 +43,12 @@ export default async function LandingDispatcher({ params }: PageProps) {
     );
   }
 
-  const lang = getCurrentLang();
+  const rawLang = getCurrentLang();
+  // Sui template svendita lo store ammette solo IT/FR. Qualunque altra lingua
+  // viene clampata a IT prima di caricare traduzioni / inviare al server.
+  const lang = (cfg.template === "svendita" && !SVENDITA_ALLOWED_LANGS.has(rawLang))
+    ? DEFAULT_LANG
+    : rawLang;
   const translation =
     lang !== DEFAULT_LANG
       ? await prisma.landingPageConfigTranslation.findUnique({
@@ -71,7 +81,12 @@ export default async function LandingDispatcher({ params }: PageProps) {
         );
       } catch { /* fallback su IT */ }
     }
-    return (
+    // Se la lingua è stata clampata (cookie != it/fr), ri-wrappa con un
+    // I18nProvider interno così SvenditaTemplate e figli leggono "it",
+    // ignorando quanto impostato dalla LandingLayout esterna.
+    const langWasClamped = rawLang !== lang;
+    const innerOverrides = langWasClamped ? await loadAllUiTranslations(lang) : null;
+    const svenditaTree = (
       <>
         {pixelScript}
         <SvenditaTemplate
@@ -88,6 +103,9 @@ export default async function LandingDispatcher({ params }: PageProps) {
         />
       </>
     );
+    return langWasClamped && innerOverrides
+      ? <I18nProvider lang={lang} defaultLang={DEFAULT_LANG} overrides={innerOverrides}>{svenditaTree}</I18nProvider>
+      : svenditaTree;
   }
 
   return (

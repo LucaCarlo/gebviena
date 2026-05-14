@@ -499,6 +499,7 @@ export default function AdminSubscribersPage() {
               <InfoSection title="Altro" icon={<StickyNote size={16} />}>
                 <InfoRow label="Origine" value={
                   c.source === "entrambi" ? "Newsletter + Evento" :
+                  c.source === "landing_svendita" ? "Vendita Speciale" :
                   c.source === "newsletter" ? "Newsletter" :
                   c.source === "evento" ? "Evento" : "Solo tag"
                 } />
@@ -716,11 +717,13 @@ export default function AdminSubscribersPage() {
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${
                         c.source === "entrambi" ? "bg-purple-100 text-purple-600" :
+                        c.source === "landing_svendita" ? "bg-rose-100 text-rose-700" :
                         c.source === "newsletter" ? "bg-blue-100 text-blue-600" :
                         c.source === "evento" ? "bg-amber-100 text-amber-600" :
                         "bg-warm-100 text-warm-600"
                       }`}>
                         {c.source === "entrambi" ? "Newsletter + Evento" :
+                          c.source === "landing_svendita" ? "Vendita Speciale" :
                           c.source === "newsletter" ? "Newsletter" :
                           c.source === "evento" ? "Evento" : "Solo tag"}
                       </span>

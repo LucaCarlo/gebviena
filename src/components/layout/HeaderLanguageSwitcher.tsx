@@ -18,9 +18,11 @@ interface Language {
 
 interface Props {
   isScrolled: boolean;
+  /** Whitelist di codici lingua da mostrare nel dropdown. Se undefined → tutte le attive. */
+  allowedLangs?: string[];
 }
 
-export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
+export default function HeaderLanguageSwitcher({ isScrolled, allowedLangs }: Props) {
   const pathname = usePathname();
   const currentLang = useLang();
   // Prefetch the filter-slug cache so translateFilterParams is ready before
@@ -34,9 +36,15 @@ export default function HeaderLanguageSwitcher({ isScrolled }: Props) {
     fetch("/api/languages")
       .then((r) => r.json())
       .then((data) => {
-        if (data.success) setLanguages(data.data.filter((l: Language) => l.isActive));
+        if (data.success) {
+          const active = (data.data as Language[]).filter((l) => l.isActive);
+          const filtered = allowedLangs && allowedLangs.length > 0
+            ? active.filter((l) => allowedLangs.includes(l.code))
+            : active;
+          setLanguages(filtered);
+        }
       });
-  }, []);
+  }, [allowedLangs]);
 
   useEffect(() => {
     if (!open) return;

@@ -167,8 +167,11 @@ export async function POST(req: Request) {
     const headerLang = (() => {
       try { return (headers().get("x-gtv-lang") || "").toLowerCase(); } catch { return ""; }
     })();
-    const KNOWN = new Set(["it", "en", "de", "fr", "es"]);
-    const lang = KNOWN.has(bodyLang) ? bodyLang : (KNOWN.has(headerLang) ? headerLang : "it");
+    // Sulla landing svendita ammettiamo solo IT/FR. Qualunque altra lingua
+    // dal client (de/en/es/…) viene forzata a IT in fase di iscrizione.
+    const KNOWN = new Set(["it", "fr"]);
+    const candidate = bodyLang || headerLang;
+    const lang = KNOWN.has(candidate) ? candidate : "it";
 
     const { tagSlug, tagName, template, emailSubjectOverride, emailFooterJson, trEmailTitle, trEmailBody } = await resolveConfig(lang);
 

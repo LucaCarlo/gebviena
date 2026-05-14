@@ -17,7 +17,7 @@ interface UnifiedContact {
   country: string | null;
   website: string | null;
   notes: string | null;
-  source: string; // "newsletter" | "evento" | "entrambi"
+  source: string; // "newsletter" | "evento" | "entrambi" | "tag" | "landing_svendita"
   subscriberId: string | null;
   languageCode: string | null; // lingua dell'utente al momento dell'iscrizione
   createdAt: string;
@@ -153,8 +153,17 @@ export async function GET(req: Request) {
   // ─── 3. Tag enrichment in batch ───
   const allEmails = Array.from(contactMap.keys());
   const tagsMap = await getTagsForEmails(allEmails);
+  // Slug dei tag che indicano un'iscrizione via landing svendita: gli iscritti
+  // tramite quella landing finiscono nella tabella NewsletterSubscriber ma
+  // concettualmente vengono da una landing dedicata, non dall'iscrizione
+  // newsletter generica. Sovrascriviamo `source` in modo che la lista mostri
+  // "Vendita Speciale" invece di "Newsletter".
+  const SVENDITA_TAG_SLUGS = new Set(["accesso-svendita-gtv", "accesso-vendita-speciale-gtv"]);
   for (const [email, contact] of Array.from(contactMap.entries())) {
     contact.tags = tagsMap[email] || [];
+    if (contact.source === "newsletter" && contact.tags.some((t) => SVENDITA_TAG_SLUGS.has(t.slug))) {
+      contact.source = "landing_svendita";
+    }
   }
 
   // ─── 4. Apply filters (tag → invited → search) ───

@@ -185,7 +185,7 @@ export default function SvenditaTemplate({ row, translation }: SvenditaTemplateP
             <Link href={c.navLinkContatti || DEFAULTS.navLinkContatti} className="text-warm-600 hover:text-dark transition-colors">{c.navLabelContatti}</Link>
           </nav>
           <div className="text-dark">
-            <HeaderLanguageSwitcher isScrolled={true} />
+            <HeaderLanguageSwitcher isScrolled={true} allowedLangs={["it", "fr"]} />
           </div>
         </div>
       </header>
