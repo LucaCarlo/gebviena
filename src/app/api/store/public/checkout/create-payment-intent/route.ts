@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe, getStoreGeneralConfig } from "@/lib/stripe-config";
+import { computeShipping } from "@/lib/shipping-rates";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +21,6 @@ export const dynamic = "force-dynamic";
  *
  * Risposta: { clientSecret, orderId, orderNumber, amount, shippingCents, unboxingFeeCents, ... }
  */
-const FREE_SHIPPING_THRESHOLD_CENTS = 95000; // 950 EUR — sopra è gratis
-const UNBOXING_FEE_CENTS = 2000; // 20 EUR
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -81,6 +79,7 @@ export async function POST(req: NextRequest) {
 
     let subtotalCents = 0;
     let totalBoxes = 0;
+    let totalVolumeM3 = 0;
 
     for (const it of items) {
       const v = vmap.get(it.variantId);
@@ -101,6 +100,7 @@ export async function POST(req: NextRequest) {
       // Scatole: ceil(qty / productsPerBox)
       const perBox = Math.max(1, v.productsPerBox || 1);
       totalBoxes += Math.ceil(qty / perBox);
+      totalVolumeM3 += Number(v.volumeM3) * qty;
 
       const productName = v.storeProduct.translations[0]?.name || v.storeProduct.product.name;
       const attrSnapshot = v.attributes
@@ -121,28 +121,26 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Spedizione: tariffa flat per scatola, scalata per paese; gratuita sopra soglia
-    const country = (shippingAddress.country || "IT").toUpperCase();
-    const boxes = Math.max(1, totalBoxes);
-    let shippingCents = 0;
-    if (country === "IT") {
-      shippingCents = 1500 * boxes; // 15€ per scatola
-    } else if (["FR", "DE", "AT", "CH", "ES", "BE", "NL", "PT", "LU", "SI", "DK", "SE", "FI", "IE", "PL"].includes(country)) {
-      shippingCents = 4500 * boxes; // 45€ per scatola UE
-    } else {
-      shippingCents = 9000 * boxes; // 90€ per scatola RoW
-    }
-    // Surcharge per piano (oltre piano terra): +10€ a piano per ogni scatola, max 5
-    if (shippingFloor > 0) {
-      const floorSurcharge = Math.min(shippingFloor, 5) * 1000 * boxes;
-      shippingCents += floorSurcharge;
-    }
-    // Spedizione gratuita se subtotale >= soglia
-    if (subtotalCents >= FREE_SHIPPING_THRESHOLD_CENTS) {
-      shippingCents = 0;
-    }
-    // Fee disimballo e smaltimento
-    const unboxingFeeCents = withUnboxingService ? UNBOXING_FEE_CENTS : 0;
+    // ─── Spedizione: calcolo via helper centralizzato ───────────────────
+    // IT: tariffa flat per regione (lookup via codice provincia, fallback CAP).
+    // FR: per m³ (186€/m³, 300€/m³ Corsica CAP "20…").
+    // Altri paesi: 90€/scatola fallback.
+    // Soglia free shipping 950€ azzera SOLO la standard.
+    // Piano (consegna al piano) e disimballo restano additivi anche con free.
+    const shippingResult = computeShipping({
+      country: (shippingAddress.country || "IT").toUpperCase(),
+      postalCode: shippingAddress.postalCode || "",
+      province: shippingAddress.province || "",
+      totalVolumeM3,
+      totalBoxes,
+      subtotalCents,
+      shippingFloor,
+      withUnboxingService,
+    });
+    // shippingCents (sul DB Order) = standard + piano. unboxingFeeCents resta separato.
+    const shippingCents = shippingResult.standardShippingCents + shippingResult.floorDeliveryCents;
+    const unboxingFeeCents = shippingResult.unboxingFeeCents;
+    console.log("[create-payment-intent] shipping calc:", shippingResult.notes.join(" · "));
 
     const cfg = await getStoreGeneralConfig();
     // Prezzi IVA inclusa: tax è informativa, calcolata come "tax compresa"
@@ -227,6 +225,11 @@ export async function POST(req: NextRequest) {
         amountCents: totalCents,
         subtotalCents,
         shippingCents,
+        // Breakdown spedizione (per visualizzazione UI):
+        standardShippingCents: shippingResult.standardShippingCents,
+        floorDeliveryCents: shippingResult.floorDeliveryCents,
+        freeStandardShippingApplied: shippingResult.freeShippingApplied,
+        resolvedRegion: shippingResult.resolvedRegion,
         unboxingFeeCents,
         taxCents,
         currency: cfg.currency,

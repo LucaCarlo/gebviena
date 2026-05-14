@@ -20,6 +20,10 @@ interface IntentResponse {
   amountCents: number;
   subtotalCents: number;
   shippingCents: number;
+  standardShippingCents?: number;
+  floorDeliveryCents?: number;
+  freeStandardShippingApplied?: boolean;
+  resolvedRegion?: string | null;
   unboxingFeeCents: number;
   taxCents: number;
   currency: string;
@@ -27,7 +31,6 @@ interface IntentResponse {
 
 const FREE_SHIPPING_THRESHOLD_CENTS = 95000; // 950 EUR
 const SHIPPING_REMINDER_RANGE_CENTS = 20000; // mostra reminder se manca <= 200 EUR
-const UNBOXING_FEE_CENTS = 2000; // 20 EUR
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -213,9 +216,13 @@ export default function CheckoutPage() {
                     onChange={(e) => updateField("withUnboxingService", e.target.checked)}
                     className="mt-1"
                   />
-                  <span>Servizio disimballo e smaltimento imballi <span className="text-warm-500">(+{eur(UNBOXING_FEE_CENTS)})</span></span>
+                  <span>Servizio disimballo e smaltimento imballi <span className="text-warm-500">(+20€/m³)</span></span>
                 </label>
               </div>
+              <p className="text-[11px] text-warm-500 leading-[1.55]">
+                Consegna al piano (oltre piano terra): <strong>{form.country === "FR" ? "140€/m³" : "120€/m³"}</strong> aggiuntivo.
+                Servizi addizionali si applicano anche con spedizione gratuita.
+              </p>
 
               {/* Reminder spedizione gratuita (solo se mancano <= 200€ alla soglia) */}
               {(() => {
@@ -277,15 +284,25 @@ export default function CheckoutPage() {
           </div>
           <div className="border-t border-warm-200 pt-3 space-y-1.5 text-sm">
             <Row label="Subtotale" value={eur(intent?.subtotalCents ?? subtotalCents)} />
-            <Row
-              label="Spedizione"
-              value={intent ? (intent.shippingCents === 0 ? "Gratuita" : eur(intent.shippingCents)) : "—"}
-              subtle={!intent}
-            />
-            {intent && intent.unboxingFeeCents > 0 && (
-              <Row label="Disimballo e smaltimento" value={eur(intent.unboxingFeeCents)} />
+            {intent ? (
+              <>
+                <Row
+                  label={`Spedizione standard${intent.resolvedRegion ? ` · ${intent.resolvedRegion}` : ""}`}
+                  value={intent.freeStandardShippingApplied
+                    ? "Gratuita"
+                    : eur(intent.standardShippingCents ?? intent.shippingCents)}
+                />
+                {(intent.floorDeliveryCents ?? 0) > 0 && (
+                  <Row label="Consegna al piano" value={eur(intent.floorDeliveryCents!)} />
+                )}
+                {intent.unboxingFeeCents > 0 && (
+                  <Row label="Disimballo e smaltimento" value={eur(intent.unboxingFeeCents)} />
+                )}
+                <Row label="(IVA inclusa)" value={eur(intent.taxCents)} subtle />
+              </>
+            ) : (
+              <Row label="Spedizione" value="calcolata a checkout" subtle />
             )}
-            {intent && <Row label="(IVA inclusa)" value={eur(intent.taxCents)} subtle />}
           </div>
           <div className="border-t border-warm-200 pt-3 flex justify-between items-baseline">
             <span className="text-warm-900 font-medium">Totale</span>
