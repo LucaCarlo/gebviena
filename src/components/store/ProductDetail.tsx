@@ -334,28 +334,37 @@ export default function ProductDetail({ product }: { product: Product }) {
   // Set delle scelte attuali (per highlight nei button)
   const selectedAttrIds = new Set(Object.values(userChoices).filter(Boolean) as string[]);
 
-  // ─── Cascading filter ──────────────────────────────────────────────────
-  // Per ogni tipo T, calcola gli attributi DISPONIBILI dato le scelte attuali
-  // sugli ALTRI tipi: filtra le varianti che soddisfano gli altri attributi e
-  // unisce i loro valori di tipo T. Se zero valori disponibili → il gruppo T
-  // non viene renderizzato (es. "Imbottitura" sparisce quando Seduta=Legno).
+  // ─── Cascading filter (dependent selectors, ordine-based) ─────────────
+  // Per ogni tipo T (in posizione i di ATTR_TYPE_ORDER) i valori disponibili
+  // sono filtrati SOLO dalle scelte sui tipi PRECEDENTI (posizione < i).
+  // Questo garantisce che:
+  //   - i "fratelli" dello stesso tipo restano sempre cliccabili (puoi sempre
+  //     cambiare la Seduta da Imbottita a Legno);
+  //   - i tipi PIÙ AVANTI nell'ordine vengono filtrati dalle scelte fatte sui
+  //     tipi precedenti (es. "Imbottitura" appare/scompare in base a "Seduta").
+  // Se 0 valori disponibili → il gruppo non viene renderizzato.
   const availableByType = useMemo(() => {
     const result: Partial<Record<AttrType, Attribute[]>> = {};
-    for (const t of ATTR_TYPE_ORDER) {
-      // Tipi non variantizzati: tutti i valori sempre disponibili
+    for (let i = 0; i < ATTR_TYPE_ORDER.length; i++) {
+      const t = ATTR_TYPE_ORDER[i];
+      // Tipi non variantizzati: sempre tutti i valori
       if (nonVariantizedTypes.has(t)) {
         result[t] = attrByType[t] || [];
         continue;
       }
-      // Scelte sugli ALTRI tipi (per cui esiste almeno una variante con quel valore)
-      const otherChoices = Object.entries(userChoices)
-        .filter(([type, id]) => type !== t && id && !nonVariantizedTypes.has(type as AttrType))
-        .map(([, id]) => id as string);
-      // Filtra varianti compatibili
+      // Scelte sui tipi PRECEDENTI valorizzate
+      const upstreamChoices: string[] = [];
+      for (let j = 0; j < i; j++) {
+        const ut = ATTR_TYPE_ORDER[j];
+        if (nonVariantizedTypes.has(ut)) continue;
+        const id = userChoices[ut];
+        if (id) upstreamChoices.push(id);
+      }
+      // Varianti compatibili con le scelte upstream
       const compatibleVariants = product.variants.filter((v) =>
-        otherChoices.every((id) => v.attributes.some((a) => a.id === id))
+        upstreamChoices.every((id) => v.attributes.some((a) => a.id === id))
       );
-      // Raccogli valori di tipo T da quelle varianti (dedup)
+      // Raccogli i valori di tipo T (dedup per id)
       const seenIds = new Set<string>();
       const values: Attribute[] = [];
       for (const v of compatibleVariants) {
