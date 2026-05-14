@@ -1389,8 +1389,25 @@ model Customer {
   addresses Address[]
   orders    Order[]
   favorites CustomerFavorite[]
+  loginTokens CustomerLoginToken[]
 
   @@index([createdAt])
+}
+
+model CustomerLoginToken {
+  id            String    @id @default(cuid())
+  token         String    @unique @db.VarChar(64)
+  customerId    String
+  purpose       String    @default("magic_link") @db.VarChar(32) // magic_link | password_reset
+  usesRemaining Int       @default(3)
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  lastUsedAt    DateTime?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([expiresAt])
 }
 
 model CustomerFavorite {
