@@ -41,15 +41,17 @@ import * as fs from "fs";
 
 const prisma = new PrismaClient();
 
-// ─── Colonne Excel ─────────────────────────────────────────────────────
-const COL_NAME = "Nome commerciale";
-const COL_SKU = "SKU";
-const COL_DESC = "descrizione per rete vendita";
-const COL_PRICE_LIST = " prezzo listino ";
-const COL_PRICE_VAT = " prezzo ivato ";
-const COL_DISCOUNT = " Sconto ";
-const COL_PRICE_FINAL = " prezzo finale scontato ivato (22%) ";
-const COL_MAX_BOX = " MAX PRODOTTI 1 SCATOLA ";
+// ─── Colonne Excel — accettano anche varianti con/senza spazi e maiuscole ─
+// (XLSX a volte normalizza i header rimuovendo gli spazi quando rilegge un
+// file scritto da xlsx-js).
+const COL_NAME = ["Nome commerciale"];
+const COL_SKU = ["SKU"];
+const COL_DESC = ["descrizione per rete vendita"];
+const COL_PRICE_LIST = [" prezzo listino ", "prezzo listino"];
+const COL_PRICE_VAT = [" prezzo ivato ", "prezzo ivato"];
+const COL_DISCOUNT = [" Sconto ", "Sconto"];
+const COL_PRICE_FINAL = [" prezzo finale scontato ivato (22%) ", "prezzo finale scontato ivato (22%)"];
+const COL_MAX_BOX = [" MAX PRODOTTI 1 SCATOLA ", "MAX PRODOTTI 1 SCATOLA"];
 const COL_STRUTTURA = "Struttura";
 const COL_COLORE = "Colore";
 const COL_SEDUTA = "Seduta";
@@ -90,18 +92,33 @@ function readExcel(filePath: string): ExcelRow[] {
   const wb = XLSX.readFile(filePath);
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
+  // Picker: prova più header (l'xlsx writer a volte rimuove gli spazi)
+  const pick = (r: Record<string, unknown>, keys: string[]): unknown => {
+    for (const k of keys) {
+      if (r[k] !== undefined && r[k] !== null && r[k] !== "") return r[k];
+    }
+    // Fallback case-insensitive + trim
+    const wanted = keys.map((k) => k.trim().toLowerCase());
+    for (const realKey of Object.keys(r)) {
+      if (wanted.includes(realKey.trim().toLowerCase())) {
+        const v = r[realKey];
+        if (v !== undefined && v !== null && v !== "") return v;
+      }
+    }
+    return null;
+  };
   const num = (v: unknown) => (v !== null && v !== undefined && v !== "" ? Number(v) : null);
   const str = (v: unknown) => (v !== null && v !== undefined ? String(v).trim() : "");
   return rows
     .map((r) => ({
-      name: str(r[COL_NAME]),
-      sku: str(r[COL_SKU]).slice(0, 64),
-      description: str(r[COL_DESC]),
-      priceList: num(r[COL_PRICE_LIST]),
-      priceVat: num(r[COL_PRICE_VAT]),
-      discount: num(r[COL_DISCOUNT]),
-      priceFinal: num(r[COL_PRICE_FINAL]),
-      maxPerBox: num(r[COL_MAX_BOX]),
+      name: str(pick(r, COL_NAME)),
+      sku: str(pick(r, COL_SKU)).slice(0, 64),
+      description: str(pick(r, COL_DESC)),
+      priceList: num(pick(r, COL_PRICE_LIST)),
+      priceVat: num(pick(r, COL_PRICE_VAT)),
+      discount: num(pick(r, COL_DISCOUNT)),
+      priceFinal: num(pick(r, COL_PRICE_FINAL)),
+      maxPerBox: num(pick(r, COL_MAX_BOX)),
       struttura: str(r[COL_STRUTTURA]) || null,
       colore: str(r[COL_COLORE]) || null,
       seduta: str(r[COL_SEDUTA]) || null,
