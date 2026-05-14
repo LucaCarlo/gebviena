@@ -1,0 +1,345 @@
+/**
+ * Email transazionale post-pagamento + PDF di riepilogo.
+ *
+ * Esposta come `sendOrderConfirmationEmail(orderId)`. Chiamata dal webhook
+ * Stripe quando arriva `payment_intent.succeeded`, e dal fallback in
+ * `order-status` se il webhook non è configurato. Idempotenza basata sul
+ * flag Order.confirmationEmailSentAt (se aggiunto in futuro) — al momento
+ * affidata al caller (chiama solo quando lo status passa a PAID).
+ */
+import PDFDocument from "pdfkit";
+import { prisma } from "@/lib/prisma";
+import { sendMail } from "@/lib/mail";
+
+const eur = (cents: number) =>
+  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+
+const COMPANY = {
+  name: "Gebrüder Thonet Vienna",
+  legalName: "GTV Verlagsanstalt GmbH",
+  address: "Wienerstrasse 53, 1230 Wien, Austria",
+  vat: "ATU60853336",
+  email: "info@gebruederthonetvienna.com",
+  website: "gebruederthonetvienna.com",
+};
+
+interface OrderWithItems {
+  id: string;
+  orderNumber: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  language: string;
+  shippingAddress: string;
+  billingAddress: string;
+  subtotalCents: number;
+  shippingCents: number;
+  taxCents: number;
+  totalCents: number;
+  currency: string;
+  taxRateBp: number;
+  unboxingFeeCents: number;
+  shippingFloor: number | null;
+  customerNotes: string | null;
+  paidAt: Date | null;
+  createdAt: Date;
+  items: Array<{
+    productName: string;
+    variantName: string | null;
+    sku: string;
+    unitPriceCents: number;
+    quantity: number;
+    totalCents: number;
+    attributesSnapshot: string | null;
+  }>;
+}
+
+function parseAddress(json: string): {
+  street?: string; city?: string; province?: string; postalCode?: string; country?: string;
+} {
+  try { return JSON.parse(json); } catch { return {}; }
+}
+
+function parseAttrs(s: string | null): string {
+  if (!s) return "";
+  // attributesSnapshot è "TYPE:label|TYPE:label" — restituisco in chiaro.
+  return s.split("|").map((p) => p.split(":").slice(1).join(":")).filter(Boolean).join(" · ");
+}
+
+/** Costruisce il body HTML dell'email cliente. */
+function buildHtml(order: OrderWithItems): string {
+  const ship = parseAddress(order.shippingAddress);
+  const isFr = order.language === "fr";
+
+  const t = isFr ? {
+    title: "Confirmation de votre commande",
+    greeting: `Bonjour ${order.firstName},`,
+    intro: "Nous avons bien reçu votre commande, merci !",
+    orderNo: "Numéro de commande",
+    shipping: "Adresse de livraison",
+    summary: "Récapitulatif",
+    article: "Article",
+    qty: "Qté",
+    total: "Total",
+    subtotal: "Sous-total",
+    shippingFee: "Livraison",
+    unboxingFee: "Déballage et reprise emballages",
+    vat: "dont TVA",
+    grandTotal: "Total",
+    next: "Vous trouverez en pièce jointe le PDF récapitulatif. Nous vous contacterons pour confirmer le délai de livraison.",
+    questions: "Pour toute question, répondez simplement à cet email.",
+  } : {
+    title: "Conferma del tuo ordine",
+    greeting: `Ciao ${order.firstName},`,
+    intro: "Abbiamo ricevuto il tuo ordine, grazie!",
+    orderNo: "Numero ordine",
+    shipping: "Indirizzo di spedizione",
+    summary: "Riepilogo",
+    article: "Articolo",
+    qty: "Q.tà",
+    total: "Totale",
+    subtotal: "Subtotale",
+    shippingFee: "Spedizione",
+    unboxingFee: "Disimballo e smaltimento",
+    vat: "di cui IVA",
+    grandTotal: "Totale",
+    next: "In allegato trovi il PDF di riepilogo. Ti contatteremo per confermare i tempi di consegna.",
+    questions: "Per qualsiasi domanda puoi rispondere direttamente a questa email.",
+  };
+
+  const itemsRows = order.items.map((it) => {
+    const attrs = parseAttrs(it.attributesSnapshot);
+    return `
+      <tr>
+        <td style="padding:10px 12px;border-bottom:1px solid #eee;vertical-align:top;">
+          <div style="color:#222;font-weight:500;">${escape(it.productName)}</div>
+          ${attrs ? `<div style="color:#666;font-size:12px;margin-top:2px;">${escape(attrs)}</div>` : ""}
+          <div style="color:#999;font-size:11px;margin-top:2px;font-family:monospace;">SKU ${escape(it.sku)}</div>
+        </td>
+        <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:center;color:#555;">${it.quantity}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:right;color:#222;font-family:monospace;">${eur(it.totalCents)}</td>
+      </tr>`;
+  }).join("");
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${t.title}</title></head>
+<body style="margin:0;padding:0;background:#f7f5f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#333;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f5f0;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border:1px solid #e5e2db;">
+        <tr><td style="padding:32px 32px 16px 32px;border-bottom:1px solid #e5e2db;">
+          <div style="font-size:11px;color:#888;letter-spacing:0.2em;text-transform:uppercase;">${escape(COMPANY.name)}</div>
+          <h1 style="font-size:24px;font-weight:300;color:#222;margin:8px 0 0 0;letter-spacing:-0.01em;">${t.title}</h1>
+        </td></tr>
+
+        <tr><td style="padding:24px 32px;">
+          <p style="margin:0 0 8px 0;color:#333;">${t.greeting}</p>
+          <p style="margin:0 0 16px 0;color:#666;">${t.intro}</p>
+
+          <table cellpadding="0" cellspacing="0" style="margin:16px 0;font-size:13px;">
+            <tr>
+              <td style="padding:4px 16px 4px 0;color:#888;">${t.orderNo}</td>
+              <td style="padding:4px 0;color:#222;font-family:monospace;">${escape(order.orderNumber)}</td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding:0 32px 16px 32px;">
+          <div style="font-size:11px;color:#888;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;">${t.summary}</div>
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #ddd;font-size:13px;">
+            <thead>
+              <tr>
+                <th align="left" style="padding:8px 12px;color:#666;font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;">${t.article}</th>
+                <th style="padding:8px 12px;color:#666;font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;width:50px;">${t.qty}</th>
+                <th align="right" style="padding:8px 12px;color:#666;font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;width:90px;">${t.total}</th>
+              </tr>
+            </thead>
+            <tbody>${itemsRows}</tbody>
+          </table>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;font-size:13px;">
+            <tr><td align="right" style="padding:4px 12px;color:#666;">${t.subtotal}</td><td align="right" style="padding:4px 0;color:#333;font-family:monospace;width:90px;">${eur(order.subtotalCents)}</td></tr>
+            <tr><td align="right" style="padding:4px 12px;color:#666;">${t.shippingFee}</td><td align="right" style="padding:4px 0;color:#333;font-family:monospace;">${order.shippingCents === 0 ? (isFr ? "Offerte" : "Gratuita") : eur(order.shippingCents)}</td></tr>
+            ${order.unboxingFeeCents > 0 ? `<tr><td align="right" style="padding:4px 12px;color:#666;">${t.unboxingFee}</td><td align="right" style="padding:4px 0;color:#333;font-family:monospace;">${eur(order.unboxingFeeCents)}</td></tr>` : ""}
+            <tr><td align="right" style="padding:4px 12px;color:#999;font-size:11px;">${t.vat} (${(order.taxRateBp / 100).toFixed(0)}%)</td><td align="right" style="padding:4px 0;color:#999;font-family:monospace;font-size:11px;">${eur(order.taxCents)}</td></tr>
+            <tr><td align="right" style="padding:12px 12px 4px 12px;color:#222;font-weight:600;border-top:1px solid #ddd;">${t.grandTotal}</td><td align="right" style="padding:12px 0 4px 0;color:#222;font-family:monospace;font-weight:600;border-top:1px solid #ddd;font-size:16px;">${eur(order.totalCents)}</td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding:0 32px 24px 32px;">
+          <div style="font-size:11px;color:#888;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;">${t.shipping}</div>
+          <div style="font-size:13px;color:#333;line-height:1.6;">
+            ${escape(order.firstName)} ${escape(order.lastName)}<br>
+            ${escape(ship.street || "")}<br>
+            ${escape(ship.postalCode || "")} ${escape(ship.city || "")}${ship.province ? " (" + escape(ship.province) + ")" : ""}<br>
+            ${escape(ship.country || "")}
+            ${order.phone ? `<br>${escape(order.phone)}` : ""}
+          </div>
+        </td></tr>
+
+        <tr><td style="padding:0 32px 32px 32px;">
+          <p style="margin:0 0 12px 0;color:#666;font-size:13px;line-height:1.6;">${t.next}</p>
+          <p style="margin:0;color:#666;font-size:13px;line-height:1.6;">${t.questions}</p>
+        </td></tr>
+
+        <tr><td style="padding:16px 32px;background:#faf8f3;border-top:1px solid #e5e2db;font-size:11px;color:#888;line-height:1.6;">
+          <strong style="color:#555;">${escape(COMPANY.legalName)}</strong><br>
+          ${escape(COMPANY.address)}<br>
+          VAT ${escape(COMPANY.vat)} · <a href="https://${COMPANY.website}" style="color:#555;text-decoration:none;">${escape(COMPANY.website)}</a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+function escape(s: string): string {
+  return String(s ?? "").replace(/[&<>"]/g, (c) =>
+    c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&quot;"
+  );
+}
+
+/** Genera il PDF di riepilogo come Buffer. */
+async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
+  return new Promise<Buffer>((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: "A4", margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on("data", (c: Buffer) => chunks.push(c));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const isFr = order.language === "fr";
+      const t = isFr
+        ? { title: "Récapitulatif de commande", date: "Date", orderNo: "Commande", shipTo: "Livraison à",
+            article: "Article", sku: "SKU", qty: "Qté", unit: "Prix unit.", total: "Total",
+            subtotal: "Sous-total", shipping: "Livraison", unboxing: "Déballage", vat: "dont TVA", grand: "TOTAL" }
+        : { title: "Riepilogo ordine", date: "Data", orderNo: "Ordine", shipTo: "Spedizione a",
+            article: "Articolo", sku: "SKU", qty: "Q.tà", unit: "Prezzo un.", total: "Totale",
+            subtotal: "Subtotale", shipping: "Spedizione", unboxing: "Disimballo", vat: "di cui IVA", grand: "TOTALE" };
+
+      // Header
+      doc.fontSize(9).fillColor("#888").text(COMPANY.name.toUpperCase(), 50, 50, { characterSpacing: 1.5 });
+      doc.fontSize(18).fillColor("#222").text(t.title, 50, 70);
+
+      doc.fontSize(9).fillColor("#666");
+      const headerY = 110;
+      doc.text(`${t.orderNo}:`, 50, headerY);
+      doc.fillColor("#222").text(order.orderNumber, 110, headerY);
+      doc.fillColor("#666").text(`${t.date}:`, 320, headerY);
+      doc.fillColor("#222").text(
+        (order.paidAt || order.createdAt).toLocaleDateString(isFr ? "fr-FR" : "it-IT", { day: "2-digit", month: "long", year: "numeric" }),
+        360, headerY
+      );
+
+      // Indirizzo di spedizione
+      const ship = parseAddress(order.shippingAddress);
+      let y = 150;
+      doc.fontSize(9).fillColor("#888").text(t.shipTo, 50, y);
+      y += 14;
+      doc.fontSize(10).fillColor("#333");
+      doc.text(`${order.firstName} ${order.lastName}`, 50, y);
+      y += 14;
+      doc.text(ship.street || "", 50, y);
+      y += 14;
+      doc.text(`${ship.postalCode || ""} ${ship.city || ""}${ship.province ? " (" + ship.province + ")" : ""}`, 50, y);
+      y += 14;
+      doc.text(ship.country || "", 50, y);
+      if (order.phone) { y += 14; doc.text(order.phone, 50, y); }
+
+      // Tabella items
+      y += 30;
+      const colX = { name: 50, sku: 270, qty: 360, unit: 400, total: 480 };
+      doc.fontSize(9).fillColor("#666");
+      doc.text(t.article, colX.name, y);
+      doc.text(t.sku, colX.sku, y);
+      doc.text(t.qty, colX.qty, y, { width: 30, align: "center" });
+      doc.text(t.unit, colX.unit, y, { width: 70, align: "right" });
+      doc.text(t.total, colX.total, y, { width: 70, align: "right" });
+      y += 14;
+      doc.moveTo(50, y).lineTo(550, y).strokeColor("#ddd").stroke();
+      y += 8;
+
+      doc.fontSize(9).fillColor("#222");
+      for (const it of order.items) {
+        const attrs = parseAttrs(it.attributesSnapshot);
+        const rowH = attrs ? 28 : 18;
+        if (y + rowH > 720) { doc.addPage(); y = 60; }
+        doc.fillColor("#222").text(it.productName, colX.name, y, { width: 210 });
+        if (attrs) doc.fontSize(8).fillColor("#888").text(attrs, colX.name, y + 12, { width: 210 });
+        doc.fontSize(8).fillColor("#666").text(it.sku, colX.sku, y, { width: 80 });
+        doc.fontSize(9).fillColor("#333").text(String(it.quantity), colX.qty, y, { width: 30, align: "center" });
+        doc.text(eur(it.unitPriceCents), colX.unit, y, { width: 70, align: "right" });
+        doc.fillColor("#222").text(eur(it.totalCents), colX.total, y, { width: 70, align: "right" });
+        y += rowH;
+        doc.moveTo(50, y).lineTo(550, y).strokeColor("#eee").stroke();
+        y += 6;
+      }
+
+      // Totali
+      y += 12;
+      const drawTotal = (label: string, value: string, bold = false) => {
+        doc.fontSize(bold ? 11 : 9).fillColor(bold ? "#222" : "#666").text(label, 350, y, { width: 130, align: "right" });
+        doc.fillColor("#222").text(value, colX.total, y, { width: 70, align: "right" });
+        y += bold ? 20 : 14;
+      };
+      drawTotal(t.subtotal, eur(order.subtotalCents));
+      drawTotal(t.shipping, order.shippingCents === 0 ? (isFr ? "Offerte" : "Gratuita") : eur(order.shippingCents));
+      if (order.unboxingFeeCents > 0) drawTotal(t.unboxing, eur(order.unboxingFeeCents));
+      drawTotal(`${t.vat} (${(order.taxRateBp / 100).toFixed(0)}%)`, eur(order.taxCents));
+      y += 4;
+      doc.moveTo(350, y).lineTo(550, y).strokeColor("#222").stroke();
+      y += 6;
+      drawTotal(t.grand, eur(order.totalCents), true);
+
+      // Footer
+      doc.fontSize(8).fillColor("#888").text(
+        `${COMPANY.legalName} · ${COMPANY.address} · VAT ${COMPANY.vat} · ${COMPANY.website}`,
+        50, 780, { width: 500, align: "center" }
+      );
+
+      doc.end();
+    } catch (e) { reject(e); }
+  });
+}
+
+/**
+ * Invia conferma ordine al cliente (+ BCC a info@). Idempotente lato caller.
+ * Ritorna `true` se Brevo/SMTP risponde ok.
+ */
+export async function sendOrderConfirmationEmail(orderId: string): Promise<boolean> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  });
+  if (!order) {
+    console.error("[order-email] order not found:", orderId);
+    return false;
+  }
+
+  const html = buildHtml(order as OrderWithItems);
+  const pdf = await buildPdfBuffer(order as OrderWithItems);
+
+  const isFr = order.language === "fr";
+  const subject = isFr
+    ? `Confirmation de commande ${order.orderNumber} — ${COMPANY.name}`
+    : `Conferma ordine ${order.orderNumber} — ${COMPANY.name}`;
+
+  const ok = await sendMail(order.email, subject, html, {
+    fromName: COMPANY.name,
+    replyTo: COMPANY.email,
+    bcc: COMPANY.email,
+    attachments: [{
+      filename: `${order.orderNumber}.pdf`,
+      content: pdf,
+      contentType: "application/pdf",
+    }],
+  });
+
+  if (ok) {
+    console.log("[order-email] sent for order", order.orderNumber, "to", order.email);
+  } else {
+    console.error("[order-email] FAILED for order", order.orderNumber, "to", order.email);
+  }
+  return ok;
+}

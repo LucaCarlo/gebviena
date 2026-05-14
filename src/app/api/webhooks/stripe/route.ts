@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe, getStripeConfig } from "@/lib/stripe-config";
+import { sendOrderConfirmationEmail } from "@/lib/order-email";
 import type Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +43,10 @@ export async function POST(req: NextRequest) {
         }
         if (order.status === "PAID") break; // idempotenza
 
+        let promoted = false;
         await prisma.$transaction(async (tx) => {
+          const fresh = await tx.order.findUnique({ where: { id: order.id }, select: { status: true } });
+          if (fresh?.status !== "PENDING") return; // race con order-status fallback
           await tx.order.update({
             where: { id: order.id },
             data: { status: "PAID", paidAt: new Date() },
@@ -58,8 +62,17 @@ export async function POST(req: NextRequest) {
               });
             }
           }
+          promoted = true;
         });
-        console.log("[stripe-webhook] order PAID:", order.orderNumber);
+        console.log("[stripe-webhook] order PAID:", order.orderNumber, promoted ? "(promoted)" : "(already paid)");
+
+        // Conferma ordine: HTML personalizzato + PDF allegato. Solo se è
+        // questo path che ha effettivamente promosso (no doppia email).
+        if (promoted) {
+          sendOrderConfirmationEmail(order.id).catch((err) => {
+            console.error("[stripe-webhook] sendOrderConfirmationEmail error:", err);
+          });
+        }
         break;
       }
 

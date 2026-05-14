@@ -8,9 +8,24 @@ async function getSmtpConfig() {
   return config;
 }
 
+export interface MailAttachment {
+  /** Nome file mostrato all'utente (es. "ordine-GTV-123.pdf"). */
+  filename: string;
+  /** Contenuto del file. */
+  content: Buffer;
+  /** MIME type. Default "application/octet-stream". */
+  contentType?: string;
+}
+
 interface SendMailOptions {
   fromName?: string;
   fromEmail?: string;
+  /** BCC (per copia interna). */
+  bcc?: string;
+  /** Reply-to esplicito. Se non passato deduce da fromEmail. */
+  replyTo?: string;
+  /** Allegati. Supportato sia da Brevo HTTP che da nodemailer. */
+  attachments?: MailAttachment[];
 }
 
 export async function sendMail(to: string, subject: string, html: string, options?: SendMailOptions): Promise<boolean> {
@@ -22,17 +37,25 @@ export async function sendMail(to: string, subject: string, html: string, option
 
     // Prefer Brevo HTTP API
     if (cfg.brevo_api_key) {
-      const body = JSON.stringify({
+      const payload: Record<string, unknown> = {
         sender: { name: fromName, email: fromEmail },
         to: [{ email: to }],
         subject,
         htmlContent: html,
-      });
+      };
+      if (options?.bcc) payload.bcc = [{ email: options.bcc }];
+      if (options?.replyTo) payload.replyTo = { email: options.replyTo };
+      if (options?.attachments?.length) {
+        payload.attachment = options.attachments.map((a) => ({
+          name: a.filename,
+          content: a.content.toString("base64"),
+        }));
+      }
 
       const res = await fetch("https://api.brevo.com/v3/smtp/email", {
         method: "POST",
         headers: { "api-key": cfg.brevo_api_key, "Content-Type": "application/json" },
-        body,
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -61,10 +84,17 @@ export async function sendMail(to: string, subject: string, html: string, option
 
     await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
-      replyTo: options?.fromEmail ? `"${options.fromName || fromName}" <${options.fromEmail}>` : undefined,
+      replyTo: options?.replyTo
+        || (options?.fromEmail ? `"${options.fromName || fromName}" <${options.fromEmail}>` : undefined),
       to,
+      bcc: options?.bcc,
       subject,
       html,
+      attachments: options?.attachments?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        contentType: a.contentType || "application/octet-stream",
+      })),
     });
     return true;
   } catch (e) {

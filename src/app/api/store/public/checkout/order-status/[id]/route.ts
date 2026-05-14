@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe-config";
+import { sendOrderConfirmationEmail } from "@/lib/order-email";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       const pi = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId);
 
       if (pi.status === "succeeded") {
+        let promoted = false;
         await prisma.$transaction(async (tx) => {
           const fresh = await tx.order.findUnique({ where: { id: order.id }, select: { status: true } });
           if (fresh?.status !== "PENDING") return; // race con webhook → ok
@@ -55,8 +57,16 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
               });
             }
           }
+          promoted = true;
         });
         order.status = "PAID";
+        // Email post-pagamento solo se questo path ha effettivamente fatto la
+        // promozione (race con webhook: l'altro path già la manda).
+        if (promoted) {
+          sendOrderConfirmationEmail(order.id).catch((err) => {
+            console.error("[order-status] sendOrderConfirmationEmail error:", err);
+          });
+        }
       } else if (pi.status === "canceled" || pi.status === "requires_payment_method") {
         // requires_payment_method dopo un decline definitivo → annulla
         if (pi.last_payment_error) {
