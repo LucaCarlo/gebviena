@@ -516,8 +516,13 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
           )}
 
-          {product.shortDescription && (
-            <p className="mt-5 text-[15px] text-warm-700 leading-[1.6]">{product.shortDescription}</p>
+          {/* Descrizione breve: la variante selezionata può avere una description
+              propria (varia per variante). Se presente la mostro al posto della
+              shortDescription del prodotto. */}
+          {(selectedVariant?.description || product.shortDescription) && (
+            <p className="mt-5 text-[15px] text-warm-700 leading-[1.6]">
+              {selectedVariant?.description || product.shortDescription}
+            </p>
           )}
 
           {/* Variant selector — attributi cliccabili (soft-selection) */}
