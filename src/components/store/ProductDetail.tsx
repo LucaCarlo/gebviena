@@ -242,57 +242,83 @@ export default function ProductDetail({ product }: { product: Product }) {
   // visibile come "richiesta di configurazione".
   const [userChoices, setUserChoices] = useState<Partial<Record<AttrType, string | null>>>({});
 
-  // Inizializza/aggiorna userChoices in base alla variante selezionata.
-  // Per ogni tipo, se la variante ha un solo valore di quel tipo, lo selezioniamo
-  // come default. Se la variante ha più valori dello stesso tipo (es. tutte le
-  // strutture disponibili), lasciamo null (l'utente deve scegliere).
+  // Inizializza userChoices in base alla variante selezionata: per ogni tipo
+  // prendiamo il valore della variante (se presente). I tipi non presenti sulla
+  // variante restano null (l'utente li sceglie liberamente come opzione custom).
   useEffect(() => {
     if (!selectedVariant) return;
-    const byType: Partial<Record<AttrType, string[]>> = {};
+    const next: Partial<Record<AttrType, string | null>> = {};
     for (const a of selectedVariant.attributes) {
-      const list = byType[a.type] || [];
-      list.push(a.id);
-      byType[a.type] = list;
+      // Per il tipo di un attributo presente più volte, l'ultima vince.
+      // In pratica le varianti ben formate hanno max 1 valore per tipo.
+      next[a.type] = a.id;
     }
-    setUserChoices((prev) => {
-      const next: Partial<Record<AttrType, string | null>> = { ...prev };
-      for (const t of ATTR_TYPE_ORDER) {
-        const list = byType[t];
-        if (!list || list.length === 0) {
-          // Tipo non presente sulla variante → mantieni eventuale scelta utente
-          continue;
-        }
-        if (list.length === 1) {
-          // Default automatico: unico valore
-          if (!next[t]) next[t] = list[0];
-        } else {
-          // Più valori: se la scelta corrente non è tra questi, resetta a null
-          if (next[t] && !list.includes(next[t]!)) next[t] = null;
-        }
-      }
-      return next;
-    });
+    setUserChoices(next);
   }, [selectedVariant?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const selectAttr = (type: AttrType, attrId: string) => {
-    setUserChoices((prev) => ({
-      ...prev,
-      [type]: prev[type] === attrId ? null : attrId,
-    }));
+  // Helper: trova la variante che meglio soddisfa la combinazione di attributi
+  // desiderata. Preferisce un match ESATTO (tutti gli id presenti). Se non esiste,
+  // sceglie quella che contiene la maggior parte degli id voluti, dando priorità
+  // all'attributo appena cliccato.
+  const findBestVariant = (intended: Partial<Record<AttrType, string | null>>, priorityType: AttrType, priorityId: string | null) => {
+    const wantedIds = Object.values(intended).filter((v): v is string => !!v);
+    if (wantedIds.length === 0) return null;
+    // 1. Match esatto: variante che contiene TUTTI gli id
+    const exact = product.variants.find((v) => wantedIds.every((id) => v.attributes.some((a) => a.id === id)));
+    if (exact) return exact;
+    // 2. Match parziale: deve contenere ALMENO l'attributo prioritario (se valorizzato)
+    const candidates = priorityId
+      ? product.variants.filter((v) => v.attributes.some((a) => a.id === priorityId))
+      : product.variants.slice();
+    if (candidates.length === 0) return null;
+    let best: Variant | null = null;
+    let bestScore = -1;
+    for (const v of candidates) {
+      const score = wantedIds.filter((id) => v.attributes.some((a) => a.id === id)).length;
+      if (score > bestScore) { bestScore = score; best = v; }
+    }
+    return best;
   };
 
-  // Dopo che userChoices cambia, cerca la variante migliore.
-  useEffect(() => {
-    const chosen = Object.values(userChoices).filter((v): v is string => !!v);
-    if (chosen.length === 0) return;
-    const candidates = product.variants.filter((v) =>
-      chosen.every((id) => v.attributes.some((a) => a.id === id))
-    );
-    if (candidates.length === 0) return; // niente match → lasciamo la variante corrente
-    // Preferisci match più specifico: variante con meno attributi extra
-    const best = candidates.slice().sort((a, b) => a.attributes.length - b.attributes.length)[0];
-    if (best.id !== selectedVariantId) setSelectedVariantId(best.id);
-  }, [userChoices, product.variants, selectedVariantId]);
+  const selectAttr = (type: AttrType, attrId: string) => {
+    setUserChoices((prev) => {
+      // Toggle: stesso valore → deseleziona, altrimenti seleziona
+      const newType = prev[type] === attrId ? null : attrId;
+      const intended: Partial<Record<AttrType, string | null>> = { ...prev, [type]: newType };
+
+      // Cerca la variante migliore data l'intenzione
+      const best = findBestVariant(intended, type, newType);
+      if (!best) {
+        // Nessuna variante: lasciamo l'intenzione così com'è (config su richiesta)
+        return intended;
+      }
+
+      // Cambia variante (solo se diversa)
+      if (best.id !== selectedVariantId) {
+        setSelectedVariantId(best.id);
+      }
+
+      // Riconcilia userChoices: SOLO valori che la variante effettivamente ha.
+      // Per gli altri tipi che l'utente aveva selezionato ma non sono sulla
+      // variante → li deseleziono per non avere "fantasmi". Per i tipi presenti
+      // sulla variante ma non scelti dall'utente → li pre-seleziono.
+      const reconciled: Partial<Record<AttrType, string | null>> = {};
+      for (const a of best.attributes) {
+        reconciled[a.type] = a.id;
+      }
+      // Mantieni la scelta utente per attributi NON variantizzati (cioè tipi che
+      // non compaiono su NESSUNA variante — usati come "config richiesta")
+      for (const t of ATTR_TYPE_ORDER) {
+        if (reconciled[t]) continue;
+        const userChoice = intended[t];
+        if (!userChoice) continue;
+        // È un attributo davvero esistente in qualche variante?
+        const isOnAnyVariant = product.variants.some((v) => v.attributes.some((a) => a.id === userChoice));
+        if (!isOnAnyVariant) reconciled[t] = userChoice;
+      }
+      return reconciled;
+    });
+  };
 
   // Set delle scelte attuali (per highlight nei button)
   const selectedAttrIds = new Set(Object.values(userChoices).filter(Boolean) as string[]);
