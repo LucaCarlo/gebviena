@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe, getStoreGeneralConfig } from "@/lib/stripe-config";
 import { computeShipping } from "@/lib/shipping-rates";
+import { marketFromCountry, resolveVariantPrice, vatRateBp } from "@/lib/store-pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,9 @@ export async function POST(req: NextRequest) {
     if (!shippingAddress?.street || !shippingAddress?.city || !shippingAddress?.postalCode || !shippingAddress?.country) {
       return NextResponse.json({ success: false, error: "Indirizzo di spedizione incompleto" }, { status: 400 });
     }
+
+    // Mercato = country di spedizione (FR usa prezzi FR + IVA 20%, IT usa IT + 22%).
+    const market = marketFromCountry(shippingAddress.country);
 
     // Carica le varianti dal DB per verificare prezzi (NEVER trust client)
     const variantIds = items.map((i) => i.variantId);
@@ -91,10 +95,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: `Stock insufficiente per ${v.storeProduct.product.name}` }, { status: 400 });
       }
       const qty = Math.max(1, Math.floor(it.quantity));
-      // Prezzo effettivo: sale se presente e < normale, altrimenti normale
-      const unitPrice = v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents
-        ? v.salePriceCents
-        : v.priceCents;
+      // Prezzo per mercato (FR cade su IT se non valorizzato; sale se < base).
+      const resolved = resolveVariantPrice(v, market);
+      const unitPrice = resolved.effectivePriceCents;
       const lineTotal = unitPrice * qty;
       subtotalCents += lineTotal;
       // Scatole: ceil(qty / productsPerBox)
@@ -143,9 +146,11 @@ export async function POST(req: NextRequest) {
     console.log("[create-payment-intent] shipping calc:", shippingResult.notes.join(" · "));
 
     const cfg = await getStoreGeneralConfig();
-    // Prezzi IVA inclusa: tax è informativa, calcolata come "tax compresa"
-    const taxRateBp = cfg.taxRateBp;
-    const taxCents = Math.round((subtotalCents * taxRateBp) / (10000 + taxRateBp));
+    // Prezzi IVA inclusa: la tax è informativa, calcolata come "tax compresa"
+    // (back-out dal lordo). L'aliquota dipende dal mercato di spedizione
+    // (IT 22%, FR 20%) — il prezzo che il cliente vede è già "ivato giusto".
+    const taxRateBpMarket = vatRateBp(market);
+    const taxCents = Math.round((subtotalCents * taxRateBpMarket) / (10000 + taxRateBpMarket));
     const totalCents = subtotalCents + shippingCents + unboxingFeeCents;
 
     // Genera orderNumber
@@ -208,7 +213,7 @@ export async function POST(req: NextRequest) {
         taxCents,
         totalCents,
         currency: cfg.currency,
-        taxRateBp,
+        taxRateBp: taxRateBpMarket,
         paymentProvider: "stripe",
         stripePaymentIntentId: paymentIntent.id,
         customerNotes: body.customerNotes || null,

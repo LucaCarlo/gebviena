@@ -160,6 +160,8 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
             listPriceCents: v.listPriceCents,
             priceCents: v.priceCents,
             salePriceCents: v.salePriceCents,
+            priceFrCents: v.priceFrCents,
+            salePriceFrCents: v.salePriceFrCents,
             priceWithVatCents: v.priceWithVatCents,
             stockQty: v.stockQty,
             trackStock: v.trackStock,

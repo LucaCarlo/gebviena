@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeShipping, FREE_STANDARD_SHIPPING_THRESHOLD_CENTS } from "@/lib/shipping-rates";
+import { marketFromCountry, resolveVariantPrice } from "@/lib/store-pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -45,10 +46,15 @@ export async function POST(req: NextRequest) {
     const variantIds = items.map((i) => i.variantId);
     const variants = await prisma.storeProductVariant.findMany({
       where: { id: { in: variantIds }, isPublished: true },
-      select: { id: true, priceCents: true, salePriceCents: true, volumeM3: true, storeProduct: { select: { productsPerBox: true } } },
+      select: {
+        id: true, priceCents: true, salePriceCents: true,
+        priceFrCents: true, salePriceFrCents: true,
+        volumeM3: true, storeProduct: { select: { productsPerBox: true } },
+      },
     });
     const vmap = new Map(variants.map((v) => [v.id, v]));
 
+    const market = marketFromCountry(country);
     let subtotalCents = 0;
     let totalBoxes = 0;
     let totalVolumeM3 = 0;
@@ -57,9 +63,7 @@ export async function POST(req: NextRequest) {
       const v = vmap.get(it.variantId);
       if (!v) continue; // ignora silenziosamente: è solo un quote
       const qty = Math.max(1, Math.floor(it.quantity));
-      const unitPrice = v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents
-        ? v.salePriceCents
-        : v.priceCents;
+      const unitPrice = resolveVariantPrice(v, market).effectivePriceCents;
       subtotalCents += unitPrice * qty;
       const perBox = Math.max(1, v.storeProduct?.productsPerBox || 1);
       totalBoxes += Math.ceil(qty / perBox);

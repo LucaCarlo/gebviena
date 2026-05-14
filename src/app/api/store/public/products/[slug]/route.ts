@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStoreGeneralConfig } from "@/lib/stripe-config";
+import { marketFromLang, resolveVariantPrice } from "@/lib/store-pricing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -52,7 +53,9 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
         where: { isPublished: true },
         orderBy: [{ isDefault: "desc" }, { sortOrder: "asc" }],
         select: {
-          id: true, sku: true, priceCents: true, salePriceCents: true, stockQty: true, trackStock: true,
+          id: true, sku: true, priceCents: true, salePriceCents: true,
+          priceFrCents: true, salePriceFrCents: true,
+          stockQty: true, trackStock: true,
           volumeM3: true, weightKg: true, shippingClass: true,
           coverImage: true, galleryImages: true, isDefault: true,
           dimensionBlockId: true, dimensionValues: true,
@@ -155,11 +158,22 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
           }
         : null,
       relatedProjects,
-      variants: sp.variants.map((v) => ({
+      variants: sp.variants.map((v) => {
+        const market = marketFromLang(lang);
+        const resolved = resolveVariantPrice(v, market);
+        return {
         id: v.id,
         sku: v.sku,
+        // Prezzi raw (entrambi i mercati) — utili al client per debug / switch lingua
         priceCents: v.priceCents,
         salePriceCents: v.salePriceCents,
+        priceFrCents: v.priceFrCents,
+        salePriceFrCents: v.salePriceFrCents,
+        // Prezzi risolti per il MERCATO corrente (quelli da mostrare nel frontend):
+        marketBasePriceCents: resolved.basePriceCents,
+        marketSalePriceCents: resolved.salePriceCents,
+        marketEffectivePriceCents: resolved.effectivePriceCents,
+        market,
         stockQty: v.stockQty,
         trackStock: v.trackStock,
         volumeM3: Number(v.volumeM3),
@@ -195,7 +209,8 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
               || a.value.code,
           };
         }),
-      })),
+      };
+    }),
     },
   });
 }

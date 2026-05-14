@@ -15,6 +15,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const listPriceCents = body.listPriceCents == null ? null : (Number.isFinite(body.listPriceCents) ? Math.trunc(body.listPriceCents) : null);
     const priceCents = Number.isFinite(body.priceCents) ? Math.trunc(body.priceCents) : 0;
     const salePriceCents = body.salePriceCents == null ? null : (Number.isFinite(body.salePriceCents) ? Math.trunc(body.salePriceCents) : null);
+    const priceFrCents = body.priceFrCents == null ? null : (Number.isFinite(body.priceFrCents) ? Math.trunc(body.priceFrCents) : null);
+    const salePriceFrCents = body.salePriceFrCents == null ? null : (Number.isFinite(body.salePriceFrCents) ? Math.trunc(body.salePriceFrCents) : null);
     const priceWithVatCents = body.priceWithVatCents == null ? null : (Number.isFinite(body.priceWithVatCents) ? Math.trunc(body.priceWithVatCents) : null);
     const stockQty = body.stockQty === null || body.stockQty === undefined ? null : Math.max(0, Math.trunc(Number(body.stockQty)));
     const trackStock = body.trackStock === true;
@@ -53,6 +55,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           listPriceCents,
           priceCents,
           salePriceCents,
+          priceFrCents,
+          salePriceFrCents,
           priceWithVatCents,
           stockQty,
           trackStock,

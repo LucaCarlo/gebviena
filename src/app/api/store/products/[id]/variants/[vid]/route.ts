@@ -22,6 +22,8 @@ export async function PUT(
     if (body.listPriceCents !== undefined) data.listPriceCents = body.listPriceCents === null ? null : Math.trunc(Number(body.listPriceCents));
     if (body.priceCents !== undefined) data.priceCents = Math.trunc(Number(body.priceCents));
     if (body.salePriceCents !== undefined) data.salePriceCents = body.salePriceCents === null ? null : Math.trunc(Number(body.salePriceCents));
+    if (body.priceFrCents !== undefined) data.priceFrCents = body.priceFrCents === null ? null : Math.trunc(Number(body.priceFrCents));
+    if (body.salePriceFrCents !== undefined) data.salePriceFrCents = body.salePriceFrCents === null ? null : Math.trunc(Number(body.salePriceFrCents));
     if (body.priceWithVatCents !== undefined) data.priceWithVatCents = body.priceWithVatCents === null ? null : Math.trunc(Number(body.priceWithVatCents));
     if (body.stockQty !== undefined) data.stockQty = body.stockQty === null ? null : Math.max(0, Math.trunc(Number(body.stockQty)));
     if (body.trackStock !== undefined) data.trackStock = body.trackStock === true;

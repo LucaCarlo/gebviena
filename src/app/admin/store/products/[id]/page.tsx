@@ -51,6 +51,8 @@ interface Variant {
   listPriceCents: number | null;
   priceCents: number;
   salePriceCents: number | null;
+  priceFrCents: number | null;
+  salePriceFrCents: number | null;
   priceWithVatCents: number | null;
   stockQty: number | null;
   trackStock: boolean;
@@ -631,6 +633,8 @@ function VariantsTab({
     listPriceCents: null,
     priceCents: 0,
     salePriceCents: null,
+    priceFrCents: null,
+    salePriceFrCents: null,
     priceWithVatCents: null,
     stockQty: null,
     trackStock: false,
@@ -855,13 +859,18 @@ function VariantModal({
             </div>
           </div>
 
-          {/* Prezzi: 3 campi chiari */}
+          {/* Prezzi: IT + FR */}
           <div className="bg-warm-50 rounded-lg p-4 space-y-4">
-            <div className="text-xs font-medium text-warm-600 uppercase tracking-wider">Prezzi (in EUR)</div>
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-warm-600 uppercase tracking-wider">Prezzi (in EUR)</div>
+              <div className="text-[10px] text-warm-500">Listino senza IVA è condiviso. IT al 22%, FR al 20%.</div>
+            </div>
+
+            {/* Riga 1: Listino (condiviso) */}
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-medium text-warm-600 mb-1">
-                  Listino <span className="text-warm-400 font-normal">(no IVA)</span>
+                  Listino <span className="text-warm-400 font-normal">(no IVA · condiviso IT/FR)</span>
                 </label>
                 <input
                   type="number"
@@ -877,44 +886,111 @@ function VariantModal({
                 />
                 <p className="text-[10px] text-warm-500 mt-1">Prezzo di catalogo senza IVA.</p>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1">
-                  IVA inclusa <span className="text-warm-400 font-normal">★</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={(v.priceCents / 100).toFixed(2)}
-                  onChange={(e) => update({ priceCents: Math.round(Number(e.target.value) * 100) || 0 })}
-                  className="w-full px-3 py-2 border border-warm-300 rounded-lg text-sm bg-white font-medium"
-                />
-                <p className="text-[10px] text-warm-500 mt-1">Mostrato <strong>barrato</strong> sulla card. Base sconto.</p>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1">
-                  Scontato (IVA inclusa)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="—"
-                  value={v.salePriceCents != null ? (v.salePriceCents / 100).toFixed(2) : ""}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    if (raw === "") return update({ salePriceCents: null });
-                    update({ salePriceCents: Math.round(Number(raw) * 100) || null });
-                  }}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
-                />
-                <p className="text-[10px] text-warm-500 mt-1">Quello pagato dal cliente. Se vuoto = no sconto.</p>
-              </div>
             </div>
-            {v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents && (
-              <div className="text-[11px] text-warm-700 bg-white border border-warm-200 rounded px-3 py-2">
-                Sconto applicato: <strong>{Math.round((1 - v.salePriceCents / v.priceCents) * 100)}%</strong>
-                {" "}rispetto al prezzo IVA inclusa.
+
+            {/* Riga 2: Prezzi IT */}
+            <div>
+              <div className="text-[11px] font-medium text-warm-700 mb-2 inline-flex items-center gap-1.5">
+                <span className="text-base leading-none">🇮🇹</span> Mercato Italia (IVA 22%)
               </div>
-            )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-warm-600 mb-1">
+                    IVA inclusa IT <span className="text-warm-400 font-normal">★</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={(v.priceCents / 100).toFixed(2)}
+                    onChange={(e) => update({ priceCents: Math.round(Number(e.target.value) * 100) || 0 })}
+                    className="w-full px-3 py-2 border border-warm-300 rounded-lg text-sm bg-white font-medium"
+                  />
+                  <p className="text-[10px] text-warm-500 mt-1">Mostrato <strong>barrato</strong> sulla card IT. Base sconto.</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-warm-600 mb-1">
+                    Scontato IT (IVA inclusa)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="—"
+                    value={v.salePriceCents != null ? (v.salePriceCents / 100).toFixed(2) : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") return update({ salePriceCents: null });
+                      update({ salePriceCents: Math.round(Number(raw) * 100) || null });
+                    }}
+                    className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
+                  />
+                  <p className="text-[10px] text-warm-500 mt-1">Pagato dal cliente in IT. Vuoto = nessuno sconto.</p>
+                </div>
+              </div>
+              {v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents && (
+                <div className="mt-2 text-[11px] text-warm-700 bg-white border border-warm-200 rounded px-3 py-2 inline-block">
+                  Sconto IT: <strong>{Math.round((1 - v.salePriceCents / v.priceCents) * 100)}%</strong>
+                </div>
+              )}
+            </div>
+
+            {/* Riga 3: Prezzi FR */}
+            <div className="pt-3 border-t border-warm-200">
+              <div className="text-[11px] font-medium text-warm-700 mb-2 inline-flex items-center gap-1.5">
+                <span className="text-base leading-none">🇫🇷</span> Mercato Francia (IVA 20%)
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-warm-600 mb-1">
+                    IVA inclusa FR
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="se vuoto usa il prezzo IT"
+                    value={v.priceFrCents != null ? (v.priceFrCents / 100).toFixed(2) : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") return update({ priceFrCents: null });
+                      update({ priceFrCents: Math.round(Number(raw) * 100) || null });
+                    }}
+                    className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
+                  />
+                  <p className="text-[10px] text-warm-500 mt-1">
+                    Mostrato <strong>barrato</strong> sulla card FR. Se vuoto si usa il prezzo IT.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-warm-600 mb-1">
+                    Scontato FR (IVA inclusa)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="—"
+                    value={v.salePriceFrCents != null ? (v.salePriceFrCents / 100).toFixed(2) : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") return update({ salePriceFrCents: null });
+                      update({ salePriceFrCents: Math.round(Number(raw) * 100) || null });
+                    }}
+                    className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
+                  />
+                  <p className="text-[10px] text-warm-500 mt-1">Pagato dal cliente in FR. Vuoto = nessuno sconto in FR.</p>
+                </div>
+              </div>
+              {(() => {
+                const frBase = v.priceFrCents ?? v.priceCents;
+                const frSale = v.salePriceFrCents;
+                if (frSale != null && frSale > 0 && frSale < frBase) {
+                  return (
+                    <div className="mt-2 text-[11px] text-warm-700 bg-white border border-warm-200 rounded px-3 py-2 inline-block">
+                      Sconto FR: <strong>{Math.round((1 - frSale / frBase) * 100)}%</strong>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
           </div>
 
           {/* Descrizione variante */}

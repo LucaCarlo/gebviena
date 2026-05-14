@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { marketFromLang, resolveVariantPrice } from "@/lib/store-pricing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -22,27 +23,13 @@ export async function GET(req: NextRequest) {
   const onlyAvailable = sp.get("onlyAvailable") === "1";
   const sort = sp.get("sort") || "newest";
 
+  const market = marketFromLang(lang);
+
   const variantsFilter: Prisma.StoreProductVariantWhereInput = { isPublished: true };
   if (attrs.length > 0) variantsFilter.attributes = { some: { valueId: { in: attrs } } };
-  // Componiamo i filtri (prezzo, disponibilità) come AND di clausole, ciascuna
-  // delle quali può a sua volta essere un OR. Così possono coesistere.
+  // Componiamo i filtri (disponibilità) come AND di clausole. Il filtro prezzo
+  // è applicato dopo in JS perché, per FR, dipende dal fallback FR→IT.
   const andClauses: Prisma.StoreProductVariantWhereInput[] = [];
-  // Filtro prezzo sul prezzo EFFETTIVO (sale se presente e > 0, altrimenti priceCents).
-  if (minPrice > 0 || maxPrice > 0) {
-    const minCents = minPrice > 0 ? Math.round(minPrice * 100) : undefined;
-    const maxCents = maxPrice > 0 ? Math.round(maxPrice * 100) : undefined;
-    const range: Prisma.IntFilter = {};
-    if (minCents !== undefined) range.gte = minCents;
-    if (maxCents !== undefined) range.lte = maxCents;
-    andClauses.push({
-      OR: [
-        // Variante in saldo: filtra su salePriceCents
-        { salePriceCents: { gt: 0, ...range } },
-        // Variante senza sconto: filtra su priceCents
-        { AND: [{ OR: [{ salePriceCents: null }, { salePriceCents: { lte: 0 } }] }, { priceCents: range }] },
-      ],
-    });
-  }
   if (onlyAvailable) {
     andClauses.push({
       OR: [
@@ -96,7 +83,9 @@ export async function GET(req: NextRequest) {
       variants: {
         where: { isPublished: true },
         select: {
-          id: true, sku: true, priceCents: true, salePriceCents: true, priceWithVatCents: true,
+          id: true, sku: true, priceCents: true, salePriceCents: true,
+          priceFrCents: true, salePriceFrCents: true,
+          priceWithVatCents: true,
           stockQty: true, trackStock: true,
           isDefault: true, coverImage: true,
           attributes: { select: { valueId: true, value: { select: { id: true, type: true, code: true, hexColor: true } } } },
@@ -109,13 +98,11 @@ export async function GET(req: NextRequest) {
   // Proiezione in una struttura comoda per il frontend
   const data = products.map((p) => {
     const tr = p.translations.find((t) => t.languageCode === lang) || p.translations.find((t) => t.languageCode === "it");
-    const minPrice = p.variants.reduce((m, v) => Math.min(m, v.priceCents), Infinity);
-    // Prezzo "from" effettivamente pagato dal cliente: salePriceCents se presente, altrimenti priceCents
-    const effectivePrice = (v: { priceCents: number; salePriceCents: number | null }) =>
-      v.salePriceCents != null && v.salePriceCents > 0 ? v.salePriceCents : v.priceCents;
-    const minEffective = p.variants.reduce((m, v) => Math.min(m, effectivePrice(v)), Infinity);
-    // Se almeno una variante ha un sale price < priceCents, esponi la coppia prezzo-pieno + prezzo-scontato
-    const hasAnyDiscount = p.variants.some((v) => v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents);
+    // Risolvi i prezzi per il MERCATO (IT/FR) — FR ricade su IT se priceFrCents null.
+    const resolved = p.variants.map((v) => resolveVariantPrice(v, market));
+    const minBase = resolved.reduce((m, r) => Math.min(m, r.basePriceCents), Infinity);
+    const minEffective = resolved.reduce((m, r) => Math.min(m, r.effectivePriceCents), Infinity);
+    const hasAnyDiscount = resolved.some((r) => r.salePriceCents != null && r.salePriceCents < r.basePriceCents);
     const hasStock = p.variants.some((v) => !v.trackStock || (v.stockQty ?? 0) > 0);
 
     // Hover image: prima immagine della gallery dello store, fallback cover di un'altra variante
@@ -148,7 +135,7 @@ export async function GET(req: NextRequest) {
       coverImage: p.coverImage || p.product.coverImage || p.product.imageUrl,
       hoverImage,
       colors,
-      priceFromCents: isFinite(minPrice) ? minPrice : 0,
+      priceFromCents: isFinite(minBase) ? minBase : 0,
       salePriceFromCents: hasAnyDiscount && isFinite(minEffective) ? minEffective : null,
       variantsCount: p.variants.length,
       inStock: hasStock,
@@ -163,14 +150,26 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  // Per ordinamento usa il prezzo effettivamente pagato dal cliente (sale se presente, altrimenti regular)
+  // Per ordinamento + filtro prezzo usa il prezzo effettivamente pagato dal cliente
+  // nel mercato corrente (sale se presente, altrimenti regular).
   const effective = (x: { priceFromCents: number; salePriceFromCents: number | null }) =>
     x.salePriceFromCents != null ? x.salePriceFromCents : x.priceFromCents;
-  let sorted = data;
+
+  let filtered = data;
+  if (minPrice > 0 || maxPrice > 0) {
+    const minCents = minPrice > 0 ? Math.round(minPrice * 100) : 0;
+    const maxCents = maxPrice > 0 ? Math.round(maxPrice * 100) : Number.POSITIVE_INFINITY;
+    filtered = data.filter((p) => {
+      const e = effective(p);
+      return e >= minCents && e <= maxCents;
+    });
+  }
+
+  let sorted = filtered;
   if (sort === "price-asc") {
-    sorted = [...data].sort((a, b) => effective(a) - effective(b));
+    sorted = [...filtered].sort((a, b) => effective(a) - effective(b));
   } else if (sort === "price-desc") {
-    sorted = [...data].sort((a, b) => effective(b) - effective(a));
+    sorted = [...filtered].sort((a, b) => effective(b) - effective(a));
   }
 
   return NextResponse.json({ success: true, data: sorted });

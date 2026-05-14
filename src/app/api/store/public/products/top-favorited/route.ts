@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { marketFromLang, resolveVariantPrice, Market } from "@/lib/store-pricing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,6 +24,8 @@ export async function GET(req: NextRequest) {
 
   const ids = grouped.map((g) => g.storeProductId);
 
+  const market = marketFromLang(lang);
+
   if (ids.length === 0) {
     // Fallback: primi N prodotti pubblicati
     const fallback = await prisma.storeProduct.findMany({
@@ -31,7 +34,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ sortOrder: "asc" }, { publishedAt: "desc" }],
       select: projSelect(lang),
     });
-    return NextResponse.json({ success: true, data: fallback.map(projMap) });
+    return NextResponse.json({ success: true, data: fallback.map((p) => projMap(p, market)) });
   }
 
   const products = await prisma.storeProduct.findMany({
@@ -42,7 +45,7 @@ export async function GET(req: NextRequest) {
   const order = new Map(products.map((p) => [p.id, p]));
   const ordered = ids.map((id) => order.get(id)).filter((p): p is NonNullable<typeof p> => !!p);
 
-  return NextResponse.json({ success: true, data: ordered.map(projMap) });
+  return NextResponse.json({ success: true, data: ordered.map((p) => projMap(p, market)) });
 }
 
 function projSelect(lang: string) {
@@ -53,7 +56,10 @@ function projSelect(lang: string) {
     translations: { where: { languageCode: lang }, select: { name: true, slug: true } },
     variants: {
       where: { isPublished: true },
-      select: { priceCents: true, salePriceCents: true },
+      select: {
+        priceCents: true, salePriceCents: true,
+        priceFrCents: true, salePriceFrCents: true,
+      },
       orderBy: { priceCents: "asc" as const },
       take: 1,
     },
@@ -65,19 +71,25 @@ type FetchedProduct = {
   coverImage: string | null;
   product: { name: string; coverImage: string | null; imageUrl: string | null };
   translations: { name: string | null; slug: string }[];
-  variants: { priceCents: number; salePriceCents: number | null }[];
+  variants: {
+    priceCents: number; salePriceCents: number | null;
+    priceFrCents: number | null; salePriceFrCents: number | null;
+  }[];
 };
 
-function projMap(p: FetchedProduct) {
+function projMap(p: FetchedProduct, market: Market) {
   const tr = p.translations[0];
   const v = p.variants[0];
-  const salePrice = v?.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents ? v.salePriceCents : null;
+  const resolved = v ? resolveVariantPrice(v, market) : null;
+  const salePrice = resolved && resolved.salePriceCents != null && resolved.salePriceCents < resolved.basePriceCents
+    ? resolved.salePriceCents
+    : null;
   return {
     id: p.id,
     slug: tr?.slug || "",
     name: tr?.name || p.product.name,
     coverImage: p.coverImage || p.product.coverImage || p.product.imageUrl,
-    priceFromCents: v?.priceCents ?? 0,
+    priceFromCents: resolved?.basePriceCents ?? 0,
     salePriceFromCents: salePrice,
   };
 }

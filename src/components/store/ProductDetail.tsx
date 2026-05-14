@@ -45,8 +45,16 @@ interface Attribute {
 interface Variant {
   id: string;
   sku: string;
+  // Prezzi raw IT+FR (per debug/switch lingua client-side)
   priceCents: number;
   salePriceCents: number | null;
+  priceFrCents?: number | null;
+  salePriceFrCents?: number | null;
+  // Prezzi risolti dal server per il mercato corrente — USA QUESTI nel JSX
+  marketBasePriceCents?: number;
+  marketSalePriceCents?: number | null;
+  marketEffectivePriceCents?: number;
+  market?: "IT" | "FR";
   stockQty: number | null;
   trackStock: boolean;
   volumeM3: number;
@@ -150,13 +158,25 @@ export default function ProductDetail({ product }: { product: Product }) {
     [product.variants, selectedVariantId]
   );
 
-  // Prezzo effettivamente pagato (sale se presente e < listino, altrimenti listino)
-  const effectivePriceCents = (v: Variant): number =>
-    v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents
-      ? v.salePriceCents
-      : v.priceCents;
-  const hasDiscount = (v: Variant): boolean =>
-    v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents;
+  // I prezzi vengono già "risolti" lato server in base al mercato (IT/FR) e
+  // restituiti come marketBasePriceCents / marketSalePriceCents. Qui leggiamo
+  // semplicemente quelli; fallback ai campi raw IT per compatibilità con
+  // payload vecchi del browser cache.
+  const baseOf = (v: Variant): number =>
+    v.marketBasePriceCents != null ? v.marketBasePriceCents : v.priceCents;
+  const saleOf = (v: Variant): number | null => {
+    if (v.marketSalePriceCents !== undefined) return v.marketSalePriceCents;
+    return v.salePriceCents != null && v.salePriceCents > 0 ? v.salePriceCents : null;
+  };
+  const effectivePriceCents = (v: Variant): number => {
+    if (v.marketEffectivePriceCents != null) return v.marketEffectivePriceCents;
+    const b = baseOf(v); const s = saleOf(v);
+    return s != null && s > 0 && s < b ? s : b;
+  };
+  const hasDiscount = (v: Variant): boolean => {
+    const b = baseOf(v); const s = saleOf(v);
+    return s != null && s > 0 && s < b;
+  };
 
   const handleAddToCart = () => {
     if (!selectedVariant) return;
@@ -676,7 +696,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                 {product.variants.map((v) => {
                   const shortName = shortenVariantLabel(v.name, product.name) || v.sku;
                   const isSel = v.id === selectedVariantId;
-                  const vPrice = v.salePriceCents != null && v.salePriceCents > 0 && v.salePriceCents < v.priceCents ? v.salePriceCents : v.priceCents;
+                  const vPrice = effectivePriceCents(v);
                   return (
                     <button
                       key={v.id}
@@ -713,7 +733,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               <div className="flex items-baseline gap-3 flex-wrap">
                 <div className="text-[34px] font-light text-warm-900 tracking-tight">
                   {selectedVariant ? (
-                    selectedVariant.priceCents > 0 ? (
+                    baseOf(selectedVariant) > 0 ? (
                       eur(effectivePriceCents(selectedVariant))
                     ) : (
                       <span className="italic text-[24px] text-warm-700">Prezzo su richiesta</span>
@@ -723,10 +743,10 @@ export default function ProductDetail({ product }: { product: Product }) {
                 {selectedVariant && hasDiscount(selectedVariant) && (
                   <>
                     <span className="text-warm-400 line-through text-[18px]">
-                      {eur(selectedVariant.priceCents)}
+                      {eur(baseOf(selectedVariant))}
                     </span>
                     <span className="text-[12px] uppercase tracking-wider bg-warm-100 text-warm-900 px-2 py-1 rounded-sm font-semibold">
-                      -{Math.round((1 - effectivePriceCents(selectedVariant) / selectedVariant.priceCents) * 100)}%
+                      -{Math.round((1 - effectivePriceCents(selectedVariant) / baseOf(selectedVariant)) * 100)}%
                     </span>
                   </>
                 )}
@@ -736,7 +756,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               )}
             </div>
             <div className="text-[11px] text-warm-500 mb-4">
-              {selectedVariant && selectedVariant.priceCents > 0
+              {selectedVariant && baseOf(selectedVariant) > 0
                 ? "IVA inclusa · spedizione calcolata al checkout"
                 : "Contattaci per un preventivo personalizzato"}
             </div>
@@ -756,7 +776,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
 
             <div className="flex gap-2">
-              {selectedVariant && selectedVariant.priceCents > 0 ? (
+              {selectedVariant && baseOf(selectedVariant) > 0 ? (
                 <button
                   disabled={!inStock}
                   onClick={handleAddToCart}
