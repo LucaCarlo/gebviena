@@ -7,6 +7,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { ShoppingBag, User, Menu, X, Heart } from "lucide-react";
 import { useLang } from "@/contexts/I18nContext";
 import { useCart } from "@/contexts/CartContext";
+import StoreLanguageSwitcher from "@/components/store/StoreLanguageSwitcher";
 
 interface Category {
   id: string;
@@ -88,6 +89,7 @@ export default function StoreHeader() {
 
             {/* Azioni a destra */}
             <div className="flex items-center gap-2 md:gap-4 text-neutral-700 shrink-0">
+              <StoreLanguageSwitcher />
               <Link href="/account/favorites" title="Preferiti" className="p-1 hover:text-neutral-900 transition-colors hidden sm:inline-flex">
                 <Heart size={20} strokeWidth={1.6} />
               </Link>
