@@ -7,6 +7,10 @@
  * FR:  per m³. 186€/m³ standard; 300€/m³ se CAP inizia con "20" (Corsica).
  * Altri paesi: fallback flat per scatola (logica precedente, 90€/scatola).
  *
+ * Volume fatturabile: il m³ è un'unità fissa e indivisibile.
+ *   billableVol = max(1, ceil(volReale)).
+ *   0.4m³ → 1m³;  1.0m³ → 1m³;  1.3m³ → 2m³;  2.0m³ → 2m³.
+ *
  * Soglia spedizione gratuita: 950€ subtotale (azzera SOLO la quota standard).
  * Servizi aggiuntivi (consegna al piano, disimballo) restano fatturati anche
  * quando la spedizione standard è gratuita.
@@ -185,6 +189,9 @@ export function computeShipping(input: ShippingComputeInput): ShippingComputeRes
   const country = (input.country || "IT").toUpperCase();
   const cap = (input.postalCode || "").trim();
   const vol = Math.max(0, input.totalVolumeM3);
+  // m³ è un'unità fissa: si parte sempre da 1 m³ minimo e si arrotonda al
+  // m³ superiore per qualsiasi frazione (0.4→1, 1.0→1, 1.3→2, 2.0→2).
+  const billableVol = Math.max(1, Math.ceil(vol));
   let resolvedRegion: string | null = null;
 
   // 1. Spedizione standard
@@ -208,8 +215,8 @@ export function computeShipping(input: ShippingComputeInput): ShippingComputeRes
     }
   } else if (country === "FR") {
     const ratePerM3 = cap.startsWith("20") ? FR_CORSICA_PER_M3_CENTS : FR_STANDARD_PER_M3_CENTS;
-    standardShippingCents = Math.round(ratePerM3 * vol);
-    notes.push(`FR: CAP ${cap} → ${ratePerM3 / 100}€/m³ × ${vol}m³ = ${(standardShippingCents / 100).toFixed(2)} EUR`);
+    standardShippingCents = ratePerM3 * billableVol;
+    notes.push(`FR: CAP ${cap} → ${ratePerM3 / 100}€/m³ × ${billableVol}m³ fatturabili (reali ${vol.toFixed(3)}m³) = ${(standardShippingCents / 100).toFixed(2)} EUR`);
   } else {
     const boxes = Math.max(1, Math.floor(input.totalBoxes));
     standardShippingCents = 9000 * boxes;
@@ -228,15 +235,15 @@ export function computeShipping(input: ShippingComputeInput): ShippingComputeRes
   let floorDeliveryCents = 0;
   if (input.shippingFloor > 0) {
     const ratePerM3 = country === "FR" ? FLOOR_DELIVERY_PER_M3_CENTS_FR : FLOOR_DELIVERY_PER_M3_CENTS_IT;
-    floorDeliveryCents = Math.round(ratePerM3 * vol);
-    notes.push(`Consegna al piano (piano ${input.shippingFloor}): ${ratePerM3 / 100}€/m³ × ${vol}m³ = ${(floorDeliveryCents / 100).toFixed(2)} EUR`);
+    floorDeliveryCents = ratePerM3 * billableVol;
+    notes.push(`Consegna al piano (piano ${input.shippingFloor}): ${ratePerM3 / 100}€/m³ × ${billableVol}m³ fatturabili (reali ${vol.toFixed(3)}m³) = ${(floorDeliveryCents / 100).toFixed(2)} EUR`);
   }
 
   // 4. Disimballo + smaltimento (additivo)
   let unboxingFeeCents = 0;
   if (input.withUnboxingService) {
-    unboxingFeeCents = Math.round(UNBOXING_PER_M3_CENTS * vol);
-    notes.push(`Disimballo: 20€/m³ × ${vol}m³ = ${(unboxingFeeCents / 100).toFixed(2)} EUR`);
+    unboxingFeeCents = UNBOXING_PER_M3_CENTS * billableVol;
+    notes.push(`Disimballo: 20€/m³ × ${billableVol}m³ fatturabili (reali ${vol.toFixed(3)}m³) = ${(unboxingFeeCents / 100).toFixed(2)} EUR`);
   }
 
   return {
