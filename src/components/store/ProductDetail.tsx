@@ -231,6 +231,17 @@ export default function ProductDetail({ product }: { product: Product }) {
     [attrByType]
   );
 
+  // Tipi attributo che NON appaiono su nessuna variante (es. opzioni custom
+  // globali). Verrebbero filtrati via dal cascading sotto: li gestiamo a parte
+  // mantenendoli sempre visibili.
+  const nonVariantizedTypes = useMemo(() => {
+    const set = new Set<AttrType>();
+    for (const t of ATTR_TYPE_ORDER) {
+      if ((attrByType[t]?.length || 0) === 0) set.add(t);
+    }
+    return set;
+  }, [attrByType]);
+
   // ─── Soft selection ────────────────────────────────────────────────────
   // userChoices è la selezione "umana" per ogni tipo (1 valore per tipo).
   // Quando l'utente clicca un attributo:
@@ -322,6 +333,43 @@ export default function ProductDetail({ product }: { product: Product }) {
 
   // Set delle scelte attuali (per highlight nei button)
   const selectedAttrIds = new Set(Object.values(userChoices).filter(Boolean) as string[]);
+
+  // ─── Cascading filter ──────────────────────────────────────────────────
+  // Per ogni tipo T, calcola gli attributi DISPONIBILI dato le scelte attuali
+  // sugli ALTRI tipi: filtra le varianti che soddisfano gli altri attributi e
+  // unisce i loro valori di tipo T. Se zero valori disponibili → il gruppo T
+  // non viene renderizzato (es. "Imbottitura" sparisce quando Seduta=Legno).
+  const availableByType = useMemo(() => {
+    const result: Partial<Record<AttrType, Attribute[]>> = {};
+    for (const t of ATTR_TYPE_ORDER) {
+      // Tipi non variantizzati: tutti i valori sempre disponibili
+      if (nonVariantizedTypes.has(t)) {
+        result[t] = attrByType[t] || [];
+        continue;
+      }
+      // Scelte sugli ALTRI tipi (per cui esiste almeno una variante con quel valore)
+      const otherChoices = Object.entries(userChoices)
+        .filter(([type, id]) => type !== t && id && !nonVariantizedTypes.has(type as AttrType))
+        .map(([, id]) => id as string);
+      // Filtra varianti compatibili
+      const compatibleVariants = product.variants.filter((v) =>
+        otherChoices.every((id) => v.attributes.some((a) => a.id === id))
+      );
+      // Raccogli valori di tipo T da quelle varianti (dedup)
+      const seenIds = new Set<string>();
+      const values: Attribute[] = [];
+      for (const v of compatibleVariants) {
+        for (const a of v.attributes) {
+          if (a.type !== t) continue;
+          if (seenIds.has(a.id)) continue;
+          seenIds.add(a.id);
+          values.push(a);
+        }
+      }
+      result[t] = values;
+    }
+    return result;
+  }, [userChoices, attrByType, product.variants, nonVariantizedTypes]);
 
   // Galleria hero unificata:
   // 1. PRIMA tutte le immagini del prodotto (cover + gallery store, deduplicate)
@@ -555,8 +603,9 @@ export default function ProductDetail({ product }: { product: Product }) {
           {hasAttributeVariants ? (
             <div className="mt-7 space-y-5 pt-6 border-t border-warm-200">
               {ATTR_TYPE_ORDER.map((type) => {
-                const available = attrByType[type];
-                if (!available || available.length === 0) return null;
+                // Cascading: mostra solo i valori compatibili con le altre scelte attuali
+                const available = availableByType[type] || [];
+                if (available.length === 0) return null;
                 const chosenId = userChoices[type];
                 const chosenLabel = available.find((a) => a.id === chosenId)?.label;
                 return (
