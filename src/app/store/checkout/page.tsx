@@ -44,6 +44,8 @@ interface LiveQuote {
   billableVolumeM3?: number;
   totalVolumeM3?: number;
   missing?: string;
+  market?: "IT" | "FR";
+  lines?: Array<{ variantId: string; unitPriceCents: number; quantity: number; lineCents: number }>;
 }
 
 const FREE_SHIPPING_THRESHOLD_CENTS = 95000; // 950 EUR
@@ -135,7 +137,7 @@ export default function CheckoutPage() {
     setError(null);
 
     // Validazione minima
-    const required = ["email", "firstName", "lastName", "taxId", "street", "city", "postalCode", "country"];
+    const required = ["email", "firstName", "lastName", "phone", "taxId", "street", "city", "postalCode", "country"];
     for (const k of required) {
       if (!form[k as keyof typeof form]?.toString().trim()) {
         setError(t("Compila tutti i campi obbligatori.", "Veuillez remplir tous les champs obligatoires."));
@@ -223,7 +225,12 @@ export default function CheckoutPage() {
                 <Field label={t("Nome *", "Prénom *")} value={form.firstName} onChange={(v) => updateField("firstName", v)} />
                 <Field label={t("Cognome *", "Nom *")} value={form.lastName} onChange={(v) => updateField("lastName", v)} />
               </div>
-              <Field label={t("Telefono", "Téléphone")} type="tel" value={form.phone} onChange={(v) => updateField("phone", v)} />
+              <div>
+                <Field label={t("Telefono *", "Téléphone *")} type="tel" value={form.phone} onChange={(v) => updateField("phone", v)} />
+                <p className="text-[11px] text-warm-500 mt-1">
+                  {t("Necessario al corriere per la consegna dell'ordine.", "Nécessaire au transporteur pour la livraison de la commande.")}
+                </p>
+              </div>
               <Field
                 label={t("P.IVA o Codice Fiscale *", "N° TVA ou Code fiscal *")}
                 value={form.taxId}
@@ -326,15 +333,22 @@ export default function CheckoutPage() {
         <aside className="lg:sticky lg:top-28 self-start space-y-4 p-6 border border-warm-200 rounded bg-warm-50/40">
           <h2 className="text-sm uppercase tracking-[0.2em] text-warm-500">{t("Riepilogo ordine", "Récapitulatif de commande")}</h2>
           <div className="space-y-2 max-h-72 overflow-y-auto text-sm pr-2">
-            {items.map((it) => (
-              <div key={it.variantId} className="flex justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-warm-900 truncate">{it.productName}</div>
-                  <div className="text-warm-500 text-xs">x{it.quantity}{it.variantAttributes && ` · ${it.variantAttributes}`}</div>
+            {items.map((it) => {
+              // Prezzo per riga: se il quote (basato sul PAESE di spedizione)
+              // ha risolto i prezzi di mercato, usa quelli — così in Francia
+              // si vede il prezzo FR anche navigando in italiano.
+              const ql = quote?.lines?.find((l) => l.variantId === it.variantId);
+              const lineCents = ql ? ql.lineCents : it.priceCents * it.quantity;
+              return (
+                <div key={it.variantId} className="flex justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-warm-900 truncate">{it.productName}</div>
+                    <div className="text-warm-500 text-xs">x{it.quantity}{it.variantAttributes && ` · ${it.variantAttributes}`}</div>
+                  </div>
+                  <div className="text-warm-900 shrink-0">{eur(lineCents)}</div>
                 </div>
-                <div className="text-warm-900 shrink-0">{eur(it.priceCents * it.quantity)}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="border-t border-warm-200 pt-3 space-y-1.5 text-sm">
             <Row label={t("Subtotale", "Sous-total")} value={eur(intent?.subtotalCents ?? quote?.subtotalCents ?? subtotalCents)} />

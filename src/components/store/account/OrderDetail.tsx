@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronLeft, Truck, Package, CheckCircle2, Clock, CircleAlert } from "lucide-react";
+import { ChevronLeft, CircleAlert } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useStoreT } from "@/lib/use-store-t";
 import AuthForms from "./AuthForms";
@@ -44,30 +44,6 @@ interface OrderFull {
   shippingZoneLabel: string | null;
   customerNotes: string | null;
   items: OrderItem[];
-}
-
-const STATUS_LABEL: Record<string, [string, string]> = {
-  PENDING: ["In attesa di pagamento", "En attente de paiement"],
-  PAID: ["Pagato", "Payé"],
-  PROCESSING: ["In preparazione", "En préparation"],
-  SHIPPED: ["Spedito", "Expédié"],
-  DELIVERED: ["Consegnato", "Livré"],
-  CANCELLED: ["Annullato", "Annulé"],
-  REFUNDED: ["Rimborsato", "Remboursé"],
-  PARTIALLY_REFUNDED: ["Parzialmente rimborsato", "Partiellement remboursé"],
-};
-
-const TIMELINE_STEPS: { key: string; label: [string, string]; icon: typeof Clock }[] = [
-  { key: "PENDING", label: ["Ordine ricevuto", "Commande reçue"], icon: Clock },
-  { key: "PAID", label: ["Pagamento confermato", "Paiement confirmé"], icon: CheckCircle2 },
-  { key: "PROCESSING", label: ["In preparazione", "En préparation"], icon: Package },
-  { key: "SHIPPED", label: ["Spedito", "Expédié"], icon: Truck },
-  { key: "DELIVERED", label: ["Consegnato", "Livré"], icon: CheckCircle2 },
-];
-
-function statusIndex(status: string) {
-  const idx = TIMELINE_STEPS.findIndex((s) => s.key === status);
-  return idx < 0 ? 0 : idx;
 }
 
 function eur(cents: number) {
@@ -114,7 +90,6 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
   );
   if (!order) return <div className="max-w-4xl mx-auto p-12 text-center text-warm-500 text-sm">{t("Caricamento ordine…", "Chargement de la commande…")}</div>;
 
-  const currentIdx = statusIndex(order.status);
   const shipping = safeParseAddress(order.shippingAddress);
   const billing = safeParseAddress(order.billingAddress);
 
@@ -130,56 +105,18 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
           <h1 className="text-3xl font-light text-warm-900 font-mono">#{order.orderNumber}</h1>
           <div className="text-sm text-warm-500 mt-1">{fmtDate(order.createdAt)}</div>
         </div>
-        <div className="text-sm text-warm-700 uppercase tracking-[0.15em] bg-warm-100 px-3 py-1.5">
-          {STATUS_LABEL[order.status] ? t(STATUS_LABEL[order.status][0], STATUS_LABEL[order.status][1]) : order.status}
-        </div>
       </div>
 
-      {/* Timeline tracking */}
-      {!["CANCELLED", "REFUNDED"].includes(order.status) && (
-        <div className="border border-warm-200 p-6 mb-8">
-          <div className="text-xs uppercase tracking-[0.2em] text-warm-500 mb-5">{t("Stato spedizione", "Statut de l'expédition")}</div>
-          <div className="grid grid-cols-5 gap-2 relative">
-            {TIMELINE_STEPS.map((step, idx) => {
-              const Icon = step.icon;
-              const done = idx <= currentIdx;
-              return (
-                <div key={step.key} className="flex flex-col items-center text-center relative">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center mb-2 ${done ? "bg-warm-900 text-white" : "bg-warm-100 text-warm-400"}`}>
-                    <Icon size={16} />
-                  </div>
-                  <div className={`text-[10px] uppercase tracking-wider ${done ? "text-warm-900" : "text-warm-400"}`}>
-                    {t(step.label[0], step.label[1])}
-                  </div>
-                  {idx < TIMELINE_STEPS.length - 1 && (
-                    <div className={`absolute top-[18px] left-1/2 w-full h-0.5 ${idx < currentIdx ? "bg-warm-900" : "bg-warm-200"}`} style={{ zIndex: -1 }} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {order.trackingNumber && (
-            <div className="mt-6 pt-5 border-t border-warm-200 text-sm flex flex-wrap gap-4 items-center">
-              <div>
-                <span className="text-warm-500 mr-2">{t("Corriere", "Transporteur")}:</span>
-                <span className="text-warm-900">{order.trackingCarrier || "—"}</span>
-              </div>
-              <div>
-                <span className="text-warm-500 mr-2">{t("Tracking", "Suivi")}:</span>
-                <span className="font-mono text-warm-900">{order.trackingNumber}</span>
-              </div>
-              {order.trackingUrl && (
-                <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-warm-900 border-b border-warm-900 pb-0.5 hover:text-warm-600">
-                  {t("Traccia spedizione", "Suivre l'expédition")}
-                </a>
-              )}
-            </div>
-          )}
-          {order.shippedAt && <div className="mt-3 text-xs text-warm-500">{t("Spedito il", "Expédié le")} {fmtDate(order.shippedAt)}</div>}
-          {order.deliveredAt && <div className="mt-1 text-xs text-warm-500">{t("Consegnato il", "Livré le")} {fmtDate(order.deliveredAt)}</div>}
-        </div>
-      )}
+      {/* Nota contatti — il sito non gestisce le fasi di spedizione */}
+      <div className="border border-warm-200 bg-warm-50/50 p-5 mb-8 text-sm text-warm-700 leading-relaxed">
+        {t(
+          "Per qualsiasi informazione sul tuo ordine, il nostro team è a disposizione all'indirizzo ",
+          "Pour toute information sur votre commande, notre équipe est à votre disposition à l'adresse ",
+        )}
+        <a href="mailto:info@gebruederthonetvienna.com" className="text-warm-900 underline">info@gebruederthonetvienna.com</a>
+        {t(" oppure al numero ", " ou au numéro ")}
+        <a href="tel:+390110133330" className="text-warm-900 underline">+39 011 0133330</a>.
+      </div>
 
       {/* Articoli */}
       <div className="border border-warm-200 mb-8">

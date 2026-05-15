@@ -22,27 +22,6 @@ interface OrderRow {
   items: { id: string; productName: string; variantName: string | null; quantity: number; totalCents: number }[];
 }
 
-const STATUS_LABEL: Record<string, [string, string]> = {
-  PENDING: ["In attesa", "En attente"],
-  PAID: ["Pagato", "Payé"],
-  PROCESSING: ["In preparazione", "En préparation"],
-  SHIPPED: ["Spedito", "Expédié"],
-  DELIVERED: ["Consegnato", "Livré"],
-  CANCELLED: ["Annullato", "Annulé"],
-  REFUNDED: ["Rimborsato", "Remboursé"],
-  PARTIALLY_REFUNDED: ["Parzialmente rimborsato", "Partiellement remboursé"],
-};
-
-const STATUS_COLOR: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800",
-  PAID: "bg-blue-100 text-blue-800",
-  PROCESSING: "bg-indigo-100 text-indigo-800",
-  SHIPPED: "bg-purple-100 text-purple-800",
-  DELIVERED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-red-100 text-red-800",
-  REFUNDED: "bg-neutral-200 text-neutral-700",
-  PARTIALLY_REFUNDED: "bg-neutral-200 text-neutral-700",
-};
 
 function eur(cents: number) {
   return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -105,13 +84,9 @@ export default function OrdersList() {
                   <div className="text-[11px] uppercase tracking-[0.15em] text-warm-500">{t("Totale", "Total")}</div>
                   <div className="text-sm font-mono text-warm-900">{eur(o.totalCents)}</div>
                 </div>
-                <span className={`text-[11px] uppercase tracking-wider px-2 py-1 ${STATUS_COLOR[o.status] || "bg-warm-200 text-warm-700"}`}>
-                  {STATUS_LABEL[o.status] ? t(STATUS_LABEL[o.status][0], STATUS_LABEL[o.status][1]) : o.status}
-                </span>
               </div>
               <div className="text-xs text-warm-500">
                 {t(`${o.items.length} articol${o.items.length === 1 ? "o" : "i"}`, `${o.items.length} article${o.items.length === 1 ? "" : "s"}`)}
-                {o.trackingNumber && <span> · {t("Tracking", "Suivi")}: {o.trackingNumber}</span>}
               </div>
             </Link>
           ))}

@@ -58,6 +58,10 @@ export async function POST(req: NextRequest) {
     let subtotalCents = 0;
     let totalBoxes = 0;
     let totalVolumeM3 = 0;
+    // Prezzi per-item risolti dal mercato (paese di spedizione): servono al
+    // checkout per mostrare il prezzo FR quando il paese è Francia, anche se
+    // l'utente sta navigando in italiano.
+    const lines: Array<{ variantId: string; unitPriceCents: number; quantity: number; lineCents: number }> = [];
 
     for (const it of items) {
       const v = vmap.get(it.variantId);
@@ -65,6 +69,7 @@ export async function POST(req: NextRequest) {
       const qty = Math.max(1, Math.floor(it.quantity));
       const unitPrice = resolveVariantPrice(v, market).effectivePriceCents;
       subtotalCents += unitPrice * qty;
+      lines.push({ variantId: it.variantId, unitPriceCents: unitPrice, quantity: qty, lineCents: unitPrice * qty });
       const perBox = Math.max(1, v.storeProduct?.productsPerBox || 1);
       totalBoxes += Math.ceil(qty / perBox);
       totalVolumeM3 += Number(v.volumeM3) * qty;
@@ -86,6 +91,8 @@ export async function POST(req: NextRequest) {
           subtotalCents,
           totalVolumeM3,
           totalBoxes,
+          lines,
+          market,
           ready: false,
           missing: country === "IT" ? "provincia o CAP" : "CAP",
         },
@@ -108,6 +115,8 @@ export async function POST(req: NextRequest) {
       data: {
         ready: true,
         country,
+        market,
+        lines,
         subtotalCents,
         totalVolumeM3,
         billableVolumeM3: Math.max(1, Math.ceil(totalVolumeM3)),
