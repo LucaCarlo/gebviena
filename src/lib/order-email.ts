@@ -426,15 +426,17 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
     ? `Confirmation de commande ${order.orderNumber} — ${COMPANY.name}`
     : `Conferma d'ordine ${order.orderNumber} — ${COMPANY.name}`;
 
+  const pdfAttachment = {
+    filename: `${order.orderNumber}.pdf`,
+    content: pdf,
+    contentType: "application/pdf",
+  };
+
   const ok = await sendMail(order.email, subject, html, {
     fromName: COMPANY.name,
     replyTo: COMPANY.email,
     bcc: COMPANY.email,
-    attachments: [{
-      filename: `${order.orderNumber}.pdf`,
-      content: pdf,
-      contentType: "application/pdf",
-    }],
+    attachments: [pdfAttachment],
   });
 
   if (ok) {
@@ -442,5 +444,50 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
   } else {
     console.error("[order-email] FAILED for order", order.orderNumber, "to", order.email);
   }
+
+  // ─── Notifica interna agli admin spedizioni (venditaspeciale@) ───
+  // Stesso PDF, ma messaggio operativo: ordine da evadere/spedire.
+  const ship = parseAddress(order.shippingAddress);
+  const itemsList = order.items
+    .map((it) => `<li style="margin-bottom:4px;">${escape(it.productName)} — ${escape(it.sku)} × ${it.quantity} — ${eur(it.totalCents)}</li>`)
+    .join("");
+  const adminHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:24px;background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;color:#222;">
+  <table width="600" align="center" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #ddd;max-width:600px;">
+    <tr><td style="padding:24px 28px;border-bottom:2px solid #111;">
+      <div style="font-size:12px;letter-spacing:0.15em;text-transform:uppercase;color:#888;">${escape(COMPANY.name)} — Vendita Speciale</div>
+      <h1 style="margin:8px 0 0;font-size:20px;color:#111;">Nuovo ordine da evadere · ${escape(order.orderNumber)}</h1>
+    </td></tr>
+    <tr><td style="padding:22px 28px;font-size:14px;line-height:1.6;">
+      <p style="margin:0 0 14px;"><strong>Procedere con la preparazione e la spedizione dell'ordine.</strong> In allegato il PDF con tutti i dettagli.</p>
+      <p style="margin:0 0 4px;"><strong>Cliente:</strong> ${escape(order.firstName)} ${escape(order.lastName)} — ${escape(order.email)}${order.phone ? " — ☎ " + escape(order.phone) : ""}</p>
+      ${order.customerTaxId ? `<p style="margin:0 0 4px;"><strong>P.IVA/C.F.:</strong> ${escape(order.customerTaxId)}</p>` : ""}
+      <p style="margin:0 0 4px;"><strong>Spedire a:</strong> ${escape(order.firstName)} ${escape(order.lastName)}, ${escape(ship.street || "")}, ${escape(ship.postalCode || "")} ${escape(ship.city || "")}${ship.province ? " (" + escape(ship.province) + ")" : ""} — ${escape(ship.country || "")}</p>
+      <p style="margin:14px 0 6px;"><strong>Articoli:</strong></p>
+      <ul style="margin:0 0 14px;padding-left:20px;">${itemsList}</ul>
+      <p style="margin:0;font-size:15px;"><strong>Totale ordine: ${eur(order.totalCents)}</strong></p>
+      <p style="margin:14px 0 0;color:#666;font-size:13px;">
+        Spedizione: nessun tracking. Contattare il cliente al numero indicato per concordare la consegna
+        (consegna prevista ${escape(deliveryStr)}).
+      </p>
+    </td></tr>
+    <tr><td style="padding:14px 28px;background:#faf8f3;border-top:1px solid #e5e2db;font-size:11px;color:#888;">
+      ${escape(COMPANY.legalName)} · ${escape(COMPANY.addressLine1)}, ${escape(COMPANY.addressLine2)} (${escape(COMPANY.country)})
+    </td></tr>
+  </table>
+</body></html>`;
+
+  await sendMail("venditaspeciale@gebruederthonetvienna.com",
+    `[DA EVADERE] Ordine ${order.orderNumber} — ${order.firstName} ${order.lastName}`,
+    adminHtml,
+    {
+      fromName: `${COMPANY.name} — Ordini`,
+      replyTo: order.email,
+      attachments: [pdfAttachment],
+    },
+  ).then((aok) => {
+    console.log("[order-email] admin notify", order.orderNumber, aok ? "sent" : "FAILED");
+  }).catch((e) => console.error("[order-email] admin notify error:", e));
+
   return ok;
 }
