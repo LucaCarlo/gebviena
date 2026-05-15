@@ -240,6 +240,16 @@ export async function GET(req: Request) {
   contacts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const totalCount = contacts.length;
 
+  // ─── 6-0. format=ids → tutti gli email+subscriberId che matchano i filtri
+  // (no paginazione). Serve al "Seleziona tutti" cross-pagina lato admin. ───
+  if (format === "ids") {
+    return NextResponse.json({
+      success: true,
+      totalCount,
+      contacts: contacts.map((c) => ({ email: c.email, subscriberId: c.subscriberId })),
+    });
+  }
+
   // ─── 6a. CSV export (no pagination) ───
   if (format === "csv") {
     // Per CSV serve sempre lo stato checkedIn (anche se non filtrato), così l'utente lo vede.

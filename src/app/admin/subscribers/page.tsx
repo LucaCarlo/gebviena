@@ -68,6 +68,11 @@ export default function AdminSubscribersPage() {
   const [langFilter, setLangFilter] = useState<string>("all"); // "all" | codice lingua | "unknown"
   const [availableLangs, setAvailableLangs] = useState<{ code: string; name: string; flag: string | null }[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set()); // by email
+  // "Seleziona tutti" cross-pagina: quando attivo, le operazioni bulk valgono
+  // su TUTTI i contatti che matchano i filtri (non solo la pagina caricata).
+  const [selectAllMatching, setSelectAllMatching] = useState(false);
+  const [allMatchingSubIds, setAllMatchingSubIds] = useState<Map<string, string | null>>(new Map());
+  const [selectingAll, setSelectingAll] = useState(false);
 
   // Event registrations (for evento detail view)
   const [eventRegs, setEventRegs] = useState<EventReg[]>([]);
@@ -157,6 +162,8 @@ export default function AdminSubscribersPage() {
     if (isEventoDetail) return;
     fetchContacts({ pageOverride: 1 });
     setSelected(new Set());
+    setSelectAllMatching(false);
+    setAllMatchingSubIds(new Map());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, search, invitedFilter, checkinFilter, langFilter]);
 
@@ -187,10 +194,64 @@ export default function AdminSubscribersPage() {
   /* ───── Selection (by email) ───── */
 
   const currentList = isEventoDetail ? [] : filteredContacts;
-  const toggleSelect = (email: string) => setSelected((p) => { const n = new Set(Array.from(p)); if (n.has(email)) n.delete(email); else n.add(email); return n; });
-  const selectAll = () => selected.size === currentList.length ? setSelected(new Set()) : setSelected(new Set(currentList.map((c) => c.email)));
+  const toggleSelect = (email: string) => {
+    setSelectAllMatching(false);
+    setSelected((p) => { const n = new Set(Array.from(p)); if (n.has(email)) n.delete(email); else n.add(email); return n; });
+  };
+  const selectAll = () => {
+    setSelectAllMatching(false);
+    if (selected.size === currentList.length) setSelected(new Set());
+    else setSelected(new Set(currentList.map((c) => c.email)));
+  };
+
+  // Costruisce gli stessi filtri di fetchContacts (senza page/pageSize).
+  const buildFilterParams = () => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
+    if (invitedFilter !== "all") params.set("invited", invitedFilter);
+    if (checkinFilter !== "all") params.set("checkedIn", checkinFilter);
+    if (langFilter !== "all") params.set("lang", langFilter);
+    return params;
+  };
+
+  // "Seleziona TUTTI i N" (cross-pagina): scarica dall'API tutti gli
+  // email+subscriberId che matchano i filtri correnti e li seleziona.
+  const selectAllAcrossPages = async () => {
+    setSelectingAll(true);
+    try {
+      const params = buildFilterParams();
+      params.set("format", "ids");
+      const r = await fetch(`/api/contacts/unified?${params}`);
+      const d = await r.json();
+      if (d.success && Array.isArray(d.contacts)) {
+        const emails = new Set<string>();
+        const subMap = new Map<string, string | null>();
+        for (const c of d.contacts as { email: string; subscriberId: string | null }[]) {
+          emails.add(c.email);
+          subMap.set(c.email, c.subscriberId);
+        }
+        setSelected(emails);
+        setAllMatchingSubIds(subMap);
+        setSelectAllMatching(true);
+      }
+    } catch { /* noop */ }
+    setSelectingAll(false);
+  };
+
+  const clearSelection = () => { setSelected(new Set()); setSelectAllMatching(false); setAllMatchingSubIds(new Map()); };
+
   const getSelectedEmails = () => Array.from(selected);
-  const getSelectedSubscriberIds = () => contacts.filter((c) => selected.has(c.email) && c.subscriberId).map((c) => c.subscriberId as string);
+  const getSelectedSubscriberIds = () => {
+    // Quando "seleziona tutti cross-pagina" è attivo usiamo la mappa completa
+    // scaricata dall'API (i `contacts` in memoria sono solo la pagina corrente).
+    if (selectAllMatching) {
+      return Array.from(allMatchingSubIds.entries())
+        .filter(([, sid]) => !!sid)
+        .map(([, sid]) => sid as string);
+    }
+    return contacts.filter((c) => selected.has(c.email) && c.subscriberId).map((c) => c.subscriberId as string);
+  };
 
   /* ───── Delete ───── */
 
@@ -209,7 +270,7 @@ export default function AdminSubscribersPage() {
     if (ids.length > 0) {
       await fetch("/api/newsletter/subscribers", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
     }
-    setSelected(new Set());
+    clearSelection();
     fetchContacts(); fetchTags();
   };
 
@@ -567,7 +628,7 @@ export default function AdminSubscribersPage() {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-warm-200 overflow-x-auto scrollbar-hidden">
         {tabItems.map((tab) => (
-          <button key={tab.key} onClick={() => { setActiveTab(tab.key); setSelected(new Set()); }}
+          <button key={tab.key} onClick={() => { setActiveTab(tab.key); clearSelection(); }}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0 ${activeTab === tab.key ? "border-current" : "border-transparent text-warm-400 hover:text-warm-600"}`}
             style={activeTab === tab.key ? { borderColor: tab.color, color: tab.color } : undefined}>
             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tab.color }} />
@@ -692,9 +753,43 @@ export default function AdminSubscribersPage() {
         /* ═══ Unified contacts ═══ */
         filteredContacts.length === 0 ? <EmptyState text={activeTab !== "all" ? "Nessun utente con questo tag" : "Nessun contatto"} /> : (
           <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
+            {/* Banner "seleziona tutti cross-pagina" */}
+            {selected.size > 0 && (
+              <div className="px-4 py-2.5 bg-warm-50 border-b border-warm-200 text-[13px] text-warm-700 flex items-center gap-3 flex-wrap">
+                {selectAllMatching ? (
+                  <>
+                    <span>
+                      Selezionati <strong>tutti i {totalCount}</strong> contatti che corrispondono ai filtri.
+                    </span>
+                    <button onClick={clearSelection} className="text-warm-600 underline hover:text-warm-900">
+                      Annulla selezione
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      Selezionati <strong>{selected.size}</strong>
+                      {totalCount > selected.size ? <> in questa vista (di {totalCount} totali).</> : "."}
+                    </span>
+                    {totalCount > selected.size && (
+                      <button
+                        onClick={selectAllAcrossPages}
+                        disabled={selectingAll}
+                        className="text-warm-900 font-medium underline hover:text-black disabled:opacity-50"
+                      >
+                        {selectingAll ? "Selezione…" : `Seleziona tutti i ${totalCount}`}
+                      </button>
+                    )}
+                    <button onClick={clearSelection} className="text-warm-600 underline hover:text-warm-900">
+                      Annulla
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
             <table className="w-full text-sm">
               <thead><tr className="border-b border-warm-200 bg-warm-50">
-                <th className="text-left px-4 py-3 w-10"><input type="checkbox" checked={selected.size === currentList.length && currentList.length > 0} onChange={selectAll} className="accent-warm-800" /></th>
+                <th className="text-left px-4 py-3 w-10"><input type="checkbox" checked={selectAllMatching || (selected.size === currentList.length && currentList.length > 0)} onChange={selectAll} className="accent-warm-800" /></th>
                 <Th>Nome</Th><Th>Email</Th><Th className="hidden md:table-cell">Città</Th><Th className="hidden md:table-cell">Tag</Th><Th className="hidden lg:table-cell">Origine</Th><Th className="w-36" />
               </tr></thead>
               <tbody className="divide-y divide-warm-100">
