@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe-config";
 import { sendOrderConfirmationEmail } from "@/lib/order-email";
+import { requestMagicLink } from "@/lib/customer-magic-link";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
  *
  * Restituisce solo dati non sensibili (orderNumber, status, email, totale).
  */
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const order = await prisma.order.findUnique({
     where: { id: params.id },
     select: {
@@ -65,6 +66,19 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         if (promoted) {
           sendOrderConfirmationEmail(order.id).catch((err) => {
             console.error("[order-status] sendOrderConfirmationEmail error:", err);
+          });
+          // 2a email: magic-link per accedere all'area riservata (solo se il
+          // customer non ha già una password).
+          (async () => {
+            const ord = await prisma.order.findUnique({
+              where: { id: order.id },
+              select: { email: true, customer: { select: { passwordHash: true } } },
+            });
+            if (!ord) return;
+            if (ord.customer && ord.customer.passwordHash) return;
+            await requestMagicLink({ email: ord.email, origin: req.nextUrl.origin, purpose: "magic_link" });
+          })().catch((err) => {
+            console.error("[order-status] welcome magic-link error:", err);
           });
         }
       } else if (pi.status === "canceled" || pi.status === "requires_payment_method") {

@@ -9,6 +9,7 @@ import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Lock, Loader2, ArrowLeft } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useLang } from "@/contexts/I18nContext";
 
 const eur = (cents: number) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -50,6 +51,7 @@ const SHIPPING_REMINDER_RANGE_CENTS = 20000; // mostra reminder se manca <= 200 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotalCents, count } = useCart();
+  const lang = useLang();
 
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [intent, setIntent] = useState<IntentResponse | null>(null);
@@ -165,6 +167,7 @@ export default function CheckoutPage() {
           shippingFloor: Number(form.shippingFloor) || 0,
           withUnboxingService: form.withUnboxingService === true,
           customerNotes: form.customerNotes,
+          lang,
         }),
       });
       const data = await res.json();

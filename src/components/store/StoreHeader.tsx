@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ShoppingBag, User, Menu, X, Heart } from "lucide-react";
+import { ShoppingBag, Menu, X, Heart } from "lucide-react";
 import { useLang } from "@/contexts/I18nContext";
 import { useCart } from "@/contexts/CartContext";
 import StoreLanguageSwitcher from "@/components/store/StoreLanguageSwitcher";
+import StoreUserMenu from "@/components/store/StoreUserMenu";
 
 interface Category {
   id: string;
@@ -93,9 +94,7 @@ export default function StoreHeader() {
               <Link href="/account/favorites" title="Preferiti" className="p-1 hover:text-neutral-900 transition-colors hidden sm:inline-flex">
                 <Heart size={20} strokeWidth={1.6} />
               </Link>
-              <Link href="/account" title="Area riservata" className="p-1 hover:text-neutral-900 transition-colors">
-                <User size={20} strokeWidth={1.6} />
-              </Link>
+              <StoreUserMenu />
               <Link href="/carrello" title="Carrello" className="relative p-1 hover:text-neutral-900 transition-colors">
                 <ShoppingBag size={20} strokeWidth={1.6} />
                 {cartCount > 0 && (

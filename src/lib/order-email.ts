@@ -7,6 +7,8 @@
  * flag Order.confirmationEmailSentAt (se aggiunto in futuro) — al momento
  * affidata al caller (chiama solo quando lo status passa a PAID).
  */
+import path from "path";
+import fs from "fs";
 import PDFDocument from "pdfkit";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
@@ -17,11 +19,31 @@ const eur = (cents: number) =>
 const COMPANY = {
   name: "Gebrüder Thonet Vienna",
   legalName: "GTV Verlagsanstalt GmbH",
-  address: "Wienerstrasse 53, 1230 Wien, Austria",
+  addressLine1: "Wienerstrasse 53",
+  addressLine2: "1230 Wien",
+  country: "Austria",
   vat: "ATU60853336",
   email: "info@gebruederthonetvienna.com",
   website: "gebruederthonetvienna.com",
 };
+
+const LOGO_PATH = path.join(process.cwd(), "public", "logo-email-black.png");
+
+function loadLogoBuffer(): Buffer | null {
+  try {
+    return fs.readFileSync(LOGO_PATH);
+  } catch {
+    return null;
+  }
+}
+
+/** Numero progressivo "INV-NNNN/YYYY" derivato da orderNumber + anno paidAt/createdAt. */
+function invoiceNumber(order: { orderNumber: string; paidAt: Date | null; createdAt: Date }): string {
+  const year = (order.paidAt || order.createdAt).getFullYear();
+  // Prendiamo la coda dell'orderNumber (es. "GTV-XXX-YYYY" → ultime 4 cifre/lettere)
+  const tail = order.orderNumber.split("-").pop() || order.orderNumber;
+  return `${tail}/${year}`;
+}
 
 interface OrderWithItems {
   id: string;
@@ -184,7 +206,7 @@ function buildHtml(order: OrderWithItems): string {
 
         <tr><td style="padding:16px 32px;background:#faf8f3;border-top:1px solid #e5e2db;font-size:11px;color:#888;line-height:1.6;">
           <strong style="color:#555;">${escape(COMPANY.legalName)}</strong><br>
-          ${escape(COMPANY.address)}<br>
+          ${escape(COMPANY.addressLine1)}, ${escape(COMPANY.addressLine2)} – ${escape(COMPANY.country)}<br>
           VAT ${escape(COMPANY.vat)} · <a href="https://${COMPANY.website}" style="color:#555;text-decoration:none;">${escape(COMPANY.website)}</a>
         </td></tr>
       </table>
@@ -199,7 +221,7 @@ function escape(s: string): string {
   );
 }
 
-/** Genera il PDF di riepilogo come Buffer. */
+/** Genera il PDF fattura/ricevuta come Buffer, layout stile fattura europea. */
 async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     try {
@@ -211,91 +233,174 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
 
       const isFr = order.language === "fr";
       const t = isFr
-        ? { title: "Récapitulatif de commande", date: "Date", orderNo: "Commande", shipTo: "Livraison à",
-            article: "Article", sku: "SKU", qty: "Qté", unit: "Prix unit.", total: "Total",
-            subtotal: "Sous-total", shipping: "Livraison", unboxing: "Déballage", vat: "dont TVA", grand: "TOTAL" }
-        : { title: "Riepilogo ordine", date: "Data", orderNo: "Ordine", shipTo: "Spedizione a",
-            article: "Articolo", sku: "SKU", qty: "Q.tà", unit: "Prezzo un.", total: "Totale",
-            subtotal: "Subtotale", shipping: "Spedizione", unboxing: "Disimballo", vat: "di cui IVA", grand: "TOTALE" };
+        ? {
+            title: "FACTURE / REÇU",
+            seller: "Vendeur",
+            client: "Client",
+            invoiceNo: "Facture n.",
+            date: "Date",
+            description: "Description",
+            quantity: "Quantité",
+            unitPrice: "Prix unitaire",
+            total: "Total",
+            taxBase: "Base imposable",
+            vatLabel: (rate: number) => `TVA France ${rate}%`,
+            grandTotal: "Total TTC",
+            shipping: "Livraison",
+            unboxing: "Déballage et reprise emballages",
+            shippingFree: "Offerte",
+            fiscalHeading: "Mention fiscale",
+            fiscalText: "Vente à distance intracommunautaire B2C soumise à la TVA française – régime OSS. Opération déclarée via le guichet unique OSS.",
+            paymentHeading: "Mode de paiement",
+            paymentText: "Carte bancaire / Virement bancaire (via Stripe).",
+            country: "France",
+            locale: "fr-FR",
+          }
+        : {
+            title: "FATTURA / RICEVUTA",
+            seller: "Venditore",
+            client: "Cliente",
+            invoiceNo: "Fattura n.",
+            date: "Data",
+            description: "Descrizione",
+            quantity: "Quantità",
+            unitPrice: "Prezzo unitario",
+            total: "Totale",
+            taxBase: "Imponibile",
+            vatLabel: (rate: number) => `IVA Italia ${rate}%`,
+            grandTotal: "Totale IVA inclusa",
+            shipping: "Spedizione",
+            unboxing: "Disimballo e smaltimento imballi",
+            shippingFree: "Gratuita",
+            fiscalHeading: "Dicitura fiscale",
+            fiscalText: "Vendita al consumatore finale (B2C) – IVA italiana applicata. Operazione non soggetta a fattura ai sensi dell'art. 22 DPR 633/72; il presente documento ha valore di ricevuta fiscale.",
+            paymentHeading: "Modalità di pagamento",
+            paymentText: "Carta di credito / Bonifico bancario (via Stripe).",
+            country: "Italia",
+            locale: "it-IT",
+          };
 
-      // Header
-      doc.fontSize(9).fillColor("#888").text(COMPANY.name.toUpperCase(), 50, 50, { characterSpacing: 1.5 });
-      doc.fontSize(18).fillColor("#222").text(t.title, 50, 70);
+      const vatRatePct = Math.round(order.taxRateBp / 100);
+      const taxableBaseCents = order.subtotalCents + order.shippingCents + order.unboxingFeeCents - order.taxCents;
 
-      doc.fontSize(9).fillColor("#666");
-      const headerY = 110;
-      doc.text(`${t.orderNo}:`, 50, headerY);
-      doc.fillColor("#222").text(order.orderNumber, 110, headerY);
-      doc.fillColor("#666").text(`${t.date}:`, 320, headerY);
-      doc.fillColor("#222").text(
-        (order.paidAt || order.createdAt).toLocaleDateString(isFr ? "fr-FR" : "it-IT", { day: "2-digit", month: "long", year: "numeric" }),
-        360, headerY
-      );
+      // ─── HEADER: logo + titolo ───
+      const logo = loadLogoBuffer();
+      if (logo) {
+        try { doc.image(logo, 50, 40, { height: 50 }); } catch { /* ignore */ }
+      }
+      doc.font("Helvetica-Bold").fontSize(18).fillColor("#111").text(t.title, 0, 50, { align: "center" });
 
-      // Indirizzo di spedizione
+      let y = 110;
+
+      // ─── VENDEUR ───
+      doc.font("Helvetica-Bold").fontSize(11).fillColor("#111").text(t.seller, 50, y);
+      y += 16;
+      doc.font("Helvetica").fontSize(10).fillColor("#333");
+      doc.text(COMPANY.legalName, 50, y); y += 13;
+      doc.text(COMPANY.addressLine1, 50, y); y += 13;
+      doc.text(`${COMPANY.addressLine2} – ${COMPANY.country}`, 50, y); y += 13;
+      doc.text(`VAT ${COMPANY.vat}`, 50, y); y += 13;
+
+      y += 14;
+
+      // ─── CLIENT ───
+      doc.font("Helvetica-Bold").fontSize(11).fillColor("#111").text(t.client, 50, y);
+      y += 16;
+      doc.font("Helvetica").fontSize(10).fillColor("#333");
       const ship = parseAddress(order.shippingAddress);
-      let y = 150;
-      doc.fontSize(9).fillColor("#888").text(t.shipTo, 50, y);
-      y += 14;
-      doc.fontSize(10).fillColor("#333");
-      doc.text(`${order.firstName} ${order.lastName}`, 50, y);
-      y += 14;
-      doc.text(ship.street || "", 50, y);
-      y += 14;
-      doc.text(`${ship.postalCode || ""} ${ship.city || ""}${ship.province ? " (" + ship.province + ")" : ""}`, 50, y);
-      y += 14;
-      doc.text(ship.country || "", 50, y);
-      if (order.phone) { y += 14; doc.text(order.phone, 50, y); }
+      doc.text(`${order.firstName} ${order.lastName}`, 50, y); y += 13;
+      if (ship.street) { doc.text(ship.street, 50, y); y += 13; }
+      const cityLine = `${ship.postalCode || ""} ${ship.city || ""}${ship.province ? ` (${ship.province})` : ""} – ${ship.country || t.country}`.trim();
+      doc.text(cityLine, 50, y); y += 13;
+      if (order.phone) { doc.text(order.phone, 50, y); y += 13; }
+      doc.text(order.email, 50, y); y += 13;
 
-      // Tabella items
-      y += 30;
-      const colX = { name: 50, sku: 270, qty: 360, unit: 400, total: 480 };
-      doc.fontSize(9).fillColor("#666");
-      doc.text(t.article, colX.name, y);
-      doc.text(t.sku, colX.sku, y);
-      doc.text(t.qty, colX.qty, y, { width: 30, align: "center" });
-      doc.text(t.unit, colX.unit, y, { width: 70, align: "right" });
-      doc.text(t.total, colX.total, y, { width: 70, align: "right" });
       y += 14;
-      doc.moveTo(50, y).lineTo(550, y).strokeColor("#ddd").stroke();
-      y += 8;
 
-      doc.fontSize(9).fillColor("#222");
+      // ─── DATI FATTURA ───
+      const invoiceDate = (order.paidAt || order.createdAt).toLocaleDateString(t.locale, {
+        day: "2-digit", month: "2-digit", year: "numeric",
+      });
+      doc.font("Helvetica-Bold").fontSize(11).fillColor("#111")
+        .text(`${t.invoiceNo} ${invoiceNumber(order)}`, 50, y);
+      y += 16;
+      doc.font("Helvetica").fontSize(10).fillColor("#333")
+        .text(`${t.date} : ${invoiceDate}`, 50, y);
+      y += 28;
+
+      // ─── TABELLA ARTICOLI ───
+      const col = { name: 50, qty: 240, unit: 320, total: 440 };
+      const tableWidth = 500;
+      const tableRight = 50 + tableWidth;
+
+      // Header row
+      doc.lineWidth(0.8).strokeColor("#111");
+      doc.rect(50, y, tableWidth, 22).stroke();
+      doc.font("Helvetica-Bold").fontSize(10).fillColor("#111");
+      doc.text(t.description, col.name + 6, y + 6, { width: 180 });
+      doc.text(t.quantity, col.qty, y + 6, { width: 70 });
+      doc.text(t.unitPrice, col.unit, y + 6, { width: 110 });
+      doc.text(t.total, col.total, y + 6, { width: 100 });
+      y += 22;
+
+      // Item rows
+      doc.font("Helvetica").fontSize(10).fillColor("#333");
       for (const it of order.items) {
         const attrs = parseAttrs(it.attributesSnapshot);
-        const rowH = attrs ? 28 : 18;
-        if (y + rowH > 720) { doc.addPage(); y = 60; }
-        doc.fillColor("#222").text(it.productName, colX.name, y, { width: 210 });
-        if (attrs) doc.fontSize(8).fillColor("#888").text(attrs, colX.name, y + 12, { width: 210 });
-        doc.fontSize(8).fillColor("#666").text(it.sku, colX.sku, y, { width: 80 });
-        doc.fontSize(9).fillColor("#333").text(String(it.quantity), colX.qty, y, { width: 30, align: "center" });
-        doc.text(eur(it.unitPriceCents), colX.unit, y, { width: 70, align: "right" });
-        doc.fillColor("#222").text(eur(it.totalCents), colX.total, y, { width: 70, align: "right" });
+        const nameLines = doc.heightOfString(it.productName, { width: 180 });
+        const attrLines = attrs ? doc.heightOfString(attrs, { width: 180 }) : 0;
+        const rowH = Math.max(28, nameLines + attrLines + 10);
+        if (y + rowH > 740) { doc.addPage(); y = 60; }
+        doc.rect(50, y, tableWidth, rowH).stroke();
+        doc.fillColor("#222").text(it.productName, col.name + 6, y + 6, { width: 180 });
+        if (attrs) {
+          doc.fontSize(8).fillColor("#666").text(attrs, col.name + 6, y + 6 + nameLines, { width: 180 });
+          doc.fontSize(10).fillColor("#222");
+        }
+        doc.text(String(it.quantity), col.qty, y + 8, { width: 70 });
+        doc.text(eur(it.unitPriceCents), col.unit, y + 8, { width: 110 });
+        doc.text(eur(it.totalCents), col.total, y + 8, { width: 100 });
         y += rowH;
-        doc.moveTo(50, y).lineTo(550, y).strokeColor("#eee").stroke();
-        y += 6;
       }
 
-      // Totali
-      y += 12;
-      const drawTotal = (label: string, value: string, bold = false) => {
-        doc.fontSize(bold ? 11 : 9).fillColor(bold ? "#222" : "#666").text(label, 350, y, { width: 130, align: "right" });
-        doc.fillColor("#222").text(value, colX.total, y, { width: 70, align: "right" });
-        y += bold ? 20 : 14;
-      };
-      drawTotal(t.subtotal, eur(order.subtotalCents));
-      drawTotal(t.shipping, order.shippingCents === 0 ? (isFr ? "Offerte" : "Gratuita") : eur(order.shippingCents));
-      if (order.unboxingFeeCents > 0) drawTotal(t.unboxing, eur(order.unboxingFeeCents));
-      drawTotal(`${t.vat} (${(order.taxRateBp / 100).toFixed(0)}%)`, eur(order.taxCents));
-      y += 4;
-      doc.moveTo(350, y).lineTo(550, y).strokeColor("#222").stroke();
-      y += 6;
-      drawTotal(t.grand, eur(order.totalCents), true);
+      y += 14;
 
-      // Footer
-      doc.fontSize(8).fillColor("#888").text(
-        `${COMPANY.legalName} · ${COMPANY.address} · VAT ${COMPANY.vat} · ${COMPANY.website}`,
-        50, 780, { width: 500, align: "center" }
+      // ─── TOTALI (tabella più piccola allineata a destra) ───
+      const totalsX = 280;
+      const totalsW = tableRight - totalsX;
+      const rowTotal = (label: string, value: string, bold = false) => {
+        doc.rect(totalsX, y, totalsW, 22).stroke();
+        // separatore tra label e valore
+        doc.moveTo(totalsX + totalsW / 2, y).lineTo(totalsX + totalsW / 2, y + 22).stroke();
+        doc.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(10).fillColor("#111");
+        doc.text(label, totalsX + 6, y + 6, { width: totalsW / 2 - 12 });
+        doc.text(value, totalsX + totalsW / 2 + 6, y + 6, { width: totalsW / 2 - 12 });
+        y += 22;
+      };
+      rowTotal(t.taxBase, eur(taxableBaseCents));
+      if (order.shippingCents > 0) rowTotal(t.shipping, eur(order.shippingCents));
+      else rowTotal(t.shipping, t.shippingFree);
+      if (order.unboxingFeeCents > 0) rowTotal(t.unboxing, eur(order.unboxingFeeCents));
+      rowTotal(t.vatLabel(vatRatePct), eur(order.taxCents));
+      rowTotal(t.grandTotal, eur(order.totalCents), true);
+
+      y += 24;
+
+      // ─── MENTION FISCALE ───
+      if (y + 60 > 770) { doc.addPage(); y = 60; }
+      doc.font("Helvetica-Bold").fontSize(10).fillColor("#111").text(t.fiscalHeading, 50, y); y += 14;
+      doc.font("Helvetica").fontSize(9).fillColor("#333").text(t.fiscalText, 50, y, { width: tableWidth });
+      y += doc.heightOfString(t.fiscalText, { width: tableWidth }) + 18;
+
+      // ─── PAYMENT ───
+      if (y + 40 > 770) { doc.addPage(); y = 60; }
+      doc.font("Helvetica-Bold").fontSize(10).fillColor("#111").text(t.paymentHeading, 50, y); y += 14;
+      doc.font("Helvetica").fontSize(9).fillColor("#333").text(t.paymentText, 50, y, { width: tableWidth });
+
+      // ─── FOOTER ───
+      doc.font("Helvetica").fontSize(8).fillColor("#888").text(
+        `${COMPANY.legalName} · ${COMPANY.addressLine1}, ${COMPANY.addressLine2} (${COMPANY.country}) · VAT ${COMPANY.vat} · ${COMPANY.website}`,
+        50, 800, { width: tableWidth, align: "center" },
       );
 
       doc.end();

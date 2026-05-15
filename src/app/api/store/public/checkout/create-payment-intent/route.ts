@@ -42,6 +42,10 @@ export async function POST(req: NextRequest) {
 
     // Mercato = country di spedizione (FR usa prezzi FR + IVA 20%, IT usa IT + 22%).
     const market = marketFromCountry(shippingAddress.country);
+    // Lingua dell'ordine: dalla request (frontend store con useLang()); fallback a "it".
+    const ALLOWED_LANGS = new Set(["it", "fr", "en", "de", "es"]);
+    const reqLang = typeof body.lang === "string" ? body.lang.toLowerCase().trim() : "";
+    const orderLang = ALLOWED_LANGS.has(reqLang) ? reqLang : "it";
 
     // Carica le varianti dal DB per verificare prezzi (NEVER trust client)
     const variantIds = items.map((i) => i.variantId);
@@ -156,11 +160,35 @@ export async function POST(req: NextRequest) {
     // Genera orderNumber
     const orderNumber = "GTV-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase();
 
-    // Cerca o crea customer (guest o esistente)
-    let customerId: string | undefined;
+    // Cerca o crea customer. Se non esiste, lo creiamo SENZA password (passwordHash=null):
+    // dopo il pagamento gli mandiamo un magic-link per impostarla. Se esiste già,
+    // aggiorniamo nome/telefono/lingua sui campi mancanti senza sovrascrivere ciò che ha.
     const existingCustomer = await prisma.customer.findUnique({ where: { email: customer.email } });
+    let customerId: string;
     if (existingCustomer) {
       customerId = existingCustomer.id;
+      await prisma.customer.update({
+        where: { id: existingCustomer.id },
+        data: {
+          firstName: existingCustomer.firstName || customer.firstName,
+          lastName: existingCustomer.lastName || customer.lastName,
+          phone: existingCustomer.phone || customer.phone || null,
+          language: existingCustomer.language || orderLang,
+        },
+      });
+    } else {
+      const created = await prisma.customer.create({
+        data: {
+          email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone: customer.phone || null,
+          language: orderLang,
+          passwordHash: null,
+          isActive: true,
+        },
+      });
+      customerId = created.id;
     }
 
     // Crea Stripe PaymentIntent.
@@ -202,7 +230,7 @@ export async function POST(req: NextRequest) {
         firstName: customer.firstName,
         lastName: customer.lastName,
         phone: customer.phone || null,
-        language: "it",
+        language: orderLang,
         shippingAddress: JSON.stringify(shippingAddress),
         billingAddress: JSON.stringify(billingAddress),
         subtotalCents,

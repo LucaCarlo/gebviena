@@ -2,7 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe, getStripeConfig } from "@/lib/stripe-config";
 import { sendOrderConfirmationEmail } from "@/lib/order-email";
+import { requestMagicLink } from "@/lib/customer-magic-link";
 import type Stripe from "stripe";
+
+async function maybeSendWelcomeMagicLink(orderId: string, origin: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { customerId: true, email: true, customer: { select: { passwordHash: true } } },
+  });
+  if (!order) return;
+  // Mandiamo il magic-link SOLO ai customer senza password — è il caso del nuovo
+  // cliente che ha appena fatto il primo ordine. Quelli che già accedono con
+  // password non ricevono nulla, hanno già il loro account.
+  if (order.customer && order.customer.passwordHash) return;
+  await requestMagicLink({ email: order.email, origin, purpose: "magic_link" }).catch((err) => {
+    console.error("[welcome-magic-link] error:", err);
+  });
+}
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +87,11 @@ export async function POST(req: NextRequest) {
         if (promoted) {
           sendOrderConfirmationEmail(order.id).catch((err) => {
             console.error("[stripe-webhook] sendOrderConfirmationEmail error:", err);
+          });
+          // 2a email: magic-link per accedere all'area riservata (solo se nuovo).
+          const origin = req.nextUrl.origin;
+          maybeSendWelcomeMagicLink(order.id, origin).catch((err) => {
+            console.error("[stripe-webhook] welcome magic-link error:", err);
           });
         }
         break;
