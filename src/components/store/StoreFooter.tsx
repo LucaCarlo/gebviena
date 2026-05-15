@@ -1,14 +1,32 @@
 "use client";
 
-import { useLang } from "@/contexts/I18nContext";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useT, useLang } from "@/contexts/I18nContext";
 
 /**
  * Footer dedicato allo store: snello, senza i link alle pagine del sito
  * principale. Solo contatti per assistenza + orari, bilingue IT/FR.
+ * Il bottom bar (copyright + disclaimer marchio + "Built by") è identico
+ * a quello del sito principale.
  */
 export default function StoreFooter() {
+  const t = useT();
   const isFr = useLang() === "fr";
-  const year = new Date().getFullYear();
+  const [builtByLogo, setBuiltByLogo] = useState<string>("");
+  const [builtByLink, setBuiltByLink] = useState<string>("");
+
+  useEffect(() => {
+    fetch("/api/page-images?page=footer")
+      .then((r) => r.json())
+      .then((d) => {
+        const items = d?.data || [];
+        const logo = items.find((i: { section: string }) => i.section === "built-by-logo");
+        if (logo?.imageUrl) setBuiltByLogo(logo.imageUrl);
+        if (logo?.linkUrl) setBuiltByLink(logo.linkUrl);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <footer className="border-t border-warm-200 bg-white">
@@ -44,9 +62,51 @@ export default function StoreFooter() {
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="mt-8 pt-5 border-t border-warm-100 text-[11px] text-warm-400">
-          © {year} Gebrüder Thonet Vienna · Production Furniture International S.p.A
+      {/* Bottom bar — identico al sito principale */}
+      <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-12 pt-8 md:pt-10">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="flex-1">
+            <p className="text-[14px] font-normal leading-relaxed" style={{ color: "#000" }}>
+              {t("footer.bottom.copyright")}
+            </p>
+            <p className="text-[13px] font-normal leading-[1.4] mt-3 max-w-3xl" style={{ color: "#000" }}>
+              {t("footer.bottom.disclaimer")}
+            </p>
+          </div>
+          {builtByLogo && (
+            <div className="flex items-center gap-1.5 shrink-0" style={{ color: "#000" }}>
+              <span className="text-[13px] font-normal">Built by</span>
+              {builtByLink ? (
+                <a
+                  href={builtByLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block"
+                  aria-label="Built by"
+                >
+                  <Image
+                    src={builtByLogo}
+                    alt="Built by"
+                    width={80}
+                    height={18}
+                    className="object-contain h-[18px] w-auto"
+                    unoptimized
+                  />
+                </a>
+              ) : (
+                <Image
+                  src={builtByLogo}
+                  alt="Built by"
+                  width={80}
+                  height={18}
+                  className="object-contain h-[18px] w-auto"
+                  unoptimized
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
     </footer>

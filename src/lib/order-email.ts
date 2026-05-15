@@ -195,18 +195,24 @@ export async function buildOrderPdf(order: OrderWithItems): Promise<Buffer> {
 async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: "A4", margin: 50 });
+      // I font TTF embedded vanno risolti PRIMA di costruire il documento:
+      // il costruttore di PDFDocument chiama initFonts() che, senza opzione
+      // `font`, carica di default Helvetica → legge data/Helvetica.afm, che
+      // il bundle webpack di Next NON include (ENOENT in produzione). Passando
+      // il TTF come `font` nelle opzioni, pdfkit non tocca mai gli .afm.
+      const FONT = "Body";
+      const FONT_BOLD = "BodyBold";
+      const regPath = firstExisting(FONT_REG_CANDIDATES);
+      const boldPath = firstExisting(FONT_BOLD_CANDIDATES);
+
+      const docOpts: PDFKit.PDFDocumentOptions = { size: "A4", margin: 50 };
+      if (regPath) docOpts.font = regPath;
+      const doc = new PDFDocument(docOpts);
       const chunks: Buffer[] = [];
       doc.on("data", (c: Buffer) => chunks.push(c));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      // Registra i font TTF embedded (evita la dipendenza dagli .afm standard
-      // che Next.js non bundla). FONT = regular, FONT_BOLD = grassetto.
-      const FONT = "Body";
-      const FONT_BOLD = "BodyBold";
-      const regPath = firstExisting(FONT_REG_CANDIDATES);
-      const boldPath = firstExisting(FONT_BOLD_CANDIDATES);
       if (regPath) doc.registerFont(FONT, regPath);
       if (boldPath) doc.registerFont(FONT_BOLD, boldPath);
       // Se per qualche motivo i TTF non ci sono, ripieghiamo sui built-in

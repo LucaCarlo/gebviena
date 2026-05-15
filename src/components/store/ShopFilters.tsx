@@ -58,7 +58,6 @@ const TYPE_LABEL_FR: Record<AttrValue["type"], string> = {
   OTHER: "Autre",
 };
 const SORT_OPTIONS = [
-  { value: "newest", label: "Novità", labelFr: "Nouveautés" },
   { value: "price-asc", label: "Prezzo: crescente", labelFr: "Prix : croissant" },
   { value: "price-desc", label: "Prezzo: decrescente", labelFr: "Prix : décroissant" },
   { value: "name", label: "Nome A-Z", labelFr: "Nom A-Z" },
@@ -169,6 +168,7 @@ export default function ShopFilters() {
           onChange={(e) => updateQuery({ sort: e.target.value === "newest" ? null : e.target.value })}
           className="flex-1 border border-warm-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-warm-500"
         >
+          <option value="newest">{tr("Predefinito", "Par défaut")}</option>
           {SORT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{tr(o.label, o.labelFr)}</option>
           ))}
