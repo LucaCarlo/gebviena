@@ -31,16 +31,40 @@ function newToken(): string {
 interface CreateTokenInput {
   customerId: string;
   purpose: TokenPurpose;
+  /**
+   * Se true (default per magic_link), riusa un token già esistente ancora
+   * valido (non scaduto, usi residui > 0) invece di crearne uno nuovo.
+   * Così, se il cliente non vede l'email post-pagamento e richiede di
+   * nuovo l'accesso, riceve LO STESSO token: il contatore dei 3 usi non
+   * si moltiplica e i link vecchi restano validi.
+   */
+  reuseExisting?: boolean;
 }
 
-export async function createLoginToken({ customerId, purpose }: CreateTokenInput) {
-  const token = newToken();
+export async function createLoginToken({ customerId, purpose, reuseExisting }: CreateTokenInput) {
   const now = Date.now();
   const ttlMs = purpose === "password_reset"
     ? PASSWORD_RESET_TTL_HOURS * 60 * 60 * 1000
     : MAGIC_LINK_TTL_DAYS * 24 * 60 * 60 * 1000;
   const usesRemaining = purpose === "password_reset" ? PASSWORD_RESET_MAX_USES : MAGIC_LINK_MAX_USES;
 
+  // Default: riusa per magic_link, NON riusare per password_reset (single-use,
+  // ogni richiesta deve invalidare la precedente per sicurezza).
+  const shouldReuse = reuseExisting ?? (purpose === "magic_link");
+  if (shouldReuse) {
+    const existing = await prisma.customerLoginToken.findFirst({
+      where: {
+        customerId,
+        purpose,
+        usesRemaining: { gt: 0 },
+        expiresAt: { gt: new Date(now) },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    if (existing) return existing.token;
+  }
+
+  const token = newToken();
   await prisma.customerLoginToken.create({
     data: {
       token,
