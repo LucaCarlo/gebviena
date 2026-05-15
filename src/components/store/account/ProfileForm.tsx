@@ -75,7 +75,8 @@ export default function ProfileForm() {
   if (!customer) return <AuthForms />;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
+      <div className="max-w-2xl">
       <Link href="/account" className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-warm-500 hover:text-warm-900 mb-6">
         <ChevronLeft size={14} /> {t("Area riservata", "Espace personnel")}
       </Link>
@@ -150,6 +151,7 @@ export default function ProfileForm() {
           {t("Aggiorna password", "Mettre à jour le mot de passe")}
         </button>
       </form>
+      </div>
     </div>
   );
 }

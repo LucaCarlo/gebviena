@@ -49,7 +49,7 @@ export default function FavoritesList() {
   if (!customer) return <AuthForms />;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
       <Link href="/account" className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-warm-500 hover:text-warm-900 mb-6">
         <ChevronLeft size={14} /> {t("Area riservata", "Espace personnel")}
       </Link>

@@ -11,7 +11,7 @@ export default function AccountDashboard({ customer }: { customer: StoreCustomer
   const fullName = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
       <div className="flex flex-wrap items-end justify-between mb-10 gap-4">
         <div>
           <div className="text-[11px] uppercase tracking-[0.25em] text-warm-500 mb-1">{t("Area riservata", "Espace personnel")}</div>

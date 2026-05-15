@@ -203,7 +203,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 lg:px-8 py-10">
+    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
       <Link href="/carrello" className="inline-flex items-center gap-2 text-sm text-warm-600 hover:text-warm-900 mb-4">
         <ArrowLeft size={14} /> {t("Torna al carrello", "Retour au panier")}
       </Link>

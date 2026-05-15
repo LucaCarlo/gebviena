@@ -100,7 +100,7 @@ export default function AuthForms() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-16">
+    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10"><div className="max-w-lg mx-auto">
       <div className="text-center mb-10">
         <h1 className="text-3xl font-light text-warm-900 mb-2">{t("Area riservata", "Espace personnel")}</h1>
         <p className="text-sm text-warm-600">{t("Accedi o registrati per gestire i tuoi ordini e i preferiti.", "Connectez-vous ou inscrivez-vous pour gérer vos commandes et vos favoris.")}</p>
@@ -215,7 +215,7 @@ export default function AuthForms() {
           </button>
         </form>
       )}
-    </div>
+    </div></div>
   );
 }
 

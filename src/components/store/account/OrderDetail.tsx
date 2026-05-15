@@ -78,7 +78,7 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
   if (loading) return <div className="max-w-4xl mx-auto p-12 text-center text-warm-500 text-sm">{t("Caricamento…", "Chargement…")}</div>;
   if (!customer) return <AuthForms />;
   if (notFound) return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
       <div className="border border-warm-200 p-12 text-center">
         <CircleAlert size={28} className="mx-auto text-warm-400 mb-3" />
         <div className="text-warm-600 mb-4">{t("Ordine non trovato.", "Commande introuvable.")}</div>
@@ -94,7 +94,7 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
   const billing = safeParseAddress(order.billingAddress);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
       <Link href="/account/orders" className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-warm-500 hover:text-warm-900 mb-6">
         <ChevronLeft size={14} /> {t("I miei ordini", "Mes commandes")}
       </Link>
