@@ -13,7 +13,10 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "12");
   const lang = resolveLangFromRequest(req, DEFAULT_LANG);
 
-  const where: Record<string, unknown> = { isActive: true };
+  // Esclude i prodotti creati per lo Store (special-sale): hanno uno
+  // StoreProduct collegato. Il catalogo del sito principale mostra solo i
+  // prodotti "veri", non i duplicati/import dello shop.
+  const where: Record<string, unknown> = { isActive: true, storeProduct: { is: null } };
   if (category && category !== "TUTTI") where.category = { contains: category };
   if (subcategory) where.subcategory = subcategory;
   if (featured === "true") where.isFeatured = true;

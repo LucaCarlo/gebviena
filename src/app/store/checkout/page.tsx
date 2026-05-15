@@ -285,6 +285,23 @@ export default function CheckoutPage() {
                 {t("Consegna al piano (oltre piano terra):", "Livraison à l'étage (au-delà du rez-de-chaussée) :")} <strong>{form.country === "FR" ? "140€/m³" : "120€/m³"}</strong> {t("aggiuntivo. Servizi addizionali si applicano anche con spedizione gratuita.", "en supplément. Les services additionnels s'appliquent aussi avec la livraison gratuite.")}
               </p>
 
+              {/* Note sempre visibili al checkout */}
+              <div className="space-y-2 text-[11px] text-warm-600 leading-[1.6] bg-warm-50 border border-warm-200 rounded p-3">
+                <p>
+                  <strong>{t("Nota — consegna al piano:", "Note — livraison à l'étage :")}</strong>{" "}
+                  {t(
+                    "Il costo indicato si riferisce a un servizio di consegna che non prevede particolari difficoltà di accesso ai locali e/o specifiche esigenze di movimentazione dei prodotti ordinati, come per esempio prodotti particolarmente pesanti o voluminosi, necessità di utilizzare una piattaforma esterna, obbligo di richiedere particolari permessi, necessità di personale extra per la movimentazione. Nel caso in cui si verificasse una di queste condizioni, è necessario informare il servizio clienti che si occuperà di rivedere la quotazione e di ricalcolare gli eventuali costi del servizio in accordo con le condizioni sopra descritte.",
+                    "Le coût indiqué se réfère à un service de livraison ne présentant pas de difficultés particulières d'accès aux locaux et/ou d'exigences spécifiques de manutention des produits commandés, par exemple produits particulièrement lourds ou volumineux, nécessité d'utiliser une plateforme externe, obligation de demander des autorisations particulières, besoin de personnel supplémentaire pour la manutention. Si l'une de ces conditions se présentait, il est nécessaire d'informer le service client qui se chargera de revoir le devis et de recalculer les éventuels coûts du service selon les conditions décrites ci-dessus.",
+                  )}
+                </p>
+                <p>
+                  {t(
+                    "La spedizione standard in Italia è gratuita per ordini superiori a 950€, salvo alcune eccezioni legate a prodotti particolarmente voluminosi o a consegne in aree remote.",
+                    "La livraison standard en Italie est gratuite pour les commandes supérieures à 950€, sauf exceptions liées à des produits particulièrement volumineux ou à des livraisons en zones reculées.",
+                  )}
+                </p>
+              </div>
+
               {/* Reminder spedizione gratuita (solo se mancano <= 200€ alla soglia) */}
               {(() => {
                 const sub = subtotalCents;

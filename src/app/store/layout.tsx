@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { unstable_noStore as noStore } from "next/cache";
-import Footer from "@/components/layout/Footer";
+import StoreFooter from "@/components/store/StoreFooter";
 import RecaptchaProvider from "@/components/providers/RecaptchaProvider";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { getCurrentLang, loadAllUiTranslations, DEFAULT_LANG } from "@/lib/i18n";
@@ -80,7 +80,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
               <StoreHeader />
             </Suspense>
             <main className="pt-20 md:pt-24">{children}</main>
-            <Footer />
+            <StoreFooter />
           </div>
         </CartProvider>
         </CustomerAuthProvider>
