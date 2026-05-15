@@ -74,9 +74,16 @@ const DEFINITIONS: SettingDef[] = [
   {
     key: "store.delivery_lead_time",
     group: "store_general",
-    label: "Tempi di consegna",
+    label: "Tempi di consegna (IT)",
     placeholder: "4–6 settimane",
-    hint: "Mostrato sulla pagina prodotto sotto Volume/Peso. Testo libero (es. \"4–6 settimane\", \"Pronta consegna\", \"Su ordinazione\"). Vale per tutti i prodotti.",
+    hint: "Mostrato sulla pagina prodotto (lingua italiana). Testo libero (es. \"4–6 settimane\", \"Pronta consegna\", \"Su ordinazione\"). Vale per tutti i prodotti.",
+  },
+  {
+    key: "store.delivery_lead_time_fr",
+    group: "store_general",
+    label: "Tempi di consegna (FR)",
+    placeholder: "4–6 semaines",
+    hint: "Versione francese mostrata quando lo store è in francese (es. \"4–6 semaines\", \"Livraison rapide\", \"Sur commande\").",
   },
 
   // ── Email ──

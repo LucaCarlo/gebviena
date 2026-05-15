@@ -42,10 +42,10 @@ export default function StoreHeroSection() {
       <section className="border-b border-warm-200">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-12 text-center">
           <div className="text-xs uppercase tracking-[0.3em] text-warm-500 mb-3">
-            Gebrüder Thonet Vienna · Shop online
+            Gebrüder Thonet Vienna · {lang === "fr" ? "Boutique en ligne" : "Shop online"}
           </div>
           <h1 className="text-3xl md:text-4xl font-light text-warm-900">
-            Design viennese, ordinabile a casa tua
+            {lang === "fr" ? "Le design viennois, livré chez vous" : "Design viennese, ordinabile a casa tua"}
           </h1>
         </div>
       </section>

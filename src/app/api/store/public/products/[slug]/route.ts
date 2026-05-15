@@ -132,7 +132,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       marketingDescription: tr?.marketingDescription || productTr?.description || null,
       seoTitle: tr?.seoTitle || null,
       seoDescription: tr?.seoDescription || null,
-      deliveryLeadTime: generalCfg.deliveryLeadTime,
+      deliveryLeadTime: lang === "fr" ? generalCfg.deliveryLeadTimeFr : generalCfg.deliveryLeadTime,
       coverImage: sp.coverImage || sp.product.coverImage || sp.product.imageUrl,
       galleryImages: sp.galleryImages,
       excludedCatalogImages: sp.excludedCatalogImages,

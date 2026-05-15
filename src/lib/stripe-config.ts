@@ -47,6 +47,7 @@ export interface StoreGeneralConfig {
   taxRateBp: number;
   defaultCountry: string;
   deliveryLeadTime: string;
+  deliveryLeadTimeFr: string;
 }
 
 export async function getStoreGeneralConfig(): Promise<StoreGeneralConfig> {
@@ -55,11 +56,14 @@ export async function getStoreGeneralConfig(): Promise<StoreGeneralConfig> {
     "store.tax_rate_bp",
     "store.default_country",
     "store.delivery_lead_time",
+    "store.delivery_lead_time_fr",
   ]);
+  const itLead = (map["store.delivery_lead_time"] || "4–6 settimane").trim() || "4–6 settimane";
   return {
     currency: (map["store.currency"] || "EUR").toUpperCase(),
     taxRateBp: parseInt(map["store.tax_rate_bp"] || "2200", 10) || 2200,
     defaultCountry: (map["store.default_country"] || "IT").toUpperCase(),
-    deliveryLeadTime: (map["store.delivery_lead_time"] || "4–6 settimane").trim() || "4–6 settimane",
+    deliveryLeadTime: itLead,
+    deliveryLeadTimeFr: (map["store.delivery_lead_time_fr"] || "4–6 semaines").trim() || "4–6 semaines",
   };
 }
