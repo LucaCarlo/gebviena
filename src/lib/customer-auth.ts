@@ -11,7 +11,7 @@ export interface CustomerJWTPayload {
 }
 
 export function signCustomerToken(payload: CustomerJWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "60d" });
 }
 
 export function verifyCustomerToken(token: string): CustomerJWTPayload | null {
@@ -53,7 +53,7 @@ export function customerCookieOptions() {
     httpOnly: true,
     secure: isSecure,
     sameSite: "lax" as const,
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: 60 * 60 * 24 * 60, // 60 giorni (2 mesi) — accesso salvato sul dispositivo
     path: "/",
   };
 }

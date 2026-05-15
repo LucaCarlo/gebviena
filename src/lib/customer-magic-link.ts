@@ -270,3 +270,39 @@ export async function requestMagicLink(opts: {
   });
   return { sent: ok };
 }
+
+/**
+ * Email post-ordine che INVITA ad accedere all'area riservata, SENZA token.
+ * Porta alla pagina di login dove l'utente inserisce la propria email per
+ * ricevere il link di accesso (flusso passwordless). Inviata sempre (non
+ * rivela se l'utente esiste — è comunque l'email dell'ordine).
+ */
+export async function sendAccessInviteEmail(opts: {
+  email: string;
+  origin: string;
+  language?: string;
+}): Promise<{ sent: boolean }> {
+  const email = opts.email.trim().toLowerCase();
+  if (!email) return { sent: false };
+  const isFr = (opts.language || "it") === "fr";
+  const loginUrl = `${storeOriginFrom(opts.origin)}/account`;
+
+  const subject = isFr
+    ? `Accédez à votre espace personnel — ${COMPANY_NAME}`
+    : `Accedi alla tua area riservata — ${COMPANY_NAME}`;
+  const greeting = isFr ? "Bonjour," : "Ciao,";
+  const intro = isFr
+    ? "Vous pouvez consulter votre commande dans votre espace personnel. L'accès est sans mot de passe : cliquez ci-dessous, saisissez votre adresse e-mail et vous recevrez un lien de connexion."
+    : "Puoi consultare il tuo ordine nella tua area riservata. L'accesso è senza password: clicca qui sotto, inserisci la tua email e riceverai un link per entrare.";
+  const cta = isFr ? "Accéder à mon espace" : "Accedi all'area riservata";
+  const ignore = isFr
+    ? "Le lien de connexion reste valable et votre accès est mémorisé sur cet appareil pendant 2 mois."
+    : "Il link di accesso resta valido e l'accesso viene ricordato su questo dispositivo per 2 mesi.";
+
+  const html = htmlWrap({ greeting, intro, cta, url: loginUrl, ignore });
+  const ok = await sendMail(email, subject, html, {
+    fromName: COMPANY_NAME,
+    replyTo: COMPANY_EMAIL,
+  });
+  return { sent: ok };
+}

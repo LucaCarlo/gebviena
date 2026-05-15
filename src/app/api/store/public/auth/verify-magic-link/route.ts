@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
     });
 
     const jwt = signCustomerToken({ customerId: customer.id, email: customer.email });
-    const needsPasswordSetup = !customer.passwordHash;
 
+    // Accesso passwordless: nessuna password da impostare, entra e basta.
     const res = NextResponse.json({
       success: true,
       data: {
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         email: customer.email,
         firstName: customer.firstName,
         lastName: customer.lastName,
-        needsPasswordSetup,
+        needsPasswordSetup: false,
         purpose: consumed.purpose,
       },
     });
