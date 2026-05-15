@@ -1,0 +1,584 @@
+[
+ {
+  "sku": "CHVALELGN",
+  "descFr": "Arch Clothes Valet est un valet de chambre en bois de hêtre cintré au design essentiel et élégant. Un support pratique et raffiné pour vêtements et accessoires, idéal pour les chambres, dressings et espaces hospitality.",
+  "priceFrCents": 83400,
+  "salePriceFrCents": 50040
+ },
+ {
+  "sku": "SDCAFELGN",
+  "descFr": "Chaise Caféstuhl en hêtre cintré avec assise en multiplis et dossier façonné. Les lignes douces et la structure légère définissent un design essentiel et contemporain, idéal pour les espaces dining et les projets contract.",
+  "priceFrCents": 69000,
+  "salePriceFrCents": 41400
+ },
+ {
+  "sku": "SDCAFELTES-C",
+  "descFr": "Chaise Caféstuhl en hêtre cintré avec assise rembourrée et dossier façonné. Les lignes douces et la structure légère définissent un design essentiel et contemporain, idéal pour les espaces dining et les projets contract.",
+  "priceFrCents": 80400,
+  "salePriceFrCents": 48240
+ },
+ {
+  "sku": "SDCAFELTES-S",
+  "descFr": "Chaise Caféstuhl en hêtre cintré avec assise rembourrée et dossier façonné. Les lignes douces et la structure légère définissent un design essentiel et contemporain, idéal pour les espaces dining et les projets contract.",
+  "priceFrCents": 80400,
+  "salePriceFrCents": 48240
+ },
+ {
+  "sku": "SDCZECLGN-G",
+  "descFr": "Chaise Czech en hêtre cintré avec assise façonnée en multiplis et dossier enveloppant. Disponible également avec piètement en hêtre naturel. Les lignes douces et le profil essentiel définissent un design contemporain et polyvalent, idéal pour les espaces dining et les projets contract.",
+  "priceFrCents": 66840,
+  "salePriceFrCents": 40104
+ },
+ {
+  "sku": "SDCZECLGN",
+  "descFr": "Chaise Czech en hêtre cintré avec assise façonnée en multiplis et dossier enveloppant. Disponible également avec piètement en hêtre naturel. Les lignes douces et le profil essentiel définissent un design contemporain et polyvalent, idéal pour les espaces dining et les projets contract.",
+  "priceFrCents": 66840,
+  "salePriceFrCents": 40104
+ },
+ {
+  "sku": "SDCZECTES-GC",
+  "descFr": "Chaise Czech en hêtre cintré avec assise façonnée rembourrée et dossier enveloppant. Disponible également avec piètement en hêtre naturel. Les lignes douces et le profil essentiel définissent un design contemporain et polyvalent, idéal pour les espaces dining et les projets contract.",
+  "priceFrCents": 79200,
+  "salePriceFrCents": 47520
+ },
+ {
+  "sku": "SDCZECTES-GS",
+  "descFr": "Chaise Czech en hêtre cintré avec assise façonnée rembourrée et dossier enveloppant. Disponible également avec piètement en hêtre naturel. Les lignes douces et le profil essentiel définissent un design contemporain et polyvalent, idéal pour les espaces dining et les projets contract.",
+  "priceFrCents": 79200,
+  "salePriceFrCents": 47520
+ },
+ {
+  "sku": "SDCZECTES-C",
+  "descFr": "Chaise Czech en hêtre cintré avec assise façonnée rembourrée et dossier enveloppant. Disponible également avec piètement en hêtre naturel. Les lignes douces et le profil essentiel définissent un design contemporain et polyvalent, idéal pour les espaces dining et les projets contract.",
+  "priceFrCents": 79200,
+  "salePriceFrCents": 47520
+ },
+ {
+  "sku": "SDCZECTES-S",
+  "descFr": "Chaise Czech en hêtre cintré avec assise façonnée rembourrée et dossier enveloppant. Disponible également avec piètement en hêtre naturel. Les lignes douces et le profil essentiel définissent un design contemporain et polyvalent, idéal pour les espaces dining et les projets contract.",
+  "priceFrCents": 79200,
+  "salePriceFrCents": 47520
+ },
+ {
+  "sku": "PTCZECLGN-G",
+  "descFr": "Chaise Czech avec accoudoirs en hêtre cintré avec assise façonnée en multiplis et accoudoirs intégrés. Disponible également avec piètement en hêtre naturel. La courbe continue de la structure crée une esthétique fluide et confortable, parfaite pour des espaces dining élégants et des contextes contract.",
+  "priceFrCents": 93600,
+  "salePriceFrCents": 56160
+ },
+ {
+  "sku": "PTCZECLGN",
+  "descFr": "Chaise Czech avec accoudoirs en hêtre cintré avec assise façonnée en multiplis et accoudoirs intégrés. Disponible également avec piètement en hêtre naturel. La courbe continue de la structure crée une esthétique fluide et confortable, parfaite pour des espaces dining élégants et des contextes contract.",
+  "priceFrCents": 93600,
+  "salePriceFrCents": 56160
+ },
+ {
+  "sku": "PTCZECTES-GC",
+  "descFr": "Chaise Czech avec accoudoirs en hêtre cintré avec assise façonnée rembourrée et accoudoirs intégrés. Disponible également avec piètement en hêtre naturel. La courbe continue de la structure crée une esthétique fluide et confortable, parfaite pour des espaces dining élégants et des contextes contract.",
+  "priceFrCents": 105240,
+  "salePriceFrCents": 63144
+ },
+ {
+  "sku": "PTCZECTES-GS",
+  "descFr": "Chaise Czech en hêtre cintré avec assise façonnée rembourrée et accoudoirs intégrés. Disponible également avec piètement en hêtre naturel. La courbe continue de la structure crée une esthétique fluide et confortable, parfaite pour des espaces dining élégants et des contextes contract.",
+  "priceFrCents": 105240,
+  "salePriceFrCents": 63144
+ },
+ {
+  "sku": "PTCZECTES-C",
+  "descFr": "Chaise Czech en hêtre cintré avec assise façonnée rembourrée et accoudoirs intégrés. Disponible également avec piètement en hêtre naturel. La courbe continue de la structure crée une esthétique fluide et confortable, parfaite pour des espaces dining élégants et des contextes contract.",
+  "priceFrCents": 105240,
+  "salePriceFrCents": 63144
+ },
+ {
+  "sku": "PTCZECTES-S",
+  "descFr": "Chaise Czech avec accoudoirs en hêtre cintré avec assise façonnée rembourrée et accoudoirs intégrés. Disponible également avec piètement en hêtre naturel. La courbe continue de la structure crée une esthétique fluide et confortable, parfaite pour des espaces dining élégants et des contextes contract.",
+  "priceFrCents": 105240,
+  "salePriceFrCents": 63144
+ },
+ {
+  "sku": "CML160LGN-N",
+  "descFr": "Chaise décorative en bois Ladder, pensée pour organiser avec style. Parfaite comme porte-serviettes ou porte-journaux, elle apporte une touche essentielle à l’espace. Ne pas utiliser comme échelle.",
+  "priceFrCents": 65640,
+  "salePriceFrCents": 39384
+ },
+ {
+  "sku": "CML160LGN-B",
+  "descFr": "Chaise décorative en bois Ladder, pensée pour organiser avec style. Parfaite comme porte-serviettes ou porte-journaux, elle apporte une touche essentielle à l’espace. Ne pas utiliser comme échelle.",
+  "priceFrCents": 65640,
+  "salePriceFrCents": 39384
+ },
+ {
+  "sku": "CML160LGN-F",
+  "descFr": "Chaise décorative en bois Ladder, pensée pour organiser avec style. Parfaite comme porte-serviettes ou porte-journaux, elle apporte une touche essentielle à l’espace. Ne pas utiliser comme échelle.",
+  "priceFrCents": 65640,
+  "salePriceFrCents": 39384
+ },
+ {
+  "sku": "CML200LGN-N",
+  "descFr": "Chaise décorative en bois Ladder, pensée pour organiser avec style. Parfaite comme porte-serviettes ou porte-journaux, elle apporte une touche essentielle à l’espace. Ne pas utiliser comme échelle.",
+  "priceFrCents": 77760,
+  "salePriceFrCents": 46656
+ },
+ {
+  "sku": "CML200LGN-B",
+  "descFr": "Chaise décorative en bois Ladder, pensée pour organiser avec style. Parfaite comme porte-serviettes ou porte-journaux, elle apporte une touche essentielle à l’espace. Ne pas utiliser comme échelle.",
+  "priceFrCents": 77760,
+  "salePriceFrCents": 46656
+ },
+ {
+  "sku": "CML200LGN-F",
+  "descFr": "Chaise décorative en bois Ladder, pensée pour organiser avec style. Parfaite comme porte-serviettes ou porte-journaux, elle apporte une touche essentielle à l’espace. Ne pas utiliser comme échelle.",
+  "priceFrCents": 77760,
+  "salePriceFrCents": 46656
+ },
+ {
+  "sku": "CML250LGN-N",
+  "descFr": "Chaise décorative en bois Ladder, pensée pour organiser avec style. Parfaite comme porte-serviettes ou porte-journaux, elle apporte une touche essentielle à l’espace. Ne pas utiliser comme échelle.",
+  "priceFrCents": 93120,
+  "salePriceFrCents": 55872
+ },
+ {
+  "sku": "CML250LGN-B",
+  "descFr": "Chaise décorative en bois Ladder, pensée pour organiser avec style. Parfaite comme porte-serviettes ou porte-journaux, elle apporte une touche essentielle à l’espace. Ne pas utiliser comme échelle.",
+  "priceFrCents": 93120,
+  "salePriceFrCents": 55872
+ },
+ {
+  "sku": "CML250LGN-F",
+  "descFr": "Chaise décorative en bois Ladder, pensée pour organiser avec style. Parfaite comme porte-serviettes ou porte-journaux, elle apporte une touche essentielle à l’espace. Ne pas utiliser comme échelle.",
+  "priceFrCents": 93120,
+  "salePriceFrCents": 55872
+ },
+ {
+  "sku": "PLLOOPTES-C",
+  "descFr": "Poltroncina Loop en hêtre cintré avec assise et dossier rembourrés. Le caractéristique accoudoir en anneau, réalisé grâce à une élégante courbure du bois, définit son design. Le dossier rouleau est entièrement déhoussable, pour une esthétique épurée et un entretien simplifié. Une pièce iconique qui allie technique, confort et style.",
+  "priceFrCents": 241680,
+  "salePriceFrCents": 145008
+ },
+ {
+  "sku": "PLLOOPTES-S",
+  "descFr": "Poltroncina Loop en hêtre cintré avec assise et dossier rembourrés. Le caractéristique accoudoir en anneau, réalisé grâce à une élégante courbure du bois, définit son design. Le dossier rouleau est entièrement déhoussable, pour une esthétique épurée et un entretien simplifié. Une pièce iconique qui allie technique, confort et style.",
+  "priceFrCents": 241680,
+  "salePriceFrCents": 145008
+ },
+ {
+  "sku": "PTLOOPTES-C",
+  "descFr": "Chaise Loop dining en hêtre cintré au design essentiel. L’assise rembourrée offre du confort, tandis que le dossier en bois valorise la pureté des lignes. Le caractéristique accoudoir en anneau, réalisé grâce à une élégante courbure du bois, apporte une signature distinctive de style et de maîtrise technique. Parfaite pour des espaces dining modernes et raffinés.",
+  "priceFrCents": 177000,
+  "salePriceFrCents": 106200
+ },
+ {
+  "sku": "PTLOOPTES-S",
+  "descFr": "Chaise Loop dining en hêtre cintré au design essentiel. L’assise rembourrée offre du confort, tandis que le dossier en bois valorise la pureté des lignes. Le caractéristique accoudoir en anneau, réalisé grâce à une élégante courbure du bois, apporte une signature distinctive de style et de maîtrise technique. Parfaite pour des espaces dining modernes et raffinés.",
+  "priceFrCents": 177000,
+  "salePriceFrCents": 106200
+ },
+ {
+  "sku": "SDMAGILGN",
+  "descFr": "Fauteuil Magistretti 0301 en hêtre cintré avec assise suspendue et dossier enveloppant. Les lignes fluides et la structure continue définissent une icône du design contemporain, essentielle et raffinée, idéale pour les espaces modernes et les projets contract.",
+  "priceFrCents": 83160,
+  "salePriceFrCents": 49896
+ },
+ {
+  "sku": "CAMAJOPGL",
+  "descFr": "Valet de chambre Majordomo en cannage de Vienne avec structure en bois cintré. Pensé comme un accessoire fonctionnel et décoratif, il offre un support pratique pour vêtements et accessoires, avec une assise confortable et une étagère inférieure idéale pour ranger les chaussures. Un complément léger et raffiné, parfait pour valoriser l’entrée, la chambre ou le dressing.",
+  "priceFrCents": 69480,
+  "salePriceFrCents": 41688
+ },
+ {
+  "sku": "CNMOSAPGC",
+  "descFr": "Cabinet Mos en hêtre cintré avec panneaux latéraux et arrière en cannage de Vienne et embouts en laiton. Les portes sont dotées d’une fermeture magnétique pour une ouverture fluide et discrète. Les étagères intérieures sont plaquées en frêne verni à pores ouverts. Un élément de mobilier raffiné qui allie artisanat et fonctionnalité.",
+  "priceFrCents": 507840,
+  "salePriceFrCents": 304704
+ },
+ {
+  "sku": "CNMOSGPGC",
+  "descFr": "Console Mos en hêtre cintré avec panneaux latéraux et arrière en cannage de Vienne et embouts en laiton. Les étagères intérieures sont plaquées en frêne verni à pores ouverts. Un élément de mobilier raffiné qui allie artisanat et fonctionnalité.",
+  "priceFrCents": 405120,
+  "salePriceFrCents": 243072
+ },
+ {
+  "sku": "LBMOSGPGL",
+  "descFr": "Bibliothèque MOS freestanding en hêtre cintré avec inserts latéraux en cannage de Vienne et embouts en laiton. Les étagères, en frêne plaqué et verni à pores ouverts, offrent légèreté visuelle et solidité. Un complément raffiné qui unit artisanat et design contemporain.",
+  "priceFrCents": 451320,
+  "salePriceFrCents": 270792
+ },
+ {
+  "sku": "PCMOSGTEP",
+  "descFr": "Banc en hêtre cintré avec inserts en cannage de Vienne et embouts en laiton. Les étagères, en frêne plaqué et verni à pores ouverts, offrent praticité et légèreté visuelle. Un complément polyvalent et raffiné, idéal pour l’entrée, la chambre ou le living.",
+  "priceFrCents": 299400,
+  "salePriceFrCents": 179640
+ },
+ {
+  "sku": "PCMOSGTEP-CC",
+  "descFr": "Banc en hêtre cintré avec inserts en cannage de Vienne et coussin demi-assise déhoussable, avec embouts en laiton. Les étagères, en frêne plaqué et verni à pores ouverts, offrent praticité et légèreté visuelle. Un complément polyvalent et raffiné, idéal pour l’entrée, la chambre ou le living.",
+  "priceFrCents": 353160,
+  "salePriceFrCents": 211896
+ },
+ {
+  "sku": "PCMOSGTEP-SC",
+  "descFr": "Banc en hêtre cintré avec inserts en cannage de Vienne et coussin demi-assise déhoussable, avec embouts en laiton. Les étagères, en frêne plaqué et verni à pores ouverts, offrent praticité et légèreté visuelle. Un complément polyvalent et raffiné, idéal pour l’entrée, la chambre ou le living.",
+  "priceFrCents": 353160,
+  "salePriceFrCents": 211896
+ },
+ {
+  "sku": "PCMOSGTEP-CL",
+  "descFr": "Banc en hêtre cintré avec inserts en cannage de Vienne et long coussin d’assise déhoussable, avec embouts en laiton. Les étagères, en frêne plaqué et verni à pores ouverts, offrent praticité et légèreté visuelle. Un complément polyvalent et raffiné, idéal pour l’entrée, la chambre ou le living.",
+  "priceFrCents": 360480,
+  "salePriceFrCents": 216288
+ },
+ {
+  "sku": "PCMOSGTEP-SL",
+  "descFr": "Banc en hêtre cintré avec inserts en cannage de Vienne et long coussin d’assise déhoussable, avec embouts en laiton. Les étagères, en frêne plaqué et verni à pores ouverts, offrent praticité et légèreté visuelle. Un complément polyvalent et raffiné, idéal pour l’entrée, la chambre ou le living.",
+  "priceFrCents": 360480,
+  "salePriceFrCents": 216288
+ },
+ {
+  "sku": "TBMOSGLGP",
+  "descFr": "Table d’appoint Mos en hêtre cintré avec inserts en cannage de Vienne et embouts en laiton. Les étagères, en frêne plaqué et verni à pores ouverts, offrent légèreté et fonctionnalité. Un complément polyvalent qui s’adapte parfaitement aussi bien comme table d’appoint que comme table de chevet pour une chambre au caractère raffiné.",
+  "priceFrCents": 150600,
+  "salePriceFrCents": 90360
+ },
+ {
+  "sku": "SDN014LGN",
+  "descFr": "Chaise N.14 en hêtre cintré avec assise en multiplis. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est parfaite pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat.",
+  "priceFrCents": 56160,
+  "salePriceFrCents": 33696
+ },
+ {
+  "sku": "SDN014PGL",
+  "descFr": "Chaise N.14 en hêtre cintré avec assise en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est parfaite pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat.",
+  "priceFrCents": 57840,
+  "salePriceFrCents": 34704
+ },
+ {
+  "sku": "SDN014TES-C",
+  "descFr": "Chaise N.14 en hêtre cintré avec assise rembourrée. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est parfaite pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat.",
+  "priceFrCents": 67560,
+  "salePriceFrCents": 40536
+ },
+ {
+  "sku": "SDN014TES-S",
+  "descFr": "Chaise N.14 en hêtre cintré avec assise rembourrée. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est parfaite pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat.",
+  "priceFrCents": 67560,
+  "salePriceFrCents": 40536
+ },
+ {
+  "sku": "SDN018LGN",
+  "descFr": "Chaise N.18 en hêtre cintré avec assise en multiplis. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est parfaite pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat.",
+  "priceFrCents": 61080,
+  "salePriceFrCents": 36648
+ },
+ {
+  "sku": "SDN018TES-C",
+  "descFr": "Chaise N.18 en hêtre cintré avec assise rembourrée. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est parfaite pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat.",
+  "priceFrCents": 74040,
+  "salePriceFrCents": 44424
+ },
+ {
+  "sku": "SDN018TES-S",
+  "descFr": "Chaise N.18 en hêtre cintré avec assise rembourrée. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est parfaite pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat.",
+  "priceFrCents": 74040,
+  "salePriceFrCents": 44424
+ },
+ {
+  "sku": "SAN018LGN",
+  "descFr": "Tabouret de bar N.18 en hêtre cintré avec assise en multiplis. Une icône du design intemporel, caractérisée par des lignes essentielles et par la raffinée fabrication du bois cintré. Solide, léger et polyvalent, il est idéal pour les cuisines, bars et espaces contract qui valorisent l’artisanat.",
+  "priceFrCents": 69480,
+  "salePriceFrCents": 41688
+ },
+ {
+  "sku": "SAN018TES-C",
+  "descFr": "Tabouret de bar N.18 en hêtre cintré avec assise rembourrée. Une icône du design intemporel, caractérisée par des lignes essentielles et par la raffinée fabrication du bois cintré. Solide, léger et polyvalent, il est idéal pour les cuisines, bars et espaces contract qui valorisent l’artisanat.",
+  "priceFrCents": 84360,
+  "salePriceFrCents": 50616
+ },
+ {
+  "sku": "SAN018TES-S",
+  "descFr": "Tabouret de bar N.18 en hêtre cintré avec assise rembourrée. Une icône du design intemporel, caractérisée par des lignes essentielles et par la raffinée fabrication du bois cintré. Solide, léger et polyvalent, il est idéal pour les cuisines, bars et espaces contract qui valorisent l’artisanat.",
+  "priceFrCents": 84360,
+  "salePriceFrCents": 50616
+ },
+ {
+  "sku": "PLN200PGL",
+  "descFr": "Fauteuil lounge N.200 en hêtre cintré avec assise et dossier en cannage de Vienne. Les proportions généreuses et le design essentiel créent une esthétique élégante et minimaliste, tandis que le travail artisanal du bois cintré apporte légèreté et raffinement. Une icône contemporaine pensée pour les espaces living, lounge et les environnements contract.",
+  "priceFrCents": 211800,
+  "salePriceFrCents": 105900
+ },
+ {
+  "sku": "PLN200TES-C",
+  "descFr": "Fauteuil lounge N.200 en hêtre cintré avec assise et dossier rembourrés. Les proportions généreuses et le design essentiel créent une esthétique élégante et minimaliste, tandis que le travail artisanal du bois cintré apporte légèreté et raffinement. Un complément contemporain et confortable, idéal pour les espaces living, lounge et les environnements contract.",
+  "priceFrCents": 253800,
+  "salePriceFrCents": 126900
+ },
+ {
+  "sku": "PLN200TES-S",
+  "descFr": "Fauteuil lounge N.200 en hêtre cintré avec assise et dossier rembourrés. Les proportions généreuses et le design essentiel créent une esthétique élégante et minimaliste, tandis que le travail artisanal du bois cintré apporte légèreté et raffinement. Un complément contemporain et confortable, idéal pour les espaces living, lounge et les environnements contract.",
+  "priceFrCents": 253800,
+  "salePriceFrCents": 126900
+ },
+ {
+  "sku": "PT0811PGL",
+  "descFr": "Chaise avec accoudoirs N.811 en hêtre cintré avec assise et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est idéale pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne offre confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 83760,
+  "salePriceFrCents": 50256
+ },
+ {
+  "sku": "PT0811TES-C",
+  "descFr": "Chaise avec accoudoirs N.811 en hêtre cintré avec assise rembourrée et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est idéale pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne garantit confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 98160,
+  "salePriceFrCents": 58896
+ },
+ {
+  "sku": "PT0811TES-S",
+  "descFr": "Chaise avec accoudoirs N.811 en hêtre cintré avec assise rembourrée et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est idéale pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne garantit confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 98160,
+  "salePriceFrCents": 58896
+ },
+ {
+  "sku": "SD0811PGL",
+  "descFr": "Chaise N.811 en hêtre cintré avec assise et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est idéale pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne offre confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 64560,
+  "salePriceFrCents": 38736
+ },
+ {
+  "sku": "SD0811TES-C",
+  "descFr": "Chaise N.811 en hêtre cintré avec assise rembourrée et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est idéale pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne garantit confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 73920,
+  "salePriceFrCents": 44352
+ },
+ {
+  "sku": "SD0811TES-S",
+  "descFr": "Chaise N.811 en hêtre cintré avec assise rembourrée et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Légère, résistante et intemporelle, elle est idéale pour les espaces dining, contract et les intérieurs contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne garantit confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 73920,
+  "salePriceFrCents": 44352
+ },
+ {
+  "sku": "SA0811PGL",
+  "descFr": "Tabouret de bar N.811 en hêtre cintré avec assise et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Léger, résistant et intemporel, il est idéal pour les cuisines, bars, restaurants et espaces contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne garantit confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 101160,
+  "salePriceFrCents": 60696
+ },
+ {
+  "sku": "SA0811TES-C",
+  "descFr": "Tabouret haut de bar N.811 en hêtre cintré avec assise rembourrée et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Léger, résistant et intemporel, il est idéal pour les cuisines, bars, restaurants et espaces contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne garantit confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 107880,
+  "salePriceFrCents": 64728
+ },
+ {
+  "sku": "SA0811TES-S",
+  "descFr": "Tabouret haut de bar N.811 en hêtre cintré avec assise rembourrée et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Léger, résistant et intemporel, il est idéal pour les cuisines, bars, restaurants et espaces contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne garantit confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 107880,
+  "salePriceFrCents": 64728
+ },
+ {
+  "sku": "SM0811PGL",
+  "descFr": "Tabouret counter N.811 en hêtre cintré avec assise et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Léger, résistant et intemporel, il est idéal pour les cuisines, bars, restaurants et espaces contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne garantit confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 101160,
+  "salePriceFrCents": 60696
+ },
+ {
+  "sku": "SM0811TES-C",
+  "descFr": "Tabouret counter N.811 en hêtre cintré avec assise rembourrée et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Léger, résistant et intemporel, il est idéal pour les cuisines, bars, restaurants et espaces contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne garantit confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 107880,
+  "salePriceFrCents": 64728
+ },
+ {
+  "sku": "SM0811TES-S",
+  "descFr": "Tabouret counter N.811 en hêtre cintré avec assise rembourrée et dossier en cannage de Vienne. Une icône du design, reconnaissable à ses lignes essentielles et à la raffinée fabrication du bois cintré. Léger, résistant et intemporel, il est idéal pour les cuisines, bars, restaurants et espaces contemporains qui valorisent l’artisanat. Le large dossier en cannage de Vienne garantit confort et ergonomie, tout en conservant une esthétique élégante et aérienne.",
+  "priceFrCents": 107880,
+  "salePriceFrCents": 64728
+ },
+ {
+  "sku": "TVPEEALGN",
+  "descFr": "Table basse Peer A en hêtre cintré avec plateau en stratifié. La forme irrégulière apporte dynamisme et légèreté, en faisant un complément polyvalent et contemporain. Parfaite seule comme surface d’appoint, elle révèle tout son potentiel lorsqu’elle est associée à la seconde table de la même série, créant un ensemble harmonieux et fonctionnel.",
+  "priceFrCents": 166200,
+  "salePriceFrCents": 83100
+ },
+ {
+  "sku": "TVPEEBLGN",
+  "descFr": "Table basse Peer B en hêtre cintré avec plateau en stratifié. La forme irrégulière apporte dynamisme et légèreté, en faisant un complément polyvalent et contemporain. Parfaite seule comme surface d’appoint, elle révèle tout son potentiel lorsqu’elle est associée à la seconde table de la même série, créant un ensemble harmonieux et fonctionnel.",
+  "priceFrCents": 155880,
+  "salePriceFrCents": 77940
+ },
+ {
+  "sku": "SDRADELGN",
+  "descFr": "Chaise Radetzky avec structure en hêtre massif et éléments en bois cintré reliant avec continuité les pieds arrière et le dossier. Le profil alterne lignes douces et traits nets, tandis que l’assise en multiplis complète un design essentiel et contemporain.",
+  "priceFrCents": 103080,
+  "salePriceFrCents": 51540
+ },
+ {
+  "sku": "SDSOLDTES-C",
+  "descFr": "Chaise Sölden en hêtre cintré avec assise rembourrée et dossier en cannage de Vienne. Un design essentiel et raffiné qui allie légèreté, confort et esthétique contemporaine, valorisant la tradition du bois cintré.",
+  "priceFrCents": 96120,
+  "salePriceFrCents": 57672
+ },
+ {
+  "sku": "SDSOLDTES-S",
+  "descFr": "Chaise Sölden en hêtre cintré avec assise rembourrée et dossier en cannage de Vienne. Un design essentiel et raffiné qui allie légèreté, confort et esthétique contemporaine, valorisant la tradition du bois cintré.",
+  "priceFrCents": 96120,
+  "salePriceFrCents": 57672
+ },
+ {
+  "sku": "SDSUGILGN",
+  "descFr": "Chaise Sugiloo en hêtre cintré avec assise en multiplis. Le design est réduit à l’essentiel : le dossier est défini par un simple élément en bois cintré, qui apporte légèreté visuelle et caractère contemporain. Une assise minimale et raffinée, idéale pour les espaces modernes et les projets contract.",
+  "priceFrCents": 81720,
+  "salePriceFrCents": 40860
+ },
+ {
+  "sku": "SDSUGITE2-C",
+  "descFr": "Chaise Sugiloo en hêtre cintré avec assise rembourrée et petit dossier en multiplis. Le design minimaliste est défini par un dossier formé d’une seule courbe continue, qui apporte légèreté visuelle et caractère contemporain. Une assise essentielle et polyvalente, idéale pour les espaces modernes et les projets contract.",
+  "priceFrCents": 107640,
+  "salePriceFrCents": 53820
+ },
+ {
+  "sku": "SDSUGITE2-S",
+  "descFr": "Chaise Sugiloo en hêtre cintré avec assise rembourrée et petit dossier en multiplis. Le design minimaliste est défini par un dossier formé d’une seule courbe continue, qui apporte légèreté visuelle et caractère contemporain. Une assise essentielle et polyvalente, idéale pour les espaces modernes et les projets contract.",
+  "priceFrCents": 107640,
+  "salePriceFrCents": 53820
+ },
+ {
+  "sku": "PTSUGITE2-C",
+  "descFr": "Chaise Sugiloo avec accoudoirs en hêtre cintré avec assise rembourrée et petit dossier en multiplis. Le design minimaliste est défini par un dossier essentiel en hêtre cintré, qui apporte légèreté et caractère contemporain. Parfaite pour les espaces modernes et les projets contract.",
+  "priceFrCents": 122280,
+  "salePriceFrCents": 61140
+ },
+ {
+  "sku": "PTSUGITE2-S",
+  "descFr": "Chaise Sugiloo avec accoudoirs en hêtre cintré avec assise rembourrée et petit dossier en multiplis. Le design minimaliste est défini par un dossier essentiel en hêtre cintré, qui apporte légèreté et caractère contemporain. Parfaite pour les espaces modernes et les projets contract.",
+  "priceFrCents": 122280,
+  "salePriceFrCents": 61140
+ },
+ {
+  "sku": "PTSUGILGN",
+  "descFr": "Chaise Sugiloo avec accoudoirs avec structure en hêtre cintré et assise en multiplis. Le design minimaliste, défini par un unique profil tubulaire en bois formant pieds, accoudoirs et dossier, crée une esthétique contemporaine et légère. Une assise essentielle et polyvalente, idéale pour les espaces modernes et les projets contract.",
+  "priceFrCents": 98280,
+  "salePriceFrCents": 49140
+ },
+ {
+  "sku": "SATRIOLGN",
+  "descFr": "Tabouret Trio haut en hêtre cintré avec assise en multiplis. Le design minimaliste, défini par une structure élancée et des éléments courbés essentiels, crée une esthétique contemporaine et légère. Une solution polyvalente et fonctionnelle, idéale pour les cuisines, bars et espaces contract.",
+  "priceFrCents": 80160,
+  "salePriceFrCents": 48096
+ },
+ {
+  "sku": "SATRIOTES-C",
+  "descFr": "Tabouret Trio haut en hêtre cintré avec assise rembourrée. Le design minimaliste et élancé, défini par des lignes essentielles et une structure légère, crée une esthétique contemporaine et polyvalente. Parfait pour les cuisines, bars et espaces contract.",
+  "priceFrCents": 88680,
+  "salePriceFrCents": 53208
+ },
+ {
+  "sku": "SATRIOTES-S",
+  "descFr": "Tabouret Trio haut en hêtre cintré avec assise rembourrée. Le design minimaliste et élancé, défini par des lignes essentielles et une structure légère, crée une esthétique contemporaine et polyvalente. Parfait pour les cuisines, bars et espaces contract.",
+  "priceFrCents": 88680,
+  "salePriceFrCents": 53208
+ },
+ {
+  "sku": "SMTRIOLGN",
+  "descFr": "Tabouret Trio Counter en hêtre cintré avec assise en multiplis. Le design minimaliste, défini par une structure élancée et des éléments courbés essentiels, crée une esthétique contemporaine et légère. Une solution polyvalente et fonctionnelle, idéale pour les cuisines, bars et espaces contract.",
+  "priceFrCents": 78120,
+  "salePriceFrCents": 46872
+ },
+ {
+  "sku": "SMTRIOTES-C",
+  "descFr": "Tabouret Trio Counter en hêtre cintré avec assise rembourrée. Le design minimaliste et élancé, défini par des lignes essentielles et une structure légère, crée une esthétique contemporaine et polyvalente. Parfait pour les cuisines, bars et espaces contract.",
+  "priceFrCents": 87240,
+  "salePriceFrCents": 52344
+ },
+ {
+  "sku": "SMTRIOTES-S",
+  "descFr": "Tabouret Trio Counter en hêtre cintré avec assise rembourrée. Le design minimaliste et élancé, défini par des lignes essentielles et une structure légère, crée une esthétique contemporaine et polyvalente. Parfait pour les cuisines, bars et espaces contract.",
+  "priceFrCents": 87240,
+  "salePriceFrCents": 52344
+ },
+ {
+  "sku": "SBTRIOLGN",
+  "descFr": "Tabouret Trio bas en hêtre cintré avec assise en multiplis. Le design minimaliste et léger en fait un complément polyvalent, parfait comme assise informelle, table de chevet, table d’appoint ou élément décoratif dans des espaces modernes et contract.",
+  "priceFrCents": 58080,
+  "salePriceFrCents": 34848
+ },
+ {
+  "sku": "SBTRIOTES-C",
+  "descFr": "Tabouret Trio bas en hêtre cintré avec assise rembourrée. Le design minimaliste et léger en fait un complément polyvalent, parfait comme assise informelle, table de chevet, table d’appoint ou élément décoratif dans des espaces modernes et contract.",
+  "priceFrCents": 67080,
+  "salePriceFrCents": 40248
+ },
+ {
+  "sku": "SBTRIOTES-S",
+  "descFr": "Tabouret Trio bas en hêtre cintré avec assise rembourrée. Le design minimaliste et léger en fait un complément polyvalent, parfait comme assise informelle, table de chevet, table d’appoint ou élément décoratif dans des espaces modernes et contract.",
+  "priceFrCents": 67080,
+  "salePriceFrCents": 40248
+ },
+ {
+  "sku": "SDV144PGL",
+  "descFr": "Chaise Vienna 144, icône du design classique, réalisée en hêtre cintré avec assise en cannage de Vienne. Les lignes fluides et légères mettent en valeur le savoir-faire artisanal du bois cintré, offrant une esthétique intemporelle. Idéale pour les espaces dining, bistrots et environnements contract qui valorisent élégance et authenticité.",
+  "priceFrCents": 73560,
+  "salePriceFrCents": 36780
+ },
+ {
+  "sku": "SDV144TES-C",
+  "descFr": "Chaise Vienna 144, icône du design classique, réalisée en hêtre cintré avec assise rembourrée pour un confort supérieur. Les courbes harmonieuses et la structure légère définissent un design raffiné et polyvalent, parfait pour les espaces dining, bistrots et environnements contract qui unissent tradition et modernité.",
+  "priceFrCents": 80640,
+  "salePriceFrCents": 40320
+ },
+ {
+  "sku": "SDV144TES-S",
+  "descFr": "Chaise Vienna 144, icône du design classique, réalisée en hêtre cintré avec assise rembourrée pour un confort supérieur. Les courbes harmonieuses et la structure légère définissent un design raffiné et polyvalent, parfait pour les espaces dining, bistrots et environnements contract qui unissent tradition et modernité.",
+  "priceFrCents": 80640,
+  "salePriceFrCents": 40320
+ },
+ {
+  "sku": "SAV144LGN",
+  "descFr": "Tabouret de bar haut Vienna 144 en hêtre cintré avec assise en multiplis moulé en relief. Le profil minimaliste et la structure stable en font un complément polyvalent et fonctionnel pour comptoirs domestiques et environnements professionnels.",
+  "priceFrCents": 69240,
+  "salePriceFrCents": 41544
+ },
+ {
+  "sku": "SAV144PGL",
+  "descFr": "Tabouret de bar haut Vienna 144 en hêtre cintré avec assise en cannage de Vienne. Le profil minimaliste et la structure stable en font un complément polyvalent et fonctionnel pour comptoirs domestiques et environnements professionnels.",
+  "priceFrCents": 72960,
+  "salePriceFrCents": 43776
+ },
+ {
+  "sku": "SAV144TES-C",
+  "descFr": "Tabouret de bar haut Vienna 144 en hêtre cintré avec assise rembourrée. Le profil minimaliste et la structure stable en font un complément polyvalent et fonctionnel pour comptoirs domestiques et environnements professionnels.",
+  "priceFrCents": 77760,
+  "salePriceFrCents": 46656
+ },
+ {
+  "sku": "SAV144TES-S",
+  "descFr": "Tabouret de bar haut Vienna 144 en hêtre cintré avec assise rembourrée. Le profil minimaliste et la structure stable en font un complément polyvalent et fonctionnel pour comptoirs domestiques et environnements professionnels.",
+  "priceFrCents": 77760,
+  "salePriceFrCents": 46656
+ },
+ {
+  "sku": "SBV144LGN",
+  "descFr": "Tabouret bas Vienna 144 en hêtre cintré avec assise en multiplis moulé en relief. Lignes essentielles et structure compacte pour un élément multifonction parfait comme table de chevet, table basse ou surface d’appoint dans des espaces modernes et contract.",
+  "priceFrCents": 48600,
+  "salePriceFrCents": 29160
+ },
+ {
+  "sku": "SBV144PGL",
+  "descFr": "Tabouret bas Vienna 144 en hêtre cintré avec assise en cannage de Vienne. Le design minimaliste et léger en fait un complément polyvalent, idéal comme assise informelle, table de chevet ou petite table d’appoint.",
+  "priceFrCents": 52080,
+  "salePriceFrCents": 31248
+ },
+ {
+  "sku": "SBV144TES-C",
+  "descFr": "Tabouret bas Vienna 144 en hêtre cintré avec assise rembourrée. Un design simple et contemporain qui allie confort et polyvalence, idéal comme assise supplémentaire, table de chevet ou table d’appoint.",
+  "priceFrCents": 57480,
+  "salePriceFrCents": 34488
+ },
+ {
+  "sku": "SBV144TES-S",
+  "descFr": "Tabouret bas Vienna 144 en hêtre cintré avec assise rembourrée. Un design simple et contemporain qui allie confort et polyvalence, idéal comme assise supplémentaire, table de chevet ou table d’appoint.",
+  "priceFrCents": 57480,
+  "salePriceFrCents": 34488
+ },
+ {
+  "sku": "SDYOUCLGN",
+  "descFr": "Chaise You empilable avec structure en hêtre cintré, caractérisée par un arc en bois massif reliant les pieds et servant de support à l’empilabilité. Le design essentiel et léger garantit praticité, stabilité et une présence contemporaine idéale pour les espaces dining et contract.",
+  "priceFrCents": 37800,
+  "salePriceFrCents": 22680
+ }
+]

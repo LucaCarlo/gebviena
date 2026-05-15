@@ -19,11 +19,12 @@ const eur = (cents: number) =>
 
 const COMPANY = {
   name: "Gebrüder Thonet Vienna",
-  legalName: "GTV Verlagsanstalt GmbH",
-  addressLine1: "Wienerstrasse 53",
-  addressLine2: "1230 Wien",
-  country: "Austria",
-  vat: "ATU60853336",
+  legalName: "Production Furniture International S.p.A",
+  addressLine1: "Via Vincenzo Vela 35/B",
+  addressLine2: "10128 Torino",
+  country: "Italy",
+  vat: "08743760012",
+  rea: "TO-997261",
   email: "info@gebruederthonetvienna.com",
   website: "gebruederthonetvienna.com",
 };
@@ -162,7 +163,7 @@ function buildHtml(order: OrderWithItems, deliveryStr: string): string {
         <tr><td style="padding:16px 32px;background:#faf8f3;border-top:1px solid #e5e2db;font-size:11px;color:#888;line-height:1.6;">
           <strong style="color:#555;">${escape(COMPANY.legalName)}</strong><br>
           ${escape(COMPANY.addressLine1)}, ${escape(COMPANY.addressLine2)} – ${escape(COMPANY.country)}<br>
-          VAT ${escape(COMPANY.vat)} · <a href="https://${COMPANY.website}" style="color:#555;text-decoration:none;">${escape(COMPANY.website)}</a>
+          P.IVA ${escape(COMPANY.vat)} · REA ${escape(COMPANY.rea)} · <a href="https://${COMPANY.website}" style="color:#555;text-decoration:none;">${escape(COMPANY.website)}</a>
         </td></tr>
       </table>
     </td></tr>
@@ -293,7 +294,7 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       doc.text(COMPANY.legalName, 50, y); y += 13;
       doc.text(COMPANY.addressLine1, 50, y); y += 13;
       doc.text(`${COMPANY.addressLine2} – ${COMPANY.country}`, 50, y); y += 13;
-      doc.text(`VAT ${COMPANY.vat}`, 50, y); y += 13;
+      doc.text(`P.IVA ${COMPANY.vat} – REA ${COMPANY.rea}`, 50, y); y += 13;
 
       y += 14;
 
@@ -401,7 +402,7 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       const footerY = doc.page.height - doc.page.margins.bottom - 26; // ≈765.89
       doc.moveTo(50, footerY - 9).lineTo(50 + tableWidth, footerY - 9).strokeColor("#ddd").lineWidth(0.5).stroke();
       doc.font(F).fontSize(8).fillColor("#888").text(
-        `${COMPANY.legalName} · ${COMPANY.addressLine1}, ${COMPANY.addressLine2} (${COMPANY.country}) · VAT ${COMPANY.vat} · ${COMPANY.website}`,
+        `${COMPANY.legalName} · ${COMPANY.addressLine1}, ${COMPANY.addressLine2} (${COMPANY.country}) · P.IVA ${COMPANY.vat} · REA ${COMPANY.rea} · ${COMPANY.website}`,
         50, footerY, { width: tableWidth, align: "center", lineBreak: false },
       );
 
