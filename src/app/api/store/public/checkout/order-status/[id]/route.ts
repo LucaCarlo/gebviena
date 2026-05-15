@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe-config";
 import { sendOrderConfirmationEmail } from "@/lib/order-email";
-import { sendAccessInviteEmail } from "@/lib/customer-magic-link";
 
 export const dynamic = "force-dynamic";
 
@@ -66,17 +65,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         if (promoted) {
           sendOrderConfirmationEmail(order.id).catch((err) => {
             console.error("[order-status] sendOrderConfirmationEmail error:", err);
-          });
-          // 2a email: invito (senza token) all'area riservata → pagina login.
-          (async () => {
-            const ord = await prisma.order.findUnique({
-              where: { id: order.id },
-              select: { email: true, language: true },
-            });
-            if (!ord) return;
-            await sendAccessInviteEmail({ email: ord.email, origin: req.nextUrl.origin, language: ord.language });
-          })().catch((err) => {
-            console.error("[order-status] welcome access-invite error:", err);
           });
         }
       } else if (pi.status === "canceled" || pi.status === "requires_payment_method") {

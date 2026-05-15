@@ -2,21 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe, getStripeConfig } from "@/lib/stripe-config";
 import { sendOrderConfirmationEmail } from "@/lib/order-email";
-import { sendAccessInviteEmail } from "@/lib/customer-magic-link";
 import type Stripe from "stripe";
-
-async function maybeSendWelcomeMagicLink(orderId: string, origin: string) {
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    select: { email: true, language: true },
-  });
-  if (!order) return;
-  // Email invito (senza token): porta alla pagina di login dell'area
-  // riservata dove l'utente inserisce l'email per accedere (passwordless).
-  await sendAccessInviteEmail({ email: order.email, origin, language: order.language }).catch((err) => {
-    console.error("[welcome-access-invite] error:", err);
-  });
-}
 
 export const dynamic = "force-dynamic";
 
@@ -85,11 +71,6 @@ export async function POST(req: NextRequest) {
         if (promoted) {
           sendOrderConfirmationEmail(order.id).catch((err) => {
             console.error("[stripe-webhook] sendOrderConfirmationEmail error:", err);
-          });
-          // 2a email: magic-link per accedere all'area riservata (solo se nuovo).
-          const origin = req.nextUrl.origin;
-          maybeSendWelcomeMagicLink(order.id, origin).catch((err) => {
-            console.error("[stripe-webhook] welcome magic-link error:", err);
           });
         }
         break;
