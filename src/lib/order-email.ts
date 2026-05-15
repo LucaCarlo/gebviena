@@ -172,23 +172,12 @@ function buildHtml(order: OrderWithItems, deliveryStr: string): string {
 }
 
 /**
- * Stringa consegna localizzata. Calcola data = (paidAt||createdAt) + N
- * settimane, dove N è il numero (ultimo) nel lead-time configurato. Se non
- * si riesce a parsare, ripiega sulla frase "entro {leadTime}".
+ * Stringa consegna localizzata: SEMPRE la frase con il lead-time
+ * configurato (es. "entro 6 settimane" / "sous 6 semaines"), NON una
+ * data calcolata.
  */
 function deliveryString(order: OrderWithItems, leadTime: string): string {
   const isFr = order.language === "fr";
-  const nums = (leadTime.match(/\d+/g) || []).map(Number);
-  const weeks = nums.length ? nums[nums.length - 1] : 0;
-  if (weeks > 0) {
-    const base = order.paidAt || order.createdAt;
-    const d = new Date(base.getTime() + weeks * 7 * 24 * 60 * 60 * 1000);
-    const months = isFr
-      ? ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
-      : ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
-    const ds = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-    return isFr ? `pour le ${ds}` : `per il giorno ${ds}`;
-  }
   return isFr ? `sous ${leadTime}` : `entro ${leadTime}`;
 }
 
