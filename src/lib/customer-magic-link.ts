@@ -172,10 +172,37 @@ function escape(s: string): string {
   );
 }
 
-/** Costruisce l'URL assoluto da inviare nell'email. */
+/**
+ * Normalizza l'origin verso il dominio STORE.
+ *
+ * Le route dell'area riservata vivono sul sottodominio store
+ * (es. prod: https://store.gebruederthonetvienna.com,
+ *  dev:  https://store.dev.gebruederthonetvienna.com).
+ * Il webhook Stripe / order-status però arrivano sul dominio principale
+ * (gebruederthonetvienna.com), quindi `req.nextUrl.origin` punterebbe al
+ * sito sbagliato. Qui forziamo il sottodominio store.
+ *
+ * Override esplicito via env STORE_PUBLIC_URL (consigliato in prod).
+ */
+export function storeOriginFrom(origin: string): string {
+  const envUrl = process.env.STORE_PUBLIC_URL?.trim();
+  if (envUrl) return envUrl.replace(/\/+$/, "");
+  try {
+    const u = new URL(origin);
+    if (!u.hostname.startsWith("store.")) {
+      u.hostname = `store.${u.hostname}`;
+    }
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return "https://store.gebruederthonetvienna.com";
+  }
+}
+
+/** Costruisce l'URL assoluto da inviare nell'email (sempre sul dominio store). */
 export function buildMagicUrl(origin: string, token: string, purpose: TokenPurpose): string {
+  const base = storeOriginFrom(origin);
   const path = purpose === "password_reset" ? "/account/reset-password" : "/account/login-token";
-  return `${origin}${path}?t=${encodeURIComponent(token)}`;
+  return `${base}${path}?t=${encodeURIComponent(token)}`;
 }
 
 /**

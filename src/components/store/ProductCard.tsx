@@ -131,12 +131,14 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
         {p.category && (
           <div className="text-[10px] uppercase tracking-[0.15em] text-warm-500">{p.category.name}</div>
         )}
-        {/* Nome + prezzo: tentano di stare sulla stessa riga; se il nome è
-            lungo, il prezzo va a capo automaticamente (flex-wrap + min-w-0).
-            Il nome non viene mai troncato. */}
+        {/* Nome + prezzo: stessa riga se ci stanno; se il nome è lungo il nome
+            occupa l'intera riga (mai troncato, mai spezzato accanto al prezzo)
+            e il prezzo SLITTA tutto nella riga sotto, allineato a destra.
+            (niente flex-1/min-w-0 sul nome → prende la larghezza naturale e
+            con flex-wrap spinge giù il prezzo invece di accapezzarsi.) */}
         <div className="flex items-baseline justify-between gap-x-3 gap-y-1 flex-wrap">
-          <div className="text-sm font-medium text-warm-900 break-words min-w-0 flex-1">{p.name}</div>
-          <div className="text-sm font-mono text-warm-900 shrink-0">
+          <div className="text-sm font-medium text-warm-900">{p.name}</div>
+          <div className="text-sm font-mono text-warm-900 shrink-0 ml-auto">
             {p.priceFromCents > 0 ? (
               p.salePriceFromCents != null && p.salePriceFromCents > 0 && p.salePriceFromCents < p.priceFromCents ? (() => {
                 const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);

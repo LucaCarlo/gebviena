@@ -33,14 +33,25 @@ const ITALIAN_MONTHS = [
 ];
 
 function formatItalianDate(iso: string): string {
-  const d = new Date(iso);
+  const hasTime = iso.includes("T");
+  const d = new Date(hasTime ? iso : iso + "T00:00:00");
   if (isNaN(d.getTime())) return iso;
-  return `${d.getDate()} ${ITALIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  const base = `${d.getDate()} ${ITALIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  if (hasTime && !(d.getHours() === 0 && d.getMinutes() === 0)) {
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${base} · ${hh}:${mm}`;
+  }
+  return base;
 }
 
 export default function MaintenanceScreen({ title, message, openingDate, mainSiteUrl }: Props) {
   const baseUrl = mainSiteUrl.replace(/\/$/, "");
-  const target = openingDate ? new Date(openingDate + "T00:00:00") : null;
+  // openingDate può essere "YYYY-MM-DD" (vecchio formato) o
+  // "YYYY-MM-DDTHH:mm" (nuovo, con ora). Gestiamo entrambi.
+  const target = openingDate
+    ? new Date(openingDate.includes("T") ? openingDate : openingDate + "T00:00:00")
+    : null;
   const [cd, setCd] = useState<Countdown | null>(target ? computeCountdown(target) : null);
 
   useEffect(() => {

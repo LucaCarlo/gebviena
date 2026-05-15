@@ -29,6 +29,26 @@ const COMPANY = {
 
 const LOGO_PATH = path.join(process.cwd(), "public", "logo-email-black.png");
 
+// pdfkit di default cerca i font standard (.afm) in node_modules, ma Next.js
+// NON li include nel bundle .next → ENOENT su Helvetica.afm in produzione.
+// Soluzione: embeddiamo DejaVuSans (TTF) nel repo e li registriamo
+// esplicitamente. Fallback ai TTF di sistema Debian se il repo non li ha.
+const FONT_REG_CANDIDATES = [
+  path.join(process.cwd(), "assets", "fonts", "DejaVuSans.ttf"),
+  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+];
+const FONT_BOLD_CANDIDATES = [
+  path.join(process.cwd(), "assets", "fonts", "DejaVuSans-Bold.ttf"),
+  "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+];
+
+function firstExisting(paths: string[]): string | null {
+  for (const p of paths) {
+    try { if (fs.existsSync(p)) return p; } catch { /* ignore */ }
+  }
+  return null;
+}
+
 function loadLogoBuffer(): Buffer | null {
   try {
     return fs.readFileSync(LOGO_PATH);
@@ -45,7 +65,7 @@ function invoiceNumber(order: { orderNumber: string; paidAt: Date | null; create
   return `${tail}/${year}`;
 }
 
-interface OrderWithItems {
+export interface OrderWithItems {
   id: string;
   orderNumber: string;
   email: string;
@@ -53,6 +73,7 @@ interface OrderWithItems {
   lastName: string;
   phone: string | null;
   language: string;
+  customerTaxId?: string | null;
   shippingAddress: string;
   billingAddress: string;
   subtotalCents: number;
@@ -222,6 +243,10 @@ function escape(s: string): string {
 }
 
 /** Genera il PDF fattura/ricevuta come Buffer, layout stile fattura europea. */
+export async function buildOrderPdf(order: OrderWithItems): Promise<Buffer> {
+  return buildPdfBuffer(order);
+}
+
 async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     try {
@@ -230,6 +255,19 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       doc.on("data", (c: Buffer) => chunks.push(c));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
+
+      // Registra i font TTF embedded (evita la dipendenza dagli .afm standard
+      // che Next.js non bundla). FONT = regular, FONT_BOLD = grassetto.
+      const FONT = "Body";
+      const FONT_BOLD = "BodyBold";
+      const regPath = firstExisting(FONT_REG_CANDIDATES);
+      const boldPath = firstExisting(FONT_BOLD_CANDIDATES);
+      if (regPath) doc.registerFont(FONT, regPath);
+      if (boldPath) doc.registerFont(FONT_BOLD, boldPath);
+      // Se per qualche motivo i TTF non ci sono, ripieghiamo sui built-in
+      // (meglio un PDF brutto che nessun PDF / crash dell'email).
+      const F = regPath ? FONT : "Helvetica";
+      const FB = boldPath ? FONT_BOLD : "Helvetica-Bold";
 
       const isFr = order.language === "fr";
       const t = isFr
@@ -288,14 +326,14 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       if (logo) {
         try { doc.image(logo, 50, 40, { height: 50 }); } catch { /* ignore */ }
       }
-      doc.font("Helvetica-Bold").fontSize(18).fillColor("#111").text(t.title, 0, 50, { align: "center" });
+      doc.font(FB).fontSize(18).fillColor("#111").text(t.title, 0, 50, { align: "center" });
 
       let y = 110;
 
       // ─── VENDEUR ───
-      doc.font("Helvetica-Bold").fontSize(11).fillColor("#111").text(t.seller, 50, y);
+      doc.font(FB).fontSize(11).fillColor("#111").text(t.seller, 50, y);
       y += 16;
-      doc.font("Helvetica").fontSize(10).fillColor("#333");
+      doc.font(F).fontSize(10).fillColor("#333");
       doc.text(COMPANY.legalName, 50, y); y += 13;
       doc.text(COMPANY.addressLine1, 50, y); y += 13;
       doc.text(`${COMPANY.addressLine2} – ${COMPANY.country}`, 50, y); y += 13;
@@ -304,9 +342,9 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       y += 14;
 
       // ─── CLIENT ───
-      doc.font("Helvetica-Bold").fontSize(11).fillColor("#111").text(t.client, 50, y);
+      doc.font(FB).fontSize(11).fillColor("#111").text(t.client, 50, y);
       y += 16;
-      doc.font("Helvetica").fontSize(10).fillColor("#333");
+      doc.font(F).fontSize(10).fillColor("#333");
       const ship = parseAddress(order.shippingAddress);
       doc.text(`${order.firstName} ${order.lastName}`, 50, y); y += 13;
       if (ship.street) { doc.text(ship.street, 50, y); y += 13; }
@@ -314,6 +352,10 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       doc.text(cityLine, 50, y); y += 13;
       if (order.phone) { doc.text(order.phone, 50, y); y += 13; }
       doc.text(order.email, 50, y); y += 13;
+      if (order.customerTaxId) {
+        doc.text(`${isFr ? "N° TVA / Code fiscal" : "P.IVA / C.F."}: ${order.customerTaxId}`, 50, y);
+        y += 13;
+      }
 
       y += 14;
 
@@ -321,10 +363,10 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       const invoiceDate = (order.paidAt || order.createdAt).toLocaleDateString(t.locale, {
         day: "2-digit", month: "2-digit", year: "numeric",
       });
-      doc.font("Helvetica-Bold").fontSize(11).fillColor("#111")
+      doc.font(FB).fontSize(11).fillColor("#111")
         .text(`${t.invoiceNo} ${invoiceNumber(order)}`, 50, y);
       y += 16;
-      doc.font("Helvetica").fontSize(10).fillColor("#333")
+      doc.font(F).fontSize(10).fillColor("#333")
         .text(`${t.date} : ${invoiceDate}`, 50, y);
       y += 28;
 
@@ -336,7 +378,7 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       // Header row
       doc.lineWidth(0.8).strokeColor("#111");
       doc.rect(50, y, tableWidth, 22).stroke();
-      doc.font("Helvetica-Bold").fontSize(10).fillColor("#111");
+      doc.font(FB).fontSize(10).fillColor("#111");
       doc.text(t.description, col.name + 6, y + 6, { width: 180 });
       doc.text(t.quantity, col.qty, y + 6, { width: 70 });
       doc.text(t.unitPrice, col.unit, y + 6, { width: 110 });
@@ -344,7 +386,7 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       y += 22;
 
       // Item rows
-      doc.font("Helvetica").fontSize(10).fillColor("#333");
+      doc.font(F).fontSize(10).fillColor("#333");
       for (const it of order.items) {
         const attrs = parseAttrs(it.attributesSnapshot);
         const nameLines = doc.heightOfString(it.productName, { width: 180 });
@@ -372,7 +414,7 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
         doc.rect(totalsX, y, totalsW, 22).stroke();
         // separatore tra label e valore
         doc.moveTo(totalsX + totalsW / 2, y).lineTo(totalsX + totalsW / 2, y + 22).stroke();
-        doc.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(10).fillColor("#111");
+        doc.font(bold ? FB : F).fontSize(10).fillColor("#111");
         doc.text(label, totalsX + 6, y + 6, { width: totalsW / 2 - 12 });
         doc.text(value, totalsX + totalsW / 2 + 6, y + 6, { width: totalsW / 2 - 12 });
         y += 22;
@@ -388,17 +430,17 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
 
       // ─── MENTION FISCALE ───
       if (y + 60 > 770) { doc.addPage(); y = 60; }
-      doc.font("Helvetica-Bold").fontSize(10).fillColor("#111").text(t.fiscalHeading, 50, y); y += 14;
-      doc.font("Helvetica").fontSize(9).fillColor("#333").text(t.fiscalText, 50, y, { width: tableWidth });
+      doc.font(FB).fontSize(10).fillColor("#111").text(t.fiscalHeading, 50, y); y += 14;
+      doc.font(F).fontSize(9).fillColor("#333").text(t.fiscalText, 50, y, { width: tableWidth });
       y += doc.heightOfString(t.fiscalText, { width: tableWidth }) + 18;
 
       // ─── PAYMENT ───
       if (y + 40 > 770) { doc.addPage(); y = 60; }
-      doc.font("Helvetica-Bold").fontSize(10).fillColor("#111").text(t.paymentHeading, 50, y); y += 14;
-      doc.font("Helvetica").fontSize(9).fillColor("#333").text(t.paymentText, 50, y, { width: tableWidth });
+      doc.font(FB).fontSize(10).fillColor("#111").text(t.paymentHeading, 50, y); y += 14;
+      doc.font(F).fontSize(9).fillColor("#333").text(t.paymentText, 50, y, { width: tableWidth });
 
       // ─── FOOTER ───
-      doc.font("Helvetica").fontSize(8).fillColor("#888").text(
+      doc.font(F).fontSize(8).fillColor("#888").text(
         `${COMPANY.legalName} · ${COMPANY.addressLine1}, ${COMPANY.addressLine2} (${COMPANY.country}) · VAT ${COMPANY.vat} · ${COMPANY.website}`,
         50, 800, { width: tableWidth, align: "center" },
       );

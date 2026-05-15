@@ -66,6 +66,7 @@ export default function CheckoutPage() {
     firstName: "",
     lastName: "",
     phone: "",
+    taxId: "",
     street: "",
     city: "",
     province: "",
@@ -132,7 +133,7 @@ export default function CheckoutPage() {
     setError(null);
 
     // Validazione minima
-    const required = ["email", "firstName", "lastName", "street", "city", "postalCode", "country"];
+    const required = ["email", "firstName", "lastName", "taxId", "street", "city", "postalCode", "country"];
     for (const k of required) {
       if (!form[k as keyof typeof form]?.toString().trim()) {
         setError("Compila tutti i campi obbligatori.");
@@ -156,6 +157,7 @@ export default function CheckoutPage() {
             firstName: form.firstName,
             lastName: form.lastName,
             phone: form.phone,
+            taxId: form.taxId,
           },
           shippingAddress: {
             street: form.street,
@@ -220,6 +222,11 @@ export default function CheckoutPage() {
                 <Field label="Cognome *" value={form.lastName} onChange={(v) => updateField("lastName", v)} />
               </div>
               <Field label="Telefono" type="tel" value={form.phone} onChange={(v) => updateField("phone", v)} />
+              <Field
+                label={lang === "fr" ? "N° TVA ou Code fiscal *" : "P.IVA o Codice Fiscale *"}
+                value={form.taxId}
+                onChange={(v) => updateField("taxId", v.toUpperCase())}
+              />
 
               <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">Indirizzo di spedizione</div>
               <Field label="Via e numero civico *" value={form.street} onChange={(v) => updateField("street", v)} />
@@ -232,17 +239,8 @@ export default function CheckoutPage() {
                 <div className="col-span-2">
                   <label className="block text-[13px] text-warm-700 mb-1.5">Paese *</label>
                   <select value={form.country} onChange={(e) => updateField("country", e.target.value)} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none">
-                    <option value="IT">Italia</option>
-                    <option value="FR">Francia</option>
-                    <option value="DE">Germania</option>
-                    <option value="AT">Austria</option>
-                    <option value="CH">Svizzera</option>
-                    <option value="ES">Spagna</option>
-                    <option value="NL">Paesi Bassi</option>
-                    <option value="BE">Belgio</option>
-                    <option value="PT">Portogallo</option>
-                    <option value="GB">Regno Unito</option>
-                    <option value="US">Stati Uniti</option>
+                    <option value="IT">{lang === "fr" ? "Italie" : "Italia"}</option>
+                    <option value="FR">{lang === "fr" ? "France" : "Francia"}</option>
                   </select>
                 </div>
               </div>

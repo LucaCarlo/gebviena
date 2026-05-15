@@ -37,6 +37,7 @@ interface OrderDetail {
   lastName: string;
   phone: string | null;
   language: string;
+  customerTaxId: string | null;
   shippingAddress: string;
   billingAddress: string;
   subtotalCents: number;
@@ -214,6 +215,12 @@ export default function OrderDetailPage() {
             <span className="text-warm-700">{order.firstName} {order.lastName}</span>
             <span className="text-warm-300">·</span>
             <span className="text-warm-700 font-mono text-xs">{order.email}</span>
+            {order.customerTaxId && (
+              <>
+                <span className="text-warm-300">·</span>
+                <span className="text-warm-700 font-mono text-xs" title="P.IVA / Codice Fiscale">{order.customerTaxId}</span>
+              </>
+            )}
             {!order.customer && <span className="text-xs text-warm-400 italic">(guest)</span>}
           </div>
         </div>

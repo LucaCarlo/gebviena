@@ -36,6 +36,10 @@ export async function POST(req: NextRequest) {
     if (!customer.email || !customer.firstName || !customer.lastName) {
       return NextResponse.json({ success: false, error: "Dati cliente mancanti" }, { status: 400 });
     }
+    const customerTaxId = String(customer.taxId || "").trim().toUpperCase().slice(0, 64);
+    if (!customerTaxId) {
+      return NextResponse.json({ success: false, error: "P.IVA o Codice Fiscale obbligatorio" }, { status: 400 });
+    }
     if (!shippingAddress?.street || !shippingAddress?.city || !shippingAddress?.postalCode || !shippingAddress?.country) {
       return NextResponse.json({ success: false, error: "Indirizzo di spedizione incompleto" }, { status: 400 });
     }
@@ -174,6 +178,7 @@ export async function POST(req: NextRequest) {
           lastName: existingCustomer.lastName || customer.lastName,
           phone: existingCustomer.phone || customer.phone || null,
           language: existingCustomer.language || orderLang,
+          taxCode: existingCustomer.taxCode || customerTaxId,
         },
       });
     } else {
@@ -184,6 +189,7 @@ export async function POST(req: NextRequest) {
           lastName: customer.lastName,
           phone: customer.phone || null,
           language: orderLang,
+          taxCode: customerTaxId,
           passwordHash: null,
           isActive: true,
         },
@@ -231,6 +237,7 @@ export async function POST(req: NextRequest) {
         lastName: customer.lastName,
         phone: customer.phone || null,
         language: orderLang,
+        customerTaxId,
         shippingAddress: JSON.stringify(shippingAddress),
         billingAddress: JSON.stringify(billingAddress),
         subtotalCents,

@@ -29,7 +29,7 @@ export default function StoreLanguageSwitcher() {
     fetch("/api/languages")
       .then((r) => r.json())
       .then((data) => {
-        if (data.success) setLanguages(data.data.filter((l: Language) => l.isActive));
+        if (data.success) setLanguages(data.data.filter((l: Language) => l.isActive && ["it", "fr"].includes(l.code)));
       })
       .catch(() => { /* silent */ });
   }, []);

@@ -11,7 +11,7 @@ type SettingDef = {
   label: string;
   placeholder?: string;
   secret?: boolean;
-  type?: "text" | "number" | "email" | "boolean" | "date" | "textarea";
+  type?: "text" | "number" | "email" | "boolean" | "date" | "datetime-local" | "textarea";
   hint?: string;
 };
 
@@ -129,10 +129,10 @@ const DEFINITIONS: SettingDef[] = [
   {
     key: "store.maintenance.opening_date",
     group: "store_maintenance",
-    label: "Data di apertura",
-    type: "date",
-    placeholder: "2026-05-15",
-    hint: "Se valorizzata, viene mostrato un countdown alla data. Lascia vuoto per nasconderlo.",
+    label: "Data e ora di apertura",
+    type: "datetime-local",
+    placeholder: "2026-05-15T09:00",
+    hint: "Se valorizzata, viene mostrato un countdown alla data/ora esatta. Lascia vuoto per nasconderlo.",
   },
 ];
 
@@ -285,6 +285,7 @@ export default function StoreSettingsPage() {
 
                   const inputType =
                     def.secret && !isRevealed ? "password" :
+                    def.type === "datetime-local" ? "datetime-local" :
                     def.type === "date" ? "date" :
                     def.type === "number" ? "number" :
                     def.type === "email" ? "email" :

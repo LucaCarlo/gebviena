@@ -32,7 +32,12 @@ export default function StoreUserMenu() {
   useEffect(() => {
     fetch("/api/languages")
       .then((r) => r.json())
-      .then((d) => { if (d.success) setLanguages(d.data.filter((l: Language) => l.isActive)); })
+      .then((d) => {
+        if (d.success) {
+          // Lo store è solo IT/FR — non mostriamo altre lingue qui.
+          setLanguages(d.data.filter((l: Language) => l.isActive && ["it", "fr"].includes(l.code)));
+        }
+      })
       .catch(() => { /* silent */ });
   }, []);
 

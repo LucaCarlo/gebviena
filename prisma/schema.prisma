@@ -1497,6 +1497,9 @@ model Order {
   refundReason      String?   @db.Text
   stripeRefundId    String?   @db.VarChar(191)
 
+  // Dati fiscali cliente (snapshot al momento dell'ordine)
+  customerTaxId String? @db.VarChar(64) // P.IVA o Codice Fiscale
+
   // Note
   customerNotes String? @db.Text
   adminNotes    String? @db.Text
