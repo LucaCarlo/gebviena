@@ -120,7 +120,7 @@ function buildHtml(order: OrderWithItems): string {
   const isFr = order.language === "fr";
 
   const t = isFr ? {
-    title: "Confirmation de votre commande",
+    title: "Votre facture",
     greeting: `Bonjour ${order.firstName},`,
     intro: "Nous avons bien reçu votre commande, merci !",
     orderNo: "Numéro de commande",
@@ -137,7 +137,7 @@ function buildHtml(order: OrderWithItems): string {
     next: "Vous trouverez en pièce jointe le PDF récapitulatif. Nous vous contacterons pour confirmer le délai de livraison.",
     questions: "Pour toute question, répondez simplement à cet email.",
   } : {
-    title: "Conferma del tuo ordine",
+    title: "La tua fattura",
     greeting: `Ciao ${order.firstName},`,
     intro: "Abbiamo ricevuto il tuo ordine, grazie!",
     orderNo: "Numero ordine",
@@ -481,8 +481,8 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
 
   const isFr = order.language === "fr";
   const subject = isFr
-    ? `Confirmation de commande ${order.orderNumber} — ${COMPANY.name}`
-    : `Conferma ordine ${order.orderNumber} — ${COMPANY.name}`;
+    ? `Facture ${order.orderNumber} — ${COMPANY.name}`
+    : `Fattura ${order.orderNumber} — ${COMPANY.name}`;
 
   const ok = await sendMail(order.email, subject, html, {
     fromName: COMPANY.name,

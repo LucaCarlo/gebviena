@@ -828,7 +828,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               <BigSpec
                 icon={<Ruler size={14} />}
                 label={t("Consegna", "Livraison")}
-                value={selectedVariant.shippingClass === "QUOTE_ONLY" ? t("Su preventivo", "Sur devis") : (product.deliveryLeadTime || t("4–6 settimane", "4–6 semaines"))}
+                value={selectedVariant.shippingClass === "QUOTE_ONLY" ? t("Su preventivo", "Sur devis") : (product.deliveryLeadTime || t("6 settimane", "6 semaines"))}
               />
             </div>
           )}
