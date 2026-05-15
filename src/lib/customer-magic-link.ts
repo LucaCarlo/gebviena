@@ -184,17 +184,40 @@ function escape(s: string): string {
  *
  * Override esplicito via env STORE_PUBLIC_URL (consigliato in prod).
  */
+const STORE_FALLBACK = "https://store.gebruederthonetvienna.com";
+
 export function storeOriginFrom(origin: string): string {
+  // 1. Override esplicito (consigliato): STORE_PUBLIC_URL in .env.
   const envUrl = process.env.STORE_PUBLIC_URL?.trim();
   if (envUrl) return envUrl.replace(/\/+$/, "");
   try {
     const u = new URL(origin);
-    if (!u.hostname.startsWith("store.")) {
-      u.hostname = `store.${u.hostname}`;
+    const host = u.hostname;
+    // 2. Se l'origin è interno (0.0.0.0 / localhost / IP / nessun punto nel
+    //    dominio) NON è usabile pubblicamente → deriva dal SITE_URL pubblico
+    //    o fallback hardcoded.
+    const isInternal =
+      host === "0.0.0.0" ||
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      /^\d{1,3}(\.\d{1,3}){3}$/.test(host) ||
+      !host.includes(".");
+    if (isInternal) {
+      const site = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "").trim();
+      if (site) {
+        try {
+          const s = new URL(site);
+          if (!s.hostname.startsWith("store.")) s.hostname = `store.${s.hostname}`;
+          return `${s.protocol}//${s.host}`;
+        } catch { /* fallthrough */ }
+      }
+      return STORE_FALLBACK;
     }
+    // 3. Origin pubblico valido: assicura il prefisso store.
+    if (!host.startsWith("store.")) u.hostname = `store.${host}`;
     return `${u.protocol}//${u.host}`;
   } catch {
-    return "https://store.gebruederthonetvienna.com";
+    return STORE_FALLBACK;
   }
 }
 

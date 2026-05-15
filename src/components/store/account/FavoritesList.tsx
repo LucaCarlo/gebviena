@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, Heart, X } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useStoreT } from "@/lib/use-store-t";
+import { useLang } from "@/contexts/I18nContext";
 import AuthForms from "./AuthForms";
 
 interface Favorite {
@@ -27,10 +28,11 @@ function eur(cents: number) {
 export default function FavoritesList() {
   const { customer, loading } = useCustomerAuth();
   const t = useStoreT();
+  const lang = useLang();
   const [items, setItems] = useState<Favorite[] | null>(null);
 
   const load = () => {
-    fetch("/api/store/public/favorites?lang=it", { cache: "no-store" })
+    fetch(`/api/store/public/favorites?lang=${encodeURIComponent(lang)}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => setItems(d.success ? d.data : []))
       .catch(() => setItems([]));

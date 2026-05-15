@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, X, Search as SearchIcon } from "lucide-react";
 import { useStoreT } from "@/lib/use-store-t";
+import { useLang } from "@/contexts/I18nContext";
 
 interface AttrValue {
   id: string;
@@ -67,6 +68,7 @@ export default function ShopFilters() {
   const router = useRouter();
   const search = useSearchParams();
   const tr = useStoreT();
+  const lang = useLang();
 
   const [attrs, setAttrs] = useState<AttrValue[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
@@ -130,7 +132,10 @@ export default function ShopFilters() {
   const hasAnyFilter = selectedCategorySlug || selectedAttrs.size > 0 || qInput || minPriceInput || maxPriceInput || onlyAvailable;
   const toggleExpand = (k: string) => setExpanded((e) => ({ ...e, [k]: !e[k] }));
   const byType = (t: AttrValue["type"]) => attrs.filter((a) => a.type === t);
-  const label = (a: AttrValue) => a.translations.find((x) => x.languageCode === "it")?.label || a.code;
+  const label = (a: AttrValue) =>
+    a.translations.find((x) => x.languageCode === lang)?.label
+    || a.translations.find((x) => x.languageCode === "it")?.label
+    || a.code;
 
   const resetAll = () => {
     setQInput(""); setMinPriceInput(""); setMaxPriceInput("");
@@ -189,7 +194,9 @@ export default function ShopFilters() {
             {tr("Tutte", "Toutes")}
           </button>
           {cats.filter((c) => !c.parentId).map((c) => {
-            const name = c.translations.find((t) => t.languageCode === "it")?.name || c.slug;
+            const name = c.translations.find((t) => t.languageCode === lang)?.name
+              || c.translations.find((t) => t.languageCode === "it")?.name
+              || c.slug;
             const isSel = selectedCategorySlug === c.slug;
             return (
               <button

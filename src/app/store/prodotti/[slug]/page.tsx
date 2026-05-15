@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
 import ProductDetail from "@/components/store/ProductDetail";
+import { getCurrentLang } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
-async function getProduct(slug: string) {
+async function getProduct(slug: string, lang: string) {
   try {
     const port = process.env.PORT || "3000";
-    const res = await fetch(`http://127.0.0.1:${port}/api/store/public/products/${encodeURIComponent(slug)}?lang=it`, {
+    const res = await fetch(`http://127.0.0.1:${port}/api/store/public/products/${encodeURIComponent(slug)}?lang=${encodeURIComponent(lang)}`, {
       cache: "no-store",
     });
     if (!res.ok) return null;
@@ -20,10 +20,11 @@ async function getProduct(slug: string) {
 }
 
 export default async function ProductPage({ params }: { params: { slug: string } }) {
-  const product = await getProduct(params.slug);
+  const lang = getCurrentLang();
+  const product = await getProduct(params.slug, lang);
   if (!product) notFound();
 
-  const isFr = cookies().get("gtv_lang")?.value === "fr";
+  const isFr = lang === "fr";
 
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
