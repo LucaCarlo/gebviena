@@ -39,7 +39,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       const pi = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId);
 
       if (pi.status === "succeeded") {
-        let promoted = false;
         await prisma.$transaction(async (tx) => {
           const fresh = await tx.order.findUnique({ where: { id: order.id }, select: { status: true } });
           if (fresh?.status !== "PENDING") return; // race con webhook → ok
@@ -57,16 +56,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
               });
             }
           }
-          promoted = true;
         });
         order.status = "PAID";
-        // Email post-pagamento solo se questo path ha effettivamente fatto la
-        // promozione (race con webhook: l'altro path già la manda).
-        if (promoted) {
-          sendOrderConfirmationEmail(order.id).catch((err) => {
-            console.error("[order-status] sendOrderConfirmationEmail error:", err);
-          });
-        }
       } else if (pi.status === "canceled" || pi.status === "requires_payment_method") {
         // requires_payment_method dopo un decline definitivo → annulla
         if (pi.last_payment_error) {
@@ -81,6 +72,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       // Errore Stripe non blocca: restituiamo lo stato corrente
       console.warn("[order-status] stripe lookup failed:", e);
     }
+  }
+
+  // Garanzia consegna email: ogni volta che la success-page interroga lo
+  // stato, se l'ordine è PAID tentiamo l'invio. sendOrderConfirmationEmail
+  // è idempotente (flag confirmationEmailSentAt) quindi parte UNA volta sola,
+  // ma viene ritentata finché non riesce — anche se il webhook ha fallito.
+  if (order.status === "PAID") {
+    sendOrderConfirmationEmail(order.id).catch((err) => {
+      console.error("[order-status] sendOrderConfirmationEmail error:", err);
+    });
   }
 
   return NextResponse.json({

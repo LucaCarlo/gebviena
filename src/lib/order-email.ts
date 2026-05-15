@@ -413,6 +413,12 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
     console.error("[order-email] order not found:", orderId);
     return false;
   }
+  // Idempotenza: se già inviata, non re-inviare (sia webhook che fallback
+  // success-page chiamano questa funzione).
+  if ((order as { confirmationEmailSentAt?: Date | null }).confirmationEmailSentAt) {
+    console.log("[order-email] già inviata per", order.orderNumber, "— skip");
+    return true;
+  }
 
   const isFr = order.language === "fr";
   const cfg = await getStoreGeneralConfig();
@@ -441,6 +447,12 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
 
   if (ok) {
     console.log("[order-email] sent for order", order.orderNumber, "to", order.email);
+    // Marca come inviata SOLO se l'email cliente è partita (così un fallimento
+    // transitorio può essere ritentato dal fallback success-page).
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { confirmationEmailSentAt: new Date() },
+    }).catch((e) => console.error("[order-email] flag update error:", e));
   } else {
     console.error("[order-email] FAILED for order", order.orderNumber, "to", order.email);
   }

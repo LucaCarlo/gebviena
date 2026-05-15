@@ -1494,6 +1494,7 @@ model Order {
   stripeSessionId       String?   @unique @db.VarChar(191)
   stripePaymentIntentId String?   @unique @db.VarChar(191)
   paidAt                DateTime?
+  confirmationEmailSentAt DateTime?
 
   // Rimborso
   refundedAt        DateTime?
