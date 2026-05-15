@@ -4,12 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { ShoppingBag, Trash2, Minus, Plus, Lock } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useStoreT } from "@/lib/use-store-t";
 
 const eur = (cents: number) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
 
 export default function CartPage() {
   const { items, subtotalCents, count, updateQuantity, removeItem } = useCart();
+  const t = useStoreT();
 
   if (count === 0) {
     return (
@@ -17,15 +19,15 @@ export default function CartPage() {
         <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-warm-100 flex items-center justify-center">
           <ShoppingBag size={28} className="text-warm-500" />
         </div>
-        <h1 className="text-2xl font-light text-warm-900 mb-3">Il carrello è vuoto</h1>
+        <h1 className="text-2xl font-light text-warm-900 mb-3">{t("Il carrello è vuoto", "Votre panier est vide")}</h1>
         <p className="text-warm-600 text-sm leading-relaxed mb-8">
-          Esplora la collezione e aggiungi i prodotti che vuoi acquistare.
+          {t("Esplora la collezione e aggiungi i prodotti che vuoi acquistare.", "Explorez la collection et ajoutez les produits que vous souhaitez acheter.")}
         </p>
         <Link
           href="/"
           className="inline-flex items-center gap-2 px-6 py-3 bg-warm-900 text-white uppercase text-sm tracking-wider hover:bg-warm-800"
         >
-          Esplora lo shop
+          {t("Esplora lo shop", "Explorer la boutique")}
         </Link>
       </div>
     );
@@ -33,7 +35,7 @@ export default function CartPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 lg:px-8 py-10">
-      <h1 className="text-3xl font-light text-warm-900 mb-8">Carrello</h1>
+      <h1 className="text-3xl font-light text-warm-900 mb-8">{t("Carrello", "Panier")}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10">
         {/* Items */}
@@ -72,7 +74,7 @@ export default function CartPage() {
                     <button
                       onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
                       className="px-2 py-1.5 hover:bg-warm-50"
-                      aria-label="Diminuisci"
+                      aria-label={t("Diminuisci", "Diminuer")}
                     >
                       <Minus size={14} />
                     </button>
@@ -80,7 +82,7 @@ export default function CartPage() {
                     <button
                       onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
                       className="px-2 py-1.5 hover:bg-warm-50"
-                      aria-label="Aumenta"
+                      aria-label={t("Aumenta", "Augmenter")}
                     >
                       <Plus size={14} />
                     </button>
@@ -95,7 +97,7 @@ export default function CartPage() {
               <button
                 onClick={() => removeItem(item.variantId)}
                 className="text-warm-400 hover:text-red-600 transition-colors self-start"
-                aria-label="Rimuovi"
+                aria-label={t("Rimuovi", "Retirer")}
               >
                 <Trash2 size={18} />
               </button>
@@ -105,39 +107,39 @@ export default function CartPage() {
 
         {/* Summary */}
         <aside className="lg:sticky lg:top-28 self-start space-y-4 p-6 border border-warm-200 rounded bg-warm-50/40">
-          <h2 className="text-sm uppercase tracking-[0.2em] text-warm-500">Riepilogo</h2>
+          <h2 className="text-sm uppercase tracking-[0.2em] text-warm-500">{t("Riepilogo", "Récapitulatif")}</h2>
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-warm-700">Subtotale ({count} {count === 1 ? "prodotto" : "prodotti"})</span>
+              <span className="text-warm-700">{t("Subtotale", "Sous-total")} ({count} {count === 1 ? t("prodotto", "produit") : t("prodotti", "produits")})</span>
               <span className="text-warm-900">{eur(subtotalCents)}</span>
             </div>
             <div className="flex justify-between text-warm-500 text-xs">
-              <span>Spedizione</span>
-              <span>calcolata al checkout</span>
+              <span>{t("Spedizione", "Livraison")}</span>
+              <span>{t("calcolata al checkout", "calculée au paiement")}</span>
             </div>
           </div>
 
           <div className="border-t border-warm-200 pt-3">
             <div className="flex justify-between items-baseline">
-              <span className="text-warm-900 font-medium">Totale parziale</span>
+              <span className="text-warm-900 font-medium">{t("Totale parziale", "Total partiel")}</span>
               <span className="text-2xl font-light text-warm-900">{eur(subtotalCents)}</span>
             </div>
-            <p className="text-[11px] text-warm-500 mt-1">IVA inclusa, spedizione esclusa</p>
+            <p className="text-[11px] text-warm-500 mt-1">{t("IVA inclusa, spedizione esclusa", "TVA incluse, livraison non comprise")}</p>
           </div>
 
           <Link
             href="/checkout"
             className="w-full inline-flex items-center justify-center gap-2 py-4 bg-warm-900 text-white uppercase text-sm tracking-wider hover:bg-warm-800 transition-colors"
           >
-            <Lock size={14} /> Procedi al checkout
+            <Lock size={14} /> {t("Procedi al checkout", "Procéder au paiement")}
           </Link>
 
           <Link
             href="/"
             className="block text-center text-xs text-warm-600 hover:text-warm-900 underline"
           >
-            Continua a esplorare
+            {t("Continua a esplorare", "Continuer mes achats")}
           </Link>
         </aside>
       </div>

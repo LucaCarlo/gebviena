@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import ProductCard, { type ProductCardData } from "./ProductCard";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
+import { useStoreT } from "@/lib/use-store-t";
 
 const PAGE_SIZE = 20;
 
 export default function ShopGrid({ products }: { products: ProductCardData[] }) {
   const { customer } = useCustomerAuth();
+  const t = useStoreT();
   const [favSet, setFavSet] = useState<Set<string>>(new Set());
   const [shown, setShown] = useState(PAGE_SIZE);
 
@@ -37,14 +39,14 @@ export default function ShopGrid({ products }: { products: ProductCardData[] }) 
       <div className="flex items-center justify-between mb-6">
         <div className="text-sm text-warm-600">
           {products.length === 0
-            ? "Nessun prodotto"
-            : <>Mostro <strong>{visible.length}</strong> di <strong>{products.length}</strong></>}
+            ? t("Nessun prodotto", "Aucun produit")
+            : <>{t("Mostro", "Affichage de")} <strong>{visible.length}</strong> {t("di", "sur")} <strong>{products.length}</strong></>}
         </div>
       </div>
 
       {products.length === 0 ? (
         <div className="text-center py-24 text-warm-500 border border-warm-200 rounded-lg">
-          Nessun prodotto trovato. Prova a modificare i filtri.
+          {t("Nessun prodotto trovato. Prova a modificare i filtri.", "Aucun produit trouvé. Essayez de modifier les filtres.")}
         </div>
       ) : (
         <>
@@ -71,7 +73,7 @@ export default function ShopGrid({ products }: { products: ProductCardData[] }) 
                 onClick={() => setShown((n) => n + PAGE_SIZE)}
                 className="px-8 py-3 border border-warm-900 text-warm-900 uppercase text-[12px] tracking-[0.18em] hover:bg-warm-900 hover:text-white transition-colors"
               >
-                Carica altri ({Math.min(PAGE_SIZE, products.length - shown)})
+                {t("Carica altri", "Charger plus")} ({Math.min(PAGE_SIZE, products.length - shown)})
               </button>
             </div>
           )}

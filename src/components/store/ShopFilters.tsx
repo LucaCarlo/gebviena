@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, X, Search as SearchIcon } from "lucide-react";
+import { useStoreT } from "@/lib/use-store-t";
 
 interface AttrValue {
   id: string;
@@ -44,16 +45,28 @@ const SHOP_FILTER_TYPES: AttrValue["type"][] = [
   "UPHOLSTERY", "INSERT", "CONFIGURATION",
 ];
 
+const TYPE_LABEL_FR: Record<AttrValue["type"], string> = {
+  MATERIAL: "Matériau",
+  FINISH: "Finition",
+  COLOR: "Couleur",
+  STRUCTURE: "Structure",
+  SEAT: "Assise",
+  UPHOLSTERY: "Rembourrage",
+  INSERT: "Inserts",
+  CONFIGURATION: "Variante",
+  OTHER: "Autre",
+};
 const SORT_OPTIONS = [
-  { value: "newest", label: "Novità" },
-  { value: "price-asc", label: "Prezzo: crescente" },
-  { value: "price-desc", label: "Prezzo: decrescente" },
-  { value: "name", label: "Nome A-Z" },
+  { value: "newest", label: "Novità", labelFr: "Nouveautés" },
+  { value: "price-asc", label: "Prezzo: crescente", labelFr: "Prix : croissant" },
+  { value: "price-desc", label: "Prezzo: decrescente", labelFr: "Prix : décroissant" },
+  { value: "name", label: "Nome A-Z", labelFr: "Nom A-Z" },
 ];
 
 export default function ShopFilters() {
   const router = useRouter();
   const search = useSearchParams();
+  const tr = useStoreT();
 
   const [attrs, setAttrs] = useState<AttrValue[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
@@ -133,7 +146,7 @@ export default function ShopFilters() {
           type="text"
           value={qInput}
           onChange={(e) => setQInput(e.target.value)}
-          placeholder="Cerca un prodotto…"
+          placeholder={tr("Cerca un prodotto…", "Rechercher un produit…")}
           className="w-full pl-9 pr-8 py-2 border border-warm-200 bg-white text-sm focus:outline-none focus:border-warm-500"
         />
         {qInput && (
@@ -145,35 +158,35 @@ export default function ShopFilters() {
 
       {/* Sort */}
       <div className="flex items-center gap-2">
-        <label className="text-xs uppercase tracking-[0.15em] text-warm-500 shrink-0">Ordina</label>
+        <label className="text-xs uppercase tracking-[0.15em] text-warm-500 shrink-0">{tr("Ordina", "Trier")}</label>
         <select
           value={selectedSort}
           onChange={(e) => updateQuery({ sort: e.target.value === "newest" ? null : e.target.value })}
           className="flex-1 border border-warm-200 px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-warm-500"
         >
           {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+            <option key={o.value} value={o.value}>{tr(o.label, o.labelFr)}</option>
           ))}
         </select>
       </div>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-xs uppercase tracking-[0.2em] text-warm-500">Filtri</h2>
+        <h2 className="text-xs uppercase tracking-[0.2em] text-warm-500">{tr("Filtri", "Filtres")}</h2>
         {hasAnyFilter && (
           <button onClick={resetAll} className="text-xs text-warm-500 hover:text-warm-900 inline-flex items-center gap-1">
-            <X size={11} /> Reset
+            <X size={11} /> {tr("Reset", "Réinitialiser")}
           </button>
         )}
       </div>
 
       {/* Categoria */}
-      <FilterGroup label="Categoria" open={expanded.category} onToggle={() => toggleExpand("category")}>
+      <FilterGroup label={tr("Categoria", "Catégorie")} open={expanded.category} onToggle={() => toggleExpand("category")}>
         <div className="space-y-1">
           <button
             onClick={() => updateQuery({ category: null })}
             className={`block w-full text-left py-1 ${!selectedCategorySlug ? "text-warm-900 font-medium" : "text-warm-600 hover:text-warm-900"}`}
           >
-            Tutte
+            {tr("Tutte", "Toutes")}
           </button>
           {cats.filter((c) => !c.parentId).map((c) => {
             const name = c.translations.find((t) => t.languageCode === "it")?.name || c.slug;
@@ -188,12 +201,12 @@ export default function ShopFilters() {
               </button>
             );
           })}
-          {cats.length === 0 && <div className="text-warm-400 italic text-xs">Nessuna categoria pubblicata.</div>}
+          {cats.length === 0 && <div className="text-warm-400 italic text-xs">{tr("Nessuna categoria pubblicata.", "Aucune catégorie publiée.")}</div>}
         </div>
       </FilterGroup>
 
       {/* Prezzo */}
-      <FilterGroup label="Prezzo (€)" open={expanded.price} onToggle={() => toggleExpand("price")}>
+      <FilterGroup label={tr("Prezzo (€)", "Prix (€)")} open={expanded.price} onToggle={() => toggleExpand("price")}>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <input
@@ -223,21 +236,21 @@ export default function ShopFilters() {
               onClick={() => { setMinPriceInput(""); setMaxPriceInput(""); updateQuery({ minPrice: null, maxPrice: null }); }}
               className="text-[11px] text-warm-500 hover:text-warm-900"
             >
-              Rimuovi filtro prezzo
+              {tr("Rimuovi filtro prezzo", "Supprimer le filtre prix")}
             </button>
           )}
         </div>
       </FilterGroup>
 
       {/* Disponibilità */}
-      <FilterGroup label="Disponibilità" open={expanded.availability} onToggle={() => toggleExpand("availability")}>
+      <FilterGroup label={tr("Disponibilità", "Disponibilité")} open={expanded.availability} onToggle={() => toggleExpand("availability")}>
         <label className="flex items-center gap-2 py-1 text-xs cursor-pointer">
           <input
             type="checkbox"
             checked={onlyAvailable}
             onChange={(e) => updateQuery({ onlyAvailable: e.target.checked ? "1" : null })}
           />
-          <span className="text-warm-700">Solo prodotti disponibili</span>
+          <span className="text-warm-700">{tr("Solo prodotti disponibili", "Uniquement les produits disponibles")}</span>
         </label>
       </FilterGroup>
 
@@ -246,7 +259,7 @@ export default function ShopFilters() {
         const vals = byType(t);
         if (vals.length === 0) return null;
         return (
-          <FilterGroup key={t} label={TYPE_LABEL[t]} open={!!expanded[t]} onToggle={() => toggleExpand(t)}>
+          <FilterGroup key={t} label={tr(TYPE_LABEL[t], TYPE_LABEL_FR[t])} open={!!expanded[t]} onToggle={() => toggleExpand(t)}>
             <div className={t === "COLOR" ? "flex flex-wrap gap-2" : "space-y-1"}>
               {vals.map((v) => {
                 const isSel = selectedAttrs.has(v.id);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useLang } from "@/contexts/I18nContext";
+import { switchStoreLang } from "@/lib/store-lang-switch";
 
 interface Language {
   code: string;
@@ -45,12 +46,7 @@ export default function StoreLanguageSwitcher() {
 
   const switchTo = (lang: Language) => {
     setOpen(false);
-    const target = lang.code;
-    // Stesso cookie del sito principale così la preferenza è coerente.
-    document.cookie = `gtv_lang=${target}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-    // Hard reload: la lingua è risolta server-side e impatta layout, prezzi e
-    // contenuti tradotti.
-    window.location.reload();
+    switchStoreLang(lang.code);
   };
 
   if (languages.length <= 1) return null;

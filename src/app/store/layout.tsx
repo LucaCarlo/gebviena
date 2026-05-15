@@ -61,6 +61,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
           message={maintenance.message}
           openingDate={maintenance.openingDate || null}
           mainSiteUrl={getMainSiteUrl()}
+          lang={lang}
         />
       </I18nProvider>
     );

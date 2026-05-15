@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ChevronLeft, Truck, Package, CheckCircle2, Clock, CircleAlert } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
+import { useStoreT } from "@/lib/use-store-t";
 import AuthForms from "./AuthForms";
 
 interface OrderItem {
@@ -45,23 +46,23 @@ interface OrderFull {
   items: OrderItem[];
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  PENDING: "In attesa di pagamento",
-  PAID: "Pagato",
-  PROCESSING: "In preparazione",
-  SHIPPED: "Spedito",
-  DELIVERED: "Consegnato",
-  CANCELLED: "Annullato",
-  REFUNDED: "Rimborsato",
-  PARTIALLY_REFUNDED: "Parzialmente rimborsato",
+const STATUS_LABEL: Record<string, [string, string]> = {
+  PENDING: ["In attesa di pagamento", "En attente de paiement"],
+  PAID: ["Pagato", "Payé"],
+  PROCESSING: ["In preparazione", "En préparation"],
+  SHIPPED: ["Spedito", "Expédié"],
+  DELIVERED: ["Consegnato", "Livré"],
+  CANCELLED: ["Annullato", "Annulé"],
+  REFUNDED: ["Rimborsato", "Remboursé"],
+  PARTIALLY_REFUNDED: ["Parzialmente rimborsato", "Partiellement remboursé"],
 };
 
-const TIMELINE_STEPS = [
-  { key: "PENDING", label: "Ordine ricevuto", icon: Clock },
-  { key: "PAID", label: "Pagamento confermato", icon: CheckCircle2 },
-  { key: "PROCESSING", label: "In preparazione", icon: Package },
-  { key: "SHIPPED", label: "Spedito", icon: Truck },
-  { key: "DELIVERED", label: "Consegnato", icon: CheckCircle2 },
+const TIMELINE_STEPS: { key: string; label: [string, string]; icon: typeof Clock }[] = [
+  { key: "PENDING", label: ["Ordine ricevuto", "Commande reçue"], icon: Clock },
+  { key: "PAID", label: ["Pagamento confermato", "Paiement confirmé"], icon: CheckCircle2 },
+  { key: "PROCESSING", label: ["In preparazione", "En préparation"], icon: Package },
+  { key: "SHIPPED", label: ["Spedito", "Expédié"], icon: Truck },
+  { key: "DELIVERED", label: ["Consegnato", "Livré"], icon: CheckCircle2 },
 ];
 
 function statusIndex(status: string) {
@@ -82,6 +83,7 @@ function safeParseAddress(json: string): Record<string, string> {
 }
 
 export default function OrderDetail({ orderId }: { orderId: string }) {
+  const t = useStoreT();
   const { customer, loading } = useCustomerAuth();
   const [order, setOrder] = useState<OrderFull | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -97,20 +99,20 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
       .catch(() => setNotFound(true));
   }, [customer, orderId]);
 
-  if (loading) return <div className="max-w-4xl mx-auto p-12 text-center text-warm-500 text-sm">Caricamento…</div>;
+  if (loading) return <div className="max-w-4xl mx-auto p-12 text-center text-warm-500 text-sm">{t("Caricamento…", "Chargement…")}</div>;
   if (!customer) return <AuthForms />;
   if (notFound) return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <div className="border border-warm-200 p-12 text-center">
         <CircleAlert size={28} className="mx-auto text-warm-400 mb-3" />
-        <div className="text-warm-600 mb-4">Ordine non trovato.</div>
+        <div className="text-warm-600 mb-4">{t("Ordine non trovato.", "Commande introuvable.")}</div>
         <Link href="/account/orders" className="text-xs uppercase tracking-[0.2em] text-warm-900 border-b border-warm-900 pb-0.5">
-          Torna agli ordini
+          {t("Torna agli ordini", "Retour aux commandes")}
         </Link>
       </div>
     </div>
   );
-  if (!order) return <div className="max-w-4xl mx-auto p-12 text-center text-warm-500 text-sm">Caricamento ordine…</div>;
+  if (!order) return <div className="max-w-4xl mx-auto p-12 text-center text-warm-500 text-sm">{t("Caricamento ordine…", "Chargement de la commande…")}</div>;
 
   const currentIdx = statusIndex(order.status);
   const shipping = safeParseAddress(order.shippingAddress);
@@ -119,24 +121,24 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <Link href="/account/orders" className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-warm-500 hover:text-warm-900 mb-6">
-        <ChevronLeft size={14} /> I miei ordini
+        <ChevronLeft size={14} /> {t("I miei ordini", "Mes commandes")}
       </Link>
 
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
-          <div className="text-[11px] uppercase tracking-[0.25em] text-warm-500 mb-1">Ordine</div>
+          <div className="text-[11px] uppercase tracking-[0.25em] text-warm-500 mb-1">{t("Ordine", "Commande")}</div>
           <h1 className="text-3xl font-light text-warm-900 font-mono">#{order.orderNumber}</h1>
           <div className="text-sm text-warm-500 mt-1">{fmtDate(order.createdAt)}</div>
         </div>
         <div className="text-sm text-warm-700 uppercase tracking-[0.15em] bg-warm-100 px-3 py-1.5">
-          {STATUS_LABEL[order.status] || order.status}
+          {STATUS_LABEL[order.status] ? t(STATUS_LABEL[order.status][0], STATUS_LABEL[order.status][1]) : order.status}
         </div>
       </div>
 
       {/* Timeline tracking */}
       {!["CANCELLED", "REFUNDED"].includes(order.status) && (
         <div className="border border-warm-200 p-6 mb-8">
-          <div className="text-xs uppercase tracking-[0.2em] text-warm-500 mb-5">Stato spedizione</div>
+          <div className="text-xs uppercase tracking-[0.2em] text-warm-500 mb-5">{t("Stato spedizione", "Statut de l'expédition")}</div>
           <div className="grid grid-cols-5 gap-2 relative">
             {TIMELINE_STEPS.map((step, idx) => {
               const Icon = step.icon;
@@ -147,7 +149,7 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
                     <Icon size={16} />
                   </div>
                   <div className={`text-[10px] uppercase tracking-wider ${done ? "text-warm-900" : "text-warm-400"}`}>
-                    {step.label}
+                    {t(step.label[0], step.label[1])}
                   </div>
                   {idx < TIMELINE_STEPS.length - 1 && (
                     <div className={`absolute top-[18px] left-1/2 w-full h-0.5 ${idx < currentIdx ? "bg-warm-900" : "bg-warm-200"}`} style={{ zIndex: -1 }} />
@@ -160,28 +162,28 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
           {order.trackingNumber && (
             <div className="mt-6 pt-5 border-t border-warm-200 text-sm flex flex-wrap gap-4 items-center">
               <div>
-                <span className="text-warm-500 mr-2">Corriere:</span>
+                <span className="text-warm-500 mr-2">{t("Corriere", "Transporteur")}:</span>
                 <span className="text-warm-900">{order.trackingCarrier || "—"}</span>
               </div>
               <div>
-                <span className="text-warm-500 mr-2">Tracking:</span>
+                <span className="text-warm-500 mr-2">{t("Tracking", "Suivi")}:</span>
                 <span className="font-mono text-warm-900">{order.trackingNumber}</span>
               </div>
               {order.trackingUrl && (
                 <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="ml-auto inline-flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-warm-900 border-b border-warm-900 pb-0.5 hover:text-warm-600">
-                  Traccia spedizione
+                  {t("Traccia spedizione", "Suivre l'expédition")}
                 </a>
               )}
             </div>
           )}
-          {order.shippedAt && <div className="mt-3 text-xs text-warm-500">Spedito il {fmtDate(order.shippedAt)}</div>}
-          {order.deliveredAt && <div className="mt-1 text-xs text-warm-500">Consegnato il {fmtDate(order.deliveredAt)}</div>}
+          {order.shippedAt && <div className="mt-3 text-xs text-warm-500">{t("Spedito il", "Expédié le")} {fmtDate(order.shippedAt)}</div>}
+          {order.deliveredAt && <div className="mt-1 text-xs text-warm-500">{t("Consegnato il", "Livré le")} {fmtDate(order.deliveredAt)}</div>}
         </div>
       )}
 
       {/* Articoli */}
       <div className="border border-warm-200 mb-8">
-        <div className="p-5 border-b border-warm-200 text-xs uppercase tracking-[0.2em] text-warm-500">Articoli</div>
+        <div className="p-5 border-b border-warm-200 text-xs uppercase tracking-[0.2em] text-warm-500">{t("Articoli", "Articles")}</div>
         <div className="divide-y divide-warm-200">
           {order.items.map((it) => (
             <div key={it.id} className="p-5 flex justify-between gap-4">
@@ -198,11 +200,11 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
           ))}
         </div>
         <div className="p-5 border-t border-warm-200 space-y-1 text-sm">
-          <Row label="Subtotale" value={eur(order.subtotalCents)} />
-          <Row label="Spedizione" value={eur(order.shippingCents)} />
-          <Row label="IVA" value={eur(order.taxCents)} />
+          <Row label={t("Subtotale", "Sous-total")} value={eur(order.subtotalCents)} />
+          <Row label={t("Spedizione", "Livraison")} value={eur(order.shippingCents)} />
+          <Row label={t("IVA", "TVA")} value={eur(order.taxCents)} />
           <div className="pt-2 mt-2 border-t border-warm-200">
-            <Row label="Totale" value={eur(order.totalCents)} bold />
+            <Row label={t("Totale", "Total")} value={eur(order.totalCents)} bold />
           </div>
         </div>
       </div>
@@ -210,13 +212,13 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
       {/* Indirizzi */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <AddressCard
-          title="Indirizzo di spedizione"
+          title={t("Indirizzo di spedizione", "Adresse de livraison")}
           addr={shipping}
           recipient={`${order.firstName} ${order.lastName}`.trim()}
           phone={order.phone}
         />
         <AddressCard
-          title="Indirizzo di fatturazione"
+          title={t("Indirizzo di fatturazione", "Adresse de facturation")}
           addr={billing}
           recipient={`${order.firstName} ${order.lastName}`.trim()}
           phone={order.phone}
@@ -236,16 +238,17 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
 }
 
 // Mappa il nome del paese da codice ISO (basata sulle opzioni del checkout)
-const COUNTRY_NAMES: Record<string, string> = {
-  IT: "Italia", FR: "Francia", DE: "Germania", AT: "Austria", CH: "Svizzera",
-  ES: "Spagna", NL: "Paesi Bassi", BE: "Belgio", PT: "Portogallo", LU: "Lussemburgo",
-  GB: "Regno Unito", US: "Stati Uniti", IE: "Irlanda", SE: "Svezia", DK: "Danimarca",
-  FI: "Finlandia", PL: "Polonia", SI: "Slovenia",
+const COUNTRY_NAMES: Record<string, [string, string]> = {
+  IT: ["Italia", "Italie"], FR: ["Francia", "France"], DE: ["Germania", "Allemagne"], AT: ["Austria", "Autriche"], CH: ["Svizzera", "Suisse"],
+  ES: ["Spagna", "Espagne"], NL: ["Paesi Bassi", "Pays-Bas"], BE: ["Belgio", "Belgique"], PT: ["Portogallo", "Portugal"], LU: ["Lussemburgo", "Luxembourg"],
+  GB: ["Regno Unito", "Royaume-Uni"], US: ["Stati Uniti", "États-Unis"], IE: ["Irlanda", "Irlande"], SE: ["Svezia", "Suède"], DK: ["Danimarca", "Danemark"],
+  FI: ["Finlandia", "Finlande"], PL: ["Polonia", "Pologne"], SI: ["Slovenia", "Slovénie"],
 };
 
-function countryLabel(code: string | undefined): string {
+function countryLabel(code: string | undefined, t: (it: string, fr: string) => string): string {
   if (!code) return "";
-  return COUNTRY_NAMES[code.toUpperCase()] || code;
+  const c = COUNTRY_NAMES[code.toUpperCase()];
+  return c ? t(c[0], c[1]) : code;
 }
 
 function AddressCard({
@@ -259,6 +262,7 @@ function AddressCard({
   recipient?: string;
   phone?: string | null;
 }) {
+  const t = useStoreT();
   // L'address è salvato dal checkout come { street, city, province, postalCode, country }.
   // Manteniamo retrocompatibilità con un eventuale formato precedente { street1, zip, ... }.
   const street = addr.street || addr.street1 || "";
@@ -282,11 +286,11 @@ function AddressCard({
             {[postalCode, city].filter(Boolean).join(" ")}
             {province ? ` (${province.toUpperCase()})` : ""}
           </div>
-          {country && <div>{countryLabel(country)}</div>}
-          {phone && <div className="text-warm-500 text-xs mt-2">Tel. {phone}</div>}
+          {country && <div>{countryLabel(country, t)}</div>}
+          {phone && <div className="text-warm-500 text-xs mt-2">{t("Tel.", "Tél.")} {phone}</div>}
         </div>
       ) : (
-        <div className="text-sm text-warm-500 italic">Non disponibile</div>
+        <div className="text-sm text-warm-500 italic">{t("Non disponibile", "Non disponible")}</div>
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useCart } from "@/contexts/CartContext";
 import GallerySlideshow from "@/components/site/GallerySlideshow";
 import ProductCard, { type ProductCardData } from "./ProductCard";
+import { useStoreT } from "@/lib/use-store-t";
 
 type AttrType =
   | "MATERIAL"
@@ -31,6 +32,17 @@ const ATTR_TYPE_LABEL: Record<AttrType, string> = {
   INSERT: "Inserti",
   CONFIGURATION: "Variante",
   OTHER: "Opzione",
+};
+const ATTR_TYPE_LABEL_FR: Record<AttrType, string> = {
+  MATERIAL: "Matériau",
+  FINISH: "Finition",
+  COLOR: "Couleur",
+  STRUCTURE: "Structure",
+  SEAT: "Assise",
+  UPHOLSTERY: "Rembourrage",
+  INSERT: "Inserts",
+  CONFIGURATION: "Variante",
+  OTHER: "Option",
 };
 
 interface Attribute {
@@ -141,6 +153,7 @@ const RELATED_PAGE_SIZE = 4;
 export default function ProductDetail({ product }: { product: Product }) {
   const { customer } = useCustomerAuth();
   const { addItem, count: cartCount } = useCart();
+  const t = useStoreT();
   const [justAdded, setJustAdded] = useState(false);
   const [showAddedModal, setShowAddedModal] = useState(false);
 
@@ -582,7 +595,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               type="button"
               onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
               className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-warm-900 shadow opacity-90 group-hover:opacity-100 hover:bg-white transition-all z-10"
-              aria-label="Apri immagine a tutto schermo"
+              aria-label={t("Apri immagine a tutto schermo", "Ouvrir l’image en plein écran")}
             >
               <Maximize2 size={16} />
             </button>
@@ -594,7 +607,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                   key={i}
                   onClick={() => setActiveImgIdx(i)}
                   className={`aspect-square overflow-hidden relative border-2 ${i === activeImgIdx ? "border-warm-900" : "border-transparent hover:border-warm-300"}`}
-                  aria-label={`Immagine ${i + 1}`}
+                  aria-label={t(`Immagine ${i + 1}`, `Image ${i + 1}`)}
                 >
                   <Image src={img} alt="" fill sizes="100px" className="object-cover" />
                 </button>
@@ -610,7 +623,7 @@ export default function ProductDetail({ product }: { product: Product }) {
           </h1>
           {product.designer && (
             <div className="mt-2 text-[12px] text-warm-500 tracking-[0.06em]">
-              design by <span className="text-warm-800">{product.designer.name}</span>
+              {t("design by", "design par")} <span className="text-warm-800">{product.designer.name}</span>
             </div>
           )}
 
@@ -635,7 +648,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                 return (
                   <div key={type}>
                     <div className="text-[10px] uppercase tracking-[0.22em] text-warm-500 mb-2.5">
-                      {ATTR_TYPE_LABEL[type]}
+                      {t(ATTR_TYPE_LABEL[type], ATTR_TYPE_LABEL_FR[type])}
                       {chosenLabel && (
                         <span className="ml-2 text-warm-900 normal-case tracking-normal text-[12px]">· {chosenLabel}</span>
                       )}
@@ -690,7 +703,7 @@ export default function ProductDetail({ product }: { product: Product }) {
           ) : product.variants.length > 1 ? (
             <div className="mt-7 pt-6 border-t border-warm-200">
               <div className="text-[10px] uppercase tracking-[0.22em] text-warm-500 mb-2.5">
-                Variante <span className="text-warm-400 normal-case tracking-normal">({product.variants.length} opzioni)</span>
+                {t("Variante", "Variante")} <span className="text-warm-400 normal-case tracking-normal">({product.variants.length} {t("opzioni", "options")})</span>
               </div>
               <div className="flex flex-col gap-2">
                 {product.variants.map((v) => {
@@ -736,7 +749,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                     baseOf(selectedVariant) > 0 ? (
                       eur(effectivePriceCents(selectedVariant))
                     ) : (
-                      <span className="italic text-[24px] text-warm-700">Prezzo su richiesta</span>
+                      <span className="italic text-[24px] text-warm-700">{t("Prezzo su richiesta", "Prix sur demande")}</span>
                     )
                   ) : "—"}
                 </div>
@@ -757,20 +770,20 @@ export default function ProductDetail({ product }: { product: Product }) {
             </div>
             <div className="text-[11px] text-warm-500 mb-4">
               {selectedVariant && baseOf(selectedVariant) > 0
-                ? "IVA inclusa · spedizione calcolata al checkout"
-                : "Contattaci per un preventivo personalizzato"}
+                ? t("IVA inclusa · spedizione calcolata al checkout", "TVA incluse · livraison calculée au paiement")
+                : t("Contattaci per un preventivo personalizzato", "Contactez-nous pour un devis personnalisé")}
             </div>
 
             <div className="flex items-center gap-1.5 mb-4 text-[12px]">
               {inStock ? (
                 <span className="inline-flex items-center gap-1.5 text-emerald-700">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Disponibile
-                  {selectedVariant?.trackStock && <span className="text-warm-500 ml-1">({selectedVariant.stockQty} pz)</span>}
+                  {t("Disponibile", "Disponible")}
+                  {selectedVariant?.trackStock && <span className="text-warm-500 ml-1">({selectedVariant.stockQty} {t("pz", "pcs")})</span>}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 text-red-700">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Non disponibile
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> {t("Non disponibile", "Indisponible")}
                 </span>
               )}
             </div>
@@ -782,29 +795,29 @@ export default function ProductDetail({ product }: { product: Product }) {
                   onClick={handleAddToCart}
                   className={`flex-1 inline-flex items-center justify-center gap-2 py-3.5 text-white uppercase text-[12px] tracking-[0.18em] disabled:bg-warm-300 disabled:cursor-not-allowed transition-colors ${justAdded ? "bg-emerald-600 hover:bg-emerald-700" : "bg-warm-900 hover:bg-warm-800"}`}
                 >
-                  <ShoppingBag size={15} /> {justAdded ? "Aggiunto" : "Aggiungi al carrello"}
+                  <ShoppingBag size={15} /> {justAdded ? t("Aggiunto", "Ajouté") : t("Aggiungi al carrello", "Ajouter au panier")}
                 </button>
               ) : (
                 <a
                   href={`/contatti/richiesta-info?product=${encodeURIComponent(product.name)}`}
                   className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 text-white uppercase text-[12px] tracking-[0.18em] bg-warm-900 hover:bg-warm-800 transition-colors"
                 >
-                  Richiedi un preventivo
+                  {t("Richiedi un preventivo", "Demander un devis")}
                 </a>
               )}
               <button
                 onClick={toggleFavorite}
                 disabled={favBusy}
-                title={isFav ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+                title={isFav ? t("Rimuovi dai preferiti", "Retirer des favoris") : t("Aggiungi ai preferiti", "Ajouter aux favoris")}
                 className={`w-12 border flex items-center justify-center transition-colors ${isFav ? "border-red-500 text-red-500 bg-red-50" : "border-warm-300 text-warm-700 hover:border-warm-900 hover:text-warm-900"}`}
-                aria-label={isFav ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+                aria-label={isFav ? t("Rimuovi dai preferiti", "Retirer des favoris") : t("Aggiungi ai preferiti", "Ajouter aux favoris")}
               >
                 <Heart size={17} fill={isFav ? "currentColor" : "none"} strokeWidth={1.6} />
               </button>
             </div>
             {cartCount > 0 && (
               <div className="mt-3 text-[11px] text-warm-700 text-center">
-                <a href="/carrello" className="underline hover:text-warm-900">Vai al carrello ({cartCount})</a>
+                <a href="/carrello" className="underline hover:text-warm-900">{t("Vai al carrello", "Voir le panier")} ({cartCount})</a>
               </div>
             )}
           </div>
@@ -814,8 +827,8 @@ export default function ProductDetail({ product }: { product: Product }) {
             <div className="mt-7 pt-6 border-t border-warm-200">
               <BigSpec
                 icon={<Ruler size={14} />}
-                label="Consegna"
-                value={selectedVariant.shippingClass === "QUOTE_ONLY" ? "Su preventivo" : (product.deliveryLeadTime || "4–6 settimane")}
+                label={t("Consegna", "Livraison")}
+                value={selectedVariant.shippingClass === "QUOTE_ONLY" ? t("Su preventivo", "Sur devis") : (product.deliveryLeadTime || t("4–6 settimane", "4–6 semaines"))}
               />
             </div>
           )}
@@ -834,13 +847,13 @@ export default function ProductDetail({ product }: { product: Product }) {
             <div className="mt-6 pt-6 border-t border-warm-200 space-y-5">
               {product.materials && (
                 <div>
-                  <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-2">Materiali</div>
+                  <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-2">{t("Materiali", "Matériaux")}</div>
                   <p className="text-[15px] text-warm-700 leading-[1.55]">{product.materials}</p>
                 </div>
               )}
               {product.dimensions && (
                 <div>
-                  <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-2">Dimensioni</div>
+                  <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-2">{t("Dimensioni", "Dimensions")}</div>
                   <p className="font-mono text-[15px] text-warm-900">{product.dimensions}</p>
                 </div>
               )}
@@ -855,7 +868,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       {(product.marketingDescription || verticalCatalog.length > 0 || horizontalCatalog.length > 0) && (
         <section className="mt-20 pt-14 border-t border-warm-200">
           <h2 className="font-serif text-[34px] md:text-[42px] leading-[1.05] text-warm-900 tracking-[-0.005em] mb-8 lg:mb-10">
-            Ispirazione
+            {t("Ispirazione", "Inspiration")}
           </h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-10 lg:gap-16 items-start">
@@ -870,7 +883,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               [&_strong]:font-semibold [&_strong]:text-warm-900`.replace(/\s+/g, " ")}>
               {product.marketingDescription
                 ? <div dangerouslySetInnerHTML={{ __html: /<\/?(p|div|h[1-6]|ul|ol|li|strong|em|blockquote|br|a)\b/i.test(product.marketingDescription) ? product.marketingDescription : renderMarkdown(product.marketingDescription) }} />
-                : <p className="text-warm-500 italic">Descrizione in arrivo.</p>}
+                : <p className="text-warm-500 italic">{t("Descrizione in arrivo.", "Description à venir.")}</p>}
             </div>
 
             {/* Slideshow VERTICALE a destra — 1 foto alla volta, aspect 3/4
@@ -891,7 +904,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                       <button
                         type="button"
                         onClick={() => setDescrSlideIdx((i) => (i - 1 + verticalCatalog.length) % verticalCatalog.length)}
-                        aria-label="Immagine precedente"
+                        aria-label={t("Immagine precedente", "Image précédente")}
                         className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-warm-900 flex items-center justify-center shadow-sm transition"
                       >
                         <ChevronLeft size={18} />
@@ -899,7 +912,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                       <button
                         type="button"
                         onClick={() => setDescrSlideIdx((i) => (i + 1) % verticalCatalog.length)}
-                        aria-label="Immagine successiva"
+                        aria-label={t("Immagine successiva", "Image suivante")}
                         className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-warm-900 flex items-center justify-center shadow-sm transition"
                       >
                         <ChevronRight size={18} />
@@ -938,7 +951,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-warm-400 text-sm">
-                  (Foto designer non disponibile)
+                  {t("(Foto designer non disponibile)", "(Photo du designer indisponible)")}
                 </div>
               )}
             </div>
@@ -966,9 +979,9 @@ export default function ProductDetail({ product }: { product: Product }) {
       {/* ═══ Sezione Prodotti correlati — stesse card della pagina shop ═══ */}
       {(relatedLoading || related.length > 0) && (
         <section className="mt-20 pt-14 border-t border-warm-200">
-          <p className="uppercase text-[14px] tracking-[0.03em] text-black font-light mb-2">Prodotti correlati</p>
+          <p className="uppercase text-[14px] tracking-[0.03em] text-black font-light mb-2">{t("Prodotti correlati", "Produits associés")}</p>
           <h2 className="font-sans text-[28px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-12">
-            {product.category?.name ? `Altro da ${product.category.name}` : "Altri prodotti dello shop"}
+            {product.category?.name ? t(`Altro da ${product.category.name}`, `Plus de ${product.category.name}`) : t("Altri prodotti dello shop", "Autres produits de la boutique")}
           </h2>
           {relatedLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -1004,7 +1017,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                     onClick={() => setRelatedShown((n) => n + RELATED_PAGE_SIZE)}
                     className="px-8 py-3 border border-warm-900 text-warm-900 uppercase text-[12px] tracking-[0.18em] hover:bg-warm-900 hover:text-white transition-colors"
                   >
-                    Carica altri ({Math.min(RELATED_PAGE_SIZE, related.length - relatedShown)})
+                    {t("Carica altri", "Charger plus")} ({Math.min(RELATED_PAGE_SIZE, related.length - relatedShown)})
                   </button>
                 </div>
               )}
@@ -1039,7 +1052,7 @@ export default function ProductDetail({ product }: { product: Product }) {
               <div className="flex-1 min-w-0">
                 <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-700 font-semibold mb-1.5 inline-flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Aggiunto al carrello
+                  {t("Aggiunto al carrello", "Ajouté au panier")}
                 </div>
                 <div className="text-warm-900 text-[15px] font-medium leading-tight">{product.name}</div>
                 {selectedVariant.attributes.length > 0 && (
@@ -1055,7 +1068,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                 type="button"
                 onClick={() => setShowAddedModal(false)}
                 className="text-warm-400 hover:text-warm-900 -mr-2 -mt-2 p-2"
-                aria-label="Chiudi"
+                aria-label={t("Chiudi", "Fermer")}
               >
                 <XIcon size={18} />
               </button>
@@ -1066,13 +1079,13 @@ export default function ProductDetail({ product }: { product: Product }) {
                 onClick={() => setShowAddedModal(false)}
                 className="w-full inline-flex items-center justify-center gap-2 py-3 border border-warm-300 text-warm-900 uppercase text-[12px] tracking-[0.18em] hover:bg-warm-50"
               >
-                Continua shopping
+                {t("Continua shopping", "Continuer mes achats")}
               </button>
               <a
                 href="/carrello"
                 className="w-full inline-flex items-center justify-center gap-2 py-3 bg-warm-900 text-white uppercase text-[12px] tracking-[0.18em] hover:bg-warm-800"
               >
-                <ShoppingBag size={14} /> Vai al carrello ({cartCount})
+                <ShoppingBag size={14} /> {t("Vai al carrello", "Voir le panier")} ({cartCount})
               </a>
             </div>
           </div>
@@ -1082,17 +1095,17 @@ export default function ProductDetail({ product }: { product: Product }) {
       {lightboxOpen && heroImages.length > 0 && (
         <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
           <button onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
-            className="absolute top-5 right-5 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" aria-label="Chiudi">
+            className="absolute top-5 right-5 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" aria-label={t("Chiudi", "Fermer")}>
             <XIcon size={22} />
           </button>
           {heroImages.length > 1 && (
             <>
               <button onClick={(e) => { e.stopPropagation(); setActiveImgIdx((i) => (i - 1 + heroImages.length) % heroImages.length); }}
-                className="absolute left-5 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" aria-label="Precedente">
+                className="absolute left-5 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" aria-label={t("Precedente", "Précédent")}>
                 <ChevronLeft size={22} />
               </button>
               <button onClick={(e) => { e.stopPropagation(); setActiveImgIdx((i) => (i + 1) % heroImages.length); }}
-                className="absolute right-5 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" aria-label="Successiva">
+                className="absolute right-5 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors" aria-label={t("Successiva", "Suivante")}>
                 <ChevronRight size={22} />
               </button>
             </>
@@ -1190,6 +1203,7 @@ function DimensionsRow({
   values: Record<string, string>;
   blockName: string;
 }) {
+  const t = useStoreT();
   const [legendOpen, setLegendOpen] = useState(false);
   const entries = labels
     .filter((l) => values[l])
@@ -1200,7 +1214,7 @@ function DimensionsRow({
   return (
     <div className="mt-6 pt-6 border-t border-warm-200">
       <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-3 inline-flex items-center gap-1.5">
-        <Ruler size={12} /> Dimensioni
+        <Ruler size={12} /> {t("Dimensioni", "Dimensions")}
         <span className="normal-case tracking-normal text-warm-400 ml-1 text-[12px]">· {blockName}</span>
         <span className="relative inline-flex">
           <button
@@ -1209,18 +1223,18 @@ function DimensionsRow({
             onMouseEnter={() => setLegendOpen(true)}
             onMouseLeave={() => setLegendOpen(false)}
             className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-warm-400 hover:text-warm-900"
-            aria-label="Legenda dimensioni"
+            aria-label={t("Legenda dimensioni", "Légende des dimensions")}
           >
             <Info size={13} />
           </button>
           {legendOpen && (
             <span className="absolute left-5 top-1/2 -translate-y-1/2 z-20 bg-white border border-warm-200 shadow-md rounded px-3 py-2 normal-case tracking-normal text-warm-800 whitespace-nowrap text-[11px] leading-[1.7]">
-              <span className="block"><strong className="font-semibold">H</strong> · altezza</span>
-              <span className="block"><strong className="font-semibold">W</strong> · larghezza</span>
-              <span className="block"><strong className="font-semibold">D</strong> · profondità</span>
-              <span className="block"><strong className="font-semibold">SH</strong> · altezza seduta</span>
-              <span className="block"><strong className="font-semibold">AH</strong> · altezza bracciolo</span>
-              <span className="block"><strong className="font-semibold">SHH</strong> · altezza impilamento</span>
+              <span className="block"><strong className="font-semibold">H</strong> · {t("altezza", "hauteur")}</span>
+              <span className="block"><strong className="font-semibold">W</strong> · {t("larghezza", "largeur")}</span>
+              <span className="block"><strong className="font-semibold">D</strong> · {t("profondità", "profondeur")}</span>
+              <span className="block"><strong className="font-semibold">SH</strong> · {t("altezza seduta", "hauteur d’assise")}</span>
+              <span className="block"><strong className="font-semibold">AH</strong> · {t("altezza bracciolo", "hauteur d’accoudoir")}</span>
+              <span className="block"><strong className="font-semibold">SHH</strong> · {t("altezza impilamento", "hauteur d’empilage")}</span>
             </span>
           )}
         </span>

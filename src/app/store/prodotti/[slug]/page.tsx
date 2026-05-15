@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import ProductDetail from "@/components/store/ProductDetail";
 
 export const dynamic = "force-dynamic";
@@ -22,10 +23,12 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const product = await getProduct(params.slug);
   if (!product) notFound();
 
+  const isFr = cookies().get("gtv_lang")?.value === "fr";
+
   return (
     <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
       <nav className="text-xs text-warm-500 mb-6">
-        <Link href="/" className="hover:text-warm-900">Shop</Link>
+        <Link href="/" className="hover:text-warm-900">{isFr ? "Boutique" : "Shop"}</Link>
         {product.category && (
           <>
             <span className="mx-2">·</span>

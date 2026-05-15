@@ -45,10 +45,14 @@ export async function GET() {
     }
   }
 
-  const data = cats.map((c) => ({
-    ...c,
-    productCount: (countMap.get(c.id) || 0) + (childCount.get(c.id) || 0),
-  }));
+  const data = cats
+    .map((c) => ({
+      ...c,
+      productCount: (countMap.get(c.id) || 0) + (childCount.get(c.id) || 0),
+    }))
+    // Non mostrare categorie senza alcun prodotto pubblicato (né proprio né
+    // delle figlie) — filtri e menu devono ignorarle.
+    .filter((c) => c.productCount > 0);
 
   return NextResponse.json({ success: true, data });
 }

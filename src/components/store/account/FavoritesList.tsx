@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ChevronLeft, Heart, X } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
+import { useStoreT } from "@/lib/use-store-t";
 import AuthForms from "./AuthForms";
 
 interface Favorite {
@@ -25,6 +26,7 @@ function eur(cents: number) {
 
 export default function FavoritesList() {
   const { customer, loading } = useCustomerAuth();
+  const t = useStoreT();
   const [items, setItems] = useState<Favorite[] | null>(null);
 
   const load = () => {
@@ -41,24 +43,24 @@ export default function FavoritesList() {
     setItems((prev) => prev ? prev.filter((i) => i.storeProductId !== storeProductId) : prev);
   }
 
-  if (loading) return <div className="max-w-4xl mx-auto p-12 text-center text-warm-500 text-sm">Caricamento…</div>;
+  if (loading) return <div className="max-w-4xl mx-auto p-12 text-center text-warm-500 text-sm">{t("Caricamento…", "Chargement…")}</div>;
   if (!customer) return <AuthForms />;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
       <Link href="/account" className="inline-flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-warm-500 hover:text-warm-900 mb-6">
-        <ChevronLeft size={14} /> Area riservata
+        <ChevronLeft size={14} /> {t("Area riservata", "Espace personnel")}
       </Link>
-      <h1 className="text-3xl font-light text-warm-900 mb-8">I tuoi preferiti</h1>
+      <h1 className="text-3xl font-light text-warm-900 mb-8">{t("I tuoi preferiti", "Vos favoris")}</h1>
 
       {items === null ? (
-        <div className="text-warm-500 text-sm">Caricamento…</div>
+        <div className="text-warm-500 text-sm">{t("Caricamento…", "Chargement…")}</div>
       ) : items.length === 0 ? (
         <div className="border border-warm-200 p-12 text-center">
           <Heart size={32} className="mx-auto text-warm-400 mb-4" />
-          <div className="text-warm-600 mb-4">Non hai ancora prodotti preferiti.</div>
+          <div className="text-warm-600 mb-4">{t("Non hai ancora prodotti preferiti.", "Votre liste de favoris est vide.")}</div>
           <Link href="/" className="inline-block text-xs uppercase tracking-[0.2em] text-warm-900 border-b border-warm-900 pb-0.5 hover:text-warm-600">
-            Scopri il catalogo
+            {t("Scopri il catalogo", "Découvrir le catalogue")}
           </Link>
         </div>
       ) : (
@@ -68,7 +70,7 @@ export default function FavoritesList() {
               <button
                 onClick={() => remove(p.storeProductId)}
                 className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center text-warm-600 hover:text-red-600 shadow-sm"
-                title="Rimuovi dai preferiti"
+                title={t("Rimuovi dai preferiti", "Retirer des favoris")}
               >
                 <X size={14} />
               </button>
@@ -79,7 +81,7 @@ export default function FavoritesList() {
                   )}
                   {!p.inStock && (
                     <div className="absolute top-3 left-3 bg-warm-900 text-white text-[10px] uppercase tracking-wider px-2 py-1">
-                      Esaurito
+                      {t("Esaurito", "Épuisé")}
                     </div>
                   )}
                 </div>
@@ -87,7 +89,7 @@ export default function FavoritesList() {
                   <div className="text-sm font-medium text-warm-900">{p.name}</div>
                   {p.shortDescription && <div className="text-xs text-warm-500 line-clamp-1">{p.shortDescription}</div>}
                   <div className="text-sm font-mono text-warm-900 pt-1">
-                    {p.variantsCount > 1 ? "da " : ""}{eur(p.priceFromCents)}
+                    {p.variantsCount > 1 ? t("da ", "à partir de ") : ""}{eur(p.priceFromCents)}
                   </div>
                 </div>
               </Link>

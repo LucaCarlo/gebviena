@@ -10,6 +10,7 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 import { Lock, Loader2, ArrowLeft } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useLang } from "@/contexts/I18nContext";
+import { useStoreT } from "@/lib/use-store-t";
 
 const eur = (cents: number) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -52,6 +53,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotalCents, count } = useCart();
   const lang = useLang();
+  const t = useStoreT();
 
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [intent, setIntent] = useState<IntentResponse | null>(null);
@@ -85,10 +87,10 @@ export default function CheckoutPage() {
         if (d.success && d.data?.publishableKey) {
           setStripePromise(loadStripe(d.data.publishableKey));
         } else {
-          setError("Stripe non configurato. Configura le chiavi su /admin/store/settings.");
+          setError(t("Stripe non configurato. Configura le chiavi su /admin/store/settings.", "Stripe non configuré. Configurez les clés sur /admin/store/settings."));
         }
       })
-      .catch(() => setError("Errore caricamento configurazione Stripe."));
+      .catch(() => setError(t("Errore caricamento configurazione Stripe.", "Erreur de chargement de la configuration Stripe.")));
   }, []);
 
   const updateField = (k: keyof typeof form, v: string | boolean) => setForm((s) => ({ ...s, [k]: v as never }));
@@ -136,12 +138,12 @@ export default function CheckoutPage() {
     const required = ["email", "firstName", "lastName", "taxId", "street", "city", "postalCode", "country"];
     for (const k of required) {
       if (!form[k as keyof typeof form]?.toString().trim()) {
-        setError("Compila tutti i campi obbligatori.");
+        setError(t("Compila tutti i campi obbligatori.", "Veuillez remplir tous les champs obligatoires."));
         return;
       }
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      setError("Email non valida.");
+      setError(t("Email non valida.", "E-mail invalide."));
       return;
     }
 
@@ -174,14 +176,14 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
       if (!data.success) {
-        setError(data.error || "Errore creazione ordine.");
+        setError(data.error || t("Errore creazione ordine.", "Erreur lors de la création de la commande."));
         setSubmitting(false);
         return;
       }
       setIntent(data.data);
       setPhase("payment");
     } catch {
-      setError("Errore di connessione. Riprova.");
+      setError(t("Errore di connessione. Riprova.", "Erreur de connexion. Réessayez."));
     } finally {
       setSubmitting(false);
     }
@@ -190,9 +192,9 @@ export default function CheckoutPage() {
   if (count === 0) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
-        <h1 className="text-2xl font-light text-warm-900 mb-3">Il carrello è vuoto</h1>
+        <h1 className="text-2xl font-light text-warm-900 mb-3">{t("Il carrello è vuoto", "Votre panier est vide")}</h1>
         <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-warm-900 text-white uppercase text-sm tracking-wider hover:bg-warm-800">
-          Esplora lo shop
+          {t("Esplora lo shop", "Explorer la boutique")}
         </Link>
       </div>
     );
@@ -201,9 +203,9 @@ export default function CheckoutPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 lg:px-8 py-10">
       <Link href="/carrello" className="inline-flex items-center gap-2 text-sm text-warm-600 hover:text-warm-900 mb-4">
-        <ArrowLeft size={14} /> Torna al carrello
+        <ArrowLeft size={14} /> {t("Torna al carrello", "Retour au panier")}
       </Link>
-      <h1 className="text-3xl font-light text-warm-900 mb-8">Checkout</h1>
+      <h1 className="text-3xl font-light text-warm-900 mb-8">{t("Checkout", "Paiement")}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10">
         <div>
@@ -215,51 +217,51 @@ export default function CheckoutPage() {
 
           {phase === "address" && (
             <form onSubmit={submitAddress} className="space-y-5">
-              <div className="text-xs uppercase tracking-[0.2em] text-warm-500">Contatto</div>
-              <Field label="Email *" type="email" value={form.email} onChange={(v) => updateField("email", v)} />
+              <div className="text-xs uppercase tracking-[0.2em] text-warm-500">{t("Contatto", "Contact")}</div>
+              <Field label={t("E-mail *", "E-mail *")} type="email" value={form.email} onChange={(v) => updateField("email", v)} />
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Nome *" value={form.firstName} onChange={(v) => updateField("firstName", v)} />
-                <Field label="Cognome *" value={form.lastName} onChange={(v) => updateField("lastName", v)} />
+                <Field label={t("Nome *", "Prénom *")} value={form.firstName} onChange={(v) => updateField("firstName", v)} />
+                <Field label={t("Cognome *", "Nom *")} value={form.lastName} onChange={(v) => updateField("lastName", v)} />
               </div>
-              <Field label="Telefono" type="tel" value={form.phone} onChange={(v) => updateField("phone", v)} />
+              <Field label={t("Telefono", "Téléphone")} type="tel" value={form.phone} onChange={(v) => updateField("phone", v)} />
               <Field
-                label={lang === "fr" ? "N° TVA ou Code fiscal *" : "P.IVA o Codice Fiscale *"}
+                label={t("P.IVA o Codice Fiscale *", "N° TVA ou Code fiscal *")}
                 value={form.taxId}
                 onChange={(v) => updateField("taxId", v.toUpperCase())}
               />
 
-              <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">Indirizzo di spedizione</div>
-              <Field label="Via e numero civico *" value={form.street} onChange={(v) => updateField("street", v)} />
+              <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">{t("Indirizzo di spedizione", "Adresse de livraison")}</div>
+              <Field label={t("Via e numero civico *", "Rue et numéro *")} value={form.street} onChange={(v) => updateField("street", v)} />
               <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2"><Field label="Città *" value={form.city} onChange={(v) => updateField("city", v)} /></div>
-                <Field label="Provincia" value={form.province} onChange={(v) => updateField("province", v.toUpperCase())} />
+                <div className="col-span-2"><Field label={t("Città *", "Ville *")} value={form.city} onChange={(v) => updateField("city", v)} /></div>
+                <Field label={t("Provincia", "Province")} value={form.province} onChange={(v) => updateField("province", v.toUpperCase())} />
               </div>
               <div className="grid grid-cols-3 gap-4">
-                <Field label="CAP *" value={form.postalCode} onChange={(v) => updateField("postalCode", v)} />
+                <Field label={t("CAP *", "Code postal *")} value={form.postalCode} onChange={(v) => updateField("postalCode", v)} />
                 <div className="col-span-2">
-                  <label className="block text-[13px] text-warm-700 mb-1.5">Paese *</label>
+                  <label className="block text-[13px] text-warm-700 mb-1.5">{t("Paese *", "Pays *")}</label>
                   <select value={form.country} onChange={(e) => updateField("country", e.target.value)} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none">
-                    <option value="IT">{lang === "fr" ? "Italie" : "Italia"}</option>
-                    <option value="FR">{lang === "fr" ? "France" : "Francia"}</option>
+                    <option value="IT">{t("Italia", "Italie")}</option>
+                    <option value="FR">{t("Francia", "France")}</option>
                   </select>
                 </div>
               </div>
 
-              <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">Consegna</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">{t("Consegna", "Livraison")}</div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[13px] text-warm-700 mb-1.5">Piano dove scaricare il pacco</label>
+                  <label className="block text-[13px] text-warm-700 mb-1.5">{t("Piano dove scaricare il pacco", "Étage de livraison")}</label>
                   <select
                     value={form.shippingFloor}
                     onChange={(e) => updateField("shippingFloor", e.target.value)}
                     className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none"
                   >
-                    <option value="0">Piano terra</option>
-                    <option value="1">1° piano</option>
-                    <option value="2">2° piano</option>
-                    <option value="3">3° piano</option>
-                    <option value="4">4° piano</option>
-                    <option value="5">5° piano o oltre</option>
+                    <option value="0">{t("Piano terra", "Rez-de-chaussée")}</option>
+                    <option value="1">{t("1° piano", "1er étage")}</option>
+                    <option value="2">{t("2° piano", "2e étage")}</option>
+                    <option value="3">{t("3° piano", "3e étage")}</option>
+                    <option value="4">{t("4° piano", "4e étage")}</option>
+                    <option value="5">{t("5° piano o oltre", "5e étage ou plus")}</option>
                   </select>
                 </div>
                 <label className="flex items-start gap-2 pt-7 cursor-pointer text-[13px] text-warm-800">
@@ -269,12 +271,11 @@ export default function CheckoutPage() {
                     onChange={(e) => updateField("withUnboxingService", e.target.checked)}
                     className="mt-1"
                   />
-                  <span>Servizio disimballo e smaltimento imballi <span className="text-warm-500">(+20€/m³)</span></span>
+                  <span>{t("Servizio disimballo e smaltimento imballi", "Service de déballage et reprise des emballages")} <span className="text-warm-500">(+20€/m³)</span></span>
                 </label>
               </div>
               <p className="text-[11px] text-warm-500 leading-[1.55]">
-                Consegna al piano (oltre piano terra): <strong>{form.country === "FR" ? "140€/m³" : "120€/m³"}</strong> aggiuntivo.
-                Servizi addizionali si applicano anche con spedizione gratuita.
+                {t("Consegna al piano (oltre piano terra):", "Livraison à l'étage (au-delà du rez-de-chaussée) :")} <strong>{form.country === "FR" ? "140€/m³" : "120€/m³"}</strong> {t("aggiuntivo. Servizi addizionali si applicano anche con spedizione gratuita.", "en supplément. Les services additionnels s'appliquent aussi avec la livraison gratuite.")}
               </p>
 
               {/* Reminder spedizione gratuita (solo se mancano <= 200€ alla soglia) */}
@@ -284,14 +285,14 @@ export default function CheckoutPage() {
                 if (sub >= FREE_SHIPPING_THRESHOLD_CENTS) {
                   return (
                     <div className="text-[13px] bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-800">
-                      🎉 Hai diritto alla <strong>spedizione gratuita</strong>!
+                      🎉 {t("Hai diritto alla", "Vous bénéficiez de la")} <strong>{t("spedizione gratuita", "livraison gratuite")}</strong> !
                     </div>
                   );
                 }
                 if (missing > 0 && missing <= SHIPPING_REMINDER_RANGE_CENTS) {
                   return (
                     <div className="text-[13px] bg-amber-50 border border-amber-200 rounded p-3 text-amber-800">
-                      Aggiungi ancora <strong>{eur(missing)}</strong> al tuo ordine per ottenere la spedizione gratuita (soglia {eur(FREE_SHIPPING_THRESHOLD_CENTS)}).
+                      {t("Aggiungi ancora", "Ajoutez encore")} <strong>{eur(missing)}</strong> {t(`per la spedizione gratuita (soglia ${eur(FREE_SHIPPING_THRESHOLD_CENTS)}).`, `pour bénéficier de la livraison gratuite (seuil ${eur(FREE_SHIPPING_THRESHOLD_CENTS)}).`)}
                     </div>
                   );
                 }
@@ -299,7 +300,7 @@ export default function CheckoutPage() {
               })()}
 
               <div className="pt-4 border-t border-warm-200">
-                <label className="block text-[13px] text-warm-700 mb-1.5">Note (opzionale)</label>
+                <label className="block text-[13px] text-warm-700 mb-1.5">{t("Note (opzionale)", "Remarques (facultatif)")}</label>
                 <textarea value={form.customerNotes} onChange={(e) => updateField("customerNotes", e.target.value)} rows={2} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm focus:border-warm-700 outline-none" />
               </div>
 
@@ -309,7 +310,7 @@ export default function CheckoutPage() {
                 className="w-full inline-flex items-center justify-center gap-2 py-4 bg-warm-900 text-white uppercase text-sm tracking-wider hover:bg-warm-800 disabled:bg-warm-400"
               >
                 {submitting ? <Loader2 className="animate-spin" size={16} /> : <Lock size={14} />}
-                {submitting ? "Calcolo totale..." : "Continua al pagamento"}
+                {submitting ? t("Calcolo totale...", "Calcul du total…") : t("Continua al pagamento", "Continuer vers le paiement")}
               </button>
             </form>
           )}
@@ -323,7 +324,7 @@ export default function CheckoutPage() {
 
         {/* Riepilogo */}
         <aside className="lg:sticky lg:top-28 self-start space-y-4 p-6 border border-warm-200 rounded bg-warm-50/40">
-          <h2 className="text-sm uppercase tracking-[0.2em] text-warm-500">Riepilogo ordine</h2>
+          <h2 className="text-sm uppercase tracking-[0.2em] text-warm-500">{t("Riepilogo ordine", "Récapitulatif de commande")}</h2>
           <div className="space-y-2 max-h-72 overflow-y-auto text-sm pr-2">
             {items.map((it) => (
               <div key={it.variantId} className="flex justify-between gap-3">
@@ -336,55 +337,55 @@ export default function CheckoutPage() {
             ))}
           </div>
           <div className="border-t border-warm-200 pt-3 space-y-1.5 text-sm">
-            <Row label="Subtotale" value={eur(intent?.subtotalCents ?? quote?.subtotalCents ?? subtotalCents)} />
+            <Row label={t("Subtotale", "Sous-total")} value={eur(intent?.subtotalCents ?? quote?.subtotalCents ?? subtotalCents)} />
             {intent ? (
               <>
                 <Row
-                  label={`Spedizione standard${intent.resolvedRegion ? ` · ${intent.resolvedRegion}` : ""}`}
+                  label={`${t("Spedizione standard", "Livraison standard")}${intent.resolvedRegion ? ` · ${intent.resolvedRegion}` : ""}`}
                   value={intent.freeStandardShippingApplied
-                    ? "Gratuita"
+                    ? t("Gratuita", "Offerte")
                     : eur(intent.standardShippingCents ?? intent.shippingCents)}
                 />
                 {(intent.floorDeliveryCents ?? 0) > 0 && (
-                  <Row label="Consegna al piano" value={eur(intent.floorDeliveryCents!)} />
+                  <Row label={t("Consegna al piano", "Livraison à l'étage")} value={eur(intent.floorDeliveryCents!)} />
                 )}
                 {intent.unboxingFeeCents > 0 && (
-                  <Row label="Disimballo e smaltimento" value={eur(intent.unboxingFeeCents)} />
+                  <Row label={t("Disimballo e smaltimento", "Déballage et reprise emballages")} value={eur(intent.unboxingFeeCents)} />
                 )}
-                <Row label="(IVA inclusa)" value={eur(intent.taxCents)} subtle />
+                <Row label={t("(IVA inclusa)", "(TVA incluse)")} value={eur(intent.taxCents)} subtle />
               </>
             ) : quote && quote.ready ? (
               <>
                 <Row
-                  label={`Spedizione standard${quote.resolvedRegion ? ` · ${quote.resolvedRegion}` : ""}`}
-                  value={quote.freeShippingApplied ? "Gratuita" : eur(quote.standardShippingCents)}
+                  label={`${t("Spedizione standard", "Livraison standard")}${quote.resolvedRegion ? ` · ${quote.resolvedRegion}` : ""}`}
+                  value={quote.freeShippingApplied ? t("Gratuita", "Offerte") : eur(quote.standardShippingCents)}
                 />
                 {quote.floorDeliveryCents > 0 && (
-                  <Row label="Consegna al piano" value={eur(quote.floorDeliveryCents)} />
+                  <Row label={t("Consegna al piano", "Livraison à l'étage")} value={eur(quote.floorDeliveryCents)} />
                 )}
                 {quote.unboxingFeeCents > 0 && (
-                  <Row label="Disimballo e smaltimento" value={eur(quote.unboxingFeeCents)} />
+                  <Row label={t("Disimballo e smaltimento", "Déballage et reprise emballages")} value={eur(quote.unboxingFeeCents)} />
                 )}
                 {(quote.billableVolumeM3 ?? 0) > 0 && (quote.totalVolumeM3 ?? 0) > 0 && (
                   <Row
-                    label="Volume fatturato"
-                    value={`${quote.billableVolumeM3} m³ (reali ${(quote.totalVolumeM3 ?? 0).toFixed(2)} m³)`}
+                    label={t("Volume fatturato", "Volume facturé")}
+                    value={`${quote.billableVolumeM3} m³ ${t(`(reali ${(quote.totalVolumeM3 ?? 0).toFixed(2)} m³)`, `(réel ${(quote.totalVolumeM3 ?? 0).toFixed(2)} m³)`)}`}
                     subtle
                   />
                 )}
               </>
             ) : (
               <Row
-                label="Spedizione"
+                label={t("Spedizione", "Livraison")}
                 value={quote && !quote.ready && quote.missing
-                  ? `inserisci ${quote.missing}`
-                  : (quoting ? "calcolo…" : "inserisci indirizzo")}
+                  ? t(`inserisci ${quote.missing}`, `saisissez ${quote.missing}`)
+                  : (quoting ? t("calcolo…", "calcul…") : t("inserisci indirizzo", "saisissez l'adresse"))}
                 subtle
               />
             )}
           </div>
           <div className="border-t border-warm-200 pt-3 flex justify-between items-baseline">
-            <span className="text-warm-900 font-medium">Totale</span>
+            <span className="text-warm-900 font-medium">{t("Totale", "Total")}</span>
             <span className="text-2xl font-light text-warm-900 inline-flex items-center gap-2">
               {quoting && !intent && <Loader2 size={14} className="animate-spin text-warm-400" />}
               {eur(intent?.amountCents ?? quote?.totalCents ?? subtotalCents)}
@@ -422,6 +423,7 @@ function Row({ label, value, subtle }: { label: string; value: string; subtle?: 
 function PaymentForm({ orderNumber, orderId, onError, router }: { orderNumber: string; orderId: string; onError: (e: string | null) => void; router: ReturnType<typeof useRouter> }) {
   const stripe = useStripe();
   const elements = useElements();
+  const t = useStoreT();
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -437,7 +439,7 @@ function PaymentForm({ orderNumber, orderId, onError, router }: { orderNumber: s
       redirect: "if_required",
     });
     if (error) {
-      onError(error.message || "Errore pagamento.");
+      onError(error.message || t("Errore pagamento.", "Erreur de paiement."));
       setSubmitting(false);
       return;
     }
@@ -451,7 +453,7 @@ function PaymentForm({ orderNumber, orderId, onError, router }: { orderNumber: s
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="text-xs uppercase tracking-[0.2em] text-warm-500">Pagamento — Ordine {orderNumber}</div>
+      <div className="text-xs uppercase tracking-[0.2em] text-warm-500">{t("Pagamento — Ordine", "Paiement — Commande")} {orderNumber}</div>
       <PaymentElement />
       <button
         type="submit"
@@ -459,10 +461,10 @@ function PaymentForm({ orderNumber, orderId, onError, router }: { orderNumber: s
         className="w-full inline-flex items-center justify-center gap-2 py-4 bg-warm-900 text-white uppercase text-sm tracking-wider hover:bg-warm-800 disabled:bg-warm-400"
       >
         {submitting ? <Loader2 className="animate-spin" size={16} /> : <Lock size={14} />}
-        {submitting ? "Elaborazione..." : "Paga ora"}
+        {submitting ? t("Elaborazione...", "Traitement…") : t("Paga ora", "Payer maintenant")}
       </button>
       <p className="text-[11px] text-warm-500 text-center">
-        Pagamento sicuro tramite Stripe. I tuoi dati sono crittografati.
+        {t("Pagamento sicuro tramite Stripe. I tuoi dati sono crittografati.", "Paiement sécurisé via Stripe. Vos données sont chiffrées.")}
       </p>
     </form>
   );

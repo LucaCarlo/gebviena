@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
+import { useStoreT } from "@/lib/use-store-t";
 
 export interface ProductCardData {
   id: string;
@@ -30,6 +31,7 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
   onFavoriteChange?: (isFav: boolean) => void;
 }) {
   const { customer } = useCustomerAuth();
+  const t = useStoreT();
   const [isFav, setIsFav] = useState(!!favorited);
   const [busy, setBusy] = useState(false);
   const [hover, setHover] = useState(false);
@@ -90,7 +92,7 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
         {/* Cuore preferito */}
         <button
           onClick={toggleFav}
-          title={isFav ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+          title={isFav ? t("Rimuovi dai preferiti", "Retirer des favoris") : t("Aggiungi ai preferiti", "Ajouter aux favoris")}
           aria-pressed={isFav}
           className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/95 hover:bg-white shadow-sm flex items-center justify-center transition-all ${
             isFav ? "text-red-500" : "text-neutral-500 hover:text-neutral-900"
@@ -105,12 +107,12 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
             hover ? "opacity-100" : "opacity-0"
           }`}
         >
-          {p.variantsCount > 1 ? `${p.variantsCount} varianti` : "Scopri"}
+          {p.variantsCount > 1 ? `${p.variantsCount} ${t("varianti", "variantes")}` : t("Scopri", "Découvrir")}
         </div>
 
         {!p.inStock && (
           <div className="absolute top-3 left-3 bg-warm-900 text-white text-[10px] uppercase tracking-wider px-2 py-1">
-            Esaurito
+            {t("Esaurito", "Épuisé")}
           </div>
         )}
 
@@ -138,14 +140,14 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
             con flex-wrap spinge giù il prezzo invece di accapezzarsi.) */}
         <div className="flex items-baseline justify-between gap-x-3 gap-y-1 flex-wrap">
           <div className="text-sm font-medium text-warm-900">{p.name}</div>
-          <div className="text-sm font-mono text-warm-900 shrink-0 ml-auto">
+          <div className="text-sm font-mono text-warm-900 shrink-0">
             {p.priceFromCents > 0 ? (
               p.salePriceFromCents != null && p.salePriceFromCents > 0 && p.salePriceFromCents < p.priceFromCents ? (() => {
                 const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);
                 return (
                   <span className="inline-flex items-baseline gap-1.5 flex-wrap justify-end">
                     <span className="text-warm-400 line-through text-[12px]">{eur(p.priceFromCents)}</span>
-                    <span className="text-warm-900 font-semibold">{p.variantsCount > 1 ? "da " : ""}{eur(p.salePriceFromCents)}</span>
+                    <span className="text-warm-900 font-semibold">{p.variantsCount > 1 ? t("da ", "à partir de ") : ""}{eur(p.salePriceFromCents)}</span>
                     {pct >= 1 && (
                       <span className="text-[10px] uppercase tracking-wider bg-warm-100 text-warm-900 px-1.5 py-0.5 rounded-sm font-sans font-semibold">
                         -{pct}%
@@ -154,10 +156,10 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
                   </span>
                 );
               })() : (
-                <>{p.variantsCount > 1 ? "da " : ""}{eur(p.priceFromCents)}</>
+                <>{p.variantsCount > 1 ? t("da ", "à partir de ") : ""}{eur(p.priceFromCents)}</>
               )
             ) : (
-              <span className="text-warm-500 italic font-sans text-[12px]">Su richiesta</span>
+              <span className="text-warm-500 italic font-sans text-[12px]">{t("Su richiesta", "Sur demande")}</span>
             )}
           </div>
         </div>

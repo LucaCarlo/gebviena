@@ -7,6 +7,7 @@ interface Props {
   message: string;
   openingDate: string | null; // ISO YYYY-MM-DD or empty
   mainSiteUrl: string; // absolute URL of the main GTV site (no /store)
+  lang?: string; // "it" | "fr" — controls static UI labels
 }
 
 interface Countdown {
@@ -32,11 +33,17 @@ const ITALIAN_MONTHS = [
   "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
 ];
 
-function formatItalianDate(iso: string): string {
+const FRENCH_MONTHS = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+];
+
+function formatLocalizedDate(iso: string, isFr: boolean): string {
   const hasTime = iso.includes("T");
   const d = new Date(hasTime ? iso : iso + "T00:00:00");
   if (isNaN(d.getTime())) return iso;
-  const base = `${d.getDate()} ${ITALIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  const months = isFr ? FRENCH_MONTHS : ITALIAN_MONTHS;
+  const base = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
   if (hasTime && !(d.getHours() === 0 && d.getMinutes() === 0)) {
     const hh = String(d.getHours()).padStart(2, "0");
     const mm = String(d.getMinutes()).padStart(2, "0");
@@ -45,7 +52,9 @@ function formatItalianDate(iso: string): string {
   return base;
 }
 
-export default function MaintenanceScreen({ title, message, openingDate, mainSiteUrl }: Props) {
+export default function MaintenanceScreen({ title, message, openingDate, mainSiteUrl, lang }: Props) {
+  const isFr = lang === "fr";
+  const f = (it: string, fr: string) => (isFr ? fr : it);
   const baseUrl = mainSiteUrl.replace(/\/$/, "");
   // openingDate può essere "YYYY-MM-DD" (vecchio formato) o
   // "YYYY-MM-DDTHH:mm" (nuovo, con ora). Gestiamo entrambi.
@@ -71,11 +80,11 @@ export default function MaintenanceScreen({ title, message, openingDate, mainSit
       <main className="flex-1 flex items-center justify-center px-6 md:px-10 py-16 md:py-24">
         <div className="max-w-[720px] w-full text-center">
           <p className="text-[11px] md:text-[12px] font-semibold uppercase tracking-[0.22em] text-warm-600 mb-6">
-            Store online
+            {f("Store online", "Boutique en ligne")}
           </p>
 
           <h1 className="text-[40px] md:text-[60px] lg:text-[72px] font-semibold leading-[1.05] text-dark mb-7 tracking-[-0.02em]">
-            {title || "Stiamo arrivando"}
+            {title || f("Stiamo arrivando", "Nous arrivons bientôt")}
           </h1>
 
           {message && (
@@ -87,32 +96,32 @@ export default function MaintenanceScreen({ title, message, openingDate, mainSit
           {target && cd && !cd.done && (
             <>
               <div className="flex items-center justify-center gap-3 md:gap-6 mb-6">
-                <CountdownCell value={cd.days} label="Giorni" />
+                <CountdownCell value={cd.days} label={f("Giorni", "Jours")} />
                 <Separator />
-                <CountdownCell value={cd.hours} label="Ore" />
+                <CountdownCell value={cd.hours} label={f("Ore", "Heures")} />
                 <Separator />
-                <CountdownCell value={cd.minutes} label="Minuti" />
+                <CountdownCell value={cd.minutes} label={f("Minuti", "Minutes")} />
                 <Separator />
-                <CountdownCell value={cd.seconds} label="Secondi" />
+                <CountdownCell value={cd.seconds} label={f("Secondi", "Secondes")} />
               </div>
               <p className="text-[12px] md:text-[13px] text-warm-500 tracking-wider uppercase">
-                Apertura prevista: <strong className="text-dark">{formatItalianDate(openingDate!)}</strong>
+                {f("Apertura prevista", "Ouverture prévue")}: <strong className="text-dark">{formatLocalizedDate(openingDate!, isFr)}</strong>
               </p>
             </>
           )}
 
           {target && cd?.done && (
             <p className="text-[14px] text-warm-600">
-              Lo store sta tornando online. Ricarica la pagina tra qualche minuto.
+              {f("Lo store sta tornando online. Ricarica la pagina tra qualche minuto.", "La boutique revient en ligne. Rechargez la page dans quelques minutes.")}
             </p>
           )}
 
           <div className="mt-16 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[12px] tracking-[0.16em] uppercase text-warm-600">
-            <a href={baseUrl + "/"} className="hover:text-dark transition-colors">Sito principale</a>
+            <a href={baseUrl + "/"} className="hover:text-dark transition-colors">{f("Sito principale", "Site principal")}</a>
             <span className="text-warm-300">·</span>
-            <a href={baseUrl + "/contatti/richiesta-info"} className="hover:text-dark transition-colors">Contatti</a>
+            <a href={baseUrl + "/contatti/richiesta-info"} className="hover:text-dark transition-colors">{f("Contatti", "Contact")}</a>
             <span className="text-warm-300">·</span>
-            <a href={baseUrl + "/prodotti"} className="hover:text-dark transition-colors">Catalogo prodotti</a>
+            <a href={baseUrl + "/prodotti"} className="hover:text-dark transition-colors">{f("Catalogo prodotti", "Catalogue produits")}</a>
           </div>
         </div>
       </main>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { User, LogIn, LogOut, Heart, Package, UserCircle, Globe, Check } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useLang } from "@/contexts/I18nContext";
+import { switchStoreLang } from "@/lib/store-lang-switch";
 
 interface Language {
   code: string;
@@ -52,8 +53,7 @@ export default function StoreUserMenu() {
 
   const switchLang = (code: string) => {
     setOpen(false);
-    document.cookie = `gtv_lang=${code}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-    window.location.reload();
+    switchStoreLang(code);
   };
 
   const logout = async () => {
