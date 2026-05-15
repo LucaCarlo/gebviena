@@ -1245,6 +1245,10 @@ model StoreProduct {
   coverImage            String?   @db.Text
   galleryImages         String?   @db.Text
   excludedCatalogImages String?   @db.Text
+  // Override opzionale: se valorizzato, lo slideshow "catalogo" usa la
+  // gallery di QUESTO Product invece di quello collegato (productId).
+  // Serve per i casi in cui il prodotto catalogo associato è sbagliato.
+  galleryProductId      String?   @db.VarChar(191)
   isPublished           Boolean   @default(false)
   publishedAt           DateTime?
   sortOrder             Int       @default(0)

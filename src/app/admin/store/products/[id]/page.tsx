@@ -87,6 +87,7 @@ interface StoreProductDetail {
   coverImage: string | null;
   galleryImages: string | null;
   excludedCatalogImages: string | null;
+  galleryProductId: string | null;
   storeCategoryId: string | null;
   product: {
     id: string;
@@ -445,6 +446,16 @@ function ImagesTab({
   const [cover, setCover] = useState(sp.coverImage || "");
   const [gallery, setGallery] = useState<string[]>(parseGallery(sp.galleryImages));
 
+  // Override prodotto sorgente per lo slideshow "catalogo"
+  const [galleryProductId, setGalleryProductId] = useState<string>(sp.galleryProductId || "");
+  const [catalogList, setCatalogList] = useState<{ id: string; name: string; slug: string; thumb: string | null }[]>([]);
+  useEffect(() => {
+    fetch("/api/store/products/catalog-list")
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setCatalogList(d.data); })
+      .catch(() => {});
+  }, []);
+
   // Gallery catalogo: esclusioni (array di URL nascosti)
   const catalogGallery = parseGallery(sp.product.galleryImages);
   const initialExcluded = parseGallery(sp.excludedCatalogImages);
@@ -464,6 +475,7 @@ function ImagesTab({
       coverImage: cover || null,
       galleryImages: stringifyGallery(gallery),
       excludedCatalogImages: stringifyGallery(Array.from(excluded)),
+      galleryProductId: galleryProductId || null,
     } as unknown as Partial<StoreProductDetail>);
   };
 
@@ -498,6 +510,47 @@ function ImagesTab({
           folder="store-products"
           helpText="Trascina più immagini in una volta o scegli dalla libreria. Riordina trascinandole."
         />
+      </section>
+
+      <section className="bg-white rounded-lg border border-warm-200 p-6">
+        <h2 className="font-medium text-warm-900 mb-1">Slideshow catalogo — prodotto sorgente</h2>
+        <p className="text-sm text-warm-500 mb-3">
+          Lo slideshow &quot;estetico&quot; in fondo alla pagina shop usa le immagini del prodotto del catalogo.
+          Se il prodotto collegato è <strong className="text-warm-700">sbagliato</strong>, scegli qui da
+          quale prodotto prendere le immagini. Lascia &quot;Predefinito&quot; per usare quello collegato.
+        </p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <select
+            value={galleryProductId}
+            onChange={(e) => setGalleryProductId(e.target.value)}
+            className="border border-warm-300 rounded px-3 py-2 text-sm bg-white min-w-[280px]"
+          >
+            <option value="">Predefinito (prodotto collegato: {sp.product.name})</option>
+            {catalogList.map((p) => (
+              <option key={p.id} value={p.id}>{p.name} ({p.slug})</option>
+            ))}
+          </select>
+          {(() => {
+            const sel = catalogList.find((p) => p.id === galleryProductId);
+            return sel?.thumb ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={sel.thumb} alt={sel.name} className="w-14 h-14 object-cover rounded border border-warm-200" />
+            ) : null;
+          })()}
+          {galleryProductId && (
+            <button
+              type="button"
+              onClick={() => setGalleryProductId("")}
+              className="text-xs text-warm-500 underline hover:text-warm-900"
+            >
+              Ripristina predefinito
+            </button>
+          )}
+        </div>
+        <p className="text-[11px] text-warm-500 mt-2">
+          Dopo aver scelto, premi <strong>Salva immagini</strong> in fondo. Le esclusioni qui sotto
+          si riferiscono alla gallery del prodotto collegato attuale.
+        </p>
       </section>
 
       {catalogGallery.length > 0 && (

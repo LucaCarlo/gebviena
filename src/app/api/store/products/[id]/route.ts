@@ -52,6 +52,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const coverImage = body.coverImage !== undefined ? (body.coverImage ? String(body.coverImage) : null) : undefined;
     const galleryImages = body.galleryImages !== undefined ? (body.galleryImages ? String(body.galleryImages) : null) : undefined;
     const excludedCatalogImages = body.excludedCatalogImages !== undefined ? (body.excludedCatalogImages ? String(body.excludedCatalogImages) : null) : undefined;
+    const galleryProductId = body.galleryProductId !== undefined ? (body.galleryProductId ? String(body.galleryProductId) : null) : undefined;
     const isPublished = typeof body.isPublished === "boolean" ? body.isPublished : undefined;
     const sortOrder = Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : undefined;
     const productsPerBox = Number.isFinite(body.productsPerBox) ? Math.max(1, Math.trunc(body.productsPerBox)) : undefined;
@@ -68,6 +69,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (coverImage !== undefined) data.coverImage = coverImage;
     if (galleryImages !== undefined) data.galleryImages = galleryImages;
     if (excludedCatalogImages !== undefined) data.excludedCatalogImages = excludedCatalogImages;
+    if (galleryProductId !== undefined) data.galleryProductId = galleryProductId;
     if (isPublished !== undefined) {
       data.isPublished = isPublished;
       if (isPublished) data.publishedAt = new Date();

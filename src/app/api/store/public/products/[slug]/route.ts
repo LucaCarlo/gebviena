@@ -34,6 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       coverImage: true,
       galleryImages: true,
       excludedCatalogImages: true,
+      galleryProductId: true,
       storeCategory: { select: { id: true, slug: true, translations: { select: { languageCode: true, name: true, slug: true } } } },
       product: {
         select: {
@@ -122,6 +123,18 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   // Tempi di consegna globali (admin setting)
   const generalCfg = await getStoreGeneralConfig();
 
+  // Gallery "catalogo" per lo slideshow in fondo: di default dal Product
+  // collegato; se l'admin ha impostato un override (galleryProductId) usa
+  // la gallery di quel Product (caso "prodotto associato sbagliato").
+  let catalogGalleryImages = sp.product.galleryImages;
+  if (sp.galleryProductId && sp.galleryProductId !== sp.product.id) {
+    const gp = await prisma.product.findUnique({
+      where: { id: sp.galleryProductId },
+      select: { galleryImages: true },
+    });
+    if (gp) catalogGalleryImages = gp.galleryImages;
+  }
+
   return NextResponse.json({
     success: true,
     data: {
@@ -136,7 +149,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       coverImage: sp.coverImage || sp.product.coverImage || sp.product.imageUrl,
       galleryImages: sp.galleryImages,
       excludedCatalogImages: sp.excludedCatalogImages,
-      catalogGalleryImages: sp.product.galleryImages, // da filtrare nel client con excluded
+      catalogGalleryImages, // override-aware; filtrata nel client con excluded
       category: sp.storeCategory
         ? {
             id: sp.storeCategory.id,
