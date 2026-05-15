@@ -584,6 +584,8 @@ function VariantsTab({
           listPriceCents: variant.listPriceCents,
           priceCents: variant.priceCents,
           salePriceCents: variant.salePriceCents,
+          priceFrCents: variant.priceFrCents,
+          salePriceFrCents: variant.salePriceFrCents,
           priceWithVatCents: variant.priceWithVatCents,
           stockQty: variant.trackStock ? variant.stockQty : null,
           trackStock: variant.trackStock,
@@ -787,6 +789,39 @@ function VariantModal({
 }) {
   const [v, setV] = useState<Variant>(initial);
   const update = (patch: Partial<Variant>) => setV((prev) => ({ ...prev, ...patch }));
+  const [translatingFr, setTranslatingFr] = useState(false);
+
+  // Helper: legge/scrive la description in una lingua specifica nell'array translations
+  const getVariantDesc = (langCode: string) =>
+    (v.translations || []).find((t) => t.languageCode === langCode)?.description || "";
+  const setVariantDesc = (langCode: string, value: string) => {
+    const translations = [...(v.translations || [])];
+    const idx = translations.findIndex((t) => t.languageCode === langCode);
+    const variantName = (value || "").split(".")[0].slice(0, 180) || v.sku;
+    if (idx >= 0) {
+      translations[idx] = { ...translations[idx], description: value || null, name: translations[idx].name || variantName };
+    } else {
+      translations.push({ languageCode: langCode, name: variantName, description: value || null });
+    }
+    update({ translations });
+  };
+  const translateDescToFr = async () => {
+    const src = getVariantDesc("it").trim();
+    if (!src) return;
+    setTranslatingFr(true);
+    try {
+      const res = await fetch("/api/admin/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: src, fromLang: "it", toLang: "fr" }),
+      });
+      const d = await res.json();
+      if (d.success && typeof d.translation === "string") {
+        setVariantDesc("fr", d.translation);
+      }
+    } catch { /* noop */ }
+    setTranslatingFr(false);
+  };
 
   // Dimensioni: il blocco selezionato e i valori correnti
   const selectedBlock = dimensionBlocks.find((b) => b.id === v.dimensionBlockId) || null;
@@ -993,32 +1028,56 @@ function VariantModal({
             </div>
           </div>
 
-          {/* Descrizione variante */}
-          <div>
-            <label className="block text-xs font-medium text-warm-600 mb-1">
-              Descrizione breve della variante <span className="text-warm-400 font-normal">(testo per rete vendita)</span>
-            </label>
-            <textarea
-              rows={3}
-              value={(v.translations || []).find((t) => t.languageCode === "it")?.description || ""}
-              onChange={(e) => {
-                const value = e.target.value;
-                const translations = [...(v.translations || [])];
-                const idx = translations.findIndex((t) => t.languageCode === "it");
-                const variantName = (value || "").split(".")[0].slice(0, 180) || v.sku;
-                if (idx >= 0) {
-                  translations[idx] = { ...translations[idx], description: value || null, name: variantName };
-                } else {
-                  translations.push({ languageCode: "it", name: variantName, description: value || null });
-                }
-                update({ translations });
-              }}
-              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-              placeholder="Es. 'Sedia in faggio curvato con seduta imbottita. Linee morbide ideali per dining e contract.'"
-            />
-            <p className="text-[10px] text-warm-500 mt-1">
+          {/* Descrizione variante — IT + FR */}
+          <div className="bg-warm-50 rounded-lg p-4 space-y-4">
+            <div className="text-xs font-medium text-warm-600 uppercase tracking-wider">
+              Descrizione variante <span className="text-warm-400 font-normal normal-case tracking-normal">(testo per rete vendita / cliente)</span>
+            </div>
+
+            {/* IT */}
+            <div>
+              <label className="block text-xs font-medium text-warm-700 mb-1 inline-flex items-center gap-1.5">
+                <span className="text-base leading-none">🇮🇹</span> Italiano
+              </label>
+              <textarea
+                rows={3}
+                value={getVariantDesc("it")}
+                onChange={(e) => setVariantDesc("it", e.target.value)}
+                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
+                placeholder="Es. 'Sedia in faggio curvato con seduta imbottita. Linee morbide ideali per dining e contract.'"
+              />
+            </div>
+
+            {/* FR */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-warm-700 inline-flex items-center gap-1.5">
+                  <span className="text-base leading-none">🇫🇷</span> Français
+                </label>
+                <button
+                  type="button"
+                  onClick={translateDescToFr}
+                  disabled={translatingFr || !getVariantDesc("it").trim()}
+                  title="Traduci la descrizione IT in francese con AI"
+                  className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 hover:text-amber-900 bg-amber-50 border border-amber-200 px-2 py-1 rounded disabled:opacity-50"
+                >
+                  {translatingFr ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                  AI
+                </button>
+              </div>
+              <textarea
+                rows={3}
+                value={getVariantDesc("fr")}
+                onChange={(e) => setVariantDesc("fr", e.target.value)}
+                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
+                placeholder="Traduzione francese (puoi scriverla a mano o usare il pulsante AI)"
+              />
+            </div>
+
+            <p className="text-[10px] text-warm-500">
               Mostrata sotto il titolo del prodotto quando il cliente seleziona questa variante.
-              Lasciala vuota per usare la descrizione del prodotto.
+              Lasciala vuota per usare la descrizione del prodotto. Il francese viene mostrato
+              ai clienti con lingua FR.
             </p>
           </div>
 
