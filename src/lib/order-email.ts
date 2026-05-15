@@ -27,7 +27,12 @@ const COMPANY = {
   website: "gebruederthonetvienna.com",
 };
 
-const LOGO_PATH = path.join(process.cwd(), "public", "logo-email-black.png");
+// Logo GTV identico a quello dell'header del sito (logo.webp convertito in
+// PNG perché pdfkit non legge webp). Fallback al logo email se assente.
+const LOGO_CANDIDATES = [
+  path.join(process.cwd(), "assets", "logo-invoice.png"),
+  path.join(process.cwd(), "public", "logo-email-black.png"),
+];
 
 // pdfkit di default cerca i font standard (.afm) in node_modules, ma Next.js
 // NON li include nel bundle .next → ENOENT su Helvetica.afm in produzione.
@@ -50,11 +55,10 @@ function firstExisting(paths: string[]): string | null {
 }
 
 function loadLogoBuffer(): Buffer | null {
-  try {
-    return fs.readFileSync(LOGO_PATH);
-  } catch {
-    return null;
+  for (const p of LOGO_CANDIDATES) {
+    try { if (fs.existsSync(p)) return fs.readFileSync(p); } catch { /* ignore */ }
   }
+  return null;
 }
 
 /** Numero progressivo "INV-NNNN/YYYY" derivato da orderNumber + anno paidAt/createdAt. */
@@ -321,14 +325,17 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       const vatRatePct = Math.round(order.taxRateBp / 100);
       const taxableBaseCents = order.subtotalCents + order.shippingCents + order.unboxingFeeCents - order.taxCents;
 
-      // ─── HEADER: logo + titolo ───
+      // ─── HEADER: logo GTV centrato + titolo sotto ───
+      const pageW = doc.page.width;
       const logo = loadLogoBuffer();
       if (logo) {
-        try { doc.image(logo, 50, 40, { height: 50 }); } catch { /* ignore */ }
+        const logoH = 46;
+        const logoW = logoH * (418 / 343); // ratio del logo.webp
+        try { doc.image(logo, (pageW - logoW) / 2, 38, { height: logoH }); } catch { /* ignore */ }
       }
-      doc.font(FB).fontSize(18).fillColor("#111").text(t.title, 0, 50, { align: "center" });
+      doc.font(FB).fontSize(18).fillColor("#111").text(t.title, 0, 96, { align: "center" });
 
-      let y = 110;
+      let y = 132;
 
       // ─── VENDEUR ───
       doc.font(FB).fontSize(11).fillColor("#111").text(t.seller, 50, y);
@@ -429,20 +436,25 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       y += 24;
 
       // ─── MENTION FISCALE ───
-      if (y + 60 > 770) { doc.addPage(); y = 60; }
+      if (y + 60 > 720) { doc.addPage(); y = 60; }
       doc.font(FB).fontSize(10).fillColor("#111").text(t.fiscalHeading, 50, y); y += 14;
       doc.font(F).fontSize(9).fillColor("#333").text(t.fiscalText, 50, y, { width: tableWidth });
       y += doc.heightOfString(t.fiscalText, { width: tableWidth }) + 18;
 
       // ─── PAYMENT ───
-      if (y + 40 > 770) { doc.addPage(); y = 60; }
+      if (y + 40 > 720) { doc.addPage(); y = 60; }
       doc.font(FB).fontSize(10).fillColor("#111").text(t.paymentHeading, 50, y); y += 14;
       doc.font(F).fontSize(9).fillColor("#333").text(t.paymentText, 50, y, { width: tableWidth });
 
-      // ─── FOOTER ───
+      // ─── FOOTER (ancorato in fondo alla pagina, SENZA creare pagina nuova) ───
+      // A4=841.89pt, margine inferiore 50 → pdfkit auto-pagina se il testo
+      // scende sotto height-bottomMargin (≈791.89). Il testo footer è ~10pt
+      // alto: lo ancoriamo a height-bottom-26 così termina ben dentro.
+      const footerY = doc.page.height - doc.page.margins.bottom - 26; // ≈765.89
+      doc.moveTo(50, footerY - 9).lineTo(50 + tableWidth, footerY - 9).strokeColor("#ddd").lineWidth(0.5).stroke();
       doc.font(F).fontSize(8).fillColor("#888").text(
         `${COMPANY.legalName} · ${COMPANY.addressLine1}, ${COMPANY.addressLine2} (${COMPANY.country}) · VAT ${COMPANY.vat} · ${COMPANY.website}`,
-        50, 800, { width: tableWidth, align: "center" },
+        50, footerY, { width: tableWidth, align: "center", lineBreak: false },
       );
 
       doc.end();
