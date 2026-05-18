@@ -5,6 +5,7 @@ import { renderEmailTemplate, parseBlocks } from "@/lib/email-template-renderer"
 import { assignTagBySlug } from "@/lib/tags";
 import { buildEmailFooterHtml, getEmailFooterConfig } from "@/lib/event-registration";
 import { headers } from "next/headers";
+import { verifyRecaptcha } from "@/lib/recaptcha";
 
 const TEMPLATE_NAME = "Conferma pre-accesso svendita";
 // Permalink possibili della landing svendita: il vecchio era "accesso-svendita-gtv",
@@ -158,7 +159,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Accettazione privacy richiesta" }, { status: 400 });
     }
 
+    // Anti-bot: reCAPTCHA Enterprise. verifyRecaptcha è "graceful":
+    // se reCAPTCHA non è configurato/abilitato o l'API Google fallisce
+    // → ritorna true (non blocca utenti reali). Blocca solo token
+    // invalidi / punteggio sotto soglia quando è attivo.
+    const recaptchaToken = typeof body.recaptchaToken === "string" ? body.recaptchaToken : "";
+    const human = await verifyRecaptcha(recaptchaToken, "landing_svendita_subscribe");
+    if (!human) {
+      return NextResponse.json({ success: false, error: "Verifica anti-bot non superata. Riprova." }, { status: 400 });
+    }
+
     const email = emailRaw.toLowerCase();
+
+    // IP del visitatore dal reverse-proxy (nginx). x-forwarded-for può essere
+    // "client, proxy1, proxy2": prendiamo il primo. Fallback x-real-ip.
+    const clientIp = (() => {
+      try {
+        const h = headers();
+        const xff = (h.get("x-forwarded-for") || "").split(",")[0].trim();
+        return xff || (h.get("x-real-ip") || "").trim() || "";
+      } catch { return ""; }
+    })();
+    const isPublicIp = clientIp && !/^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::1|fc00:|fe80:)/.test(clientIp);
 
     // Lingua dell'utente: il middleware skippa /api/* quindi NON setta l'header
     // qui. Il client passa esplicitamente `lang` nel body (oppure header
@@ -184,6 +206,7 @@ export async function POST(req: Request) {
         ...(company && { company }),
         languageCode: lang,
         acceptsPrivacy: true,
+        ...(clientIp && { ipAddress: clientIp }),
       },
       create: {
         email,
@@ -193,8 +216,33 @@ export async function POST(req: Request) {
         languageCode: lang,
         acceptsPrivacy: true,
         acceptsUpdates: false,
+        ipAddress: clientIp || null,
       },
     });
+
+    // Geolocalizzazione IP → città/regione/paese. Fire-and-forget: non blocca
+    // né fa fallire l'iscrizione. Usa ip-api.com (free, no key).
+    if (isPublicIp) {
+      (async () => {
+        try {
+          const r = await fetch(`http://ip-api.com/json/${encodeURIComponent(clientIp)}?fields=status,country,regionName,city`);
+          const g = await r.json();
+          if (g && g.status === "success") {
+            await prisma.newsletterSubscriber.update({
+              where: { email },
+              data: {
+                geoCity: g.city || null,
+                geoRegion: g.regionName || null,
+                geoCountry: g.country || null,
+                geoAt: new Date(),
+              },
+            });
+          }
+        } catch (e) {
+          console.error("GeoIP lookup failed:", e);
+        }
+      })();
+    }
 
     // Assign segmentation tag (idempotent) — uses LandingPageConfig.tagSlug if set
     await assignTagBySlug(email, tagSlug, tagName).catch((e) => {

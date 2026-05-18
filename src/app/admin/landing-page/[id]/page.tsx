@@ -5,9 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Check, Send, Loader2, CheckCircle2, Settings2,
   Mail, ScanLine, Camera, AlertCircle, X, Save, Trash2,
-  ExternalLink, Globe, Sparkles,
+  ExternalLink, Globe, Sparkles, MapPin,
 } from "lucide-react";
 import ImageUploadField from "@/components/admin/ImageUploadField";
+import RegistrantsData from "@/components/admin/RegistrantsData";
 
 /* ───── Types ───── */
 
@@ -125,7 +126,7 @@ interface EmailTpl { id: string; name: string; subject: string; previewHtml: str
 
 interface ScanResult { success: boolean; alreadyCheckedIn?: boolean; error?: string; data?: { firstName: string; lastName: string; email: string; profile: string | null; checkedInAt: string | null; }; }
 
-type Tab = "config" | "email" | "scanner";
+type Tab = "config" | "email" | "scanner" | "dati";
 
 /* ───── Bottone AI inline ───── */
 function AIButton({ busy, onClick, title }: { busy?: boolean; onClick: () => void; title?: string }) {
@@ -697,6 +698,7 @@ export default function LandingPageDetailPage() {
     { key: "config", label: "Configurazione", icon: Settings2 },
     { key: "email", label: "Email", icon: Mail },
     { key: "scanner", label: "Scanner", icon: ScanLine },
+    { key: "dati", label: "DATI", icon: MapPin },
   ];
 
   return (
@@ -1269,6 +1271,9 @@ export default function LandingPageDetailPage() {
           </div>
         </div>
       )}
+
+      {/* ═══ DATI Tab ═══ */}
+      {activeTab === "dati" && <RegistrantsData />}
 
       {/* ═══ Scanner Tab ═══ */}
       {activeTab === "scanner" && (

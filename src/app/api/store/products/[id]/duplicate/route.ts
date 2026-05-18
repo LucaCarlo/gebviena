@@ -112,6 +112,9 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
           isFeatured: false,
           isNew: true,
           isActive: sp.product.isActive,
+          // Copia generata per lo store: non deve comparire nel catalogo/ricerca
+          // del sito principale (resta usabile dallo store via StoreProduct).
+          excludeFromCatalog: true,
         },
       });
 

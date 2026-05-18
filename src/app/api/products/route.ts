@@ -14,9 +14,10 @@ export async function GET(req: NextRequest) {
   const lang = resolveLangFromRequest(req, DEFAULT_LANG);
 
   // Esclude i prodotti creati per lo Store (special-sale): hanno uno
-  // StoreProduct collegato. Il catalogo del sito principale mostra solo i
-  // prodotti "veri", non i duplicati/import dello shop.
-  const where: Record<string, unknown> = { isActive: true, storeProduct: { is: null } };
+  // Il catalogo del sito principale mostra solo i prodotti "veri": esclude
+  // i Product-copia generati per lo store / artefatti (excludeFromCatalog).
+  // I prodotti reali che sono ANCHE nello store restano visibili.
+  const where: Record<string, unknown> = { isActive: true, excludeFromCatalog: false };
   if (category && category !== "TUTTI") where.category = { contains: category };
   if (subcategory) where.subcategory = subcategory;
   if (featured === "true") where.isFeatured = true;

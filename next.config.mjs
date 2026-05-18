@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // pdfkit va caricato a runtime da node_modules (non bundlato da webpack):
+  // altrimenti i suoi data/*.afm non finiscono nel bundle → ENOENT generando PDF.
+  experimental: {
+    serverComponentsExternalPackages: ["pdfkit"],
+  },
   images: {
     remotePatterns: [
       {

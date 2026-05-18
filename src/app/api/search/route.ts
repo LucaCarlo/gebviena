@@ -16,7 +16,7 @@ export async function GET(req: Request) {
       prisma.product.findMany({
         where: {
           isActive: true,
-          storeProduct: { is: null }, // esclude i prodotti special-sale dello store
+          excludeFromCatalog: false, // esclude i Product-copia/artefatti dello store
           OR: [
             { name: { contains: q } },
             { designerName: { contains: q } },

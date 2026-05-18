@@ -127,6 +127,9 @@ model Product {
   isFeatured          Boolean              @default(false)
   isNew               Boolean              @default(false)
   isActive            Boolean              @default(true)
+  // true = prodotto-copia generato per lo store / artefatto: escluso da
+  // catalogo, ricerca e tech-sheets del sito principale (resta usabile dallo store).
+  excludeFromCatalog  Boolean              @default(false)
   sortOrder           Int                  @default(0)
   seoTitle            String?              @db.Text
   seoDescription      String?              @db.Text
@@ -695,6 +698,12 @@ model NewsletterSubscriber {
   acceptsPrivacy Boolean  @default(false)
   acceptsUpdates Boolean  @default(false)
   languageCode   String?  @db.VarChar(16) // lingua del visitatore al momento dell'iscrizione (it/en/de/fr/es)
+  // Geolocalizzazione catturata all'iscrizione (IP dal proxy + lookup GeoIP).
+  ipAddress      String?  @db.VarChar(64)
+  geoCity        String?  @db.Text
+  geoRegion      String?  @db.Text
+  geoCountry     String?  @db.VarChar(80)
+  geoAt          DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 }
@@ -717,13 +726,19 @@ model ContactSubmission {
 model PageView {
   id        String   @id @default(cuid())
   path      String
+  host      String?  @db.VarChar(8)   // "SITO" | "STORE"
   referrer  String?  @db.Text
   userAgent String?  @db.Text
   ipHash    String?  @db.Text
+  geoCity    String? @db.VarChar(120)
+  geoRegion  String? @db.VarChar(120)
+  geoCountry String? @db.VarChar(80)
   createdAt DateTime @default(now())
 
   @@index([path])
   @@index([createdAt])
+  @@index([host])
+  @@index([ipHash(length: 40)])
 }
 
 model Setting {

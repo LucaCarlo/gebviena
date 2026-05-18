@@ -14,15 +14,18 @@ export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
   const rawBody = await req.text();
 
+  // Sicurezza: senza webhook secret o senza firma NON ci si fida del body.
+  // (La promozione dell'ordine avviene comunque in modo sicuro dal fallback
+  // order-status, che interroga Stripe direttamente con la secret key.)
+  if (!cfg.webhookSecret || !sig) {
+    console.error("[stripe-webhook] rifiutato: webhook secret o firma mancanti");
+    return NextResponse.json({ error: "Webhook non configurato" }, { status: 400 });
+  }
+
   let event: Stripe.Event;
   try {
-    if (cfg.webhookSecret && sig) {
-      const stripe = await getStripe();
-      event = stripe.webhooks.constructEvent(rawBody, sig, cfg.webhookSecret);
-    } else {
-      // Fallback dev: niente webhook secret → fidati del body (solo per test locale)
-      event = JSON.parse(rawBody) as Stripe.Event;
-    }
+    const stripe = await getStripe();
+    event = stripe.webhooks.constructEvent(rawBody, sig, cfg.webhookSecret);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[stripe-webhook] signature verification failed:", msg);

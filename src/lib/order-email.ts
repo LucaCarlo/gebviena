@@ -110,6 +110,13 @@ function parseAddress(json: string): {
   try { return JSON.parse(json); } catch { return {}; }
 }
 
+function floorLabel(n: number | null | undefined, isFr: boolean): string {
+  const it = ["Piano terra", "1° piano", "2° piano", "3° piano", "4° piano", "5° piano o oltre"];
+  const fr = ["Rez-de-chaussée", "1er étage", "2e étage", "3e étage", "4e étage", "5e étage ou plus"];
+  const i = Math.max(0, Math.min(5, n ?? 0));
+  return (isFr ? fr : it)[i];
+}
+
 function parseAttrs(s: string | null): string {
   if (!s) return "";
   // attributesSnapshot è "TYPE:label|TYPE:label" — restituisco in chiaro.
@@ -160,6 +167,25 @@ function buildHtml(order: OrderWithItems, deliveryStr: string): string {
           ${bodyHtml}
         </td></tr>
 
+        <tr><td style="padding:0 32px 20px 32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e2db;border-radius:4px;">
+            <tr><td style="padding:12px 16px;border-bottom:1px solid #f0ede6;font-size:13px;color:#333;">
+              <strong style="color:#555;">${isFr ? "Livraison standard" : "Spedizione standard"}:</strong>
+              ${order.shippingCents > 0
+                ? escape(new Intl.NumberFormat(isFr ? "fr-FR" : "it-IT", { style: "currency", currency: order.currency }).format(order.shippingCents / 100))
+                : (isFr ? "Offerte" : "Gratuita")}
+            </td></tr>
+            <tr><td style="padding:12px 16px;font-size:13px;color:#333;${order.customerNotes && order.customerNotes.trim() ? "border-bottom:1px solid #f0ede6;" : ""}">
+              <strong style="color:#555;">${isFr ? "Étage de livraison" : "Piano di consegna"}:</strong>
+              ${escape(floorLabel(order.shippingFloor, isFr))}
+            </td></tr>
+            ${order.customerNotes && order.customerNotes.trim() ? `<tr><td style="padding:12px 16px;font-size:13px;color:#333;">
+              <strong style="color:#555;">${isFr ? "Remarques" : "Note"}:</strong>
+              ${escape(order.customerNotes.trim())}
+            </td></tr>` : ""}
+          </table>
+        </td></tr>
+
         <tr><td style="padding:16px 32px;background:#faf8f3;border-top:1px solid #e5e2db;font-size:11px;color:#888;line-height:1.6;">
           <strong style="color:#555;">${escape(COMPANY.legalName)}</strong><br>
           ${escape(COMPANY.addressLine1)}, ${escape(COMPANY.addressLine2)} – ${escape(COMPANY.country)}<br>
@@ -195,18 +221,24 @@ export async function buildOrderPdf(order: OrderWithItems): Promise<Buffer> {
 async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: "A4", margin: 50 });
+      // I font TTF embedded vanno risolti PRIMA di costruire il documento:
+      // il costruttore di PDFDocument chiama initFonts() che, senza opzione
+      // `font`, carica di default Helvetica → legge data/Helvetica.afm, che
+      // il bundle webpack di Next NON include (ENOENT in produzione). Passando
+      // il TTF come `font` nelle opzioni, pdfkit non tocca mai gli .afm.
+      const FONT = "Body";
+      const FONT_BOLD = "BodyBold";
+      const regPath = firstExisting(FONT_REG_CANDIDATES);
+      const boldPath = firstExisting(FONT_BOLD_CANDIDATES);
+
+      const docOpts: PDFKit.PDFDocumentOptions = { size: "A4", margin: 50 };
+      if (regPath) docOpts.font = regPath;
+      const doc = new PDFDocument(docOpts);
       const chunks: Buffer[] = [];
       doc.on("data", (c: Buffer) => chunks.push(c));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      // Registra i font TTF embedded (evita la dipendenza dagli .afm standard
-      // che Next.js non bundla). FONT = regular, FONT_BOLD = grassetto.
-      const FONT = "Body";
-      const FONT_BOLD = "BodyBold";
-      const regPath = firstExisting(FONT_REG_CANDIDATES);
-      const boldPath = firstExisting(FONT_BOLD_CANDIDATES);
       if (regPath) doc.registerFont(FONT, regPath);
       if (boldPath) doc.registerFont(FONT_BOLD, boldPath);
       // Se per qualche motivo i TTF non ci sono, ripieghiamo sui built-in
@@ -230,6 +262,9 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
             vatLabel: (rate: number) => `TVA France ${rate}%`,
             grandTotal: "Total TTC",
             shipping: "Livraison",
+            shippingFreeRow: "Livraison standard : offerte",
+            shipFloor: "Étage de livraison",
+            notes: "Remarques du client",
             unboxing: "Déballage et reprise emballages",
             shippingFree: "Offerte",
             docNote: "Document de confirmation de commande. Ne constitue pas un document fiscal.",
@@ -252,6 +287,9 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
             vatLabel: (rate: number) => `IVA Italia ${rate}%`,
             grandTotal: "Totale IVA inclusa",
             shipping: "Spedizione",
+            shippingFreeRow: "Spedizione standard: gratuita",
+            shipFloor: "Piano di consegna",
+            notes: "Note del cliente",
             unboxing: "Disimballo e smaltimento imballi",
             shippingFree: "Gratuita",
             docNote: "Documento di conferma ordine. Non costituisce documento fiscale.",
@@ -301,6 +339,16 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       if (order.customerTaxId) {
         doc.text(`${isFr ? "N° TVA / Code fiscal" : "P.IVA / C.F."}: ${order.customerTaxId}`, 50, y);
         y += 13;
+      }
+      doc.font(FB).fillColor("#111").text(`${t.shipFloor}: `, 50, y, { continued: true });
+      doc.font(F).fillColor("#333").text(floorLabel(order.shippingFloor, isFr));
+      y += 13;
+      if (order.customerNotes && order.customerNotes.trim()) {
+        const note = order.customerNotes.trim();
+        doc.font(FB).fontSize(10).fillColor("#111").text(`${t.notes}:`, 50, y);
+        y += 13;
+        doc.font(F).fontSize(10).fillColor("#333").text(note, 50, y, { width: 500 });
+        y += doc.heightOfString(note, { width: 500 }) + 2;
       }
 
       y += 14;
@@ -475,6 +523,9 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
       <p style="margin:0 0 4px;"><strong>Cliente:</strong> ${escape(order.firstName)} ${escape(order.lastName)} — ${escape(order.email)}${order.phone ? " — ☎ " + escape(order.phone) : ""}</p>
       ${order.customerTaxId ? `<p style="margin:0 0 4px;"><strong>P.IVA/C.F.:</strong> ${escape(order.customerTaxId)}</p>` : ""}
       <p style="margin:0 0 4px;"><strong>Spedire a:</strong> ${escape(order.firstName)} ${escape(order.lastName)}, ${escape(ship.street || "")}, ${escape(ship.postalCode || "")} ${escape(ship.city || "")}${ship.province ? " (" + escape(ship.province) + ")" : ""} — ${escape(ship.country || "")}</p>
+      <p style="margin:0 0 4px;"><strong>Piano di consegna:</strong> ${escape(floorLabel(order.shippingFloor, false))}</p>
+      <p style="margin:0 0 4px;"><strong>Spedizione standard:</strong> ${order.shippingCents > 0 ? escape(eur(order.shippingCents)) : "Gratuita"}</p>
+      ${order.customerNotes && order.customerNotes.trim() ? `<p style="margin:8px 0 4px;padding:8px 10px;background:#fff8e1;border-left:3px solid #e0a800;"><strong>Note del cliente:</strong> ${escape(order.customerNotes.trim())}</p>` : ""}
       <p style="margin:14px 0 6px;"><strong>Articoli:</strong></p>
       <ul style="margin:0 0 14px;padding-left:20px;">${itemsList}</ul>
       <p style="margin:0;font-size:15px;"><strong>Totale ordine: ${eur(order.totalCents)}</strong></p>
