@@ -157,7 +157,7 @@ export default function AdminAnalyticsPage() {
           {/* KPI */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {[
-              { i: <Eye size={16} />, l: "Pagine viste", v: k!.views.toLocaleString("it-IT"), s: "senza duplicati" },
+              { i: <Eye size={16} />, l: "Pagine viste", v: k!.views.toLocaleString("it-IT"), s: "" },
               { i: <Users size={16} />, l: "Visitatori unici", v: k!.unique.toLocaleString("it-IT"), s: "" },
               { i: <BarChart3 size={16} />, l: `Media / ${k!.avgUnit}`, v: k!.avg.toLocaleString("it-IT"), s: "" },
               { i: <Layers size={16} />, l: "Pagine per utente", v: String(k!.pagesPerUser), s: "media nel periodo" },

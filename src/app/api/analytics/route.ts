@@ -50,10 +50,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: true, data: { recent: mapRecent(rec.slice(0, PAGE)), hasMore: rec.length > PAGE } });
   }
 
-  const [viewsR, uniqueR, daysR, perHost, series, topPages, countries, regions, cities, sources, devices, recent] =
+  const [viewsR, uniqueR, userPagesR, daysR, perHost, series, topPages, countries, regions, cities, sources, devices, recent] =
     await Promise.all([
       q(`SELECT COUNT(*) c FROM (SELECT 1 FROM \`PageView\` ${W} GROUP BY ${DEDUP}) z`),
       q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${W}`),
+      q(`SELECT COUNT(*) c FROM (SELECT 1 FROM \`PageView\` ${W} GROUP BY \`ipHash\`, \`path\`) z`),
       q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
       q(`SELECT \`host\`, COUNT(*) v FROM \`PageView\` ${dateOnly} GROUP BY \`host\``),
       q(`SELECT b, COUNT(*) v FROM (SELECT MIN(${BUCKET}) b FROM \`PageView\` ${W} GROUP BY ${DEDUP}) t GROUP BY b ORDER BY b`),
@@ -81,6 +82,7 @@ export async function GET(req: Request) {
 
   const views = num(viewsR[0]?.c);
   const unique = num(uniqueR[0]?.u);
+  const distinctUserPages = num(userPagesR[0]?.c);
   const periodDays = num(daysR[0]?.d) || 0;
   const periodHours = num(daysR[0]?.h) || 0;
   const avgDen = isHourly ? Math.max(1, periodHours) : Math.max(1, periodDays);
@@ -101,7 +103,7 @@ export async function GET(req: Request) {
         periodDays,
         minDate: daysR[0]?.mn || null,
         maxDate: daysR[0]?.mx || null,
-        pagesPerUser: unique > 0 ? Math.round((views / unique) * 10) / 10 : 0,
+        pagesPerUser: unique > 0 ? Math.round((distinctUserPages / unique) * 10) / 10 : 0,
         sito: ph["SITO"] || 0,
         store: ph["STORE"] || 0,
       },
