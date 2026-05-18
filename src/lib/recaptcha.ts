@@ -76,7 +76,9 @@ export async function verifyRecaptcha(token: string, expectedAction?: string): P
     }
 
     const score = data.riskAnalysis?.score ?? 0;
-    return score >= cfg.scoreThreshold;
+    const pass = score >= cfg.scoreThreshold;
+    console.log(`[recaptcha] token VALIDO action=${data.tokenProperties.action || "?"} score=${score} soglia=${cfg.scoreThreshold} -> ${pass ? "OK" : "BLOCCATO"}`);
+    return pass;
   } catch (e) {
     console.error("[recaptcha] errore verifica:", e);
     return true; // allow on error to not block users
