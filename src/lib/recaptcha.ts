@@ -25,9 +25,17 @@ async function getRecaptchaConfig(): Promise<RecaptchaConfig> {
 export async function verifyRecaptcha(token: string, expectedAction?: string): Promise<boolean> {
   const cfg = await getRecaptchaConfig();
 
-  // Skip if not enabled or not configured
+  // Skip if not enabled or not configured (fail-open: non blocca)
   if (!cfg.enabled || !cfg.apiKey || !cfg.projectId || !cfg.siteKey) {
     return true;
+  }
+
+  // Token assente = richiesta NON da browser reale (bot/script che postano
+  // direttamente all'API). Gli utenti veri ottengono sempre un token dal
+  // provider. Blocco netto, senza nemmeno chiamare Google.
+  if (!token || !token.trim()) {
+    console.warn("[recaptcha] token mancante → bloccato (probabile bot)");
+    return false;
   }
 
   try {
