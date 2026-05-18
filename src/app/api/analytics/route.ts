@@ -56,8 +56,8 @@ export async function GET(req: Request) {
       q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${W}`),
       q(`SELECT COUNT(*) c FROM (SELECT 1 FROM \`PageView\` ${W} GROUP BY \`ipHash\`, \`path\`) z`),
       q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
-      q(`SELECT \`host\`, COUNT(*) v FROM \`PageView\` ${dateOnly} GROUP BY \`host\``),
-      q(`SELECT b, COUNT(*) v FROM (SELECT MIN(${BUCKET}) b FROM \`PageView\` ${W} GROUP BY ${DEDUP}) t GROUP BY b ORDER BY b`),
+      q(`SELECT \`host\`, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${dateOnly} GROUP BY \`host\``),
+      q(`SELECT ${BUCKET} b, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY b ORDER BY b`),
       q(`SELECT p, COUNT(*) v FROM (SELECT \`path\` p FROM \`PageView\` ${W} GROUP BY ${DEDUP}) t GROUP BY p ORDER BY v DESC LIMIT 15`),
       q(`SELECT COALESCE(NULLIF(\`geoCountry\`,''),'(sconosciuto)') n, COUNT(*) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
       q(`SELECT COALESCE(NULLIF(\`geoRegion\`,''),'(sconosciuto)') n, COUNT(*) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
@@ -84,8 +84,12 @@ export async function GET(req: Request) {
   const unique = num(uniqueR[0]?.u);
   const distinctUserPages = num(userPagesR[0]?.c);
   const periodDays = num(daysR[0]?.d) || 0;
-  const periodHours = num(daysR[0]?.h) || 0;
-  const avgDen = isHourly ? Math.max(1, periodHours) : Math.max(1, periodDays);
+  // serie = visitatori unici per giorno/ora
+  const seriesArr = series.map((r) => ({ date: String((r as Row).b), views: num((r as Row).v) }));
+  // media = visitatori unici medi per giorno (o per ora se periodo = 1 giorno)
+  const avgUnique = seriesArr.length
+    ? Math.round(seriesArr.reduce((s, x) => s + x.views, 0) / seriesArr.length)
+    : 0;
   const ph: Record<string, number> = {};
   for (const r of perHost) ph[String((r as Row).host || "?")] = num((r as Row).v);
 
@@ -98,7 +102,7 @@ export async function GET(req: Request) {
       kpi: {
         views,
         unique,
-        avg: Math.round(views / avgDen),
+        avg: avgUnique,
         avgUnit: isHourly ? "ora" : "giorno",
         periodDays,
         minDate: daysR[0]?.mn || null,
@@ -107,7 +111,7 @@ export async function GET(req: Request) {
         sito: ph["SITO"] || 0,
         store: ph["STORE"] || 0,
       },
-      series: series.map((r) => ({ date: String((r as Row).b), views: num((r as Row).v) })),
+      series: seriesArr,
       topPages: topPages.map((r) => ({ path: String((r as Row).p), count: num((r as Row).v) })),
       geo: {
         countries: countries.map((r) => ({ name: String((r as Row).n), count: num((r as Row).v) })),

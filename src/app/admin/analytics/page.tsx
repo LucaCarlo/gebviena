@@ -159,7 +159,7 @@ export default function AdminAnalyticsPage() {
             {[
               { i: <Eye size={16} />, l: "Pagine viste", v: k!.views.toLocaleString("it-IT"), s: "" },
               { i: <Users size={16} />, l: "Visitatori unici", v: k!.unique.toLocaleString("it-IT"), s: "" },
-              { i: <BarChart3 size={16} />, l: `Media / ${k!.avgUnit}`, v: k!.avg.toLocaleString("it-IT"), s: "" },
+              { i: <BarChart3 size={16} />, l: `Media / ${k!.avgUnit}`, v: k!.avg.toLocaleString("it-IT"), s: "visitatori unici" },
               { i: <Layers size={16} />, l: "Pagine per utente", v: String(k!.pagesPerUser), s: "media nel periodo" },
               { i: <CalendarDays size={16} />, l: "Periodo", v: String(k!.periodDays), s: periodLabel },
             ].map((c) => (
@@ -172,13 +172,13 @@ export default function AdminAnalyticsPage() {
             ))}
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Card><div className="text-xs text-warm-500 uppercase">Sito principale</div><div className="text-xl font-bold text-warm-900">{k!.sito.toLocaleString("it-IT")}</div><div className="text-[10px] text-warm-400">pagine viste nel periodo</div></Card>
-            <Card><div className="text-xs text-warm-500 uppercase">Store</div><div className="text-xl font-bold text-warm-900">{k!.store.toLocaleString("it-IT")}</div><div className="text-[10px] text-warm-400">pagine viste nel periodo</div></Card>
+            <Card><div className="text-xs text-warm-500 uppercase">Sito principale</div><div className="text-xl font-bold text-warm-900">{k!.sito.toLocaleString("it-IT")}</div><div className="text-[10px] text-warm-400">visitatori unici nel periodo</div></Card>
+            <Card><div className="text-xs text-warm-500 uppercase">Store</div><div className="text-xl font-bold text-warm-900">{k!.store.toLocaleString("it-IT")}</div><div className="text-[10px] text-warm-400">visitatori unici nel periodo</div></Card>
           </div>
 
           {/* Andamento */}
           <Card>
-            <h3 className="text-sm font-semibold text-warm-800 mb-4">Andamento {data.isHourly ? "orario" : "giornaliero"} (pagine viste)</h3>
+            <h3 className="text-sm font-semibold text-warm-800 mb-4">Andamento {data.isHourly ? "orario" : "giornaliero"} (visitatori unici)</h3>
             {data.series.length === 0 ? <p className="text-xs text-warm-400">Nessun dato nel periodo.</p> : (
               <div className="flex items-end gap-1.5 h-44">
                 {data.series.map((s) => (
