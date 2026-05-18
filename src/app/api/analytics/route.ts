@@ -19,6 +19,29 @@ export async function GET(req: Request) {
   // giorno locale IT
   const DAY = "DATE(CONVERT_TZ(`createdAt`,'+00:00','+02:00'))";
 
+  // Visite recenti DEDUPLICATE: una riga per (visitatore, pagina, minuto),
+  // con conteggio hit. Niente 10 righe identiche per la stessa visita.
+  const PAGE = 30;
+  const recentSql = (offset: number) =>
+    `SELECT MAX(\`path\`) p, MAX(\`host\`) h, MAX(\`geoCity\`) c, MAX(\`geoCountry\`) co,
+            MAX(\`referrer\`) r, MAX(\`createdAt\`) t, COUNT(*) hits
+       FROM \`PageView\` ${where}
+       GROUP BY \`ipHash\`, \`path\`, DATE_FORMAT(CONVERT_TZ(\`createdAt\`,'+00:00','+02:00'),'%Y-%m-%d %H:%i')
+       ORDER BY t DESC LIMIT ${PAGE + 1} OFFSET ${offset}`;
+  const mapRecent = (rows: Row[]) => rows.map((r) => ({
+    path: String(r.p), host: String(r.h || ""),
+    city: r.c ? String(r.c) : null, country: r.co ? String(r.co) : null,
+    referrer: r.r ? String(r.r) : null, createdAt: r.t, hits: num(r.hits),
+  }));
+
+  // Modalità paginazione "Prosegui": ritorna solo la pagina recenti.
+  if (searchParams.get("recentPage")) {
+    const offset = Math.max(0, parseInt(searchParams.get("offset") || "0", 10) || 0);
+    const rec = await q(recentSql(offset));
+    const hasMore = rec.length > PAGE;
+    return NextResponse.json({ success: true, data: { recent: mapRecent(rec.slice(0, PAGE)), hasMore } });
+  }
+
   const [
     totals, perHost, today, series, topPages, countries, regions, cities, sources, devices, recent, minDate,
   ] = await Promise.all([
@@ -45,7 +68,7 @@ export async function GET(req: Request) {
           WHEN \`userAgent\` LIKE '%iPad%' OR \`userAgent\` LIKE '%Tablet%' THEN 'Tablet'
           ELSE 'Desktop' END dev, COUNT(*) v
         FROM \`PageView\` ${where} GROUP BY dev ORDER BY v DESC`),
-    q(`SELECT \`path\` p, \`host\` h, \`geoCity\` c, \`geoCountry\` co, \`referrer\` r, \`createdAt\` t FROM \`PageView\` ${where} ORDER BY \`createdAt\` DESC LIMIT 25`),
+    q(recentSql(0)),
     q("SELECT MIN(`createdAt`) m FROM `PageView`"),
   ]);
 
@@ -78,13 +101,8 @@ export async function GET(req: Request) {
       },
       sources: sources.map((r) => ({ name: String((r as Row).src), count: num((r as Row).v) })),
       devices: devices.map((r) => ({ name: String((r as Row).dev), count: num((r as Row).v) })),
-      recent: recent.map((r) => ({
-        path: String((r as Row).p), host: String((r as Row).h || ""),
-        city: (r as Row).c ? String((r as Row).c) : null,
-        country: (r as Row).co ? String((r as Row).co) : null,
-        referrer: (r as Row).r ? String((r as Row).r) : null,
-        createdAt: (r as Row).t,
-      })),
+      recent: mapRecent(recent.slice(0, PAGE)),
+      recentHasMore: recent.length > PAGE,
     },
   });
 }

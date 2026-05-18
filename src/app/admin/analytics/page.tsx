@@ -12,7 +12,8 @@ interface Data {
   geo: { countries: NC[]; regions: NC[]; cities: NC[] };
   sources: NC[];
   devices: NC[];
-  recent: { path: string; host: string; city: string | null; country: string | null; referrer: string | null; createdAt: string }[];
+  recent: { path: string; host: string; city: string | null; country: string | null; referrer: string | null; createdAt: string; hits: number }[];
+  recentHasMore?: boolean;
 }
 
 const PIE = ["#8a6d3b", "#b08968", "#cdb38b", "#7d8c7a", "#9c6644", "#6b705c", "#a5a58d", "#c9ada7"];
@@ -69,6 +70,9 @@ export default function AdminAnalyticsPage() {
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
   const [host, setHost] = useState<"" | "SITO" | "STORE">("");
+  const [recent, setRecent] = useState<Data["recent"]>([]);
+  const [recMore, setRecMore] = useState(false);
+  const [recLoading, setRecLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,8 +80,20 @@ export default function AdminAnalyticsPage() {
       const r = await fetch(`/api/analytics${host ? `?host=${host}` : ""}`, { cache: "no-store" });
       const j = await r.json();
       setData(j.data || null);
+      setRecent(j.data?.recent || []);
+      setRecMore(!!j.data?.recentHasMore);
     } catch { /* ignore */ } finally { setLoading(false); }
   }, [host]);
+
+  const loadMore = useCallback(async () => {
+    setRecLoading(true);
+    try {
+      const r = await fetch(`/api/analytics?recentPage=1&offset=${recent.length}${host ? `&host=${host}` : ""}`, { cache: "no-store" });
+      const j = await r.json();
+      setRecent((prev) => [...prev, ...(j.data?.recent || [])]);
+      setRecMore(!!j.data?.hasMore);
+    } catch { /* ignore */ } finally { setRecLoading(false); }
+  }, [recent.length, host]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -152,26 +168,38 @@ export default function AdminAnalyticsPage() {
             <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Smartphone size={15} /> Dispositivi</h3><Pie items={data.devices} /></Card>
           </div>
 
-          {/* Recenti */}
+          {/* Recenti (deduplicate: 1 riga per visitatore+pagina+minuto) */}
           <Card>
-            <h3 className="text-sm font-semibold text-warm-800 mb-3">Visite recenti</h3>
-            <div className="overflow-x-auto max-h-80 overflow-y-auto">
+            <h3 className="text-sm font-semibold text-warm-800 mb-1">Visite recenti</h3>
+            <p className="text-[11px] text-warm-400 mb-3">Visite raggruppate per visitatore, pagina e minuto. ×N = numero di richieste nella stessa visita.</p>
+            <div className="overflow-x-auto">
               <table className="w-full text-xs">
-                <thead className="text-warm-500 uppercase tracking-wide text-left sticky top-0 bg-white">
-                  <tr><th className="py-1 pr-3">Quando</th><th className="py-1 pr-3">Dove</th><th className="py-1 pr-3">Pagina</th><th className="py-1 pr-3">Città</th><th className="py-1">Paese</th></tr>
+                <thead className="text-warm-500 uppercase tracking-wide text-left bg-white">
+                  <tr><th className="py-1 pr-3">Quando</th><th className="py-1 pr-3">Dove</th><th className="py-1 pr-3">Pagina</th><th className="py-1 pr-3">Città</th><th className="py-1 pr-3">Paese</th><th className="py-1">Hit</th></tr>
                 </thead>
                 <tbody>
-                  {data.recent.map((r, i) => (
+                  {recent.map((r, i) => (
                     <tr key={i} className="border-t border-warm-100">
                       <td className="py-1 pr-3 whitespace-nowrap text-warm-500">{fmtDT(r.createdAt)}</td>
                       <td className="py-1 pr-3"><span className={`px-1.5 py-0.5 rounded text-[10px] ${r.host === "STORE" ? "bg-amber-100 text-amber-800" : "bg-warm-100 text-warm-700"}`}>{r.host || "?"}</span></td>
                       <td className="py-1 pr-3 max-w-[260px] truncate">{r.path}</td>
                       <td className="py-1 pr-3 whitespace-nowrap">{r.city || "—"}</td>
-                      <td className="py-1 whitespace-nowrap">{r.country || "—"}</td>
+                      <td className="py-1 pr-3 whitespace-nowrap">{r.country || "—"}</td>
+                      <td className="py-1 whitespace-nowrap text-warm-500">{r.hits > 1 ? `×${r.hits}` : "1"}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="mt-4 text-center">
+              {recMore ? (
+                <button onClick={loadMore} disabled={recLoading}
+                  className="text-sm border border-warm-300 px-5 py-2 rounded-lg hover:bg-warm-50 disabled:opacity-50">
+                  {recLoading ? "Carico…" : "Prosegui ↓"}
+                </button>
+              ) : (
+                <span className="text-xs text-warm-400">Fine elenco ({recent.length} visite)</span>
+              )}
             </div>
           </Card>
         </div>
