@@ -128,7 +128,7 @@ export default function AdminAnalyticsPage() {
     : "—";
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl">
+    <div className="p-6 md:p-8 w-full">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
         <h1 className="text-2xl font-semibold text-warm-800 flex items-center gap-2"><BarChart3 size={22} /> Analisi Traffico</h1>
         <button onClick={load} className="flex items-center gap-1.5 text-sm border border-warm-300 px-3 py-2 rounded-lg hover:bg-warm-50"><RefreshCw size={14} /> Aggiorna</button>

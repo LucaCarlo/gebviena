@@ -45,17 +45,32 @@ export async function verifyRecaptcha(token: string, expectedAction?: string): P
       }),
     });
 
+    // Errore HTTP dell'API (es. API key con restrizione referrer, progetto
+    // sbagliato, API non abilitata, billing): NON deve bloccare gli utenti
+    // reali — fail-open. Logghiamo per diagnosi.
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      console.error(`[recaptcha] API HTTP ${res.status}:`, t.slice(0, 300));
+      return true;
+    }
+
     const data = await res.json();
 
-    if (!data.tokenProperties?.valid) {
-      console.warn("reCAPTCHA Enterprise: invalid token", data.tokenProperties?.invalidReason);
+    // Risposta non interpretabile (manca tokenProperties): fail-open.
+    if (!data || typeof data.tokenProperties === "undefined") {
+      console.error("[recaptcha] risposta inattesa:", JSON.stringify(data).slice(0, 300));
+      return true;
+    }
+
+    if (!data.tokenProperties.valid) {
+      console.warn("[recaptcha] token non valido:", data.tokenProperties.invalidReason);
       return false;
     }
 
     const score = data.riskAnalysis?.score ?? 0;
     return score >= cfg.scoreThreshold;
   } catch (e) {
-    console.error("reCAPTCHA Enterprise verification error:", e);
+    console.error("[recaptcha] errore verifica:", e);
     return true; // allow on error to not block users
   }
 }
