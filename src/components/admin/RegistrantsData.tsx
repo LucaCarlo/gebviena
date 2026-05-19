@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { RefreshCw, Download } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
+import { RefreshCw, Download, Eye } from "lucide-react";
 
 interface Row {
   email: string;
@@ -11,6 +11,9 @@ interface Row {
   geoCity?: string | null;
   geoRegion?: string | null;
   geoCountry?: string | null;
+  emailStatus?: string | null;
+  emailError?: string | null;
+  emailSentAt?: string | null;
   createdAt: string;
 }
 
@@ -42,6 +45,7 @@ export default function RegistrantsData() {
   const [q, setQ] = useState("");
   const [countryFilter, setCountryFilter] = useState("");
   const [onlyGeo, setOnlyGeo] = useState(false);
+  const [openRow, setOpenRow] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -97,9 +101,11 @@ export default function RegistrantsData() {
 
   const exportCsv = () => {
     const e = (s: unknown) => `"${String(s ?? "").replace(/"/g, '""')}"`;
-    const head = ["Nome", "Cognome", "Email", "IP", "Città", "Regione", "Paese", "Data e ora"].map(e).join(";");
+    const head = ["Nome", "Cognome", "Email", "Stato email", "Errore email", "Email inviata", "IP", "Città", "Regione", "Paese", "Data e ora"].map(e).join(";");
+    const st = (s?: string | null) => s === "sent" ? "Inviata" : s === "error" ? "Errore" : "In attesa";
     const lines = filtered.map((r) =>
-      [r.firstName, r.lastName, r.email, r.ipAddress, r.geoCity, r.geoRegion, r.geoCountry, fmt(r.createdAt)].map(e).join(";"));
+      [r.firstName, r.lastName, r.email, st(r.emailStatus), r.emailError || "", r.emailSentAt ? fmt(r.emailSentAt) : "",
+       r.ipAddress, r.geoCity, r.geoRegion, r.geoCountry, fmt(r.createdAt)].map(e).join(";"));
     const csv = "﻿" + [head, ...lines].join("\r\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
@@ -155,9 +161,9 @@ export default function RegistrantsData() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
             {[
               ["Iscritti", filtered.length],
-              ["Con geo", withGeo],
-              ["Città distinte", new Set(filtered.map((r) => r.geoCity).filter(Boolean)).size],
-              ["Paesi", byCountry.length],
+              ["Email inviate", filtered.filter((r) => r.emailStatus === "sent").length],
+              ["Email errore", filtered.filter((r) => r.emailStatus === "error").length],
+              ["In attesa", filtered.filter((r) => !r.emailStatus).length],
             ].map(([label, val]) => (
               <div key={label} className="bg-white border border-warm-200 rounded-lg p-3">
                 <div className="text-2xl font-bold text-warm-900">{val as number}</div>
@@ -212,25 +218,51 @@ export default function RegistrantsData() {
                 <tr className="text-left text-warm-500 text-xs uppercase tracking-wide">
                   <th className="px-3 py-2">Nome</th>
                   <th className="px-3 py-2">Email</th>
-                  <th className="px-3 py-2">IP</th>
-                  <th className="px-3 py-2">Città</th>
-                  <th className="px-3 py-2">Regione</th>
+                  <th className="px-3 py-2">Stato email</th>
                   <th className="px-3 py-2">Paese</th>
                   <th className="px-3 py-2">Data</th>
+                  <th className="px-3 py-2 w-10"></th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r, i) => (
-                  <tr key={r.email + i} className="border-t border-warm-100 hover:bg-warm-50/50">
-                    <td className="px-3 py-2 whitespace-nowrap">{[r.firstName, r.lastName].filter(Boolean).join(" ") || "—"}</td>
-                    <td className="px-3 py-2 whitespace-nowrap text-warm-600">{r.email}</td>
-                    <td className="px-3 py-2 whitespace-nowrap font-mono text-xs">{r.ipAddress || "—"}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{r.geoCity || "—"}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{r.geoRegion || "—"}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{r.geoCountry || "—"}</td>
-                    <td className="px-3 py-2 whitespace-nowrap text-warm-500">{fmt(r.createdAt)}</td>
-                  </tr>
-                ))}
+                {filtered.map((r, i) => {
+                  const st = r.emailStatus;
+                  const badge = st === "sent"
+                    ? <span className="px-2 py-0.5 rounded text-[11px] bg-green-100 text-green-800">Inviata</span>
+                    : st === "error"
+                      ? <span className="px-2 py-0.5 rounded text-[11px] bg-red-100 text-red-800">Errore</span>
+                      : <span className="px-2 py-0.5 rounded text-[11px] bg-amber-100 text-amber-800">In attesa</span>;
+                  const open = openRow === r.email;
+                  return (
+                    <Fragment key={r.email + i}>
+                      <tr className="border-t border-warm-100 hover:bg-warm-50/50">
+                        <td className="px-3 py-2 whitespace-nowrap">{[r.firstName, r.lastName].filter(Boolean).join(" ") || "—"}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-warm-600">{r.email}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">{badge}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">{r.geoCountry || "—"}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-warm-500">{fmt(r.createdAt)}</td>
+                        <td className="px-3 py-2">
+                          <button onClick={() => setOpenRow(open ? null : r.email)}
+                            className="p-1 text-warm-400 hover:text-warm-800" title="Dettaglio invio email">
+                            <Eye size={15} />
+                          </button>
+                        </td>
+                      </tr>
+                      {open && (
+                        <tr className="bg-warm-50/60">
+                          <td colSpan={6} className="px-4 py-3 text-xs text-warm-700">
+                            <div className="space-y-1">
+                              <div><strong>Stato:</strong> {st === "sent" ? "Email inviata correttamente" : st === "error" ? "Errore nell'invio" : "Non ancora inviata / in attesa"}</div>
+                              <div><strong>Orario tentativo:</strong> {r.emailSentAt ? fmt(r.emailSentAt) : "—"}</div>
+                              {st === "error" && <div className="text-red-700 break-all"><strong>Dettaglio errore:</strong> {r.emailError || "—"}</div>}
+                              <div className="text-warm-400">IP: {r.ipAddress || "—"} · {[r.geoCity, r.geoRegion].filter(Boolean).join(", ") || "geo n/d"}</div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>

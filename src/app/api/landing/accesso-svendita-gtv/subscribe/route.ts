@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendMail } from "@/lib/mail";
+import { sendMailResult } from "@/lib/mail";
 import { renderEmailTemplate, parseBlocks } from "@/lib/email-template-renderer";
 import { assignTagBySlug } from "@/lib/tags";
 import { buildEmailFooterHtml, getEmailFooterConfig } from "@/lib/event-registration";
@@ -315,9 +315,22 @@ export async function POST(req: Request) {
 
         // Subject: override (traduzione + IT) > template subject > default
         const subject = emailSubjectOverride || template.subject || DEFAULT_SUBJECT;
-        await sendMail(email, subject, html);
+        const r = await sendMailResult(email, subject, html);
+        await prisma.newsletterSubscriber.update({
+          where: { email },
+          data: {
+            emailStatus: r.ok ? "sent" : "error",
+            emailError: r.ok ? null : (r.error || "Errore sconosciuto").slice(0, 400),
+            emailSentAt: new Date(),
+          },
+        }).catch((e) => console.error("update emailStatus failed:", e));
       } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
         console.error("Confirmation email failed:", e);
+        await prisma.newsletterSubscriber.update({
+          where: { email },
+          data: { emailStatus: "error", emailError: msg.slice(0, 400), emailSentAt: new Date() },
+        }).catch(() => {});
       }
     })();
 

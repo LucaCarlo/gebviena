@@ -28,7 +28,10 @@ interface SendMailOptions {
   attachments?: MailAttachment[];
 }
 
-export async function sendMail(to: string, subject: string, html: string, options?: SendMailOptions): Promise<boolean> {
+export interface SendMailResult { ok: boolean; error?: string }
+
+/** Come sendMail ma ritorna l'esito dettagliato (con messaggio d'errore). */
+export async function sendMailResult(to: string, subject: string, html: string, options?: SendMailOptions): Promise<SendMailResult> {
   try {
     const cfg = await getSmtpConfig();
 
@@ -61,13 +64,13 @@ export async function sendMail(to: string, subject: string, html: string, option
       if (!res.ok) {
         const err = await res.text();
         console.error("Brevo API error:", err);
-        return false;
+        return { ok: false, error: `Brevo: ${String(err).slice(0, 400)}` };
       }
-      return true;
+      return { ok: true };
     }
 
     // Fallback: SMTP via nodemailer
-    if (!cfg.smtp_host) return false;
+    if (!cfg.smtp_host) return { ok: false, error: "SMTP non configurato" };
 
     const transportConfig: Record<string, unknown> = {
       host: cfg.smtp_host,
@@ -96,11 +99,18 @@ export async function sendMail(to: string, subject: string, html: string, option
         contentType: a.contentType || "application/octet-stream",
       })),
     });
-    return true;
+    return { ok: true };
   } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
     console.error("Email send error:", e);
-    return false;
+    return { ok: false, error: msg.slice(0, 400) };
   }
+}
+
+/** Wrapper retro-compatibile: ritorna solo true/false. */
+export async function sendMail(to: string, subject: string, html: string, options?: SendMailOptions): Promise<boolean> {
+  const r = await sendMailResult(to, subject, html, options);
+  return r.ok;
 }
 
 export async function sendContactNotification(

@@ -704,6 +704,10 @@ model NewsletterSubscriber {
   geoRegion      String?  @db.Text
   geoCountry     String?  @db.VarChar(80)
   geoAt          DateTime?
+  // Esito invio email di conferma: "sent" | "error" | null (in attesa)
+  emailStatus    String?   @db.VarChar(16)
+  emailError     String?   @db.Text
+  emailSentAt    DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 }
