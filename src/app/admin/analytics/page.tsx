@@ -5,7 +5,7 @@ import { BarChart3, Users, Activity, Clock, CalendarDays, Globe, Smartphone, Mon
 
 interface NC { name: string; count: number }
 interface Kpi {
-  unique: number; sessions: number; bounceRate: number;
+  unique: number; avgSeconds: number;
   avg: number; avgUnit: string; periodDays: number;
   minDate: string | null; maxDate: string | null;
 }
@@ -27,6 +27,13 @@ const PIE = ["#8a6d3b", "#b08968", "#cdb38b", "#7d8c7a", "#9c6644", "#6b705c", "
 const fmtD = (s: string) => { try { return new Date(s).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" }); } catch { return s; } };
 const fmtBucket = (s: string, hourly: boolean) => { if (hourly) { const m = s.match(/(\d{2}):00$/); return m ? m[1] + "h" : s; } return fmtD(s); };
 const fmtDT = (s: string) => { try { return new Date(s).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); } catch { return s; } };
+const fmtDur = (sec: number) => {
+  if (!sec || sec < 1) return "0s";
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  if (h) return `${h}h ${m}m`;
+  if (m) return `${m}m ${s}s`;
+  return `${s}s`;
+};
 
 function Bars({ items, color = "#8a6d3b" }: { items: NC[]; color?: string }) {
   const max = Math.max(1, ...items.map((i) => i.count));
@@ -147,12 +154,11 @@ export default function AdminAnalyticsPage() {
       ) : (
         <div className="space-y-6">
           {/* KPI — unica riga */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { i: <Users size={16} />, l: "Visitatori unici", v: k!.unique.toLocaleString("it-IT"), s: "" },
-              { i: <Activity size={16} />, l: "Visite (sessioni)", v: k!.sessions.toLocaleString("it-IT"), s: "visitatore × giorno" },
-              { i: <BarChart3 size={16} />, l: "Bounce rate", v: `${k!.bounceRate}%`, s: "visite a pagina singola" },
-              { i: <Clock size={16} />, l: `Media / ${k!.avgUnit}`, v: k!.avg.toLocaleString("it-IT"), s: "visitatori unici" },
+              { i: <Clock size={16} />, l: "Tempo medio sul sito", v: fmtDur(k!.avgSeconds), s: "permanenza media per sessione" },
+              { i: <Activity size={16} />, l: `Media / ${k!.avgUnit}`, v: k!.avg.toLocaleString("it-IT"), s: "visitatori unici" },
               { i: <CalendarDays size={16} />, l: "Periodo", v: String(k!.periodDays), s: periodLabel },
             ].map((c) => (
               <Card key={c.l}>
@@ -209,7 +215,7 @@ export default function AdminAnalyticsPage() {
 
           {/* Dispositivi + Sistema */}
           <div className="grid md:grid-cols-2 gap-3">
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Smartphone size={15} /> Dispositivo</h3><Pie items={data.devices} /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Smartphone size={15} /> Dispositivo <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.devices} color="#8a6d3b" /></Card>
             <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Monitor size={15} /> Sistema</h3><Bars items={data.systems} color="#6b705c" /></Card>
           </div>
 

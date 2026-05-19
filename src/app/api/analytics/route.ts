@@ -62,12 +62,13 @@ export async function GET(req: Request) {
   const SW = isStore ? W : "WHERE `host`='STORE'";
 
   const [
-    uniqueR, sessR, bounceR, daysR, series, topPages, countries, regions, cities, sources, devices, osR, recent,
+    uniqueR, avgTimeR, daysR, series, topPages, countries, regions, cities, sources, devices, osR, recent,
     sfV, sfP, sfC, sfK, sfOk, sfTop,
   ] = await Promise.all([
     q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${W}`),
-    q(`SELECT COUNT(*) c FROM (SELECT 1 FROM \`PageView\` ${W} GROUP BY \`ipHash\`, ${DAY}) s`),
-    q(`SELECT COUNT(*) c FROM (SELECT \`ipHash\` FROM \`PageView\` ${W} GROUP BY \`ipHash\`, ${DAY} HAVING COUNT(DISTINCT \`path\`)=1) b`),
+    // tempo medio di permanenza per sessione (visitatore × giorno):
+    // ultima vista − prima vista, in secondi, mediato su tutte le sessioni.
+    q(`SELECT AVG(dur) a FROM (SELECT TIMESTAMPDIFF(SECOND, MIN(\`createdAt\`), MAX(\`createdAt\`)) dur FROM \`PageView\` ${W} GROUP BY \`ipHash\`, ${DAY}) s`),
     q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
     q(`SELECT ${BUCKET} b, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY b ORDER BY b`),
     q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY \`path\` ORDER BY v DESC LIMIT 15`),
@@ -96,8 +97,7 @@ export async function GET(req: Request) {
   ]);
 
   const unique = num(uniqueR[0]?.u);
-  const sessions = num(sessR[0]?.c);
-  const bounce = num(bounceR[0]?.c);
+  const avgSeconds = Math.round(num(avgTimeR[0]?.a));
   const seriesArr = series.map((r) => ({ date: String((r as Row).b), views: num((r as Row).v) }));
   const avg = seriesArr.length ? Math.round(seriesArr.reduce((s, x) => s + x.views, 0) / seriesArr.length) : 0;
   const sv = num(sfV[0]?.u);
@@ -112,8 +112,7 @@ export async function GET(req: Request) {
       isStore,
       kpi: {
         unique,
-        sessions,
-        bounceRate: sessions > 0 ? Math.round((bounce / sessions) * 100) : 0,
+        avgSeconds,
         avg,
         avgUnit: isHourly ? "ora" : "giorno",
         periodDays: num(daysR[0]?.d) || 0,
