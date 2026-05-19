@@ -1,34 +1,31 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { BarChart3, Eye, Users, Globe, Smartphone, RefreshCw, CalendarDays, Layers } from "lucide-react";
+import { BarChart3, Users, Activity, Clock, CalendarDays, Globe, Smartphone, Monitor, RefreshCw, ShoppingCart } from "lucide-react";
 
 interface NC { name: string; count: number }
 interface Kpi {
-  views: number; unique: number; avg: number; avgUnit: string;
-  periodDays: number; minDate: string | null; maxDate: string | null;
-  pagesPerUser: number; sito: number; store: number;
+  unique: number; sessions: number; bounceRate: number;
+  avg: number; avgUnit: string; periodDays: number;
+  minDate: string | null; maxDate: string | null;
 }
 interface Data {
-  filterHost: string;
-  range: string;
-  isHourly: boolean;
+  filterHost: string; range: string; isHourly: boolean; isStore: boolean;
   kpi: Kpi;
   series: { date: string; views: number }[];
   topPages: { path: string; count: number }[];
   geo: { countries: NC[]; regions: NC[]; cities: NC[] };
   sources: NC[];
   devices: NC[];
+  systems: NC[];
+  store: { funnel: { name: string; count: number; pct: number }[]; topProducts: { path: string; count: number }[] };
   recent: { path: string; host: string; city: string | null; country: string | null; referrer: string | null; createdAt: string; hits: number }[];
   recentHasMore?: boolean;
 }
 
 const PIE = ["#8a6d3b", "#b08968", "#cdb38b", "#7d8c7a", "#9c6644", "#6b705c", "#a5a58d", "#c9ada7"];
 const fmtD = (s: string) => { try { return new Date(s).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" }); } catch { return s; } };
-const fmtBucket = (s: string, hourly: boolean) => {
-  if (hourly) { const m = s.match(/(\d{2}):00$/); return m ? m[1] + "h" : s; }
-  return fmtD(s);
-};
+const fmtBucket = (s: string, hourly: boolean) => { if (hourly) { const m = s.match(/(\d{2}):00$/); return m ? m[1] + "h" : s; } return fmtD(s); };
 const fmtDT = (s: string) => { try { return new Date(s).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); } catch { return s; } };
 
 function Bars({ items, color = "#8a6d3b" }: { items: NC[]; color?: string }) {
@@ -77,9 +74,7 @@ function Card({ children }: { children: React.ReactNode }) {
   return <div className="bg-white border border-warm-200 rounded-lg p-4">{children}</div>;
 }
 
-const RANGES: [string, string][] = [
-  ["1d", "Ultimo giorno"], ["7d", "7 giorni"], ["30d", "30 giorni"], ["1y", "1 anno"], ["all", "Totale"],
-];
+const RANGES: [string, string][] = [["1d", "Ultimo giorno"], ["7d", "7 giorni"], ["30d", "30 giorni"], ["1y", "1 anno"], ["all", "Totale"]];
 
 export default function AdminAnalyticsPage() {
   const [data, setData] = useState<Data | null>(null);
@@ -123,9 +118,7 @@ export default function AdminAnalyticsPage() {
 
   const k = data?.kpi;
   const maxSeries = Math.max(1, ...(data?.series.map((s) => s.views) || [1]));
-  const periodLabel = k && k.minDate
-    ? `${k.periodDays} ${k.periodDays === 1 ? "giorno" : "giorni"} · ${fmtD(String(k.minDate))}–${fmtD(String(k.maxDate))}`
-    : "—";
+  const periodLabel = k && k.minDate ? `${k.periodDays} ${k.periodDays === 1 ? "giorno" : "giorni"} · ${fmtD(String(k.minDate))}–${fmtD(String(k.maxDate))}` : "—";
 
   return (
     <div className="p-6 md:p-8 w-full">
@@ -134,7 +127,6 @@ export default function AdminAnalyticsPage() {
         <button onClick={load} className="flex items-center gap-1.5 text-sm border border-warm-300 px-3 py-2 rounded-lg hover:bg-warm-50"><RefreshCw size={14} /> Aggiorna</button>
       </div>
 
-      {/* Filtri */}
       <div className="flex flex-wrap gap-2 mb-6">
         <div className="flex rounded-lg overflow-hidden border border-warm-300 text-sm">
           {([["", "Tutto"], ["SITO", "Sito"], ["STORE", "Store"]] as const).map(([v, l]) => (
@@ -154,13 +146,13 @@ export default function AdminAnalyticsPage() {
         <div className="py-20 text-center text-warm-400">Caricamento…</div>
       ) : (
         <div className="space-y-6">
-          {/* KPI */}
+          {/* KPI — unica riga */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {[
-              { i: <Eye size={16} />, l: "Pagine viste", v: k!.views.toLocaleString("it-IT"), s: "" },
               { i: <Users size={16} />, l: "Visitatori unici", v: k!.unique.toLocaleString("it-IT"), s: "" },
-              { i: <BarChart3 size={16} />, l: `Media / ${k!.avgUnit}`, v: k!.avg.toLocaleString("it-IT"), s: "visitatori unici" },
-              { i: <Layers size={16} />, l: "Pagine per utente", v: String(k!.pagesPerUser), s: "media nel periodo" },
+              { i: <Activity size={16} />, l: "Visite (sessioni)", v: k!.sessions.toLocaleString("it-IT"), s: "visitatore × giorno" },
+              { i: <BarChart3 size={16} />, l: "Bounce rate", v: `${k!.bounceRate}%`, s: "visite a pagina singola" },
+              { i: <Clock size={16} />, l: `Media / ${k!.avgUnit}`, v: k!.avg.toLocaleString("it-IT"), s: "visitatori unici" },
               { i: <CalendarDays size={16} />, l: "Periodo", v: String(k!.periodDays), s: periodLabel },
             ].map((c) => (
               <Card key={c.l}>
@@ -171,15 +163,30 @@ export default function AdminAnalyticsPage() {
               </Card>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Card><div className="text-xs text-warm-500 uppercase">Sito principale</div><div className="text-xl font-bold text-warm-900">{k!.sito.toLocaleString("it-IT")}</div><div className="text-[10px] text-warm-400">visitatori unici nel periodo</div></Card>
-            <Card><div className="text-xs text-warm-500 uppercase">Store</div><div className="text-xl font-bold text-warm-900">{k!.store.toLocaleString("it-IT")}</div><div className="text-[10px] text-warm-400">visitatori unici nel periodo</div></Card>
-          </div>
 
-          {/* Andamento */}
+          {/* Funnel STORE — solo con filtro Store */}
+          {data.isStore && (
+            <Card>
+              <h3 className="text-sm font-semibold text-warm-800 mb-1 flex items-center gap-2"><ShoppingCart size={15} /> Funnel acquisto (Store)</h3>
+              <p className="text-[11px] text-warm-400 mb-4">Percorso del visitatore verso l&apos;acquisto — % sui visitatori store.</p>
+              <div className="space-y-3">
+                {data.store.funnel.map((f, i) => (
+                  <div key={f.name}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-warm-700">{f.name}</span>
+                      <span className="text-warm-500">{f.count.toLocaleString("it-IT")} · <strong>{f.pct}%</strong></span>
+                    </div>
+                    <div className="h-4 bg-warm-100 rounded"><div className="h-4 rounded" style={{ width: `${f.pct}%`, background: PIE[i % PIE.length] }} /></div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Andamento (visitatori unici) */}
           <Card>
             <h3 className="text-sm font-semibold text-warm-800 mb-4">Andamento {data.isHourly ? "orario" : "giornaliero"} (visitatori unici)</h3>
-            {data.series.length === 0 ? <p className="text-xs text-warm-400">Nessun dato nel periodo.</p> : (
+            {data.series.length === 0 ? <p className="text-xs text-warm-400">Nessun dato.</p> : (
               <div className="flex items-end gap-1.5 h-44">
                 {data.series.map((s) => (
                   <div key={s.date} className="flex-1 flex flex-col items-center gap-1 group min-w-[8px]">
@@ -192,19 +199,29 @@ export default function AdminAnalyticsPage() {
             )}
           </Card>
 
-          {/* Geo */}
+          {/* Geo (visitatori unici) */}
           <div className="grid md:grid-cols-2 gap-3">
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Globe size={15} /> Nazioni</h3><Pie items={data.geo.countries} /></Card>
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Sorgenti traffico</h3><Pie items={data.sources} /></Card>
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Top città</h3><Bars items={data.geo.cities} color="#9c6644" /></Card>
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Top regioni</h3><Bars items={data.geo.regions} color="#7d8c7a" /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Globe size={15} /> Nazioni <span className="text-[10px] text-warm-400 normal-case">(visitatori unici)</span></h3><Pie items={data.geo.countries} /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Sorgenti traffico <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Pie items={data.sources} /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Top città <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.geo.cities} color="#9c6644" /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Top regioni <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.geo.regions} color="#7d8c7a" /></Card>
           </div>
 
-          {/* Pagine + dispositivi */}
+          {/* Dispositivi + Sistema */}
           <div className="grid md:grid-cols-2 gap-3">
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Pagine più viste</h3><Bars items={data.topPages.map((p) => ({ name: p.path, count: p.count }))} /></Card>
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Smartphone size={15} /> Dispositivi</h3><Pie items={data.devices} /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Smartphone size={15} /> Dispositivo</h3><Pie items={data.devices} /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Monitor size={15} /> Sistema</h3><Bars items={data.systems} color="#6b705c" /></Card>
           </div>
+
+          {/* Pagine / prodotti più visti (visitatori unici) */}
+          {data.isStore ? (
+            <div className="grid md:grid-cols-2 gap-3">
+              <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Prodotti più visti <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.store.topProducts.map((p) => ({ name: p.path, count: p.count }))} /></Card>
+              <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Pagine store più viste <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.topPages.map((p) => ({ name: p.path, count: p.count }))} color="#b08968" /></Card>
+            </div>
+          ) : (
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Pagine più viste <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.topPages.map((p) => ({ name: p.path, count: p.count }))} /></Card>
+          )}
 
           {/* Recenti */}
           <Card>
@@ -231,8 +248,7 @@ export default function AdminAnalyticsPage() {
             </div>
             <div className="mt-4 text-center">
               {recMore ? (
-                <button onClick={loadMore} disabled={recLoading}
-                  className="text-sm border border-warm-300 px-5 py-2 rounded-lg hover:bg-warm-50 disabled:opacity-50">
+                <button onClick={loadMore} disabled={recLoading} className="text-sm border border-warm-300 px-5 py-2 rounded-lg hover:bg-warm-50 disabled:opacity-50">
                   {recLoading ? "Carico…" : "Prosegui ↓"}
                 </button>
               ) : (

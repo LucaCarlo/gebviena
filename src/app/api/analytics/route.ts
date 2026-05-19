@@ -14,30 +14,25 @@ export async function GET(req: Request) {
   const host = hostParam === "SITO" || hostParam === "STORE" ? hostParam : "";
   const rangeParam = (searchParams.get("range") || "all").toLowerCase();
   const RANGE_DAYS: Record<string, number> = { "1d": 1, "7d": 7, "30d": 30, "1y": 365 };
-  const days = RANGE_DAYS[rangeParam]; // undefined => all
+  const days = RANGE_DAYS[rangeParam];
   const isHourly = rangeParam === "1d";
 
   const conds: string[] = [];
   if (host) conds.push(`\`host\` = '${host}'`);
   if (days) conds.push(`\`createdAt\` >= (UTC_TIMESTAMP() - INTERVAL ${days} DAY)`);
   const W = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
-  // condizione solo-data (per lo split sito/store, indipendente dal filtro host)
-  const dateOnly = days ? `WHERE \`createdAt\` >= (UTC_TIMESTAMP() - INTERVAL ${days} DAY)` : "";
 
   const q = <T = Row>(sql: string) => prisma.$queryRawUnsafe<T[]>(sql);
   const DAY = "DATE(CONVERT_TZ(`createdAt`,'+00:00','+02:00'))";
   const HOUR = "DATE_FORMAT(CONVERT_TZ(`createdAt`,'+00:00','+02:00'),'%Y-%m-%d %H:00')";
-  // grana "visita": stesso visitatore + stessa pagina + stesso minuto
-  const DEDUP = "`ipHash`, `path`, DATE_FORMAT(CONVERT_TZ(`createdAt`,'+00:00','+02:00'),'%Y-%m-%d %H:%i')";
   const BUCKET = isHourly ? HOUR : DAY;
+  const DEDUP = "`ipHash`, `path`, DATE_FORMAT(CONVERT_TZ(`createdAt`,'+00:00','+02:00'),'%Y-%m-%d %H:%i')";
 
   const PAGE = 30;
   const recentSql = (offset: number) =>
     `SELECT MAX(\`path\`) p, MAX(\`host\`) h, MAX(\`geoCity\`) c, MAX(\`geoCountry\`) co,
             MAX(\`referrer\`) r, MAX(\`createdAt\`) t, COUNT(*) hits
-       FROM \`PageView\` ${W}
-       GROUP BY ${DEDUP}
-       ORDER BY t DESC LIMIT ${PAGE + 1} OFFSET ${offset}`;
+       FROM \`PageView\` ${W} GROUP BY ${DEDUP} ORDER BY t DESC LIMIT ${PAGE + 1} OFFSET ${offset}`;
   const mapRecent = (rows: Row[]) => rows.map((r) => ({
     path: String(r.p), host: String(r.h || ""),
     city: r.c ? String(r.c) : null, country: r.co ? String(r.co) : null,
@@ -50,48 +45,63 @@ export async function GET(req: Request) {
     return NextResponse.json({ success: true, data: { recent: mapRecent(rec.slice(0, PAGE)), hasMore: rec.length > PAGE } });
   }
 
-  const [viewsR, uniqueR, userPagesR, daysR, perHost, series, topPages, countries, regions, cities, sources, devices, recent] =
-    await Promise.all([
-      q(`SELECT COUNT(*) c FROM (SELECT 1 FROM \`PageView\` ${W} GROUP BY ${DEDUP}) z`),
-      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${W}`),
-      q(`SELECT COUNT(*) c FROM (SELECT 1 FROM \`PageView\` ${W} GROUP BY \`ipHash\`, \`path\`) z`),
-      q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
-      q(`SELECT \`host\`, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${dateOnly} GROUP BY \`host\``),
-      q(`SELECT ${BUCKET} b, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY b ORDER BY b`),
-      q(`SELECT p, COUNT(*) v FROM (SELECT \`path\` p FROM \`PageView\` ${W} GROUP BY ${DEDUP}) t GROUP BY p ORDER BY v DESC LIMIT 15`),
-      q(`SELECT COALESCE(NULLIF(\`geoCountry\`,''),'(sconosciuto)') n, COUNT(*) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
-      q(`SELECT COALESCE(NULLIF(\`geoRegion\`,''),'(sconosciuto)') n, COUNT(*) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
-      q(`SELECT COALESCE(NULLIF(\`geoCity\`,''),'(sconosciuto)') n, COUNT(*) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 15`),
-      q(`SELECT CASE
-            WHEN \`referrer\` IS NULL OR \`referrer\`='' OR \`referrer\` LIKE '%gebruederthonetvienna.com%' THEN 'Diretto / interno'
-            WHEN \`referrer\` LIKE '%facebook%' OR \`referrer\` LIKE '%fbclid%' OR \`referrer\` LIKE '%fb.%' THEN 'Facebook'
-            WHEN \`referrer\` LIKE '%instagram%' OR \`referrer\` LIKE '%ig.%' THEN 'Instagram'
-            WHEN \`referrer\` LIKE '%mailchi%' OR \`referrer\` LIKE '%list-manage%' OR \`referrer\` LIKE '%utm_medium=email%' OR \`referrer\` LIKE '%brid=%' THEN 'Email'
-            WHEN \`referrer\` LIKE '%google%' THEN 'Google'
-            WHEN \`referrer\` LIKE '%bing%' THEN 'Bing'
-            WHEN \`referrer\` LIKE '%t.co%' OR \`referrer\` LIKE '%twitter%' OR \`referrer\` LIKE '%x.com%' THEN 'X / Twitter'
-            ELSE 'Altro' END src, COUNT(*) v
-          FROM \`PageView\` ${W} GROUP BY src ORDER BY v DESC`),
-      q(`SELECT CASE
-            WHEN \`userAgent\` LIKE '%Mobi%' OR \`userAgent\` LIKE '%Android%' OR \`userAgent\` LIKE '%iPhone%' THEN 'Mobile'
-            WHEN \`userAgent\` LIKE '%iPad%' OR \`userAgent\` LIKE '%Tablet%' THEN 'Tablet'
-            ELSE 'Desktop' END dev, COUNT(*) v
-          FROM \`PageView\` ${W} GROUP BY dev ORDER BY v DESC`),
-      q(recentSql(0)),
-    ]);
+  const OS = `CASE
+      WHEN \`userAgent\` LIKE '%iPhone%' THEN 'iPhone (iOS)'
+      WHEN \`userAgent\` LIKE '%iPad%' THEN 'iPad (iOS)'
+      WHEN \`userAgent\` LIKE '%Android%' THEN 'Android'
+      WHEN \`userAgent\` LIKE '%Windows%' THEN 'Windows'
+      WHEN \`userAgent\` LIKE '%Macintosh%' OR \`userAgent\` LIKE '%Mac OS%' THEN 'Mac'
+      WHEN \`userAgent\` LIKE '%Linux%' OR \`userAgent\` LIKE '%CrOS%' THEN 'Linux/Chrome OS'
+      ELSE 'Altro' END`;
+  const DEV = `CASE
+      WHEN \`userAgent\` LIKE '%iPad%' OR \`userAgent\` LIKE '%Tablet%' THEN 'Tablet'
+      WHEN \`userAgent\` LIKE '%Mobi%' OR \`userAgent\` LIKE '%iPhone%' OR \`userAgent\` LIKE '%Android%' THEN 'Mobile'
+      ELSE 'Desktop' END`;
 
-  const views = num(viewsR[0]?.c);
+  const isStore = host === "STORE";
+  const SW = isStore ? W : "WHERE `host`='STORE'";
+
+  const [
+    uniqueR, sessR, bounceR, daysR, series, topPages, countries, regions, cities, sources, devices, osR, recent,
+    sfV, sfP, sfC, sfK, sfOk, sfTop,
+  ] = await Promise.all([
+    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${W}`),
+    q(`SELECT COUNT(*) c FROM (SELECT 1 FROM \`PageView\` ${W} GROUP BY \`ipHash\`, ${DAY}) s`),
+    q(`SELECT COUNT(*) c FROM (SELECT \`ipHash\` FROM \`PageView\` ${W} GROUP BY \`ipHash\`, ${DAY} HAVING COUNT(DISTINCT \`path\`)=1) b`),
+    q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
+    q(`SELECT ${BUCKET} b, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY b ORDER BY b`),
+    q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY \`path\` ORDER BY v DESC LIMIT 15`),
+    q(`SELECT COALESCE(NULLIF(\`geoCountry\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
+    q(`SELECT COALESCE(NULLIF(\`geoRegion\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
+    q(`SELECT COALESCE(NULLIF(\`geoCity\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 15`),
+    q(`SELECT CASE
+          WHEN \`referrer\` IS NULL OR \`referrer\`='' OR \`referrer\` LIKE '%gebruederthonetvienna.com%' THEN 'Diretto / interno'
+          WHEN \`referrer\` LIKE '%facebook%' OR \`referrer\` LIKE '%fbclid%' OR \`referrer\` LIKE '%fb.%' THEN 'Facebook'
+          WHEN \`referrer\` LIKE '%instagram%' THEN 'Instagram'
+          WHEN \`referrer\` LIKE '%mailchi%' OR \`referrer\` LIKE '%list-manage%' OR \`referrer\` LIKE '%utm_medium=email%' OR \`referrer\` LIKE '%brid=%' THEN 'Email'
+          WHEN \`referrer\` LIKE '%google%' THEN 'Google'
+          WHEN \`referrer\` LIKE '%bing%' THEN 'Bing'
+          ELSE 'Altro' END src, COUNT(DISTINCT \`ipHash\`) v
+        FROM \`PageView\` ${W} GROUP BY src ORDER BY v DESC`),
+    q(`SELECT ${DEV} dev, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY dev ORDER BY v DESC`),
+    q(`SELECT ${OS} os, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY os ORDER BY v DESC`),
+    q(recentSql(0)),
+    // ---- funnel STORE (sempre calcolato sul traffico STORE del periodo) ----
+    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW}`),
+    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%'`),
+    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%carrello%'`),
+    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout%' AND \`path\` NOT LIKE '%success%'`),
+    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout/success%'`),
+    q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%' GROUP BY \`path\` ORDER BY v DESC LIMIT 15`),
+  ]);
+
   const unique = num(uniqueR[0]?.u);
-  const distinctUserPages = num(userPagesR[0]?.c);
-  const periodDays = num(daysR[0]?.d) || 0;
-  // serie = visitatori unici per giorno/ora
+  const sessions = num(sessR[0]?.c);
+  const bounce = num(bounceR[0]?.c);
   const seriesArr = series.map((r) => ({ date: String((r as Row).b), views: num((r as Row).v) }));
-  // media = visitatori unici medi per giorno (o per ora se periodo = 1 giorno)
-  const avgUnique = seriesArr.length
-    ? Math.round(seriesArr.reduce((s, x) => s + x.views, 0) / seriesArr.length)
-    : 0;
-  const ph: Record<string, number> = {};
-  for (const r of perHost) ph[String((r as Row).host || "?")] = num((r as Row).v);
+  const avg = seriesArr.length ? Math.round(seriesArr.reduce((s, x) => s + x.views, 0) / seriesArr.length) : 0;
+  const sv = num(sfV[0]?.u);
+  const pct = (a: number) => (sv > 0 ? Math.round((a / sv) * 100) : 0);
 
   return NextResponse.json({
     success: true,
@@ -99,17 +109,16 @@ export async function GET(req: Request) {
       filterHost: host || "ALL",
       range: rangeParam,
       isHourly,
+      isStore,
       kpi: {
-        views,
         unique,
-        avg: avgUnique,
+        sessions,
+        bounceRate: sessions > 0 ? Math.round((bounce / sessions) * 100) : 0,
+        avg,
         avgUnit: isHourly ? "ora" : "giorno",
-        periodDays,
+        periodDays: num(daysR[0]?.d) || 0,
         minDate: daysR[0]?.mn || null,
         maxDate: daysR[0]?.mx || null,
-        pagesPerUser: unique > 0 ? Math.round((distinctUserPages / unique) * 10) / 10 : 0,
-        sito: ph["SITO"] || 0,
-        store: ph["STORE"] || 0,
       },
       series: seriesArr,
       topPages: topPages.map((r) => ({ path: String((r as Row).p), count: num((r as Row).v) })),
@@ -120,6 +129,20 @@ export async function GET(req: Request) {
       },
       sources: sources.map((r) => ({ name: String((r as Row).src), count: num((r as Row).v) })),
       devices: devices.map((r) => ({ name: String((r as Row).dev), count: num((r as Row).v) })),
+      systems: osR.map((r) => ({ name: String((r as Row).os), count: num((r as Row).v) })),
+      store: {
+        funnel: [
+          { name: "Visitatori store", count: sv, pct: 100 },
+          { name: "Hanno visto un prodotto", count: num(sfP[0]?.u), pct: pct(num(sfP[0]?.u)) },
+          { name: "Arrivati al carrello", count: num(sfC[0]?.u), pct: pct(num(sfC[0]?.u)) },
+          { name: "Arrivati al checkout", count: num(sfK[0]?.u), pct: pct(num(sfK[0]?.u)) },
+          { name: "Ordine completato", count: num(sfOk[0]?.u), pct: pct(num(sfOk[0]?.u)) },
+        ],
+        topProducts: sfTop.map((r) => ({
+          path: String((r as Row).p).replace(/^\/(fr\/)?prodotti\//, ""),
+          count: num((r as Row).v),
+        })),
+      },
       recent: mapRecent(recent.slice(0, PAGE)),
       recentHasMore: recent.length > PAGE,
     },
