@@ -66,9 +66,17 @@ export async function GET(req: Request) {
     sfV, sfP, sfC, sfK, sfOk, sfTop,
   ] = await Promise.all([
     q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${W}`),
-    // tempo medio di permanenza per sessione (visitatore × giorno):
-    // ultima vista − prima vista, in secondi, mediato su tutte le sessioni.
-    q(`SELECT AVG(dur) a FROM (SELECT TIMESTAMPDIFF(SECOND, MIN(\`createdAt\`), MAX(\`createdAt\`)) dur FROM \`PageView\` ${W} GROUP BY \`ipHash\`, ${DAY}) s`),
+    // tempo medio di permanenza per SESSIONE reale: nuova sessione dopo 30
+    // min di inattività (come Google Analytics). Durata = ultima − prima
+    // vista nella sessione, mediata su tutte le sessioni.
+    q(`WITH seq AS (
+          SELECT \`ipHash\` h, UNIX_TIMESTAMP(\`createdAt\`) ts,
+                 LAG(UNIX_TIMESTAMP(\`createdAt\`)) OVER (PARTITION BY \`ipHash\` ORDER BY \`createdAt\`) prev
+          FROM \`PageView\` ${W}
+        ),
+        flagged AS (SELECT h, ts, CASE WHEN prev IS NULL OR ts - prev > 1800 THEN 1 ELSE 0 END nw FROM seq),
+        sess AS (SELECT h, ts, SUM(nw) OVER (PARTITION BY h ORDER BY ts) sid FROM flagged)
+        SELECT AVG(d) a FROM (SELECT MAX(ts)-MIN(ts) d FROM sess GROUP BY h, sid) x`),
     q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
     q(`SELECT ${BUCKET} b, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY b ORDER BY b`),
     q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY \`path\` ORDER BY v DESC LIMIT 15`),
