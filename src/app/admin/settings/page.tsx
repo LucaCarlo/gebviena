@@ -16,6 +16,7 @@ import {
   Languages,
   Share2,
   MapPin,
+  CreditCard,
   Cookie,
 } from "lucide-react";
 
@@ -55,7 +56,7 @@ interface BackupPreview {
   [key: string]: number;
 }
 
-type TabKey = "smtp" | "recaptcha" | "iubenda" | "languages" | "translations" | "social" | "maps" | "stats" | "backup" | "storage";
+type TabKey = "smtp" | "recaptcha" | "iubenda" | "languages" | "translations" | "social" | "maps" | "analytics" | "payments" | "stats" | "backup" | "storage";
 
 interface TabDef {
   key: TabKey;
@@ -71,6 +72,8 @@ const TABS: TabDef[] = [
   { key: "translations", label: "Traduzioni AI", icon: Languages },
   { key: "social", label: "Social", icon: Share2 },
   { key: "maps", label: "Google Maps", icon: MapPin },
+  { key: "analytics", label: "Analytics / GTM", icon: BarChart3 },
+  { key: "payments", label: "Pagamenti", icon: CreditCard },
   { key: "stats", label: "Statistiche", icon: BarChart3 },
   { key: "backup", label: "Backup", icon: Database },
   { key: "storage", label: "Storage Cloud", icon: Cloud },
@@ -1118,6 +1121,182 @@ function IubendaTab({ showToast }: { showToast: (m: string, t: "success" | "erro
 
 // ─── Google Maps Tab ─────────────────────────────────────────────────────────
 
+function AnalyticsTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
+  const [form, setForm] = useState({
+    gtm_site_id: "",
+    gtm_store_id: "",
+    ga4_id: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings?group=analytics")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          const next = { ...form };
+          for (const s of data.data) {
+            if (s.key in next) (next as Record<string, string>)[s.key] = s.value;
+          }
+          setForm(next);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const settings = Object.entries(form).map(([key, value]) => ({ key, value, group: "analytics" }));
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (data.success) showToast("Impostazioni analytics salvate", "success");
+      else showToast(data.error || "Errore", "error");
+    } catch {
+      showToast("Errore di connessione", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const Field = ({ k, label, ph, hint }: { k: keyof typeof form; label: string; ph: string; hint: string }) => (
+    <div>
+      <label className="block text-sm font-medium text-warm-800 mb-1.5">{label}</label>
+      <input
+        type="text"
+        value={form[k]}
+        onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+        placeholder={ph}
+        className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm font-mono focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+      />
+      <p className="text-xs text-warm-500 mt-1.5">{hint}</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-light text-warm-900">Analytics / Google Tag Manager</h2>
+        <p className="text-sm text-warm-500 mt-1">
+          Container GTM caricati automaticamente: il sito principale usa l&apos;ID Sito, lo store usa l&apos;ID Store.
+          GA4 viene gestito tramite i container GTM. Le modifiche sono attive al primo caricamento pagina.
+        </p>
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
+        <Field k="gtm_site_id" label="GTM — Sito principale" ph="GTM-XXXXXXX"
+          hint="Container Google Tag Manager per gebruederthonetvienna.com" />
+        <Field k="gtm_store_id" label="GTM — Store" ph="GTM-XXXXXXX"
+          hint="Container Google Tag Manager per store.gebruederthonetvienna.com" />
+        <Field k="ga4_id" label="ID misurazione GA4" ph="G-XXXXXXXXXX"
+          hint="ID GA4 (di riferimento; il tracciamento avviene tramite i container GTM sopra)" />
+        {!form.gtm_site_id.trim() && !form.gtm_store_id.trim() && (
+          <div className="text-xs px-3 py-2 rounded bg-amber-50 border border-amber-200 text-amber-800">
+            ⚠ Senza ID GTM il tracciamento Google non è attivo. Inserisci almeno un container.
+          </div>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-warm-800 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50"
+        >
+          {saving ? "Salvataggio..." : "Salva"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PaymentsTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
+  const [form, setForm] = useState({
+    pay_bonifico_enabled: "false",
+    pay_paypal_enabled: "false",
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings?group=payments")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          const next = { ...form };
+          for (const s of data.data) {
+            if (s.key in next) (next as Record<string, string>)[s.key] = s.value;
+          }
+          setForm(next);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const settings = Object.entries(form).map(([key, value]) => ({ key, value, group: "payments" }));
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (data.success) showToast("Impostazioni pagamenti salvate", "success");
+      else showToast(data.error || "Errore", "error");
+    } catch {
+      showToast("Errore di connessione", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const Toggle = ({ k, label, hint }: { k: keyof typeof form; label: string; hint: string }) => {
+    const on = form[k] === "true";
+    return (
+      <div className="flex items-start justify-between gap-4 py-3 border-b border-warm-100 last:border-0">
+        <div>
+          <div className="text-sm font-medium text-warm-800">{label}</div>
+          <p className="text-xs text-warm-500 mt-1">{hint}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setForm({ ...form, [k]: on ? "false" : "true" })}
+          className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${on ? "bg-warm-800" : "bg-warm-300"}`}
+          aria-pressed={on}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? "translate-x-5" : ""}`} />
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-light text-warm-900">Metodi di pagamento</h2>
+        <p className="text-sm text-warm-500 mt-1">
+          Abilita o disabilita i metodi di pagamento alternativi a carta di credito. Disabilitati di default:
+          l&apos;integrazione vera e propria al checkout verrà gestita in un secondo momento.
+        </p>
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+        <Toggle k="pay_bonifico_enabled" label="Bonifico bancario"
+          hint="Consenti il pagamento tramite bonifico bancario." />
+        <Toggle k="pay_paypal_enabled" label="PayPal"
+          hint="Consenti il pagamento tramite PayPal." />
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="mt-5 bg-warm-800 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50"
+        >
+          {saving ? "Salvataggio..." : "Salva"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MapsTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
   const [form, setForm] = useState({
     maps_provider: "leaflet",
@@ -1611,6 +1790,10 @@ export default function AdminSettingsPage() {
         return <SocialTab showToast={showToast} />;
       case "maps":
         return <MapsTab showToast={showToast} />;
+      case "analytics":
+        return <AnalyticsTab showToast={showToast} />;
+      case "payments":
+        return <PaymentsTab showToast={showToast} />;
       case "iubenda":
         return <IubendaTab showToast={showToast} />;
     }

@@ -29,6 +29,9 @@ const COMPANY = {
   website: "gebruederthonetvienna.com",
 };
 
+/** Indirizzo showroom dove il cliente ritira l'ordine (ritiro al punto vendita). */
+const PICKUP_ADDRESS = "Via Foggia 23H – 10125 Torino (Italy)";
+
 // Logo GTV identico a quello dell'header del sito (logo.webp convertito in
 // PNG perché pdfkit non legge webp). Fallback al logo email se assente.
 const LOGO_CANDIDATES = [
@@ -90,6 +93,7 @@ export interface OrderWithItems {
   taxRateBp: number;
   unboxingFeeCents: number;
   shippingFloor: number | null;
+  storePickup?: boolean;
   customerNotes: string | null;
   paidAt: Date | null;
   createdAt: Date;
@@ -108,6 +112,13 @@ function parseAddress(json: string): {
   street?: string; city?: string; province?: string; postalCode?: string; country?: string;
 } {
   try { return JSON.parse(json); } catch { return {}; }
+}
+
+function floorLabel(n: number | null | undefined, isFr: boolean): string {
+  const it = ["Piano terra", "1° piano", "2° piano", "3° piano", "4° piano", "5° piano o oltre"];
+  const fr = ["Rez-de-chaussée", "1er étage", "2e étage", "3e étage", "4e étage", "5e étage ou plus"];
+  const i = Math.max(0, Math.min(5, n ?? 0));
+  return (isFr ? fr : it)[i];
 }
 
 function parseAttrs(s: string | null): string {
@@ -158,6 +169,29 @@ function buildHtml(order: OrderWithItems, deliveryStr: string): string {
 
         <tr><td style="padding:28px 32px 8px 32px;">
           ${bodyHtml}
+        </td></tr>
+
+        <tr><td style="padding:0 32px 20px 32px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e2db;border-radius:4px;">
+            ${order.storePickup ? `<tr><td style="padding:12px 16px;font-size:13px;color:#333;${order.customerNotes && order.customerNotes.trim() ? "border-bottom:1px solid #f0ede6;" : ""}">
+              <strong style="color:#555;">${isFr ? "Livraison" : "Spedizione"}:</strong>
+              ${isFr ? "Retrait en magasin" : "Ritiro al punto di vendita"}<br>
+              <span style="color:#666;">${escape(PICKUP_ADDRESS)}</span>
+            </td></tr>` : `<tr><td style="padding:12px 16px;border-bottom:1px solid #f0ede6;font-size:13px;color:#333;">
+              <strong style="color:#555;">${isFr ? "Livraison standard" : "Spedizione standard"}:</strong>
+              ${order.shippingCents > 0
+                ? escape(new Intl.NumberFormat(isFr ? "fr-FR" : "it-IT", { style: "currency", currency: order.currency }).format(order.shippingCents / 100))
+                : (isFr ? "Offerte" : "Gratuita")}
+            </td></tr>
+            <tr><td style="padding:12px 16px;font-size:13px;color:#333;${order.customerNotes && order.customerNotes.trim() ? "border-bottom:1px solid #f0ede6;" : ""}">
+              <strong style="color:#555;">${isFr ? "Étage de livraison" : "Piano di consegna"}:</strong>
+              ${escape(floorLabel(order.shippingFloor, isFr))}
+            </td></tr>`}
+            ${order.customerNotes && order.customerNotes.trim() ? `<tr><td style="padding:12px 16px;font-size:13px;color:#333;">
+              <strong style="color:#555;">${isFr ? "Remarques" : "Note"}:</strong>
+              ${escape(order.customerNotes.trim())}
+            </td></tr>` : ""}
+          </table>
         </td></tr>
 
         <tr><td style="padding:16px 32px;background:#faf8f3;border-top:1px solid #e5e2db;font-size:11px;color:#888;line-height:1.6;">
@@ -236,6 +270,11 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
             vatLabel: (rate: number) => `TVA France ${rate}%`,
             grandTotal: "Total TTC",
             shipping: "Livraison",
+            shippingFreeRow: "Livraison standard : offerte",
+            storePickupRow: "Retrait en magasin",
+            storePickupAddr: `Retrait au showroom : ${PICKUP_ADDRESS}`,
+            shipFloor: "Étage de livraison",
+            notes: "Remarques du client",
             unboxing: "Déballage et reprise emballages",
             shippingFree: "Offerte",
             docNote: "Document de confirmation de commande. Ne constitue pas un document fiscal.",
@@ -258,6 +297,11 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
             vatLabel: (rate: number) => `IVA Italia ${rate}%`,
             grandTotal: "Totale IVA inclusa",
             shipping: "Spedizione",
+            shippingFreeRow: "Spedizione standard: gratuita",
+            storePickupRow: "Ritiro al punto di vendita",
+            storePickupAddr: `Ritiro presso lo showroom: ${PICKUP_ADDRESS}`,
+            shipFloor: "Piano di consegna",
+            notes: "Note del cliente",
             unboxing: "Disimballo e smaltimento imballi",
             shippingFree: "Gratuita",
             docNote: "Documento di conferma ordine. Non costituisce documento fiscale.",
@@ -307,6 +351,25 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
       if (order.customerTaxId) {
         doc.text(`${isFr ? "N° TVA / Code fiscal" : "P.IVA / C.F."}: ${order.customerTaxId}`, 50, y);
         y += 13;
+      }
+      if (order.storePickup) {
+        doc.font(FB).fillColor("#111").text(`${t.shipping}: `, 50, y, { continued: true });
+        doc.font(F).fillColor("#333").text(t.storePickupRow);
+        y += 13;
+        doc.font(F).fillColor("#555").fontSize(9).text(t.storePickupAddr, 50, y);
+        doc.fontSize(10);
+        y += 13;
+      } else {
+        doc.font(FB).fillColor("#111").text(`${t.shipFloor}: `, 50, y, { continued: true });
+        doc.font(F).fillColor("#333").text(floorLabel(order.shippingFloor, isFr));
+        y += 13;
+      }
+      if (order.customerNotes && order.customerNotes.trim()) {
+        const note = order.customerNotes.trim();
+        doc.font(FB).fontSize(10).fillColor("#111").text(`${t.notes}:`, 50, y);
+        y += 13;
+        doc.font(F).fontSize(10).fillColor("#333").text(note, 50, y, { width: 500 });
+        y += doc.heightOfString(note, { width: 500 }) + 2;
       }
 
       y += 14;
@@ -372,7 +435,8 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
         y += 22;
       };
       rowTotal(t.taxBase, eur(taxableBaseCents));
-      if (order.shippingCents > 0) rowTotal(t.shipping, eur(order.shippingCents));
+      if (order.storePickup) rowTotal(t.shipping, t.storePickupRow);
+      else if (order.shippingCents > 0) rowTotal(t.shipping, eur(order.shippingCents));
       else rowTotal(t.shipping, t.shippingFree);
       if (order.unboxingFeeCents > 0) rowTotal(t.unboxing, eur(order.unboxingFeeCents));
       rowTotal(t.vatLabel(vatRatePct), eur(order.taxCents));
@@ -480,7 +544,12 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
       <p style="margin:0 0 14px;"><strong>Procedere con la preparazione e la spedizione dell'ordine.</strong> In allegato il PDF con tutti i dettagli.</p>
       <p style="margin:0 0 4px;"><strong>Cliente:</strong> ${escape(order.firstName)} ${escape(order.lastName)} — ${escape(order.email)}${order.phone ? " — ☎ " + escape(order.phone) : ""}</p>
       ${order.customerTaxId ? `<p style="margin:0 0 4px;"><strong>P.IVA/C.F.:</strong> ${escape(order.customerTaxId)}</p>` : ""}
-      <p style="margin:0 0 4px;"><strong>Spedire a:</strong> ${escape(order.firstName)} ${escape(order.lastName)}, ${escape(ship.street || "")}, ${escape(ship.postalCode || "")} ${escape(ship.city || "")}${ship.province ? " (" + escape(ship.province) + ")" : ""} — ${escape(ship.country || "")}</p>
+      ${order.storePickup
+        ? `<p style="margin:8px 0 4px;padding:8px 10px;background:#e7f5ee;border-left:3px solid #1e9e63;"><strong>RITIRO AL PUNTO DI VENDITA</strong> — nessuna spedizione. Il cliente ritira presso lo showroom: ${escape(PICKUP_ADDRESS)}</p>`
+        : `<p style="margin:0 0 4px;"><strong>Spedire a:</strong> ${escape(order.firstName)} ${escape(order.lastName)}, ${escape(ship.street || "")}, ${escape(ship.postalCode || "")} ${escape(ship.city || "")}${ship.province ? " (" + escape(ship.province) + ")" : ""} — ${escape(ship.country || "")}</p>
+      <p style="margin:0 0 4px;"><strong>Piano di consegna:</strong> ${escape(floorLabel(order.shippingFloor, false))}</p>
+      <p style="margin:0 0 4px;"><strong>Spedizione standard:</strong> ${order.shippingCents > 0 ? escape(eur(order.shippingCents)) : "Gratuita"}</p>`}
+      ${order.customerNotes && order.customerNotes.trim() ? `<p style="margin:8px 0 4px;padding:8px 10px;background:#fff8e1;border-left:3px solid #e0a800;"><strong>Note del cliente:</strong> ${escape(order.customerNotes.trim())}</p>` : ""}
       <p style="margin:14px 0 6px;"><strong>Articoli:</strong></p>
       <ul style="margin:0 0 14px;padding-left:20px;">${itemsList}</ul>
       <p style="margin:0;font-size:15px;"><strong>Totale ordine: ${eur(order.totalCents)}</strong></p>

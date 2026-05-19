@@ -85,6 +85,13 @@ const DEFINITIONS: SettingDef[] = [
     placeholder: "4–6 semaines",
     hint: "Versione francese mostrata quando lo store è in francese (es. \"4–6 semaines\", \"Livraison rapide\", \"Sur commande\").",
   },
+  {
+    key: "store.fb_pixel_id",
+    group: "store_general",
+    label: "Facebook / Meta Pixel ID",
+    placeholder: "1358148166154402",
+    hint: "ID del pixel Meta usato per le campagne sponsorizzate. Solo il numero (es. 1358148166154402). Lascia vuoto per disattivare il tracciamento Facebook.",
+  },
 
   // ── Email ──
   {

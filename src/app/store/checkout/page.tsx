@@ -41,6 +41,7 @@ interface LiveQuote {
   totalCents: number;
   freeShippingApplied: boolean;
   resolvedRegion: string | null;
+  storePickup?: boolean;
   billableVolumeM3?: number;
   totalVolumeM3?: number;
   missing?: string;
@@ -78,6 +79,7 @@ export default function CheckoutPage() {
     country: "IT",
     shippingFloor: "0",
     withUnboxingService: false,
+    storePickup: false,
     customerNotes: "",
   });
 
@@ -120,6 +122,7 @@ export default function CheckoutPage() {
           province: form.province,
           shippingFloor: Number(form.shippingFloor) || 0,
           withUnboxingService: form.withUnboxingService === true,
+          storePickup: form.storePickup === true,
         }),
         signal: ctrl.signal,
       })
@@ -130,14 +133,16 @@ export default function CheckoutPage() {
     }, 350);
     return () => { clearTimeout(t); ctrl.abort(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, itemsFingerprint, form.country, form.postalCode, form.province, form.shippingFloor, form.withUnboxingService]);
+  }, [phase, itemsFingerprint, form.country, form.postalCode, form.province, form.shippingFloor, form.withUnboxingService, form.storePickup]);
 
   const submitAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Validazione minima
-    const required = ["email", "firstName", "lastName", "phone", "taxId", "street", "city", "postalCode", "country"];
+    // Validazione minima. Con ritiro in negozio non serve l'indirizzo di spedizione.
+    const required = form.storePickup
+      ? ["email", "firstName", "lastName", "phone", "taxId"]
+      : ["email", "firstName", "lastName", "phone", "taxId", "street", "city", "postalCode", "country"];
     for (const k of required) {
       if (!form[k as keyof typeof form]?.toString().trim()) {
         setError(t("Compila tutti i campi obbligatori.", "Veuillez remplir tous les champs obligatoires."));
@@ -163,15 +168,18 @@ export default function CheckoutPage() {
             phone: form.phone,
             taxId: form.taxId,
           },
-          shippingAddress: {
-            street: form.street,
-            city: form.city,
-            province: form.province,
-            postalCode: form.postalCode,
-            country: form.country,
-          },
+          shippingAddress: form.storePickup
+            ? { street: "Via Foggia 23H", city: "Torino", province: "TO", postalCode: "10125", country: "IT" }
+            : {
+                street: form.street,
+                city: form.city,
+                province: form.province,
+                postalCode: form.postalCode,
+                country: form.country,
+              },
           shippingFloor: Number(form.shippingFloor) || 0,
           withUnboxingService: form.withUnboxingService === true,
+          storePickup: form.storePickup === true,
           customerNotes: form.customerNotes,
           lang,
         }),
@@ -255,6 +263,29 @@ export default function CheckoutPage() {
               </div>
 
               <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">{t("Consegna", "Livraison")}</div>
+
+              <label className={`flex items-start gap-3 cursor-pointer rounded-lg border-2 p-4 transition-colors ${form.storePickup ? "border-warm-800 bg-warm-50" : "border-warm-300 bg-white hover:border-warm-400"}`}>
+                <input
+                  type="checkbox"
+                  checked={form.storePickup}
+                  onChange={(e) => updateField("storePickup", e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-warm-800"
+                />
+                <span className="text-[13px] text-warm-800">
+                  <strong className="block text-sm mb-0.5">{t("Ritiro al punto di vendita — spedizione gratuita", "Retrait en magasin — livraison offerte")}</strong>
+                  {t("Ritiri il tuo ordine direttamente nello showroom: Via Foggia 23H – 10125 Torino. Nessun costo di spedizione.", "Retirez votre commande directement au showroom : Via Foggia 23H – 10125 Turin. Aucun frais de livraison.")}
+                </span>
+              </label>
+
+              {form.storePickup ? (
+                <div className="text-[12px] text-warm-700 bg-warm-50 border border-warm-200 rounded p-3 leading-[1.6]">
+                  {t(
+                    "Hai scelto il ritiro al punto di vendita: nessun costo di spedizione né consegna al piano. Ti contatteremo per concordare il giorno del ritiro presso lo showroom di Via Foggia 23H – 10125 Torino.",
+                    "Vous avez choisi le retrait en magasin : aucun frais de livraison ni de livraison à l'étage. Nous vous contacterons pour convenir du jour de retrait au showroom Via Foggia 23H – 10125 Turin.",
+                  )}
+                </div>
+              ) : (
+              <>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[13px] text-warm-700 mb-1.5">{t("Piano dove scaricare il pacco", "Étage de livraison")}</label>
@@ -301,6 +332,8 @@ export default function CheckoutPage() {
                   )}
                 </p>
               </div>
+              </>
+              )}
 
               {/* Reminder spedizione gratuita (solo se mancano <= 200€ alla soglia) */}
               {(() => {
@@ -369,7 +402,15 @@ export default function CheckoutPage() {
           </div>
           <div className="border-t border-warm-200 pt-3 space-y-1.5 text-sm">
             <Row label={t("Subtotale", "Sous-total")} value={eur(intent?.subtotalCents ?? quote?.subtotalCents ?? subtotalCents)} />
-            {intent ? (
+            {form.storePickup ? (
+              <>
+                <Row
+                  label={t("Spedizione", "Livraison")}
+                  value={t("Ritiro al punto di vendita — gratuito", "Retrait en magasin — offert")}
+                />
+                {intent && <Row label={t("(IVA inclusa)", "(TVA incluse)")} value={eur(intent.taxCents)} subtle />}
+              </>
+            ) : intent ? (
               <>
                 <Row
                   label={`${t("Spedizione standard", "Livraison standard")}${intent.resolvedRegion ? ` · ${intent.resolvedRegion}` : ""}`}
