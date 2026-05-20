@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useLang } from "@/contexts/I18nContext";
+import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
 
 export interface FieldConfig {
   key: string;
@@ -52,6 +53,7 @@ export default function SubscribeForm({
   const router = useRouter();
   const pathname = usePathname();
   const lang = useLang();
+  const { executeRecaptcha } = useRecaptcha();
   const inviteToken = searchParams.get("inv") || "";
   const tracked = useRef(false);
 
@@ -107,10 +109,11 @@ export default function SubscribeForm({
     if (!validate()) return;
     setSubmitting(true);
     try {
+      const recaptchaToken = executeRecaptcha ? await executeRecaptcha("landing_svendita_subscribe") : "";
       const res = await fetch("/api/landing/accesso-svendita-gtv/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-gtv-lang": lang || "it" },
-        body: JSON.stringify({ ...form, inviteToken: inviteToken || undefined, lang: lang || "it" }),
+        body: JSON.stringify({ ...form, inviteToken: inviteToken || undefined, lang: lang || "it", recaptchaToken }),
       });
       const data = await res.json();
       if (data.success) {

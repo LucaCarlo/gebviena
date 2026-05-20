@@ -65,16 +65,23 @@ export default function RecaptchaProvider({ children }: { children: React.ReactN
 
   const executeRecaptcha = useCallback(
     async (action: string): Promise<string> => {
-      if (!enabled || !siteKey || !ready || !window.grecaptcha) {
-        return "";
+      if (!enabled || !siteKey) return "";
+      // Aspetta che enterprise.js sia caricato (no race se l'utente invia
+      // subito): poll fino a ~7s, poi grecaptcha.enterprise.ready, poi execute.
+      const start = Date.now();
+      while (!window.grecaptcha?.enterprise && Date.now() - start < 7000) {
+        await new Promise((r) => setTimeout(r, 150));
       }
+      const ge = window.grecaptcha?.enterprise;
+      if (!ge) return "";
       try {
-        return await window.grecaptcha.enterprise.execute(siteKey, { action });
+        await new Promise<void>((res) => ge.ready(() => res()));
+        return await ge.execute(siteKey, { action });
       } catch {
         return "";
       }
     },
-    [enabled, siteKey, ready]
+    [enabled, siteKey]
   );
 
   return (

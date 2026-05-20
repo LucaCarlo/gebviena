@@ -1,188 +1,269 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BarChart3, Eye, Globe, TrendingUp } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { BarChart3, Users, Activity, Clock, CalendarDays, Globe, Smartphone, Monitor, RefreshCw, ShoppingCart } from "lucide-react";
 
-interface AnalyticsData {
-  totalViews: number;
-  todayViews: number;
-  uniquePages: number;
-  avgDailyViews: number;
+interface NC { name: string; count: number }
+interface Kpi {
+  unique: number; avgSeconds: number;
+  avg: number; avgUnit: string; periodDays: number;
+  minDate: string | null; maxDate: string | null;
+}
+interface Data {
+  filterHost: string; range: string; isHourly: boolean; isStore: boolean;
+  kpi: Kpi;
+  series: { date: string; views: number }[];
   topPages: { path: string; count: number }[];
-  dailyViews: { date: string; count: number }[];
-  recentViews: { id: string; path: string; referrer: string | null; createdAt: string }[];
+  geo: { countries: NC[]; regions: NC[]; cities: NC[] };
+  sources: NC[];
+  devices: NC[];
+  systems: NC[];
+  store: { funnel: { name: string; count: number; pct: number }[]; topProducts: { path: string; count: number }[] };
+  recent: { path: string; host: string; city: string | null; country: string | null; referrer: string | null; createdAt: string; hits: number }[];
+  recentHasMore?: boolean;
 }
 
+const PIE = ["#8a6d3b", "#b08968", "#cdb38b", "#7d8c7a", "#9c6644", "#6b705c", "#a5a58d", "#c9ada7"];
+const fmtD = (s: string) => { try { return new Date(s).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" }); } catch { return s; } };
+const fmtBucket = (s: string, hourly: boolean) => { if (hourly) { const m = s.match(/(\d{2}):00$/); return m ? m[1] + "h" : s; } return fmtD(s); };
+const fmtDT = (s: string) => { try { return new Date(s).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); } catch { return s; } };
+const fmtDur = (sec: number) => {
+  if (!sec || sec < 1) return "0s";
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  if (h) return `${h}h ${m}m`;
+  if (m) return `${m}m ${s}s`;
+  return `${s}s`;
+};
+
+function Bars({ items, color = "#8a6d3b" }: { items: NC[]; color?: string }) {
+  const max = Math.max(1, ...items.map((i) => i.count));
+  if (!items.length) return <p className="text-xs text-warm-400">Nessun dato.</p>;
+  return (
+    <div className="space-y-2">
+      {items.map((it) => (
+        <div key={it.name}>
+          <div className="flex justify-between text-xs mb-0.5">
+            <span className="text-warm-700 truncate pr-2">{it.name}</span>
+            <span className="text-warm-500 shrink-0">{it.count.toLocaleString("it-IT")}</span>
+          </div>
+          <div className="h-2.5 bg-warm-100 rounded"><div className="h-2.5 rounded" style={{ width: `${(it.count / max) * 100}%`, background: color }} /></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Pie({ items }: { items: NC[] }) {
+  const tot = items.reduce((s, i) => s + i.count, 0) || 1;
+  let acc = 0;
+  const stops = items.slice(0, 8).map((it, i) => {
+    const a = (acc / tot) * 360; acc += it.count; const b = (acc / tot) * 360;
+    return { ...it, color: PIE[i % PIE.length], css: `${PIE[i % PIE.length]} ${a}deg ${b}deg` };
+  });
+  if (!stops.length) return <p className="text-xs text-warm-400">Nessun dato.</p>;
+  return (
+    <div className="flex items-center gap-5">
+      <div className="w-28 h-28 rounded-full shrink-0" style={{ background: `conic-gradient(${stops.map((s) => s.css).join(",")})` }} />
+      <div className="space-y-1 text-xs">
+        {stops.map((s) => (
+          <div key={s.name} className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm inline-block" style={{ background: s.color }} />
+            <span className="text-warm-700">{s.name}</span>
+            <span className="text-warm-400">{Math.round((s.count / tot) * 100)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Card({ children }: { children: React.ReactNode }) {
+  return <div className="bg-white border border-warm-200 rounded-lg p-4">{children}</div>;
+}
+
+const RANGES: [string, string][] = [["1d", "Ultimo giorno"], ["7d", "7 giorni"], ["30d", "30 giorni"], ["1y", "1 anno"], ["all", "Totale"]];
+
 export default function AdminAnalyticsPage() {
-  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
+  const [host, setHost] = useState<"" | "SITO" | "STORE">("");
+  const [range, setRange] = useState<string>("all");
+  const [recent, setRecent] = useState<Data["recent"]>([]);
+  const [recMore, setRecMore] = useState(false);
+  const [recLoading, setRecLoading] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/analytics")
-      .then((r) => r.json())
-      .then((res) => { setData(res.data || null); setLoading(false); });
-  }, []);
+  const qs = useCallback((extra = "") => {
+    const p = new URLSearchParams();
+    if (host) p.set("host", host);
+    if (range) p.set("range", range);
+    const s = p.toString();
+    return `${s ? `?${s}` : ""}${extra ? (s ? "&" : "?") + extra : ""}`;
+  }, [host, range]);
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("it-IT", {
-      day: "2-digit",
-      month: "2-digit",
-    });
-  };
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await fetch(`/api/analytics${qs()}`, { cache: "no-store" });
+      const j = await r.json();
+      setData(j.data || null);
+      setRecent(j.data?.recent || []);
+      setRecMore(!!j.data?.recentHasMore);
+    } catch { /* ignore */ } finally { setLoading(false); }
+  }, [qs]);
 
-  const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("it-IT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  const loadMore = useCallback(async () => {
+    setRecLoading(true);
+    try {
+      const r = await fetch(`/api/analytics${qs(`recentPage=1&offset=${recent.length}`)}`, { cache: "no-store" });
+      const j = await r.json();
+      setRecent((prev) => [...prev, ...(j.data?.recent || [])]);
+      setRecMore(!!j.data?.hasMore);
+    } catch { /* ignore */ } finally { setRecLoading(false); }
+  }, [qs, recent.length]);
 
-  if (loading) {
-    return (
-      <div>
-        <h1 className="text-2xl font-semibold text-warm-800 mb-8">Analisi Traffico</h1>
-        <div className="text-warm-400">Caricamento...</div>
-      </div>
-    );
-  }
+  useEffect(() => { load(); }, [load]);
 
-  if (!data) {
-    return (
-      <div>
-        <h1 className="text-2xl font-semibold text-warm-800 mb-8">Analisi Traffico</h1>
-        <div className="text-center py-12 text-warm-400">Nessun dato disponibile</div>
-      </div>
-    );
-  }
-
-  const maxDailyViews = Math.max(...(data.dailyViews?.map((d) => d.count) || [1]), 1);
+  const k = data?.kpi;
+  const maxSeries = Math.max(1, ...(data?.series.map((s) => s.views) || [1]));
+  const periodLabel = k && k.minDate ? `${k.periodDays} ${k.periodDays === 1 ? "giorno" : "giorni"} · ${fmtD(String(k.minDate))}–${fmtD(String(k.maxDate))}` : "—";
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold text-warm-800 mb-8">Analisi Traffico</h1>
+    <div className="p-6 md:p-8 w-full">
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+        <h1 className="text-2xl font-semibold text-warm-800 flex items-center gap-2"><BarChart3 size={22} /> Analisi Traffico</h1>
+        <button onClick={load} className="flex items-center gap-1.5 text-sm border border-warm-300 px-3 py-2 rounded-lg hover:bg-warm-50"><RefreshCw size={14} /> Aggiorna</button>
+      </div>
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-warm-100 rounded-lg">
-              <Eye size={18} className="text-warm-600" />
-            </div>
-            <span className="text-sm text-warm-500">Visite totali</span>
-          </div>
-          <p className="text-3xl font-bold text-warm-800">{data.totalViews.toLocaleString("it-IT")}</p>
+      <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex rounded-lg overflow-hidden border border-warm-300 text-sm">
+          {([["", "Tutto"], ["SITO", "Sito"], ["STORE", "Store"]] as const).map(([v, l]) => (
+            <button key={v} onClick={() => setHost(v as "" | "SITO" | "STORE")}
+              className={`px-4 py-2 ${host === v ? "bg-warm-800 text-white" : "bg-white text-warm-600 hover:bg-warm-50"}`}>{l}</button>
+          ))}
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-warm-100 rounded-lg">
-              <TrendingUp size={18} className="text-warm-600" />
-            </div>
-            <span className="text-sm text-warm-500">Visite oggi</span>
-          </div>
-          <p className="text-3xl font-bold text-warm-800">{data.todayViews.toLocaleString("it-IT")}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-warm-100 rounded-lg">
-              <Globe size={18} className="text-warm-600" />
-            </div>
-            <span className="text-sm text-warm-500">Pagine uniche</span>
-          </div>
-          <p className="text-3xl font-bold text-warm-800">{data.uniquePages.toLocaleString("it-IT")}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-warm-100 rounded-lg">
-              <BarChart3 size={18} className="text-warm-600" />
-            </div>
-            <span className="text-sm text-warm-500">Media visite/giorno</span>
-          </div>
-          <p className="text-3xl font-bold text-warm-800">{data.avgDailyViews.toLocaleString("it-IT")}</p>
+        <div className="flex rounded-lg overflow-hidden border border-warm-300 text-sm">
+          {RANGES.map(([v, l]) => (
+            <button key={v} onClick={() => setRange(v)}
+              className={`px-4 py-2 ${range === v ? "bg-warm-800 text-white" : "bg-white text-warm-600 hover:bg-warm-50"}`}>{l}</button>
+          ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Top pages */}
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-warm-200">
-            <h2 className="text-lg font-semibold text-warm-800">Pagine piu visitate</h2>
+      {loading || !data ? (
+        <div className="py-20 text-center text-warm-400">Caricamento…</div>
+      ) : (
+        <div className="space-y-6">
+          {/* KPI — unica riga */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { i: <Users size={16} />, l: "Visitatori unici", v: k!.unique.toLocaleString("it-IT"), s: "" },
+              { i: <Clock size={16} />, l: "Tempo medio sul sito", v: fmtDur(k!.avgSeconds), s: "permanenza media per sessione" },
+              { i: <Activity size={16} />, l: `Media / ${k!.avgUnit}`, v: k!.avg.toLocaleString("it-IT"), s: "visitatori unici" },
+              { i: <CalendarDays size={16} />, l: "Periodo", v: String(k!.periodDays), s: periodLabel },
+            ].map((c) => (
+              <Card key={c.l}>
+                <div className="text-warm-400 mb-1">{c.i}</div>
+                <div className="text-2xl font-bold text-warm-900">{c.v}</div>
+                <div className="text-[11px] text-warm-500 uppercase tracking-wide">{c.l}</div>
+                {c.s && <div className="text-[10px] text-warm-400 mt-0.5">{c.s}</div>}
+              </Card>
+            ))}
           </div>
-          <table className="w-full text-sm">
-            <thead className="bg-warm-50 border-b border-warm-200">
-              <tr>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Pagina</th>
-                <th className="text-right px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Visite</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-warm-100">
-              {(data.topPages || []).slice(0, 10).map((page, i) => (
-                <tr key={i} className="hover:bg-warm-50 transition-colors">
-                  <td className="px-6 py-3 text-warm-800 font-mono text-xs">{page.path}</td>
-                  <td className="px-6 py-3 text-right text-warm-600">{page.count.toLocaleString("it-IT")}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {(!data.topPages || data.topPages.length === 0) && (
-            <div className="text-center py-8 text-warm-400">Nessun dato</div>
-          )}
-        </div>
 
-        {/* Daily views bar chart */}
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-warm-200">
-            <h2 className="text-lg font-semibold text-warm-800">Visite ultimi 30 giorni</h2>
-          </div>
-          <div className="p-6 space-y-1.5 max-h-[400px] overflow-y-auto">
-            {(data.dailyViews || []).map((day, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-xs text-warm-500 w-12 shrink-0 text-right">{formatDate(day.date)}</span>
-                <div className="flex-1 h-6 bg-warm-50 rounded overflow-hidden">
-                  <div
-                    className="h-full bg-warm-800 rounded transition-all"
-                    style={{ width: `${Math.max((day.count / maxDailyViews) * 100, 2)}%` }}
-                  />
-                </div>
-                <span className="text-xs text-warm-600 w-10 shrink-0">{day.count}</span>
+          {/* Funnel STORE — solo con filtro Store */}
+          {data.isStore && (
+            <Card>
+              <h3 className="text-sm font-semibold text-warm-800 mb-1 flex items-center gap-2"><ShoppingCart size={15} /> Funnel acquisto (Store)</h3>
+              <p className="text-[11px] text-warm-400 mb-4">Percorso del visitatore verso l&apos;acquisto — % sui visitatori store.</p>
+              <div className="space-y-3">
+                {data.store.funnel.map((f, i) => (
+                  <div key={f.name}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-warm-700">{f.name}</span>
+                      <span className="text-warm-500">{f.count.toLocaleString("it-IT")} · <strong>{f.pct}%</strong></span>
+                    </div>
+                    <div className="h-4 bg-warm-100 rounded"><div className="h-4 rounded" style={{ width: `${f.pct}%`, background: PIE[i % PIE.length] }} /></div>
+                  </div>
+                ))}
               </div>
-            ))}
-            {(!data.dailyViews || data.dailyViews.length === 0) && (
-              <div className="text-center py-8 text-warm-400">Nessun dato</div>
-            )}
-          </div>
-        </div>
-      </div>
+            </Card>
+          )}
 
-      {/* Recent views */}
-      <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-warm-200">
-          <h2 className="text-lg font-semibold text-warm-800">Visite recenti</h2>
+          {/* Andamento (visitatori unici) */}
+          <Card>
+            <h3 className="text-sm font-semibold text-warm-800 mb-4">Andamento {data.isHourly ? "orario" : "giornaliero"} (visitatori unici)</h3>
+            {data.series.length === 0 ? <p className="text-xs text-warm-400">Nessun dato.</p> : (
+              <div className="flex items-end gap-1.5 h-44">
+                {data.series.map((s) => (
+                  <div key={s.date} className="flex-1 flex flex-col items-center gap-1 group min-w-[8px]">
+                    <div className="text-[10px] text-warm-500 opacity-0 group-hover:opacity-100">{s.views.toLocaleString("it-IT")}</div>
+                    <div className="w-full bg-warm-700 rounded-t" style={{ height: `${(s.views / maxSeries) * 150}px` }} />
+                    <div className="text-[9px] text-warm-400 -rotate-45 origin-top-left whitespace-nowrap mt-1">{fmtBucket(s.date, data.isHourly)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {/* Geo (visitatori unici) */}
+          <div className="grid md:grid-cols-2 gap-3">
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Globe size={15} /> Nazioni <span className="text-[10px] text-warm-400 normal-case">(visitatori unici)</span></h3><Pie items={data.geo.countries} /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Sorgenti traffico <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Pie items={data.sources} /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Top città <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.geo.cities} color="#9c6644" /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Top regioni <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.geo.regions} color="#7d8c7a" /></Card>
+          </div>
+
+          {/* Dispositivi + Sistema */}
+          <div className="grid md:grid-cols-2 gap-3">
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Smartphone size={15} /> Dispositivo <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.devices} color="#8a6d3b" /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Monitor size={15} /> Sistema</h3><Bars items={data.systems} color="#6b705c" /></Card>
+          </div>
+
+          {/* Pagine / prodotti più visti (visitatori unici) */}
+          {data.isStore ? (
+            <div className="grid md:grid-cols-2 gap-3">
+              <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Prodotti più visti <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.store.topProducts.map((p) => ({ name: p.path, count: p.count }))} /></Card>
+              <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Pagine store più viste <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.topPages.map((p) => ({ name: p.path, count: p.count }))} color="#b08968" /></Card>
+            </div>
+          ) : (
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Pagine più viste <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.topPages.map((p) => ({ name: p.path, count: p.count }))} /></Card>
+          )}
+
+          {/* Recenti */}
+          <Card>
+            <h3 className="text-sm font-semibold text-warm-800 mb-1">Visite recenti</h3>
+            <p className="text-[11px] text-warm-400 mb-3">Raggruppate per visitatore, pagina e minuto. ×N = richieste nella stessa visita.</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="text-warm-500 uppercase tracking-wide text-left bg-white">
+                  <tr><th className="py-1 pr-3">Quando</th><th className="py-1 pr-3">Dove</th><th className="py-1 pr-3">Pagina</th><th className="py-1 pr-3">Città</th><th className="py-1 pr-3">Paese</th><th className="py-1">Hit</th></tr>
+                </thead>
+                <tbody>
+                  {recent.map((r, i) => (
+                    <tr key={i} className="border-t border-warm-100">
+                      <td className="py-1 pr-3 whitespace-nowrap text-warm-500">{fmtDT(r.createdAt)}</td>
+                      <td className="py-1 pr-3"><span className={`px-1.5 py-0.5 rounded text-[10px] ${r.host === "STORE" ? "bg-amber-100 text-amber-800" : "bg-warm-100 text-warm-700"}`}>{r.host || "?"}</span></td>
+                      <td className="py-1 pr-3 max-w-[260px] truncate">{r.path}</td>
+                      <td className="py-1 pr-3 whitespace-nowrap">{r.city || "—"}</td>
+                      <td className="py-1 pr-3 whitespace-nowrap">{r.country || "—"}</td>
+                      <td className="py-1 whitespace-nowrap text-warm-500">{r.hits > 1 ? `×${r.hits}` : "1"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 text-center">
+              {recMore ? (
+                <button onClick={loadMore} disabled={recLoading} className="text-sm border border-warm-300 px-5 py-2 rounded-lg hover:bg-warm-50 disabled:opacity-50">
+                  {recLoading ? "Carico…" : "Prosegui ↓"}
+                </button>
+              ) : (
+                <span className="text-xs text-warm-400">Fine elenco ({recent.length} visite)</span>
+              )}
+            </div>
+          </Card>
         </div>
-        <table className="w-full text-sm">
-          <thead className="bg-warm-50 border-b border-warm-200">
-            <tr>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Pagina</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Referrer</th>
-              <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Data</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-warm-100">
-            {(data.recentViews || []).slice(0, 20).map((view) => (
-              <tr key={view.id} className="hover:bg-warm-50 transition-colors">
-                <td className="px-6 py-3 text-warm-800 font-mono text-xs">{view.path}</td>
-                <td className="px-6 py-3 text-warm-500 text-xs truncate max-w-[200px]">{view.referrer || "Diretto"}</td>
-                <td className="px-6 py-3 text-warm-500 text-xs">{formatDateTime(view.createdAt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {(!data.recentViews || data.recentViews.length === 0) && (
-          <div className="text-center py-8 text-warm-400">Nessun dato</div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

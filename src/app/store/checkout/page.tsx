@@ -65,6 +65,8 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [quote, setQuote] = useState<LiveQuote | null>(null);
   const [quoting, setQuoting] = useState(false);
+  const [bonificoEnabled, setBonificoEnabled] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "bonifico">("stripe");
 
   const [form, setForm] = useState({
     email: "",
@@ -92,6 +94,9 @@ export default function CheckoutPage() {
           setStripePromise(loadStripe(d.data.publishableKey));
         } else {
           setError(t("Stripe non configurato. Configura le chiavi su /admin/store/settings.", "Stripe non configuré. Configurez les clés sur /admin/store/settings."));
+        }
+        if (d.success && d.data?.bonificoEnabled === true) {
+          setBonificoEnabled(true);
         }
       })
       .catch(() => setError(t("Errore caricamento configurazione Stripe.", "Erreur de chargement de la configuration Stripe.")));
@@ -156,7 +161,10 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/store/public/checkout/create-payment-intent", {
+      const endpoint = paymentMethod === "bonifico"
+        ? "/api/store/public/checkout/create-bonifico-order"
+        : "/api/store/public/checkout/create-payment-intent";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -188,6 +196,11 @@ export default function CheckoutPage() {
       if (!data.success) {
         setError(data.error || t("Errore creazione ordine.", "Erreur lors de la création de la commande."));
         setSubmitting(false);
+        return;
+      }
+      if (paymentMethod === "bonifico") {
+        // Bonifico: ordine creato senza Stripe, email già inviata. Vai diretto alla success page.
+        window.location.href = `/store/checkout/success?order=${encodeURIComponent(data.data.orderId)}`;
         return;
       }
       setIntent(data.data);
@@ -361,13 +374,51 @@ export default function CheckoutPage() {
                 <textarea value={form.customerNotes} onChange={(e) => updateField("customerNotes", e.target.value)} rows={2} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm focus:border-warm-700 outline-none" />
               </div>
 
+              {bonificoEnabled && (
+                <div className="pt-4 border-t border-warm-200 space-y-3">
+                  <div className="text-xs uppercase tracking-[0.2em] text-warm-500">{t("Modalità di pagamento", "Mode de paiement")}</div>
+                  <label className={`flex items-start gap-3 cursor-pointer rounded-lg border-2 p-3 transition-colors ${paymentMethod === "stripe" ? "border-warm-800 bg-warm-50" : "border-warm-300 bg-white hover:border-warm-400"}`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="stripe"
+                      checked={paymentMethod === "stripe"}
+                      onChange={() => setPaymentMethod("stripe")}
+                      className="mt-1 w-4 h-4 accent-warm-800"
+                    />
+                    <span className="text-[13px] text-warm-800">
+                      <strong className="block text-sm">{t("Carta di credito / Klarna", "Carte bancaire / Klarna")}</strong>
+                      {t("Pagamento sicuro tramite Stripe. Conferma istantanea dell'ordine.", "Paiement sécurisé via Stripe. Confirmation instantanée de la commande.")}
+                    </span>
+                  </label>
+                  <label className={`flex items-start gap-3 cursor-pointer rounded-lg border-2 p-3 transition-colors ${paymentMethod === "bonifico" ? "border-warm-800 bg-warm-50" : "border-warm-300 bg-white hover:border-warm-400"}`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="bonifico"
+                      checked={paymentMethod === "bonifico"}
+                      onChange={() => setPaymentMethod("bonifico")}
+                      className="mt-1 w-4 h-4 accent-warm-800"
+                    />
+                    <span className="text-[13px] text-warm-800">
+                      <strong className="block text-sm">{t("Bonifico bancario", "Virement bancaire")}</strong>
+                      {t("Riceverai le coordinate bancarie via email. L'ordine sarà elaborato dopo conferma dell'avvenuto accredito.", "Vous recevrez les coordonnées bancaires par e-mail. La commande sera traitée après confirmation de la réception des fonds.")}
+                    </span>
+                  </label>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={submitting}
                 className="w-full inline-flex items-center justify-center gap-2 py-4 bg-warm-900 text-white uppercase text-sm tracking-wider hover:bg-warm-800 disabled:bg-warm-400"
               >
                 {submitting ? <Loader2 className="animate-spin" size={16} /> : <Lock size={14} />}
-                {submitting ? t("Calcolo totale...", "Calcul du total…") : t("Continua al pagamento", "Continuer vers le paiement")}
+                {submitting
+                  ? t("Calcolo totale...", "Calcul du total…")
+                  : paymentMethod === "bonifico"
+                    ? t("Conferma ordine (bonifico)", "Confirmer la commande (virement)")
+                    : t("Continua al pagamento", "Continuer vers le paiement")}
               </button>
             </form>
           )}

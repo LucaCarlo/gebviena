@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 // GET — returns all active products that have a tech sheet PDF
 export async function GET() {
   const data = await prisma.product.findMany({
-    where: { isActive: true, storeProduct: { is: null } },
+    where: { isActive: true, excludeFromCatalog: false },
     select: {
       id: true,
       name: true,

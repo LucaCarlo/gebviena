@@ -24,6 +24,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       totalCents: true,
       currency: true,
       stripePaymentIntentId: true,
+      paymentProvider: true,
+      language: true,
       items: { select: { variantId: true, quantity: true } },
     },
   });
@@ -92,6 +94,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       email: order.email,
       totalCents: order.totalCents,
       currency: order.currency,
+      paymentProvider: order.paymentProvider || null,
+      language: order.language || "it",
     },
   });
 }
