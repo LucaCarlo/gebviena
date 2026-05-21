@@ -1596,3 +1596,31 @@ model FabricFinishFile {
 
   @@index([categoryId])
 }
+
+/// Stato carrello dello store (per "carrelli abbandonati").
+/// Persistito lato server: il browser sincronizza il proprio localStorage via
+/// /api/store/public/cart/sync ogni volta che cambia (debounced).
+/// Quando l'utente completa l'ordine, lo flagghiamo come `converted=true`
+/// così è escluso dalla lista degli "abbandonati".
+model Cart {
+  id              String   @id @default(cuid())
+  sessionId       String   @unique @db.VarChar(64) // UUID v4 dal browser
+  customerId      String?  @db.VarChar(191)         // se loggato durante l'add-to-cart
+  email           String?  @db.VarChar(191)         // se l'utente ha compilato l'email al checkout
+  items           String   @db.Text                 // JSON array di CartItem (snapshot)
+  subtotalCents   Int      @default(0)
+  currency        String   @default("EUR") @db.VarChar(3)
+  itemCount       Int      @default(0)
+  language        String?  @db.VarChar(8)
+  userAgent       String?  @db.Text
+  ipAddress       String?  @db.VarChar(64)
+  converted       Boolean  @default(false)          // true = checkout completato → escludi dagli abbandonati
+  convertedOrderId String? @db.VarChar(191)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([updatedAt])
+  @@index([converted])
+  @@index([email])
+  @@index([customerId])
+}

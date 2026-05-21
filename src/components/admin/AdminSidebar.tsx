@@ -131,6 +131,7 @@ const navSections: NavSection[] = [
         ],
       },
       { href: "/admin/store/orders", label: "Ordini", icon: ShoppingCart, permission: "store_orders.view" },
+      { href: "/admin/store/abandoned-carts", label: "Carrelli abbandonati", icon: ShoppingBag, permission: "store_orders.view" },
       { href: "/admin/store/customers", label: "Clienti", icon: Users, permission: "store_customers.view" },
       { href: "/admin/store/shipping", label: "Spedizioni", icon: Truck, permission: "store_shipping.view" },
       { href: "/admin/store/settings", label: "Impostazioni Store", icon: CreditCard, permission: "store_settings.view" },
