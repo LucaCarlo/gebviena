@@ -131,6 +131,14 @@ export default function CheckoutPage() {
     withUnboxingService: false,
     storePickup: false,
     customerNotes: "",
+    // Indirizzo di fatturazione: di default uguale a quello di spedizione.
+    sameAsBilling: true,
+    billingCompany: "",
+    billingStreet: "",
+    billingCity: "",
+    billingProvince: "",
+    billingPostalCode: "",
+    billingCountry: "IT",
   });
 
   // Load Stripe publishable key once
@@ -193,9 +201,13 @@ export default function CheckoutPage() {
     setError(null);
 
     // Validazione minima. Con ritiro in negozio non serve l'indirizzo di spedizione.
-    const required = form.storePickup
+    const required: string[] = form.storePickup
       ? ["email", "firstName", "lastName", "phone", "taxId"]
       : ["email", "firstName", "lastName", "phone", "taxId", "street", "city", "postalCode", "country"];
+    // Se l'utente ha disattivato "stesso indirizzo per fatturazione", validare anche il billing.
+    if (!form.sameAsBilling) {
+      required.push("billingStreet", "billingCity", "billingPostalCode", "billingCountry");
+    }
     for (const k of required) {
       if (!form[k as keyof typeof form]?.toString().trim()) {
         setError(t("Compila tutti i campi obbligatori.", "Veuillez remplir tous les champs obligatoires."));
@@ -232,6 +244,16 @@ export default function CheckoutPage() {
                 province: form.province,
                 postalCode: form.postalCode,
                 country: form.country,
+              },
+          billingAddress: form.sameAsBilling
+            ? null /* il backend usa shippingAddress come fallback */
+            : {
+                company: form.billingCompany || null,
+                street: form.billingStreet,
+                city: form.billingCity,
+                province: form.billingProvince,
+                postalCode: form.billingPostalCode,
+                country: form.billingCountry,
               },
           shippingFloor: Number(form.shippingFloor) || 0,
           withUnboxingService: form.withUnboxingService === true,
@@ -307,22 +329,65 @@ export default function CheckoutPage() {
                 onChange={(v) => updateField("taxId", v.toUpperCase())}
               />
 
-              <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">{t("Indirizzo di spedizione", "Adresse de livraison")}</div>
-              <Field label={t("Via e numero civico *", "Rue et numéro *")} value={form.street} onChange={(v) => updateField("street", v)} />
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2"><Field label={t("Città *", "Ville *")} value={form.city} onChange={(v) => updateField("city", v)} /></div>
-                <Field label={t("Provincia", "Province")} value={form.province} onChange={(v) => updateField("province", v.toUpperCase())} />
+              {!form.storePickup && (
+                <>
+                  <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">{t("Indirizzo di spedizione", "Adresse de livraison")}</div>
+                  <Field label={t("Via e numero civico *", "Rue et numéro *")} value={form.street} onChange={(v) => updateField("street", v)} />
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2"><Field label={t("Città *", "Ville *")} value={form.city} onChange={(v) => updateField("city", v)} /></div>
+                    <Field label={t("Provincia", "Province")} value={form.province} onChange={(v) => updateField("province", v.toUpperCase())} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <Field label={t("CAP *", "Code postal *")} value={form.postalCode} onChange={(v) => updateField("postalCode", v)} />
+                    <div className="col-span-2">
+                      <label className="block text-[13px] text-warm-700 mb-1.5">{t("Paese *", "Pays *")}</label>
+                      <select value={form.country} onChange={(e) => updateField("country", e.target.value)} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none">
+                        <option value="IT">{t("Italia", "Italie")}</option>
+                        <option value="FR">{t("Francia", "France")}</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Toggle: indirizzo di fatturazione = spedizione (di default ON). Se OFF, mostra form fatturazione separato. */}
+              <div className={`${form.storePickup ? "" : "pt-4 border-t border-warm-200"}`}>
+                <label className="flex items-start gap-2 cursor-pointer text-[13px] text-warm-800">
+                  <input
+                    type="checkbox"
+                    checked={form.sameAsBilling}
+                    onChange={(e) => updateField("sameAsBilling", e.target.checked)}
+                    className="mt-1 w-4 h-4 accent-warm-800"
+                  />
+                  <span>
+                    {form.storePickup
+                      ? t("Voglio fattura intestata allo stesso nome del ritiro", "Je veux la facture au même nom du retrait")
+                      : t("Indirizzo di fatturazione uguale a quello di spedizione", "Adresse de facturation identique à celle de livraison")}
+                  </span>
+                </label>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <Field label={t("CAP *", "Code postal *")} value={form.postalCode} onChange={(v) => updateField("postalCode", v)} />
-                <div className="col-span-2">
-                  <label className="block text-[13px] text-warm-700 mb-1.5">{t("Paese *", "Pays *")}</label>
-                  <select value={form.country} onChange={(e) => updateField("country", e.target.value)} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none">
-                    <option value="IT">{t("Italia", "Italie")}</option>
-                    <option value="FR">{t("Francia", "France")}</option>
-                  </select>
-                </div>
-              </div>
+
+              {!form.sameAsBilling && (
+                <>
+                  <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-2">{t("Indirizzo di fatturazione", "Adresse de facturation")}</div>
+                  <Field label={t("Ragione sociale / Intestatario (opzionale)", "Raison sociale / Titulaire (facultatif)")} value={form.billingCompany} onChange={(v) => updateField("billingCompany", v)} />
+                  <Field label={t("Via e numero civico *", "Rue et numéro *")} value={form.billingStreet} onChange={(v) => updateField("billingStreet", v)} />
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2"><Field label={t("Città *", "Ville *")} value={form.billingCity} onChange={(v) => updateField("billingCity", v)} /></div>
+                    <Field label={t("Provincia", "Province")} value={form.billingProvince} onChange={(v) => updateField("billingProvince", v.toUpperCase())} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <Field label={t("CAP *", "Code postal *")} value={form.billingPostalCode} onChange={(v) => updateField("billingPostalCode", v)} />
+                    <div className="col-span-2">
+                      <label className="block text-[13px] text-warm-700 mb-1.5">{t("Paese *", "Pays *")}</label>
+                      <select value={form.billingCountry} onChange={(e) => updateField("billingCountry", e.target.value)} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none">
+                        <option value="IT">{t("Italia", "Italie")}</option>
+                        <option value="FR">{t("Francia", "France")}</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">{t("Consegna", "Livraison")}</div>
 

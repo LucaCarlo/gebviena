@@ -120,7 +120,7 @@ export interface OrderWithItems {
 }
 
 function parseAddress(json: string): {
-  street?: string; city?: string; province?: string; postalCode?: string; country?: string;
+  street?: string; city?: string; province?: string; postalCode?: string; country?: string; company?: string;
 } {
   try { return JSON.parse(json); } catch { return {}; }
 }
@@ -247,6 +247,31 @@ function buildHtml(order: OrderWithItems, deliveryStr: string): string {
             </td></tr>
           </table>
         </td></tr>` : ""}
+
+        ${(() => {
+          // Mostra l'indirizzo di fatturazione SOLO se diverso dallo shipping (cliente B2B o regalo).
+          try {
+            const ship = JSON.parse(order.shippingAddress);
+            const bill = JSON.parse(order.billingAddress);
+            const same = JSON.stringify({ s: ship.street, c: ship.city, p: ship.province, z: ship.postalCode, k: ship.country }) ===
+                         JSON.stringify({ s: bill.street, c: bill.city, p: bill.province, z: bill.postalCode, k: bill.country });
+            if (same) return "";
+            const lines: string[] = [];
+            if (bill.company) lines.push(escape(bill.company));
+            if (bill.street) lines.push(escape(bill.street));
+            const ll = [bill.postalCode, bill.city].filter(Boolean).join(" ") + (bill.province ? ` (${escape(String(bill.province).toUpperCase())})` : "");
+            if (ll.trim()) lines.push(escape(ll));
+            if (bill.country) lines.push(escape(String(bill.country)));
+            return `<tr><td style="padding:0 32px 20px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e2db;border-radius:4px;">
+                <tr><td style="padding:12px 16px;font-size:13px;color:#333;">
+                  <strong style="color:#555;">${isFr ? "Adresse de facturation" : "Indirizzo di fatturazione"}:</strong><br>
+                  ${lines.join("<br>")}
+                </td></tr>
+              </table>
+            </td></tr>`;
+          } catch { return ""; }
+        })()}
 
         <tr><td style="padding:16px 32px;background:#faf8f3;border-top:1px solid #e5e2db;font-size:11px;color:#888;line-height:1.6;">
           <strong style="color:#555;">${escape(COMPANY.legalName)}</strong><br>
@@ -443,6 +468,25 @@ async function buildPdfBuffer(order: OrderWithItems): Promise<Buffer> {
         doc.font(F).fontSize(10).fillColor("#333").text(note, 50, y, { width: 500 });
         y += doc.heightOfString(note, { width: 500 }) + 2;
       }
+
+      // ─── Indirizzo di fatturazione separato (solo se diverso da quello di spedizione) ───
+      try {
+        const bill = parseAddress(order.billingAddress);
+        const same =
+          (ship.street || "") === (bill.street || "") &&
+          (ship.city || "") === (bill.city || "") &&
+          (ship.postalCode || "") === (bill.postalCode || "") &&
+          (ship.country || "") === (bill.country || "");
+        if (!same) {
+          y += 8;
+          doc.font(FB).fontSize(10).fillColor("#111").text(isFr ? "Adresse de facturation:" : "Indirizzo di fatturazione:", 50, y);
+          y += 13;
+          if (bill.company) { doc.font(F).fontSize(10).fillColor("#333").text(String(bill.company), 50, y); y += 13; }
+          if (bill.street)  { doc.font(F).fontSize(10).fillColor("#333").text(String(bill.street), 50, y); y += 13; }
+          const billCity = `${bill.postalCode || ""} ${bill.city || ""}${bill.province ? ` (${String(bill.province).toUpperCase()})` : ""} – ${bill.country || ""}`.trim();
+          doc.font(F).fontSize(10).fillColor("#333").text(billCity, 50, y); y += 13;
+        }
+      } catch { /* ignore */ }
 
       y += 14;
 
@@ -648,6 +692,19 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
         : `<p style="margin:0 0 4px;"><strong>Spedire a:</strong> ${escape(order.firstName)} ${escape(order.lastName)}, ${escape(ship.street || "")}, ${escape(ship.postalCode || "")} ${escape(ship.city || "")}${ship.province ? " (" + escape(ship.province) + ")" : ""} — ${escape(ship.country || "")}</p>
       <p style="margin:0 0 4px;"><strong>Piano di consegna:</strong> ${escape(floorLabel(order.shippingFloor, false))}</p>
       <p style="margin:0 0 4px;"><strong>Spedizione standard:</strong> ${order.shippingCents > 0 ? escape(eur(order.shippingCents)) : "Gratuita"}</p>`}
+      ${(() => {
+        try {
+          const bill = parseAddress(order.billingAddress);
+          const same =
+            (ship.street || "") === (bill.street || "") &&
+            (ship.city || "") === (bill.city || "") &&
+            (ship.postalCode || "") === (bill.postalCode || "") &&
+            (ship.country || "") === (bill.country || "");
+          if (same) return "";
+          const company = bill.company ? `${escape(String(bill.company))}, ` : "";
+          return `<p style="margin:6px 0 4px;padding:8px 10px;background:#eef5ff;border-left:3px solid #2563eb;"><strong>Indirizzo fatturazione (diverso):</strong> ${company}${escape(bill.street || "")}, ${escape(bill.postalCode || "")} ${escape(bill.city || "")}${bill.province ? " (" + escape(String(bill.province).toUpperCase()) + ")" : ""} — ${escape(bill.country || "")}</p>`;
+        } catch { return ""; }
+      })()}
       ${order.customerNotes && order.customerNotes.trim() ? `<p style="margin:8px 0 4px;padding:8px 10px;background:#fff8e1;border-left:3px solid #e0a800;"><strong>Note del cliente:</strong> ${escape(order.customerNotes.trim())}</p>` : ""}
       <p style="margin:14px 0 6px;"><strong>Articoli:</strong></p>
       <ul style="margin:0 0 14px;padding-left:20px;">${itemsList}</ul>
