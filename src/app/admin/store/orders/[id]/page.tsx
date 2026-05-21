@@ -7,7 +7,19 @@ import {
   Loader2, ArrowLeft, Check, X, AlertCircle, RotateCcw, Truck, Copy,
 } from "lucide-react";
 
-type OrderStatus = "PENDING" | "PAID" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED" | "PARTIALLY_REFUNDED";
+type OrderStatus =
+  | "PENDING"
+  | "ABANDONED_CHECKOUT"
+  | "PAYMENT_FAILED"
+  | "CANCELLED"
+  | "PAID"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "PICKED_UP"
+  | "RETURNED"
+  | "REFUNDED"
+  | "PARTIALLY_REFUNDED";
 
 interface OrderItem {
   id: string;
@@ -70,14 +82,22 @@ interface OrderDetail {
   items: OrderItem[];
 }
 
-const STATUSES: OrderStatus[] = ["PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED"];
+const STATUSES: OrderStatus[] = [
+  "PENDING", "ABANDONED_CHECKOUT", "PAYMENT_FAILED", "CANCELLED",
+  "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP",
+  "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
+];
 const STATUS_LABEL: Record<OrderStatus, string> = {
   PENDING: "In attesa di pagamento",
-  PAID: "Pagato",
-  PROCESSING: "In lavorazione",
+  ABANDONED_CHECKOUT: "Checkout abbandonato",
+  PAYMENT_FAILED: "Errore pagamento",
+  CANCELLED: "Annullato dal cliente",
+  PAID: "Pagato (da evadere)",
+  PROCESSING: "In preparazione",
   SHIPPED: "Spedito",
   DELIVERED: "Consegnato",
-  CANCELLED: "Annullato",
+  PICKED_UP: "Ritirato in showroom",
+  RETURNED: "Reso",
   REFUNDED: "Rimborsato",
   PARTIALLY_REFUNDED: "Rimborso parziale",
 };

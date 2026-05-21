@@ -4,7 +4,9 @@ import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { OrderStatus, Prisma } from "@prisma/client";
 
 const VALID_STATUSES: OrderStatus[] = [
-  "PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED",
+  "PENDING", "ABANDONED_CHECKOUT", "PAYMENT_FAILED", "CANCELLED",
+  "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP",
+  "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
 ];
 
 export async function GET(req: NextRequest) {

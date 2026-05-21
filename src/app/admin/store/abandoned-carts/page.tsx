@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Loader2, Search, ShoppingCart, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { Loader2, Search, ShoppingBag, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 interface CartListItem {
   id: string;
@@ -78,7 +78,8 @@ export default function AbandonedCartsPage() {
   }, [q, minAgeMin, page]);
 
   useEffect(() => {
-    fetchCarts();
+    const t = setTimeout(fetchCarts, 200);
+    return () => clearTimeout(t);
   }, [fetchCarts]);
 
   const deleteCart = async (id: string) => {
@@ -101,47 +102,35 @@ export default function AbandonedCartsPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
+    <div>
+      <header className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-light text-warm-900 flex items-center gap-3">
-            <ShoppingCart size={26} className="text-warm-700" />
-            Carrelli abbandonati
+          <h1 className="text-2xl font-semibold text-warm-900 flex items-center gap-2">
+            <ShoppingBag size={24} /> Carrelli abbandonati
           </h1>
           <p className="text-sm text-warm-500 mt-1">
-            Clienti che hanno aggiunto prodotti al carrello e non hanno finalizzato l&apos;ordine. Non sono ordini, non hanno stato.
+            {stats.totalCarts} carrelli ·{" "}
+            <span className="text-warm-700 font-medium">{eur(stats.totalValueCents)}</span> valore complessivo non finalizzato
           </p>
         </div>
-      </div>
+      </header>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <div className="bg-white border border-warm-200 rounded p-4">
-          <div className="text-xs text-warm-500 uppercase tracking-wider">Totale carrelli</div>
-          <div className="text-2xl font-light text-warm-900 mt-1">{stats.totalCarts}</div>
-        </div>
-        <div className="bg-white border border-warm-200 rounded p-4">
-          <div className="text-xs text-warm-500 uppercase tracking-wider">Valore complessivo</div>
-          <div className="text-2xl font-light text-warm-900 mt-1">{eur(stats.totalValueCents)}</div>
-        </div>
-      </div>
-
-      {/* Filtri */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="relative flex-1 min-w-[240px] max-w-md">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+      {/* Filters */}
+      <div className="bg-white rounded-lg border border-warm-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
+        <div className="flex-1 min-w-[240px] relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             type="text"
             value={q}
             onChange={(e) => { setQ(e.target.value); setPage(1); }}
             placeholder="Cerca email, articolo, sessionId…"
-            className="w-full pl-9 pr-3 py-2 border border-warm-300 rounded text-sm focus:border-warm-700 outline-none"
+            className="w-full pl-9 pr-3 py-2 border border-warm-200 rounded-lg text-sm"
           />
         </div>
         <select
           value={minAgeMin}
           onChange={(e) => { setMinAgeMin(parseInt(e.target.value, 10)); setPage(1); }}
-          className="px-3 py-2 border border-warm-300 rounded text-sm bg-white focus:border-warm-700 outline-none"
+          className="px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
         >
           <option value="0">Tutti i carrelli</option>
           <option value="30">Fermi da almeno 30 min</option>
@@ -153,79 +142,79 @@ export default function AbandonedCartsPage() {
 
       {/* Tabella */}
       {loading ? (
-        <div className="text-center py-16 text-warm-500">
-          <Loader2 className="animate-spin mx-auto mb-3" size={24} />
-          Caricamento…
+        <div className="flex items-center justify-center py-16 text-warm-400">
+          <Loader2 className="animate-spin" size={20} />
         </div>
       ) : error ? (
-        <div className="bg-red-50 border border-red-200 rounded p-4 text-red-800 text-sm">{error}</div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 text-sm">{error}</div>
       ) : carts.length === 0 ? (
-        <div className="text-center py-16 text-warm-500 bg-warm-50 border border-warm-200 rounded">
-          <ShoppingCart size={28} className="mx-auto mb-3 text-warm-300" />
+        <div className="text-center py-16 text-warm-400 bg-white rounded-lg border border-warm-200">
           Nessun carrello abbandonato con i filtri attuali.
         </div>
       ) : (
-        <div className="bg-white border border-warm-200 rounded overflow-x-auto">
+        <div className="bg-white rounded-lg border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-warm-50 border-b border-warm-200">
+            <thead className="bg-warm-50 text-warm-500 text-xs uppercase tracking-wider">
               <tr>
-                <th className="text-left px-4 py-2 text-xs font-medium text-warm-600 uppercase tracking-wider w-8"></th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-warm-600 uppercase tracking-wider">Cliente</th>
-                <th className="text-right px-4 py-2 text-xs font-medium text-warm-600 uppercase tracking-wider">Articoli</th>
-                <th className="text-right px-4 py-2 text-xs font-medium text-warm-600 uppercase tracking-wider">Subtotale</th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-warm-600 uppercase tracking-wider">Lingua</th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-warm-600 uppercase tracking-wider">Ultimo aggiornamento</th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-warm-600 uppercase tracking-wider">Creato</th>
-                <th className="text-right px-4 py-2 text-xs font-medium text-warm-600 uppercase tracking-wider"></th>
+                <th className="px-4 py-3 text-left w-8"></th>
+                <th className="px-4 py-3 text-left">Cliente</th>
+                <th className="px-4 py-3 text-center">Articoli</th>
+                <th className="px-4 py-3 text-right">Subtotale</th>
+                <th className="px-4 py-3 text-left">Lingua</th>
+                <th className="px-4 py-3 text-left">Ultimo aggiornamento</th>
+                <th className="px-4 py-3 text-left">Creato</th>
+                <th className="px-4 py-3 text-right"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-warm-100">
               {carts.map((c) => {
                 const isOpen = openRow === c.id;
                 return (
-                  <>
-                    <tr key={c.id} className="border-b border-warm-100 hover:bg-warm-50/40">
-                      <td className="px-2 py-2">
+                  <Fragment key={c.id}>
+                    <tr className="hover:bg-warm-50/50">
+                      <td className="px-4 py-3">
                         <button onClick={() => setOpenRow(isOpen ? null : c.id)} className="p-1 hover:bg-warm-100 rounded">
                           {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </button>
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-4 py-3">
                         {c.email ? (
                           <div>
                             <div className="text-warm-900">{c.email}</div>
                             <div className="text-[11px] text-warm-400 font-mono">{c.sessionId.slice(0, 12)}…</div>
                           </div>
                         ) : (
-                          <div className="text-warm-500 italic">
-                            ospite
+                          <div>
+                            <div className="text-warm-500 italic">ospite</div>
                             <div className="text-[11px] text-warm-400 font-mono">{c.sessionId.slice(0, 12)}…</div>
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-2 text-right text-warm-900 font-medium">{c.itemCount}</td>
-                      <td className="px-4 py-2 text-right text-warm-900 font-mono">{eur(c.subtotalCents, c.currency)}</td>
-                      <td className="px-4 py-2 text-warm-700 uppercase text-xs">{c.language || "—"}</td>
-                      <td className="px-4 py-2 text-warm-700">{fmtAge(c.updatedAt)}</td>
-                      <td className="px-4 py-2 text-warm-500 text-xs">{new Date(c.createdAt).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
-                      <td className="px-4 py-2 text-right">
+                      <td className="px-4 py-3 text-center text-warm-900 font-medium">{c.itemCount}</td>
+                      <td className="px-4 py-3 text-right text-warm-900 font-mono">{eur(c.subtotalCents, c.currency)}</td>
+                      <td className="px-4 py-3 text-warm-700 uppercase text-xs">{c.language || "—"}</td>
+                      <td className="px-4 py-3 text-warm-700">{fmtAge(c.updatedAt)}</td>
+                      <td className="px-4 py-3 text-warm-500 text-xs">
+                        {new Date(c.createdAt).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </td>
+                      <td className="px-4 py-3 text-right">
                         <button onClick={() => deleteCart(c.id)} className="text-warm-400 hover:text-red-600 p-1" title="Elimina">
                           <Trash2 size={14} />
                         </button>
                       </td>
                     </tr>
                     {isOpen && (
-                      <tr key={c.id + "-d"} className="bg-warm-50/40 border-b border-warm-100">
+                      <tr className="bg-warm-50/40">
                         <td colSpan={8} className="px-4 py-4">
                           <div className="text-xs uppercase tracking-wider text-warm-500 mb-3">Dettaglio carrello</div>
-                          <div className="grid md:grid-cols-2 gap-4 mb-4 text-xs text-warm-600">
+                          <div className="grid md:grid-cols-3 gap-4 mb-4 text-xs text-warm-600">
                             <div><span className="text-warm-500">SessionId:</span> <span className="font-mono">{c.sessionId}</span></div>
                             {c.ipAddress && <div><span className="text-warm-500">IP:</span> <span className="font-mono">{c.ipAddress}</span></div>}
                             {c.customerId && <div><span className="text-warm-500">CustomerId:</span> <span className="font-mono">{c.customerId}</span></div>}
                           </div>
                           <div className="space-y-2">
                             {c.items.map((it, i) => (
-                              <div key={i} className="flex items-center gap-3 bg-white border border-warm-200 rounded p-2">
+                              <div key={i} className="flex items-center gap-3 bg-white border border-warm-200 rounded-lg p-2">
                                 {it.coverImage && (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img src={it.coverImage} alt={it.productName} className="w-12 h-12 object-cover rounded" />
@@ -242,7 +231,7 @@ export default function AbandonedCartsPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -252,9 +241,13 @@ export default function AbandonedCartsPage() {
 
       {pages > 1 && (
         <div className="flex justify-center gap-2 mt-4">
-          <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 border border-warm-300 rounded text-sm disabled:opacity-40">Precedente</button>
+          <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 border border-warm-200 rounded-lg text-sm disabled:opacity-40">
+            Precedente
+          </button>
           <span className="px-3 py-1.5 text-sm text-warm-600">Pagina {page} di {pages}</span>
-          <button disabled={page === pages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 border border-warm-300 rounded text-sm disabled:opacity-40">Successiva</button>
+          <button disabled={page === pages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 border border-warm-200 rounded-lg text-sm disabled:opacity-40">
+            Successiva
+          </button>
         </div>
       )}
     </div>

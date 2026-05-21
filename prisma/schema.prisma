@@ -1381,14 +1381,18 @@ enum AddressType {
 }
 
 enum OrderStatus {
-  PENDING
-  PAID
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  REFUNDED
-  PARTIALLY_REFUNDED
+  PENDING                // creato, in attesa di pagamento (Stripe pending / bonifico in attesa)
+  ABANDONED_CHECKOUT     // ha iniziato il checkout ma non l'ha completato (timeout pagamento)
+  PAYMENT_FAILED         // errore del sistema di pagamento (Stripe declined, errore tecnico)
+  CANCELLED              // annullato dal cliente o dall'admin
+  PAID                   // pagamento riuscito, in attesa di evasione
+  PROCESSING             // in preparazione / packaging
+  SHIPPED                // spedito al cliente
+  DELIVERED              // consegnato dal corriere
+  PICKED_UP              // ritirato dal cliente in showroom (storePickup=true)
+  RETURNED               // reso dal cliente
+  REFUNDED               // rimborsato totalmente
+  PARTIALLY_REFUNDED     // rimborso parziale
 }
 
 model Customer {
