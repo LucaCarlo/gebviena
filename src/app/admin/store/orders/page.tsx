@@ -85,6 +85,15 @@ function paymentMethodLabel(o: { paymentProvider: string | null; paymentMethodTy
   return null;
 }
 
+// Label dinamico per il PENDING: per bonifico aspettiamo l'accredito, per
+// stripe è un checkout non completato.
+function statusLabel(o: { status: OrderStatus; paymentProvider: string | null }): string {
+  if (o.status === "PENDING" && o.paymentProvider !== "bonifico") {
+    return "Pagamento Stripe non completato";
+  }
+  return STATUS_META[o.status].label;
+}
+
 const euro = (cents: number, currency: string) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
 
@@ -224,7 +233,7 @@ export default function StoreOrdersPage() {
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border ${meta.cls}`}>
                         <Icon size={11} />
-                        {meta.label}
+                        {statusLabel(o)}
                       </span>
                       {o.status === "PAYMENT_FAILED" && o.paymentErrorMessage && (
                         <div className="text-[10px] text-red-700 mt-1 max-w-[260px] leading-tight" title={o.paymentErrorMessage}>

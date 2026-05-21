@@ -253,7 +253,11 @@ export default function OrderDetailPage() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <div className="text-xs text-warm-500 uppercase tracking-wider mb-1">Stato attuale</div>
-            <div className="text-lg font-semibold text-warm-900">{STATUS_LABEL[order.status]}</div>
+            <div className="text-lg font-semibold text-warm-900">
+              {order.status === "PENDING" && order.paymentProvider !== "bonifico"
+                ? "Pagamento Stripe non completato"
+                : STATUS_LABEL[order.status]}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <label className="text-xs text-warm-500 uppercase tracking-wider">Cambia stato</label>

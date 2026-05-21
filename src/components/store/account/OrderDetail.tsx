@@ -1,11 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronLeft, CircleAlert } from "lucide-react";
+import { ChevronLeft, CircleAlert, Loader2 } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useStoreT } from "@/lib/use-store-t";
 import AuthForms from "./AuthForms";
+
+async function retryOrderCheckout(orderId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/store/public/orders/${orderId}/retry-prefill`, { cache: "no-store" });
+    const j = await res.json();
+    if (!j.success) return false;
+    if (typeof window === "undefined") return false;
+    localStorage.setItem("gtv_cart_v1", JSON.stringify(j.data.items));
+    localStorage.setItem("gtv_checkout_prefill", JSON.stringify(j.data.prefill));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 interface OrderItem {
   id: string;
@@ -173,6 +188,14 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
 }
 
 function StatusBanner({ order, t }: { order: OrderFull; t: (it: string, fr: string) => string }) {
+  const router = useRouter();
+  const [retrying, setRetrying] = useState(false);
+  async function onRetry() {
+    setRetrying(true);
+    const ok = await retryOrderCheckout(order.id);
+    if (ok) router.push("/store/checkout");
+    else { alert(t("Errore nel recupero dei dati dell'ordine.", "Erreur de récupération des données.")); setRetrying(false); }
+  }
   const isBonifico = order.paymentProvider === "bonifico";
   type Tone = "wait" | "warn" | "error" | "ok" | "neutral";
   let tone: Tone = "neutral";
@@ -304,9 +327,14 @@ function StatusBanner({ order, t }: { order: OrderFull; t: (it: string, fr: stri
       {message && <p className={`text-sm mt-3 leading-relaxed ${c.title}`}>{message}</p>}
       {cta && (
         <div className="mt-4">
-          <Link href={cta.href} className="inline-block text-[11px] uppercase tracking-[0.15em] bg-warm-900 text-white px-4 py-2 hover:bg-black">
-            {cta.label} →
-          </Link>
+          <button
+            onClick={onRetry}
+            disabled={retrying}
+            className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] bg-warm-900 text-white px-4 py-2 hover:bg-black disabled:bg-warm-400"
+          >
+            {retrying && <Loader2 size={12} className="animate-spin" />}
+            {t("Riprova al checkout", "Réessayer au checkout")} →
+          </button>
         </div>
       )}
     </div>

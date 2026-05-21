@@ -1,11 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Package, ChevronLeft } from "lucide-react";
+import { Package, ChevronLeft, Loader2 } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useStoreT } from "@/lib/use-store-t";
 import AuthForms from "./AuthForms";
+
+async function retryOrderCheckout(orderId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/store/public/orders/${orderId}/retry-prefill`, { cache: "no-store" });
+    const j = await res.json();
+    if (!j.success) return false;
+    if (typeof window === "undefined") return false;
+    localStorage.setItem("gtv_cart_v1", JSON.stringify(j.data.items));
+    localStorage.setItem("gtv_checkout_prefill", JSON.stringify(j.data.prefill));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 interface OrderRow {
   id: string;
@@ -71,8 +86,21 @@ function statusUi(o: OrderRow, t: (it: string, fr: string) => string): StatusUi 
 
 export default function OrdersList() {
   const t = useStoreT();
+  const router = useRouter();
   const { customer, loading } = useCustomerAuth();
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+
+  async function onRetry(orderId: string) {
+    setRetryingId(orderId);
+    const ok = await retryOrderCheckout(orderId);
+    if (ok) {
+      router.push("/store/checkout");
+    } else {
+      alert(t("Errore nel recupero dei dati dell'ordine.", "Erreur de récupération des données."));
+      setRetryingId(null);
+    }
+  }
 
   useEffect(() => {
     if (!customer) return;
@@ -138,12 +166,14 @@ export default function OrdersList() {
                         ? t("Il pagamento non è andato a buon fine.", "Le paiement n'a pas abouti.")
                         : t("Il pagamento non è stato completato.", "Le paiement n'a pas été complété.")}
                     </div>
-                    <Link
-                      href={ui.cta.href}
-                      className="inline-block text-[11px] uppercase tracking-[0.15em] bg-warm-900 text-white px-4 py-2 hover:bg-black"
+                    <button
+                      onClick={(e) => { e.preventDefault(); onRetry(o.id); }}
+                      disabled={retryingId === o.id}
+                      className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] bg-warm-900 text-white px-4 py-2 hover:bg-black disabled:bg-warm-400"
                     >
-                      {ui.cta.label} →
-                    </Link>
+                      {retryingId === o.id && <Loader2 size={12} className="animate-spin" />}
+                      {t("Riprova al checkout", "Réessayer au checkout")} →
+                    </button>
                   </div>
                 )}
               </div>

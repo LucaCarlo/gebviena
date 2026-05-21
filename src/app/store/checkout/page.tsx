@@ -68,6 +68,40 @@ export default function CheckoutPage() {
   const [quoting, setQuoting] = useState(false);
   const [bonificoEnabled, setBonificoEnabled] = useState(false);
 
+  // Carica eventuale prefill da "Riprova al checkout" (area riservata cliente).
+  // L'oggetto è scritto in localStorage da retryOrderCheckout() e contiene
+  // tutti i campi del form precompilati.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("gtv_checkout_prefill");
+      if (!raw) return;
+      const p = JSON.parse(raw);
+      if (p && typeof p === "object") {
+        setForm((s) => ({
+          ...s,
+          email: p.email || s.email,
+          firstName: p.firstName || s.firstName,
+          lastName: p.lastName || s.lastName,
+          phone: p.phone || s.phone,
+          taxId: p.taxId || s.taxId,
+          street: p.street || s.street,
+          city: p.city || s.city,
+          province: p.province || s.province,
+          postalCode: p.postalCode || s.postalCode,
+          country: p.country || s.country,
+          storePickup: !!p.storePickup,
+          shippingFloor: p.shippingFloor || s.shippingFloor,
+          withUnboxingService: !!p.withUnboxingService,
+          customerNotes: p.customerNotes || s.customerNotes,
+        }));
+      }
+      // Consumalo (no replay accidentale al prossimo checkout)
+      localStorage.removeItem("gtv_checkout_prefill");
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Meta Pixel: InitiateCheckout una sola volta al mount se ci sono items.
   useEffect(() => {
     if (count > 0) {
@@ -204,6 +238,7 @@ export default function CheckoutPage() {
           storePickup: form.storePickup === true,
           customerNotes: form.customerNotes,
           lang,
+          cartSessionId: typeof window !== "undefined" ? (localStorage.getItem("gtv_cart_session_v1") || "") : "",
         }),
       });
       const data = await res.json();

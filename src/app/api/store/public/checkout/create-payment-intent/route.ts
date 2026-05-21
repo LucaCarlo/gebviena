@@ -259,6 +259,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Marca il Cart come converted (così esce dalla lista "carrelli abbandonati")
+    const cartSessionId = typeof body.cartSessionId === "string" ? body.cartSessionId.trim().slice(0, 64) : "";
+    if (cartSessionId) {
+      prisma.cart.updateMany({
+        where: { sessionId: cartSessionId },
+        data: { converted: true, convertedOrderId: order.id },
+      }).catch(() => { /* silent */ });
+    }
+
     return NextResponse.json({
       success: true,
       data: {
