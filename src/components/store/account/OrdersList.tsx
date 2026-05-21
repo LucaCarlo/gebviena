@@ -58,7 +58,7 @@ function statusUi(o: OrderRow, t: (it: string, fr: string) => string): StatusUi 
         ? { label: t("In attesa di accredito bonifico", "En attente du virement"), chip: "bg-amber-50 text-amber-800 border-amber-200" }
         : { label: t("Pagamento non effettuato", "Paiement non effectué"), chip: "bg-orange-50 text-orange-800 border-orange-200", isUrgent: true, cta: { label: t("Effettua il pagamento", "Effectuer le paiement"), href: "/checkout" } };
     case "ABANDONED_CHECKOUT":
-      return { label: t("Pagamento non effettuato", "Paiement non effectué"), chip: "bg-orange-50 text-orange-800 border-orange-200", isUrgent: true, cta: { label: t("Effettua il pagamento", "Effectuer le paiement"), href: "/checkout" } };
+      return { label: t("Checkout abbandonato", "Checkout abandonné"), chip: "bg-orange-50 text-orange-800 border-orange-200", isUrgent: true, cta: { label: t("Completa l'ordine", "Finaliser la commande"), href: "/checkout" } };
     case "PAYMENT_FAILED":
       return { label: t("Pagamento non riuscito", "Paiement échoué"), chip: "bg-red-50 text-red-800 border-red-200", isUrgent: true, cta: { label: t("Riprova il pagamento", "Réessayer le paiement"), href: "/checkout" } };
     case "CANCELLED":

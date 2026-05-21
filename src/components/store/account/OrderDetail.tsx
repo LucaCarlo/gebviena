@@ -224,12 +224,12 @@ function StatusBanner({ order, t }: { order: OrderFull; t: (it: string, fr: stri
       break;
     case "ABANDONED_CHECKOUT":
       tone = "warn";
-      label = t("Pagamento non effettuato", "Paiement non effectué");
+      label = t("Checkout abbandonato", "Checkout abandonné");
       message = t(
-        "Il pagamento non è stato completato. Clicca qui sotto per tornare alla pagina di pagamento con i tuoi dati già precompilati.",
-        "Le paiement n'a pas été complété. Cliquez ci-dessous pour revenir à la page de paiement avec vos données pré-remplies.",
+        "Hai lasciato il checkout prima di completare l'ordine. Clicca qui sotto per riprendere da dove eri rimasto con i dati già precompilati.",
+        "Vous avez quitté le checkout avant de finaliser. Cliquez ci-dessous pour reprendre avec vos données pré-remplies.",
       );
-      cta = { label: t("Effettua il pagamento", "Effectuer le paiement"), href: "/checkout" };
+      cta = { label: t("Completa l'ordine", "Finaliser la commande"), href: "/checkout" };
       break;
     case "PAYMENT_FAILED":
       tone = "error";
