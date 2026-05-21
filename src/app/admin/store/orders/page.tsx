@@ -89,7 +89,7 @@ function paymentMethodLabel(o: { paymentProvider: string | null; paymentMethodTy
 // stripe è un checkout non completato.
 function statusLabel(o: { status: OrderStatus; paymentProvider: string | null }): string {
   if (o.status === "PENDING" && o.paymentProvider !== "bonifico") {
-    return "Pagamento Stripe non completato";
+    return "Pagamento non effettuato";
   }
   return STATUS_META[o.status].label;
 }

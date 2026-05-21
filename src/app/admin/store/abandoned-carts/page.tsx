@@ -8,6 +8,7 @@ interface CartListItem {
   sessionId: string;
   email: string | null;
   customerId: string | null;
+  customer: { firstName: string | null; lastName: string | null; email: string } | null;
   itemCount: number;
   subtotalCents: number;
   currency: string;
@@ -46,7 +47,7 @@ export default function AbandonedCartsPage() {
   const [carts, setCarts] = useState<CartListItem[]>([]);
   const [stats, setStats] = useState<{ totalCarts: number; totalValueCents: number }>({ totalCarts: 0, totalValueCents: 0 });
   const [q, setQ] = useState("");
-  const [minAgeMin, setMinAgeMin] = useState(0);
+  const [maxAgeDays, setMaxAgeDays] = useState(0);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [openRow, setOpenRow] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export default function AbandonedCartsPage() {
         page: String(page),
         pageSize: "30",
         ...(q ? { q } : {}),
-        ...(minAgeMin > 0 ? { minAgeMin: String(minAgeMin) } : {}),
+        ...(maxAgeDays > 0 ? { maxAgeDays: String(maxAgeDays) } : {}),
       });
       const res = await fetch(`/api/admin/store/abandoned-carts?${params}`);
       const data = await res.json();
@@ -75,7 +76,7 @@ export default function AbandonedCartsPage() {
     } finally {
       setLoading(false);
     }
-  }, [q, minAgeMin, page]);
+  }, [q, maxAgeDays, page]);
 
   useEffect(() => {
     const t = setTimeout(fetchCarts, 200);
@@ -128,15 +129,15 @@ export default function AbandonedCartsPage() {
           />
         </div>
         <select
-          value={minAgeMin}
-          onChange={(e) => { setMinAgeMin(parseInt(e.target.value, 10)); setPage(1); }}
+          value={maxAgeDays}
+          onChange={(e) => { setMaxAgeDays(parseInt(e.target.value, 10)); setPage(1); }}
           className="px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
         >
-          <option value="0">Tutti i carrelli</option>
-          <option value="30">Fermi da almeno 30 min</option>
-          <option value="60">Fermi da almeno 1 ora</option>
-          <option value="360">Fermi da almeno 6 ore</option>
-          <option value="1440">Fermi da almeno 24 ore</option>
+          <option value="0">Tutti i tempi</option>
+          <option value="1">Ultime 24 ore</option>
+          <option value="7">Ultimi 7 giorni</option>
+          <option value="14">Ultime 2 settimane</option>
+          <option value="30">Ultimo mese</option>
         </select>
       </div>
 
@@ -178,14 +179,21 @@ export default function AbandonedCartsPage() {
                         </button>
                       </td>
                       <td className="px-4 py-3">
-                        {c.email ? (
+                        {c.customer ? (
+                          <div>
+                            <div className="text-warm-900">
+                              {[c.customer.firstName, c.customer.lastName].filter(Boolean).join(" ") || c.customer.email}
+                            </div>
+                            <div className="text-xs text-warm-500">{c.customer.email}</div>
+                          </div>
+                        ) : c.email ? (
                           <div>
                             <div className="text-warm-900">{c.email}</div>
-                            <div className="text-[11px] text-warm-400 font-mono">{c.sessionId.slice(0, 12)}…</div>
+                            <div className="text-[11px] text-warm-400 italic">ospite (email da checkout)</div>
                           </div>
                         ) : (
                           <div>
-                            <div className="text-warm-500 italic">ospite</div>
+                            <div className="text-warm-500 italic">Ospite</div>
                             <div className="text-[11px] text-warm-400 font-mono">{c.sessionId.slice(0, 12)}…</div>
                           </div>
                         )}

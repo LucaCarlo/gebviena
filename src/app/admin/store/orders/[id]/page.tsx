@@ -255,7 +255,7 @@ export default function OrderDetailPage() {
             <div className="text-xs text-warm-500 uppercase tracking-wider mb-1">Stato attuale</div>
             <div className="text-lg font-semibold text-warm-900">
               {order.status === "PENDING" && order.paymentProvider !== "bonifico"
-                ? "Pagamento Stripe non completato"
+                ? "Pagamento non effettuato"
                 : STATUS_LABEL[order.status]}
             </div>
           </div>

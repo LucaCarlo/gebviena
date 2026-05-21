@@ -23,15 +23,16 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
   const pageSize = Math.min(100, Math.max(1, parseInt(url.searchParams.get("pageSize") || "30", 10)));
   const q = (url.searchParams.get("q") || "").trim();
-  const minAgeMin = Math.max(0, parseInt(url.searchParams.get("minAgeMin") || "0", 10));
-
-  const cutoff = minAgeMin > 0 ? new Date(Date.now() - minAgeMin * 60_000) : null;
+  // maxAgeDays: mostra solo carrelli aggiornati negli ultimi N giorni.
+  // 0 = "tutti i tempi". Default 0.
+  const maxAgeDays = Math.max(0, parseInt(url.searchParams.get("maxAgeDays") || "0", 10));
+  const since = maxAgeDays > 0 ? new Date(Date.now() - maxAgeDays * 86400_000) : null;
 
   const where: Record<string, unknown> = {
     converted: false,
     itemCount: { gt: 0 },
   };
-  if (cutoff) (where as { updatedAt?: unknown }).updatedAt = { lt: cutoff };
+  if (since) (where as { updatedAt?: unknown }).updatedAt = { gte: since };
   if (q) {
     (where as { OR?: unknown[] }).OR = [
       { email: { contains: q } },
@@ -69,6 +70,16 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
+  // Recupera info dei Customer per i cart che hanno customerId
+  const customerIds = rows.map((r) => r.customerId).filter((c): c is string => !!c);
+  const customers = customerIds.length > 0
+    ? await prisma.customer.findMany({
+        where: { id: { in: customerIds } },
+        select: { id: true, firstName: true, lastName: true, email: true },
+      })
+    : [];
+  const cmap = new Map(customers.map((c) => [c.id, c]));
+
   // Parse items (snapshot JSON) e fornisce un piccolo summary per UI tabella
   const data = rows.map((r) => {
     let parsedItems: Array<{ productName?: string; productSlug?: string; sku?: string; quantity?: number; priceCents?: number; coverImage?: string | null }> = [];
@@ -76,11 +87,13 @@ export async function GET(req: NextRequest) {
       parsedItems = JSON.parse(r.items);
       if (!Array.isArray(parsedItems)) parsedItems = [];
     } catch { /* */ }
+    const cust = r.customerId ? cmap.get(r.customerId) : null;
     return {
       id: r.id,
       sessionId: r.sessionId,
-      email: r.email,
+      email: r.email || cust?.email || null,
       customerId: r.customerId,
+      customer: cust ? { firstName: cust.firstName, lastName: cust.lastName, email: cust.email } : null,
       itemCount: r.itemCount,
       subtotalCents: r.subtotalCents,
       currency: r.currency,

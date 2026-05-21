@@ -193,7 +193,7 @@ function StatusBanner({ order, t }: { order: OrderFull; t: (it: string, fr: stri
   async function onRetry() {
     setRetrying(true);
     const ok = await retryOrderCheckout(order.id);
-    if (ok) router.push("/store/checkout");
+    if (ok) router.push("/checkout");
     else { alert(t("Errore nel recupero dei dati dell'ordine.", "Erreur de récupération des données.")); setRetrying(false); }
   }
   const isBonifico = order.paymentProvider === "bonifico";
@@ -214,32 +214,32 @@ function StatusBanner({ order, t }: { order: OrderFull; t: (it: string, fr: stri
         );
       } else {
         tone = "warn";
-        label = t("Ordine non finalizzato", "Commande non finalisée");
+        label = t("Pagamento non effettuato", "Paiement non effectué");
         message = t(
-          "Il pagamento non è stato completato. Questo ordine non sarà processato. Per acquistare questi articoli, aggiungili nuovamente al carrello.",
-          "Le paiement n'a pas été complété. Cette commande ne sera pas traitée. Pour acheter ces articles, ajoutez-les à nouveau au panier.",
+          "Il pagamento non è stato completato. Clicca qui sotto per tornare alla pagina di pagamento con i tuoi dati già precompilati.",
+          "Le paiement n'a pas été complété. Cliquez ci-dessous pour revenir à la page de paiement avec vos données pré-remplies.",
         );
-        cta = { label: t("Riprova dal carrello", "Réessayer depuis le panier"), href: "/" };
+        cta = { label: t("Effettua il pagamento", "Effectuer le paiement"), href: "/checkout" };
       }
       break;
     case "ABANDONED_CHECKOUT":
       tone = "warn";
-      label = t("Ordine non finalizzato", "Commande non finalisée");
+      label = t("Pagamento non effettuato", "Paiement non effectué");
       message = t(
-        "Il checkout è stato interrotto e il pagamento non è stato completato. Per acquistare questi articoli, aggiungili nuovamente al carrello.",
-        "Le paiement n'a pas été complété. Pour acheter ces articles, ajoutez-les à nouveau au panier.",
+        "Il pagamento non è stato completato. Clicca qui sotto per tornare alla pagina di pagamento con i tuoi dati già precompilati.",
+        "Le paiement n'a pas été complété. Cliquez ci-dessous pour revenir à la page de paiement avec vos données pré-remplies.",
       );
-      cta = { label: t("Riprova dal carrello", "Réessayer depuis le panier"), href: "/" };
+      cta = { label: t("Effettua il pagamento", "Effectuer le paiement"), href: "/checkout" };
       break;
     case "PAYMENT_FAILED":
       tone = "error";
       label = t("Pagamento non riuscito", "Paiement échoué");
       message = order.paymentErrorMessage
-        ? t(`Il pagamento è stato rifiutato (${order.paymentErrorMessage}). Per favore riprova o contattaci.`,
-            `Le paiement a été refusé (${order.paymentErrorMessage}). Veuillez réessayer ou nous contacter.`)
-        : t("Il pagamento è stato rifiutato. Per favore riprova o contattaci.",
-            "Le paiement a été refusé. Veuillez réessayer ou nous contacter.");
-      cta = { label: t("Riprova", "Réessayer"), href: "/" };
+        ? t(`Il pagamento è stato rifiutato (${order.paymentErrorMessage}). Riprova ora o contattaci.`,
+            `Le paiement a été refusé (${order.paymentErrorMessage}). Réessayez maintenant ou contactez-nous.`)
+        : t("Il pagamento è stato rifiutato. Riprova ora o contattaci.",
+            "Le paiement a été refusé. Réessayez maintenant ou contactez-nous.");
+      cta = { label: t("Riprova il pagamento", "Réessayer le paiement"), href: "/checkout" };
       break;
     case "CANCELLED":
       tone = "neutral";
@@ -333,7 +333,7 @@ function StatusBanner({ order, t }: { order: OrderFull; t: (it: string, fr: stri
             className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] bg-warm-900 text-white px-4 py-2 hover:bg-black disabled:bg-warm-400"
           >
             {retrying && <Loader2 size={12} className="animate-spin" />}
-            {t("Riprova al checkout", "Réessayer au checkout")} →
+            {cta.label} →
           </button>
         </div>
       )}

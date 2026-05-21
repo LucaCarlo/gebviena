@@ -7,6 +7,7 @@ import RecaptchaProvider from "@/components/providers/RecaptchaProvider";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { getCurrentLang, loadAllUiTranslations, DEFAULT_LANG } from "@/lib/i18n";
 import StoreHeader from "@/components/store/StoreHeader";
+import PendingOrdersBanner from "@/components/store/PendingOrdersBanner";
 import MaintenanceScreen from "@/components/store/MaintenanceScreen";
 import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
 import { CartProvider } from "@/contexts/CartContext";
@@ -79,6 +80,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
             <Suspense fallback={<div className="fixed top-0 left-0 right-0 h-20 md:h-24 bg-white border-b border-neutral-100 z-50" />}>
               <StoreHeader />
             </Suspense>
+            <PendingOrdersBanner />
             <main className="pt-20 md:pt-24">{children}</main>
             <StoreFooter />
           </div>

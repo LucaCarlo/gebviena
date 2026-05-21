@@ -56,11 +56,11 @@ function statusUi(o: OrderRow, t: (it: string, fr: string) => string): StatusUi 
     case "PENDING":
       return isBonifico
         ? { label: t("In attesa di accredito bonifico", "En attente du virement"), chip: "bg-amber-50 text-amber-800 border-amber-200" }
-        : { label: t("Ordine non finalizzato", "Commande non finalisée"), chip: "bg-orange-50 text-orange-800 border-orange-200", isUrgent: true, cta: { label: t("Riprova dal carrello", "Réessayer depuis le panier"), href: "/" } };
+        : { label: t("Pagamento non effettuato", "Paiement non effectué"), chip: "bg-orange-50 text-orange-800 border-orange-200", isUrgent: true, cta: { label: t("Effettua il pagamento", "Effectuer le paiement"), href: "/checkout" } };
     case "ABANDONED_CHECKOUT":
-      return { label: t("Ordine non finalizzato", "Commande non finalisée"), chip: "bg-orange-50 text-orange-800 border-orange-200", isUrgent: true, cta: { label: t("Riprova dal carrello", "Réessayer depuis le panier"), href: "/" } };
+      return { label: t("Pagamento non effettuato", "Paiement non effectué"), chip: "bg-orange-50 text-orange-800 border-orange-200", isUrgent: true, cta: { label: t("Effettua il pagamento", "Effectuer le paiement"), href: "/checkout" } };
     case "PAYMENT_FAILED":
-      return { label: t("Pagamento non riuscito", "Paiement échoué"), chip: "bg-red-50 text-red-800 border-red-200", isUrgent: true, cta: { label: t("Riprova", "Réessayer"), href: "/" } };
+      return { label: t("Pagamento non riuscito", "Paiement échoué"), chip: "bg-red-50 text-red-800 border-red-200", isUrgent: true, cta: { label: t("Riprova il pagamento", "Réessayer le paiement"), href: "/checkout" } };
     case "CANCELLED":
       return { label: t("Ordine annullato", "Commande annulée"), chip: "bg-blue-50 text-blue-800 border-blue-200" };
     case "PAID":
@@ -95,7 +95,7 @@ export default function OrdersList() {
     setRetryingId(orderId);
     const ok = await retryOrderCheckout(orderId);
     if (ok) {
-      router.push("/store/checkout");
+      router.push("/checkout");
     } else {
       alert(t("Errore nel recupero dei dati dell'ordine.", "Erreur de récupération des données."));
       setRetryingId(null);
@@ -172,7 +172,7 @@ export default function OrdersList() {
                       className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] bg-warm-900 text-white px-4 py-2 hover:bg-black disabled:bg-warm-400"
                     >
                       {retryingId === o.id && <Loader2 size={12} className="animate-spin" />}
-                      {t("Riprova al checkout", "Réessayer au checkout")} →
+                      {ui.cta?.label || t("Effettua il pagamento", "Effectuer le paiement")} →
                     </button>
                   </div>
                 )}
