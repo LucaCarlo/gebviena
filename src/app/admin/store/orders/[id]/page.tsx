@@ -255,17 +255,21 @@ export default function OrderDetailPage() {
             <div className="text-xs text-warm-500 uppercase tracking-wider mb-1">Stato attuale</div>
             <div className="text-lg font-semibold text-warm-900">{STATUS_LABEL[order.status]}</div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {STATUSES.filter((s) => s !== order.status).map((s) => (
-              <button
-                key={s}
-                onClick={() => changeStatus(s)}
-                disabled={saving}
-                className="px-3 py-1.5 text-xs border border-warm-200 bg-white hover:bg-warm-50 rounded disabled:opacity-50"
-              >
-                → {STATUS_LABEL[s]}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-warm-500 uppercase tracking-wider">Cambia stato</label>
+            <select
+              value={order.status}
+              disabled={saving}
+              onChange={(e) => {
+                const newStatus = e.target.value as OrderStatus;
+                if (newStatus !== order.status) changeStatus(newStatus);
+              }}
+              className="px-3 py-1.5 text-sm border border-warm-200 bg-white rounded focus:border-warm-700 outline-none disabled:opacity-50"
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+              ))}
+            </select>
           </div>
         </div>
       </section>
