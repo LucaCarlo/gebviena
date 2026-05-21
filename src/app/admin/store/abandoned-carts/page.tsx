@@ -1,261 +1,261 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState } from "react";
-import { Loader2, Search, ShoppingBag, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { Loader2, Search, ShoppingBag, Clock, AlertTriangle, Ban, XCircle } from "lucide-react";
 
-interface CartListItem {
+type OrderStatus =
+  | "PENDING"
+  | "ABANDONED_CHECKOUT"
+  | "PAYMENT_FAILED"
+  | "CANCELLED"
+  | "PAID"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "PICKED_UP"
+  | "RETURNED"
+  | "REFUNDED"
+  | "PARTIALLY_REFUNDED";
+
+interface OrderListItem {
   id: string;
-  sessionId: string;
-  email: string | null;
-  customerId: string | null;
-  customer: { firstName: string | null; lastName: string | null; email: string } | null;
-  itemCount: number;
-  subtotalCents: number;
+  orderNumber: string;
+  status: OrderStatus;
+  email: string;
+  firstName: string;
+  lastName: string;
+  totalCents: number;
   currency: string;
-  language: string | null;
-  ipAddress: string | null;
-  updatedAt: string;
   createdAt: string;
-  items: Array<{
-    productName: string;
-    productSlug: string;
-    sku: string;
-    quantity: number;
-    priceCents: number;
-    coverImage: string | null;
-  }>;
+  paidAt: string | null;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  paymentProvider: string | null;
+  paymentMethodType: string | null;
+  paymentErrorMessage: string | null;
+  storePickup: boolean;
+  customer: { id: string; email: string; firstName: string | null; lastName: string | null } | null;
+  items: { id: string; quantity: number }[];
 }
 
-const eur = (cents: number, currency = "EUR") =>
+// Solo gli stati "non finalizzati" — gli ordini pagati / spediti / completati stanno in /admin/store/orders
+const PENDING_STATUSES: OrderStatus[] = ["ABANDONED_CHECKOUT", "PENDING", "PAYMENT_FAILED", "CANCELLED"];
+
+const STATUS_META: Record<OrderStatus, { label: string; cls: string; Icon: typeof Clock }> = {
+  PENDING:            { label: "In attesa di accredito bonifico", cls: "bg-amber-50 text-amber-800 border-amber-200",  Icon: Clock },
+  ABANDONED_CHECKOUT: { label: "Checkout abbandonato",            cls: "bg-orange-50 text-orange-800 border-orange-200", Icon: Ban },
+  PAYMENT_FAILED:     { label: "Errore pagamento",                cls: "bg-red-50 text-red-800 border-red-200",          Icon: AlertTriangle },
+  CANCELLED:          { label: "Annullato dal cliente",           cls: "bg-blue-50 text-blue-800 border-blue-200",       Icon: XCircle },
+  // Gli stati pagati non dovrebbero apparire qui ma li dichiariamo per typing
+  PAID:               { label: "Pagato",            cls: "bg-emerald-50 text-emerald-800 border-emerald-200", Icon: Clock },
+  PROCESSING:         { label: "In preparazione",   cls: "bg-indigo-50 text-indigo-800 border-indigo-200",    Icon: Clock },
+  SHIPPED:            { label: "Spedito",           cls: "bg-purple-50 text-purple-800 border-purple-200",    Icon: Clock },
+  DELIVERED:          { label: "Consegnato",        cls: "bg-emerald-50 text-emerald-800 border-emerald-200", Icon: Clock },
+  PICKED_UP:          { label: "Ritirato",          cls: "bg-emerald-50 text-emerald-800 border-emerald-200", Icon: Clock },
+  RETURNED:           { label: "Reso",              cls: "bg-blue-50 text-blue-800 border-blue-200",          Icon: Clock },
+  REFUNDED:           { label: "Rimborsato",        cls: "bg-blue-50 text-blue-800 border-blue-200",          Icon: Clock },
+  PARTIALLY_REFUNDED: { label: "Rimb. parziale",    cls: "bg-blue-50 text-blue-800 border-blue-200",          Icon: Clock },
+};
+
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  card: "Carta",
+  klarna: "Klarna",
+  link: "Link",
+  paypal: "PayPal",
+  amazon_pay: "Amazon Pay",
+  sepa_debit: "SEPA",
+  bancontact: "Bancontact",
+  ideal: "iDEAL",
+  giropay: "Giropay",
+  sofort: "Sofort",
+  eps: "EPS",
+  p24: "P24",
+  apple_pay: "Apple Pay",
+  google_pay: "Google Pay",
+  cashapp: "Cash App",
+  alipay: "Alipay",
+  wechat_pay: "WeChat Pay",
+};
+function paymentMethodLabel(o: { paymentProvider: string | null; paymentMethodType: string | null }): string | null {
+  if (o.paymentProvider === "bonifico") return "Bonifico";
+  if (o.paymentMethodType) return PAYMENT_METHOD_LABEL[o.paymentMethodType] || o.paymentMethodType;
+  if (o.paymentProvider === "stripe") return "Stripe (in attesa)";
+  return null;
+}
+
+// PENDING via stripe = pagamento mai effettuato; PENDING via bonifico = aspettiamo accredito
+function statusLabel(o: { status: OrderStatus; paymentProvider: string | null }): string {
+  if (o.status === "PENDING" && o.paymentProvider !== "bonifico") return "Pagamento non effettuato";
+  return STATUS_META[o.status].label;
+}
+
+const euro = (cents: number, currency: string) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
 
-function fmtAge(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(ms / 60000);
-  if (min < 1) return "ora";
-  if (min < 60) return `${min} min fa`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `${h}h fa`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d} g fa`;
-  return new Date(iso).toLocaleDateString("it-IT");
-}
-
 export default function AbandonedCartsPage() {
+  const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [carts, setCarts] = useState<CartListItem[]>([]);
-  const [stats, setStats] = useState<{ totalCarts: number; totalValueCents: number }>({ totalCarts: 0, totalValueCents: 0 });
+  const [status, setStatus] = useState<OrderStatus | "">("");
   const [q, setQ] = useState("");
-  const [maxAgeDays, setMaxAgeDays] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
-  const [openRow, setOpenRow] = useState<string | null>(null);
 
-  const fetchCarts = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: "30",
-        ...(q ? { q } : {}),
-        ...(maxAgeDays > 0 ? { maxAgeDays: String(maxAgeDays) } : {}),
-      });
-      const res = await fetch(`/api/admin/store/abandoned-carts?${params}`);
-      const data = await res.json();
-      if (!data.success) {
-        setError(data.error || "Errore caricamento");
-        return;
-      }
-      setCarts(data.data || []);
-      setStats(data.stats || { totalCarts: 0, totalValueCents: 0 });
-      setPages(data.pagination?.pages || 1);
-    } catch {
-      setError("Errore di rete");
-    } finally {
-      setLoading(false);
-    }
-  }, [q, maxAgeDays, page]);
+    const params = new URLSearchParams();
+    params.set("scope", "pending"); // ABANDONED_CHECKOUT + PENDING + PAYMENT_FAILED + CANCELLED
+    if (status) params.set("status", status);
+    if (q) params.set("q", q);
+    const res = await fetch(`/api/store/orders?${params}`).then((r) => r.json());
+    if (res.success) setOrders(res.data);
+    setLoading(false);
+  }, [status, q]);
 
   useEffect(() => {
-    const t = setTimeout(fetchCarts, 200);
+    const t = setTimeout(() => fetchAll(), 250);
     return () => clearTimeout(t);
-  }, [fetchCarts]);
+  }, [fetchAll]);
 
-  const deleteCart = async (id: string) => {
-    if (!confirm("Eliminare questo carrello dalla lista?")) return;
-    try {
-      const res = await fetch("/api/admin/store/abandoned-carts", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchCarts();
-      } else {
-        alert(data.error || "Errore eliminazione");
-      }
-    } catch {
-      alert("Errore di rete");
-    }
-  };
+  const totalBy = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
+  const pendingBonifico = orders.filter((o) => o.status === "PENDING" && o.paymentProvider === "bonifico").length;
+  const pendingStripe = orders.filter((o) => o.status === "PENDING" && o.paymentProvider !== "bonifico").length;
 
   return (
     <div>
-      <header className="flex items-center justify-between mb-6">
+      <header className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-semibold text-warm-900 flex items-center gap-2">
             <ShoppingBag size={24} /> Carrelli abbandonati
           </h1>
-          <p className="text-sm text-warm-500 mt-1">
-            {stats.totalCarts} carrelli ·{" "}
-            <span className="text-warm-700 font-medium">{eur(stats.totalValueCents)}</span> valore complessivo non finalizzato
-          </p>
+          <p className="text-sm text-warm-500 mt-1">{orders.length} ordini non finalizzati</p>
         </div>
       </header>
+
+      {/* Riepilogo conteggi */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {totalBy("ABANDONED_CHECKOUT") > 0 && (
+          <div className="rounded-lg border p-3 bg-orange-50 text-orange-800 border-orange-200">
+            <div className="text-xs font-medium uppercase tracking-wider">Checkout abbandonati</div>
+            <div className="text-2xl font-semibold mt-1">{totalBy("ABANDONED_CHECKOUT")}</div>
+          </div>
+        )}
+        {pendingStripe > 0 && (
+          <div className="rounded-lg border p-3 bg-amber-50 text-amber-800 border-amber-200">
+            <div className="text-xs font-medium uppercase tracking-wider">Pagamento non effettuato</div>
+            <div className="text-2xl font-semibold mt-1">{pendingStripe}</div>
+          </div>
+        )}
+        {pendingBonifico > 0 && (
+          <div className="rounded-lg border p-3 bg-amber-50 text-amber-800 border-amber-200">
+            <div className="text-xs font-medium uppercase tracking-wider">In attesa di bonifico</div>
+            <div className="text-2xl font-semibold mt-1">{pendingBonifico}</div>
+          </div>
+        )}
+        {totalBy("PAYMENT_FAILED") > 0 && (
+          <div className="rounded-lg border p-3 bg-red-50 text-red-800 border-red-200">
+            <div className="text-xs font-medium uppercase tracking-wider">Errore pagamento</div>
+            <div className="text-2xl font-semibold mt-1">{totalBy("PAYMENT_FAILED")}</div>
+          </div>
+        )}
+        {totalBy("CANCELLED") > 0 && (
+          <div className="rounded-lg border p-3 bg-blue-50 text-blue-800 border-blue-200">
+            <div className="text-xs font-medium uppercase tracking-wider">Annullati</div>
+            <div className="text-2xl font-semibold mt-1">{totalBy("CANCELLED")}</div>
+          </div>
+        )}
+      </div>
 
       {/* Filters */}
       <div className="bg-white rounded-lg border border-warm-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
         <div className="flex-1 min-w-[240px] relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
-            type="text"
             value={q}
-            onChange={(e) => { setQ(e.target.value); setPage(1); }}
-            placeholder="Cerca email, articolo, sessionId…"
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Cerca per numero ordine, email, nome…"
             className="w-full pl-9 pr-3 py-2 border border-warm-200 rounded-lg text-sm"
           />
         </div>
         <select
-          value={maxAgeDays}
-          onChange={(e) => { setMaxAgeDays(parseInt(e.target.value, 10)); setPage(1); }}
+          value={status}
+          onChange={(e) => setStatus(e.target.value as OrderStatus | "")}
           className="px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
         >
-          <option value="0">Tutti i tempi</option>
-          <option value="1">Ultime 24 ore</option>
-          <option value="7">Ultimi 7 giorni</option>
-          <option value="14">Ultime 2 settimane</option>
-          <option value="30">Ultimo mese</option>
+          <option value="">Tutti gli stati</option>
+          {PENDING_STATUSES.map((s) => (
+            <option key={s} value={s}>{STATUS_META[s].label}</option>
+          ))}
         </select>
       </div>
 
-      {/* Tabella */}
       {loading ? (
         <div className="flex items-center justify-center py-16 text-warm-400">
           <Loader2 className="animate-spin" size={20} />
         </div>
-      ) : error ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 text-sm">{error}</div>
-      ) : carts.length === 0 ? (
+      ) : orders.length === 0 ? (
         <div className="text-center py-16 text-warm-400 bg-white rounded-lg border border-warm-200">
-          Nessun carrello abbandonato con i filtri attuali.
+          Nessun ordine non finalizzato con i filtri attuali.
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 text-warm-500 text-xs uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-3 text-left w-8"></th>
+                <th className="px-4 py-3 text-left">Numero</th>
+                <th className="px-4 py-3 text-left">Data</th>
                 <th className="px-4 py-3 text-left">Cliente</th>
                 <th className="px-4 py-3 text-center">Articoli</th>
-                <th className="px-4 py-3 text-right">Subtotale</th>
-                <th className="px-4 py-3 text-left">Lingua</th>
-                <th className="px-4 py-3 text-left">Ultimo aggiornamento</th>
-                <th className="px-4 py-3 text-left">Creato</th>
-                <th className="px-4 py-3 text-right"></th>
+                <th className="px-4 py-3 text-right">Totale</th>
+                <th className="px-4 py-3 text-left">Pagamento</th>
+                <th className="px-4 py-3 text-left">Stato</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
-              {carts.map((c) => {
-                const isOpen = openRow === c.id;
+              {orders.map((o) => {
+                const meta = STATUS_META[o.status];
+                const Icon = meta.Icon;
+                const totalItems = o.items.reduce((s, it) => s + it.quantity, 0);
                 return (
-                  <Fragment key={c.id}>
-                    <tr className="hover:bg-warm-50/50">
-                      <td className="px-4 py-3">
-                        <button onClick={() => setOpenRow(isOpen ? null : c.id)} className="p-1 hover:bg-warm-100 rounded">
-                          {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        {c.customer ? (
-                          <div>
-                            <div className="text-warm-900">
-                              {[c.customer.firstName, c.customer.lastName].filter(Boolean).join(" ") || c.customer.email}
-                            </div>
-                            <div className="text-xs text-warm-500">{c.customer.email}</div>
-                          </div>
-                        ) : c.email ? (
-                          <div>
-                            <div className="text-warm-900">{c.email}</div>
-                            <div className="text-[11px] text-warm-400 italic">ospite (email da checkout)</div>
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="text-warm-500 italic">Ospite</div>
-                            <div className="text-[11px] text-warm-400 font-mono">{c.sessionId.slice(0, 12)}…</div>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center text-warm-900 font-medium">{c.itemCount}</td>
-                      <td className="px-4 py-3 text-right text-warm-900 font-mono">{eur(c.subtotalCents, c.currency)}</td>
-                      <td className="px-4 py-3 text-warm-700 uppercase text-xs">{c.language || "—"}</td>
-                      <td className="px-4 py-3 text-warm-700">{fmtAge(c.updatedAt)}</td>
-                      <td className="px-4 py-3 text-warm-500 text-xs">
-                        {new Date(c.createdAt).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button onClick={() => deleteCart(c.id)} className="text-warm-400 hover:text-red-600 p-1" title="Elimina">
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                    {isOpen && (
-                      <tr className="bg-warm-50/40">
-                        <td colSpan={8} className="px-4 py-4">
-                          <div className="text-xs uppercase tracking-wider text-warm-500 mb-3">Dettaglio carrello</div>
-                          <div className="grid md:grid-cols-3 gap-4 mb-4 text-xs text-warm-600">
-                            <div><span className="text-warm-500">SessionId:</span> <span className="font-mono">{c.sessionId}</span></div>
-                            {c.ipAddress && <div><span className="text-warm-500">IP:</span> <span className="font-mono">{c.ipAddress}</span></div>}
-                            {c.customerId && <div><span className="text-warm-500">CustomerId:</span> <span className="font-mono">{c.customerId}</span></div>}
-                          </div>
-                          <div className="space-y-2">
-                            {c.items.map((it, i) => (
-                              <div key={i} className="flex items-center gap-3 bg-white border border-warm-200 rounded-lg p-2">
-                                {it.coverImage && (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={it.coverImage} alt={it.productName} className="w-12 h-12 object-cover rounded" />
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm text-warm-900 truncate">{it.productName || "(senza nome)"}</div>
-                                  <div className="text-xs text-warm-500 truncate">SKU {it.sku} · slug {it.productSlug}</div>
-                                </div>
-                                <div className="text-sm text-warm-700">×{it.quantity}</div>
-                                <div className="text-sm text-warm-900 font-mono w-24 text-right">{eur(it.priceCents * it.quantity, c.currency)}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
+                  <tr key={o.id} className="hover:bg-warm-50/50">
+                    <td className="px-4 py-3">
+                      <Link href={`/admin/store/orders/${o.id}`} className="font-mono text-warm-900 hover:text-warm-700">
+                        {o.orderNumber}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-warm-600">
+                      {new Date(o.createdAt).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-warm-900">{o.firstName} {o.lastName}</div>
+                      <div className="text-xs text-warm-500">{o.email}</div>
+                      {!o.customer && <span className="text-[10px] text-warm-400 italic">guest</span>}
+                    </td>
+                    <td className="px-4 py-3 text-center text-warm-600">{totalItems}</td>
+                    <td className="px-4 py-3 text-right font-mono text-warm-900">{euro(o.totalCents, o.currency)}</td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const lbl = paymentMethodLabel(o);
+                        if (!lbl) return <span className="text-warm-400 text-[11px]">—</span>;
+                        const isBonifico = o.paymentProvider === "bonifico";
+                        return <span className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded ${isBonifico ? "bg-amber-50 text-amber-800" : "bg-warm-100 text-warm-700"}`}>{lbl}</span>;
+                      })()}
+                      {o.storePickup && <span className="ml-1 inline-flex items-center text-[10px] px-1 py-0.5 rounded bg-emerald-50 text-emerald-700">Ritiro</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border ${meta.cls}`}>
+                        <Icon size={11} />
+                        {statusLabel(o)}
+                      </span>
+                      {o.status === "PAYMENT_FAILED" && o.paymentErrorMessage && (
+                        <div className="text-[10px] text-red-700 mt-1 max-w-[260px] leading-tight" title={o.paymentErrorMessage}>
+                          {o.paymentErrorMessage.length > 80 ? o.paymentErrorMessage.slice(0, 80) + "…" : o.paymentErrorMessage}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {pages > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 border border-warm-200 rounded-lg text-sm disabled:opacity-40">
-            Precedente
-          </button>
-          <span className="px-3 py-1.5 text-sm text-warm-600">Pagina {page} di {pages}</span>
-          <button disabled={page === pages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 border border-warm-200 rounded-lg text-sm disabled:opacity-40">
-            Successiva
-          </button>
         </div>
       )}
     </div>

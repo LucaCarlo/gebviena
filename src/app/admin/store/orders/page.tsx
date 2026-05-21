@@ -106,6 +106,7 @@ export default function StoreOrdersPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
+    params.set("scope", "paid"); // questa pagina mostra solo ordini pagati / in evasione / completati / post-vendita
     if (status) params.set("status", status);
     if (q) params.set("q", q);
     const res = await fetch(`/api/store/orders?${params}`).then((r) => r.json());
@@ -131,15 +132,13 @@ export default function StoreOrdersPage() {
         </div>
       </header>
 
-      {/* Riepilogo conteggi per gruppo */}
+      {/* Riepilogo conteggi per gruppo (solo ordini finalizzati) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {(() => {
           const groups = [
-            { key: "in-attesa", label: "In attesa di pagamento", statuses: ["PENDING"] as OrderStatus[], cls: "bg-amber-50 text-amber-800 border-amber-200" },
             { key: "da-evadere", label: "Da evadere (pagati)",   statuses: ["PAID", "PROCESSING"] as OrderStatus[], cls: "bg-blue-50 text-blue-800 border-blue-200" },
             { key: "in-corso",  label: "Spediti / in corso",     statuses: ["SHIPPED"] as OrderStatus[], cls: "bg-purple-50 text-purple-800 border-purple-200" },
             { key: "completati", label: "Completati",            statuses: ["DELIVERED", "PICKED_UP"] as OrderStatus[], cls: "bg-emerald-50 text-emerald-800 border-emerald-200" },
-            { key: "falliti",   label: "Falliti / annullati",    statuses: ["ABANDONED_CHECKOUT", "PAYMENT_FAILED", "CANCELLED"] as OrderStatus[], cls: "bg-warm-100 text-warm-700 border-warm-300" },
             { key: "post",      label: "Resi / rimborsi",        statuses: ["RETURNED", "REFUNDED", "PARTIALLY_REFUNDED"] as OrderStatus[], cls: "bg-orange-50 text-orange-800 border-orange-200" },
           ];
           return groups.filter((g) => g.statuses.some((s) => totalBy(s) > 0)).map((g) => {
@@ -171,7 +170,7 @@ export default function StoreOrdersPage() {
           className="px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
         >
           <option value="">Tutti gli stati</option>
-          {(Object.keys(STATUS_META) as OrderStatus[]).map((s) => (
+          {(["PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED"] as OrderStatus[]).map((s) => (
             <option key={s} value={s}>{STATUS_META[s].label}</option>
           ))}
         </select>
@@ -183,7 +182,7 @@ export default function StoreOrdersPage() {
         </div>
       ) : orders.length === 0 ? (
         <div className="text-center py-16 text-warm-400 bg-white rounded-lg border border-warm-200">
-          Nessun ordine. Quando i clienti fanno un acquisto, compaiono qui.
+          Nessun ordine finalizzato. Gli ordini non ancora pagati sono in <Link href="/admin/store/abandoned-carts" className="text-warm-700 underline">Carrelli abbandonati</Link>.
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-warm-200 overflow-hidden">
