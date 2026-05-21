@@ -32,6 +32,8 @@ interface OrderListItem {
   shippedAt: string | null;
   deliveredAt: string | null;
   paymentProvider: string | null;
+  paymentMethodType: string | null;
+  paymentErrorMessage: string | null;
   storePickup: boolean;
   customer: { id: string; email: string; firstName: string | null; lastName: string | null } | null;
   items: { id: string; quantity: number }[];
@@ -39,22 +41,49 @@ interface OrderListItem {
 
 const STATUS_META: Record<OrderStatus, { label: string; cls: string; Icon: typeof Clock; group: "pending" | "failed" | "success" | "fulfillment" | "post" }> = {
   // ─── In attesa / iniziati ───
-  PENDING:            { label: "In attesa di accredito bonifico", cls: "bg-amber-50 text-amber-700 border-amber-200", Icon: Clock,    group: "pending" },
-  ABANDONED_CHECKOUT: { label: "Checkout abbandonato",   cls: "bg-warm-100 text-warm-600 border-warm-200",         Icon: Ban,           group: "failed" },
-  PAYMENT_FAILED:     { label: "Errore pagamento",       cls: "bg-red-50 text-red-700 border-red-200",             Icon: AlertTriangle, group: "failed" },
-  CANCELLED:          { label: "Annullato dal cliente",  cls: "bg-warm-100 text-warm-600 border-warm-200",         Icon: XCircle,       group: "failed" },
+  PENDING:            { label: "In attesa di accredito bonifico", cls: "bg-amber-50 text-amber-800 border-amber-200", Icon: Clock,         group: "pending" },
+  ABANDONED_CHECKOUT: { label: "Checkout abbandonato",   cls: "bg-orange-50 text-orange-800 border-orange-200",      Icon: Ban,           group: "failed" },
+  PAYMENT_FAILED:     { label: "Errore pagamento",       cls: "bg-red-50 text-red-800 border-red-200",               Icon: AlertTriangle, group: "failed" },
+  CANCELLED:          { label: "Annullato dal cliente",  cls: "bg-blue-50 text-blue-800 border-blue-200",            Icon: XCircle,       group: "failed" },
   // ─── Pagati / in evasione ───
-  PAID:               { label: "Pagato",                 cls: "bg-blue-50 text-blue-700 border-blue-200",          Icon: Check,         group: "success" },
-  PROCESSING:         { label: "In preparazione",        cls: "bg-indigo-50 text-indigo-700 border-indigo-200",    Icon: Package,       group: "fulfillment" },
-  SHIPPED:            { label: "Spedito",                cls: "bg-purple-50 text-purple-700 border-purple-200",    Icon: Truck,         group: "fulfillment" },
+  PAID:               { label: "Pagato",                 cls: "bg-emerald-50 text-emerald-800 border-emerald-200",   Icon: Check,         group: "success" },
+  PROCESSING:         { label: "In preparazione",        cls: "bg-indigo-50 text-indigo-800 border-indigo-200",      Icon: Package,       group: "fulfillment" },
+  SHIPPED:            { label: "Spedito",                cls: "bg-purple-50 text-purple-800 border-purple-200",      Icon: Truck,         group: "fulfillment" },
   // ─── Completati ───
-  DELIVERED:          { label: "Consegnato",             cls: "bg-emerald-50 text-emerald-700 border-emerald-200", Icon: Check,         group: "fulfillment" },
-  PICKED_UP:          { label: "Ritirato in showroom",   cls: "bg-emerald-50 text-emerald-700 border-emerald-200", Icon: Store,         group: "fulfillment" },
+  DELIVERED:          { label: "Consegnato",             cls: "bg-emerald-50 text-emerald-800 border-emerald-200",   Icon: Check,         group: "fulfillment" },
+  PICKED_UP:          { label: "Ritirato in showroom",   cls: "bg-emerald-50 text-emerald-800 border-emerald-200",   Icon: Store,         group: "fulfillment" },
   // ─── Post-vendita ───
-  RETURNED:           { label: "Reso",                   cls: "bg-orange-50 text-orange-700 border-orange-200",    Icon: Undo2,         group: "post" },
-  REFUNDED:           { label: "Rimborsato",             cls: "bg-red-50 text-red-700 border-red-200",             Icon: RotateCcw,     group: "post" },
-  PARTIALLY_REFUNDED: { label: "Rimb. parziale",         cls: "bg-orange-50 text-orange-700 border-orange-200",    Icon: RotateCcw,     group: "post" },
+  RETURNED:           { label: "Reso",                   cls: "bg-blue-50 text-blue-800 border-blue-200",            Icon: Undo2,         group: "post" },
+  REFUNDED:           { label: "Rimborsato",             cls: "bg-blue-50 text-blue-800 border-blue-200",            Icon: RotateCcw,     group: "post" },
+  PARTIALLY_REFUNDED: { label: "Rimb. parziale",         cls: "bg-blue-50 text-blue-800 border-blue-200",            Icon: RotateCcw,     group: "post" },
 };
+
+// Label umane per il payment_method_type Stripe (card, klarna, link, paypal, ecc.)
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  card: "Carta",
+  klarna: "Klarna",
+  link: "Link",
+  paypal: "PayPal",
+  amazon_pay: "Amazon Pay",
+  sepa_debit: "SEPA",
+  bancontact: "Bancontact",
+  ideal: "iDEAL",
+  giropay: "Giropay",
+  sofort: "Sofort",
+  eps: "EPS",
+  p24: "P24",
+  apple_pay: "Apple Pay",
+  google_pay: "Google Pay",
+  cashapp: "Cash App",
+  alipay: "Alipay",
+  wechat_pay: "WeChat Pay",
+};
+function paymentMethodLabel(o: { paymentProvider: string | null; paymentMethodType: string | null }): string | null {
+  if (o.paymentProvider === "bonifico") return "Bonifico";
+  if (o.paymentMethodType) return PAYMENT_METHOD_LABEL[o.paymentMethodType] || o.paymentMethodType;
+  if (o.paymentProvider === "stripe") return "Stripe (in attesa)";
+  return null;
+}
 
 const euro = (cents: number, currency: string) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
@@ -184,13 +213,12 @@ export default function StoreOrdersPage() {
                     <td className="px-4 py-3 text-center text-warm-600">{totalItems}</td>
                     <td className="px-4 py-3 text-right font-mono text-warm-900">{euro(o.totalCents, o.currency)}</td>
                     <td className="px-4 py-3">
-                      {o.paymentProvider === "bonifico" ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-warm-100 text-warm-700">Bonifico</span>
-                      ) : o.paymentProvider === "stripe" ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-warm-100 text-warm-700">Carta / Klarna</span>
-                      ) : (
-                        <span className="text-warm-400 text-[11px]">—</span>
-                      )}
+                      {(() => {
+                        const lbl = paymentMethodLabel(o);
+                        if (!lbl) return <span className="text-warm-400 text-[11px]">—</span>;
+                        const isBonifico = o.paymentProvider === "bonifico";
+                        return <span className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded ${isBonifico ? "bg-amber-50 text-amber-800" : "bg-warm-100 text-warm-700"}`}>{lbl}</span>;
+                      })()}
                       {o.storePickup && <span className="ml-1 inline-flex items-center text-[10px] px-1 py-0.5 rounded bg-emerald-50 text-emerald-700">Ritiro</span>}
                     </td>
                     <td className="px-4 py-3">
@@ -198,6 +226,11 @@ export default function StoreOrdersPage() {
                         <Icon size={11} />
                         {meta.label}
                       </span>
+                      {o.status === "PAYMENT_FAILED" && o.paymentErrorMessage && (
+                        <div className="text-[10px] text-red-700 mt-1 max-w-[260px] leading-tight" title={o.paymentErrorMessage}>
+                          {o.paymentErrorMessage.length > 80 ? o.paymentErrorMessage.slice(0, 80) + "…" : o.paymentErrorMessage}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );

@@ -1515,6 +1515,7 @@ model Order {
 
   // Pagamento
   paymentProvider       String?   @db.VarChar(32)
+  paymentMethodType     String?   @db.VarChar(32)   // tipo Stripe payment method: card, klarna, link, paypal, sepa_debit…
   stripeSessionId       String?   @unique @db.VarChar(191)
   stripePaymentIntentId String?   @unique @db.VarChar(191)
   paymentErrorMessage   String?   @db.Text   // motivo decline da Stripe (es. "issuer_declined")

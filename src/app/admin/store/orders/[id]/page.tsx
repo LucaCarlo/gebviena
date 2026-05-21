@@ -66,6 +66,7 @@ interface OrderDetail {
   shippedAt: string | null;
   deliveredAt: string | null;
   paymentProvider: string | null;
+  paymentMethodType: string | null;
   paymentErrorMessage: string | null;
   stripeSessionId: string | null;
   stripePaymentIntentId: string | null;
@@ -419,6 +420,14 @@ export default function OrderDetailPage() {
             <h3 className="font-medium text-warm-900 mb-2">Pagamento</h3>
             <dl className="space-y-1 text-xs">
               <div className="flex justify-between"><dt className="text-warm-500">Provider</dt><dd className="text-warm-800">{order.paymentProvider || "—"}</dd></div>
+              {order.paymentMethodType && (() => {
+                const map: Record<string, string> = {
+                  card: "Carta", klarna: "Klarna", link: "Link", paypal: "PayPal",
+                  amazon_pay: "Amazon Pay", sepa_debit: "SEPA", bancontact: "Bancontact",
+                  ideal: "iDEAL", giropay: "Giropay", sofort: "Sofort", apple_pay: "Apple Pay", google_pay: "Google Pay",
+                };
+                return <div className="flex justify-between"><dt className="text-warm-500">Metodo</dt><dd className="text-warm-800 font-medium">{map[order.paymentMethodType] || order.paymentMethodType}</dd></div>;
+              })()}
               {order.paidAt && <div className="flex justify-between"><dt className="text-warm-500">Pagato il</dt><dd className="text-warm-800">{new Date(order.paidAt).toLocaleString("it-IT")}</dd></div>}
               {order.stripePaymentIntentId && (
                 <div className="flex justify-between items-center">

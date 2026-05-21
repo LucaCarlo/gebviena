@@ -46,13 +46,20 @@ export async function POST(req: NextRequest) {
         }
         if (order.status === "PAID") break; // idempotenza
 
+        // Estrai il metodo di pagamento esatto dal latest_charge
+        let methodType: string | null = null;
+        try {
+          const charge = pi.latest_charge && typeof pi.latest_charge !== "string" ? pi.latest_charge : null;
+          methodType = charge?.payment_method_details?.type || (pi.payment_method_types && pi.payment_method_types[0]) || null;
+        } catch { /* */ }
+
         let promoted = false;
         await prisma.$transaction(async (tx) => {
           const fresh = await tx.order.findUnique({ where: { id: order.id }, select: { status: true } });
           if (fresh?.status !== "PENDING") return; // race con order-status fallback
           await tx.order.update({
             where: { id: order.id },
-            data: { status: "PAID", paidAt: new Date() },
+            data: { status: "PAID", paidAt: new Date(), paymentMethodType: methodType || undefined },
           });
           // Decrementa stock
           for (const item of order.items) {

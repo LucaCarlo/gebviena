@@ -41,12 +41,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       const pi = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId);
 
       if (pi.status === "succeeded") {
+        // Estrai paymentMethodType
+        const piExpanded = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId, { expand: ["latest_charge"] }).catch(() => null);
+        const charge = piExpanded?.latest_charge && typeof piExpanded.latest_charge !== "string" ? piExpanded.latest_charge : null;
+        const methodType = charge?.payment_method_details?.type || piExpanded?.payment_method_types?.[0] || null;
         await prisma.$transaction(async (tx) => {
           const fresh = await tx.order.findUnique({ where: { id: order.id }, select: { status: true } });
           if (fresh?.status !== "PENDING") return; // race con webhook → ok
           await tx.order.update({
             where: { id: order.id },
-            data: { status: "PAID", paidAt: new Date() },
+            data: { status: "PAID", paidAt: new Date(), paymentMethodType: methodType || undefined },
           });
           for (const it of order.items) {
             if (!it.variantId) continue;
