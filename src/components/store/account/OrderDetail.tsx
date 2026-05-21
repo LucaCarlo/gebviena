@@ -27,6 +27,10 @@ interface OrderFull {
   shippingCents: number;
   taxCents: number;
   currency: string;
+  paymentProvider: string | null;
+  paymentMethodType: string | null;
+  paymentErrorMessage: string | null;
+  storePickup: boolean;
   trackingNumber: string | null;
   trackingCarrier: string | null;
   trackingUrl: string | null;
@@ -99,13 +103,16 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
         <ChevronLeft size={14} /> {t("I miei ordini", "Mes commandes")}
       </Link>
 
-      <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
           <div className="text-[11px] uppercase tracking-[0.25em] text-warm-500 mb-1">{t("Ordine", "Commande")}</div>
           <h1 className="text-3xl font-light text-warm-900 font-mono">#{order.orderNumber}</h1>
           <div className="text-sm text-warm-500 mt-1">{fmtDate(order.createdAt)}</div>
         </div>
       </div>
+
+      {/* Banner stato dell'ordine — messaggio user-friendly + eventuale CTA */}
+      <StatusBanner order={order} t={t} />
 
       {/* Nota contatti — il sito non gestisce le fasi di spedizione */}
       <div className="border border-warm-200 bg-warm-50/50 p-5 mb-8 text-sm text-warm-700 leading-relaxed">
@@ -161,6 +168,147 @@ export default function OrderDetail({ orderId }: { orderId: string }) {
           phone={order.phone}
         />
       </div>
+    </div>
+  );
+}
+
+function StatusBanner({ order, t }: { order: OrderFull; t: (it: string, fr: string) => string }) {
+  const isBonifico = order.paymentProvider === "bonifico";
+  type Tone = "wait" | "warn" | "error" | "ok" | "neutral";
+  let tone: Tone = "neutral";
+  let label = order.status;
+  let message = "";
+  let cta: { label: string; href: string } | null = null;
+
+  switch (order.status) {
+    case "PENDING":
+      if (isBonifico) {
+        tone = "wait";
+        label = t("In attesa di accredito bonifico", "En attente du virement");
+        message = t(
+          "Effettua il bonifico utilizzando le coordinate che ti abbiamo inviato per email. L'ordine verrà elaborato dopo la conferma di accredito.",
+          "Effectuez le virement avec les coordonnées que nous vous avons envoyées par e-mail. La commande sera traitée après confirmation de la réception des fonds.",
+        );
+      } else {
+        tone = "warn";
+        label = t("Ordine non finalizzato", "Commande non finalisée");
+        message = t(
+          "Il pagamento non è stato completato. Questo ordine non sarà processato. Per acquistare questi articoli, aggiungili nuovamente al carrello.",
+          "Le paiement n'a pas été complété. Cette commande ne sera pas traitée. Pour acheter ces articles, ajoutez-les à nouveau au panier.",
+        );
+        cta = { label: t("Riprova dal carrello", "Réessayer depuis le panier"), href: "/" };
+      }
+      break;
+    case "ABANDONED_CHECKOUT":
+      tone = "warn";
+      label = t("Ordine non finalizzato", "Commande non finalisée");
+      message = t(
+        "Il checkout è stato interrotto e il pagamento non è stato completato. Per acquistare questi articoli, aggiungili nuovamente al carrello.",
+        "Le paiement n'a pas été complété. Pour acheter ces articles, ajoutez-les à nouveau au panier.",
+      );
+      cta = { label: t("Riprova dal carrello", "Réessayer depuis le panier"), href: "/" };
+      break;
+    case "PAYMENT_FAILED":
+      tone = "error";
+      label = t("Pagamento non riuscito", "Paiement échoué");
+      message = order.paymentErrorMessage
+        ? t(`Il pagamento è stato rifiutato (${order.paymentErrorMessage}). Per favore riprova o contattaci.`,
+            `Le paiement a été refusé (${order.paymentErrorMessage}). Veuillez réessayer ou nous contacter.`)
+        : t("Il pagamento è stato rifiutato. Per favore riprova o contattaci.",
+            "Le paiement a été refusé. Veuillez réessayer ou nous contacter.");
+      cta = { label: t("Riprova", "Réessayer"), href: "/" };
+      break;
+    case "CANCELLED":
+      tone = "neutral";
+      label = t("Ordine annullato", "Commande annulée");
+      message = t("Questo ordine è stato annullato e non sarà processato.",
+        "Cette commande a été annulée et ne sera pas traitée.");
+      break;
+    case "PAID":
+      tone = "ok";
+      label = t("Pagamento confermato", "Paiement confirmé");
+      message = t(
+        "Abbiamo ricevuto il tuo pagamento. Il tuo ordine è in elaborazione: ti contatteremo prima della spedizione per concordare i dettagli.",
+        "Nous avons reçu votre paiement. Votre commande est en traitement : nous vous contacterons avant l'expédition.",
+      );
+      break;
+    case "PROCESSING":
+      tone = "ok";
+      label = t("In preparazione", "En préparation");
+      message = t(
+        "Stiamo preparando il tuo ordine. Ti contatteremo prima della spedizione per concordare i dettagli della consegna.",
+        "Nous préparons votre commande. Nous vous contacterons avant l'expédition pour convenir des détails.",
+      );
+      break;
+    case "SHIPPED":
+      tone = "ok";
+      label = t("Ordine spedito", "Commande expédiée");
+      message = t(
+        "Il tuo ordine è in viaggio. Il corriere ti contatterà al numero di telefono indicato per concordare la consegna.",
+        "Votre commande est en route. Le transporteur vous contactera pour convenir de la livraison.",
+      );
+      break;
+    case "DELIVERED":
+      tone = "ok";
+      label = t("Ordine consegnato", "Commande livrée");
+      message = t("Il tuo ordine è stato consegnato. Grazie per averci scelto!",
+        "Votre commande a été livrée. Merci de nous avoir choisis !");
+      break;
+    case "PICKED_UP":
+      tone = "ok";
+      label = t("Ordine ritirato in showroom", "Commande retirée au showroom");
+      message = t("Hai ritirato il tuo ordine presso il nostro showroom. Grazie!",
+        "Vous avez retiré votre commande dans notre showroom. Merci !");
+      break;
+    case "RETURNED":
+      tone = "neutral";
+      label = t("Reso", "Retourné");
+      message = t("L'ordine è stato reso. Per dettagli sul rimborso contattaci.",
+        "La commande a été retournée. Pour les détails du remboursement, contactez-nous.");
+      break;
+    case "REFUNDED":
+      tone = "neutral";
+      label = t("Rimborsato", "Remboursé");
+      message = t("Hai ricevuto il rimborso totale per questo ordine.",
+        "Vous avez reçu le remboursement total pour cette commande.");
+      break;
+    case "PARTIALLY_REFUNDED":
+      tone = "neutral";
+      label = t("Rimborso parziale", "Remboursement partiel");
+      message = t("Hai ricevuto un rimborso parziale per questo ordine.",
+        "Vous avez reçu un remboursement partiel pour cette commande.");
+      break;
+    default:
+      message = "";
+  }
+
+  const toneCls: Record<Tone, { border: string; bg: string; chip: string; title: string }> = {
+    wait:    { border: "border-amber-300",   bg: "bg-amber-50",   chip: "bg-amber-100 text-amber-800",       title: "text-amber-900" },
+    warn:    { border: "border-orange-300",  bg: "bg-orange-50",  chip: "bg-orange-100 text-orange-800",     title: "text-orange-900" },
+    error:   { border: "border-red-300",     bg: "bg-red-50",     chip: "bg-red-100 text-red-800",           title: "text-red-900" },
+    ok:      { border: "border-emerald-300", bg: "bg-emerald-50", chip: "bg-emerald-100 text-emerald-800",   title: "text-emerald-900" },
+    neutral: { border: "border-warm-300",    bg: "bg-warm-50",    chip: "bg-warm-100 text-warm-700",         title: "text-warm-900" },
+  };
+  const c = toneCls[tone];
+
+  return (
+    <div className={`border ${c.border} ${c.bg} p-5 mb-6`}>
+      <div className="flex items-start gap-3 flex-wrap">
+        <span className={`text-[11px] uppercase tracking-[0.15em] px-2 py-0.5 rounded ${c.chip}`}>{label}</span>
+        {order.trackingUrl && order.status === "SHIPPED" && (
+          <a href={order.trackingUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] uppercase tracking-[0.15em] text-warm-900 underline">
+            {t("Traccia spedizione", "Suivre l'envoi")} →
+          </a>
+        )}
+      </div>
+      {message && <p className={`text-sm mt-3 leading-relaxed ${c.title}`}>{message}</p>}
+      {cta && (
+        <div className="mt-4">
+          <Link href={cta.href} className="inline-block text-[11px] uppercase tracking-[0.15em] bg-warm-900 text-white px-4 py-2 hover:bg-black">
+            {cta.label} →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

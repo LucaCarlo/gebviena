@@ -19,11 +19,16 @@ export async function GET() {
       status: true,
       totalCents: true,
       currency: true,
+      paymentProvider: true,
+      paymentMethodType: true,
+      paymentErrorMessage: true,
+      storePickup: true,
       trackingNumber: true,
       trackingCarrier: true,
       trackingUrl: true,
       shippedAt: true,
       deliveredAt: true,
+      paidAt: true,
       createdAt: true,
       items: {
         select: {
