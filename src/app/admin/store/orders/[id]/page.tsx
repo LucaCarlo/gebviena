@@ -210,7 +210,7 @@ export default function OrderDetailPage() {
   if (!order) {
     return (
       <div className="text-center py-24 text-warm-500">
-        Ordine non trovato. <Link href="/admin/store/orders" className="underline text-warm-900">Torna alla lista</Link>
+        Ordine non trovato. <Link href="/admin/store/orders" className="underline text-warm-900">Torna agli ordini</Link> o <Link href="/admin/store/abandoned-carts" className="underline text-warm-900">ai carrelli abbandonati</Link>
       </div>
     );
   }
@@ -218,11 +218,17 @@ export default function OrderDetailPage() {
   const shipAddr = parseAddress(order.shippingAddress);
   const billAddr = parseAddress(order.billingAddress);
 
+  // Il back link punta alla lista da cui presumibilmente arrivi: gli ordini non
+  // finalizzati stanno in "Carrelli abbandonati", quelli pagati in "Ordini".
+  const isAbandoned = ["ABANDONED_CHECKOUT", "PENDING", "PAYMENT_FAILED", "CANCELLED"].includes(order.status);
+  const backHref = isAbandoned ? "/admin/store/abandoned-carts" : "/admin/store/orders";
+  const backLabel = isAbandoned ? "Torna a Carrelli abbandonati" : "Torna agli ordini";
+
   return (
     <div className="max-w-6xl">
       <div className="mb-4">
-        <Link href="/admin/store/orders" className="inline-flex items-center gap-2 text-sm text-warm-500 hover:text-warm-900">
-          <ArrowLeft size={14} /> Torna alla lista
+        <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-warm-500 hover:text-warm-900">
+          <ArrowLeft size={14} /> {backLabel}
         </Link>
       </div>
 
