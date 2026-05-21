@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Clock } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useLang } from "@/contexts/I18nContext";
+import { fbTrack } from "@/lib/fbpixel";
 
 interface OrderSummary {
   orderNumber: string;
@@ -74,6 +75,17 @@ function SuccessInner() {
           // Per ordini bonifico lo stato resta PENDING per design (admin manuale): non fare polling.
           if (data.data.status === "PENDING" && data.data.paymentProvider !== "bonifico" && pollCount < 8) {
             setTimeout(() => setPollCount((n) => n + 1), 2500);
+          }
+          // Meta Pixel: Purchase event. Una sola volta per orderId (chiave in sessionStorage).
+          const firedKey = `fb_purchase_${data.data.orderNumber}`;
+          if (typeof window !== "undefined" && !sessionStorage.getItem(firedKey)) {
+            sessionStorage.setItem(firedKey, "1");
+            fbTrack("Purchase", {
+              value: (data.data.totalCents || 0) / 100,
+              currency: data.data.currency || "EUR",
+              content_type: "product",
+              order_number: data.data.orderNumber,
+            });
           }
         }
       } catch {

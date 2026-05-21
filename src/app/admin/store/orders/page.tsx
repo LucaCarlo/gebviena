@@ -39,7 +39,7 @@ interface OrderListItem {
 
 const STATUS_META: Record<OrderStatus, { label: string; cls: string; Icon: typeof Clock; group: "pending" | "failed" | "success" | "fulfillment" | "post" }> = {
   // ─── In attesa / iniziati ───
-  PENDING:            { label: "In attesa di pagamento", cls: "bg-amber-50 text-amber-700 border-amber-200",      Icon: Clock,         group: "pending" },
+  PENDING:            { label: "In attesa di accredito bonifico", cls: "bg-amber-50 text-amber-700 border-amber-200", Icon: Clock,    group: "pending" },
   ABANDONED_CHECKOUT: { label: "Checkout abbandonato",   cls: "bg-warm-100 text-warm-600 border-warm-200",         Icon: Ban,           group: "failed" },
   PAYMENT_FAILED:     { label: "Errore pagamento",       cls: "bg-red-50 text-red-700 border-red-200",             Icon: AlertTriangle, group: "failed" },
   CANCELLED:          { label: "Annullato dal cliente",  cls: "bg-warm-100 text-warm-600 border-warm-200",         Icon: XCircle,       group: "failed" },

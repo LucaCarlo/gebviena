@@ -81,11 +81,25 @@ export async function POST(req: NextRequest) {
 
       case "payment_intent.payment_failed": {
         const pi = event.data.object as Stripe.PaymentIntent;
+        const err = pi.last_payment_error;
+        const msg = err
+          ? [err.code, err.decline_code, err.message].filter(Boolean).join(" · ").slice(0, 500)
+          : null;
         await prisma.order.updateMany({
-          where: { stripePaymentIntentId: pi.id, status: "PENDING" },
+          where: { stripePaymentIntentId: pi.id, status: { in: ["PENDING", "ABANDONED_CHECKOUT"] } },
+          data: { status: "PAYMENT_FAILED", paymentErrorMessage: msg },
+        });
+        console.log("[stripe-webhook] PI failed:", pi.id, "·", msg);
+        break;
+      }
+
+      case "payment_intent.canceled": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        await prisma.order.updateMany({
+          where: { stripePaymentIntentId: pi.id, status: { in: ["PENDING", "ABANDONED_CHECKOUT", "PAYMENT_FAILED"] } },
           data: { status: "CANCELLED" },
         });
-        console.log("[stripe-webhook] PI failed:", pi.id);
+        console.log("[stripe-webhook] PI canceled:", pi.id);
         break;
       }
 

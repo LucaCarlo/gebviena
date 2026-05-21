@@ -8,6 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import GallerySlideshow from "@/components/site/GallerySlideshow";
 import ProductCard, { type ProductCardData } from "./ProductCard";
 import { useStoreT } from "@/lib/use-store-t";
+import { fbTrack } from "@/lib/fbpixel";
 
 type AttrType =
   | "MATERIAL"
@@ -211,6 +212,22 @@ export default function ProductDetail({ product }: { product: Product }) {
     setShowAddedModal(true);
     setTimeout(() => setJustAdded(false), 1800);
   };
+
+  // Meta Pixel: ViewContent al mount (1 volta per slug, via sessionStorage)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const k = `fb_vc_${product.slug}`;
+    if (sessionStorage.getItem(k)) return;
+    sessionStorage.setItem(k, "1");
+    const firstPrice = product.variants?.[0]?.priceCents ?? 0;
+    fbTrack("ViewContent", {
+      content_ids: [product.slug],
+      content_name: product.name,
+      content_type: "product",
+      value: firstPrice / 100,
+      currency: "EUR",
+    });
+  }, [product.slug, product.name, product.variants]);
 
   useEffect(() => {
     if (!customer) { setIsFav(false); return; }

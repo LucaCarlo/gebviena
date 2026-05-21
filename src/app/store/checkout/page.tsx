@@ -11,6 +11,7 @@ import { Lock, Loader2, ArrowLeft } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useLang } from "@/contexts/I18nContext";
 import { useStoreT } from "@/lib/use-store-t";
+import { fbTrack } from "@/lib/fbpixel";
 
 const eur = (cents: number) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -66,6 +67,19 @@ export default function CheckoutPage() {
   const [quote, setQuote] = useState<LiveQuote | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [bonificoEnabled, setBonificoEnabled] = useState(false);
+
+  // Meta Pixel: InitiateCheckout una sola volta al mount se ci sono items.
+  useEffect(() => {
+    if (count > 0) {
+      fbTrack("InitiateCheckout", {
+        content_ids: items.map((i) => i.variantId),
+        num_items: count,
+        value: subtotalCents / 100,
+        currency: "EUR",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "bonifico">("stripe");
 
   const [form, setForm] = useState({

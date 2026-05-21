@@ -1517,6 +1517,7 @@ model Order {
   paymentProvider       String?   @db.VarChar(32)
   stripeSessionId       String?   @unique @db.VarChar(191)
   stripePaymentIntentId String?   @unique @db.VarChar(191)
+  paymentErrorMessage   String?   @db.Text   // motivo decline da Stripe (es. "issuer_declined")
   paidAt                DateTime?
   confirmationEmailSentAt DateTime?
 

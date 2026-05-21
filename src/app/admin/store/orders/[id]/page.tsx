@@ -66,6 +66,7 @@ interface OrderDetail {
   shippedAt: string | null;
   deliveredAt: string | null;
   paymentProvider: string | null;
+  paymentErrorMessage: string | null;
   stripeSessionId: string | null;
   stripePaymentIntentId: string | null;
   paidAt: string | null;
@@ -88,7 +89,7 @@ const STATUSES: OrderStatus[] = [
   "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
 ];
 const STATUS_LABEL: Record<OrderStatus, string> = {
-  PENDING: "In attesa di pagamento",
+  PENDING: "In attesa di accredito bonifico",
   ABANDONED_CHECKOUT: "Checkout abbandonato",
   PAYMENT_FAILED: "Errore pagamento",
   CANCELLED: "Annullato dal cliente",
@@ -428,6 +429,12 @@ export default function OrderDetailPage() {
                 </div>
               )}
             </dl>
+            {order.paymentErrorMessage && (
+              <div className="mt-3 px-3 py-2 rounded bg-red-50 border border-red-200 text-[12px] text-red-800">
+                <div className="font-medium mb-0.5">Motivo errore pagamento</div>
+                <div className="text-red-700">{order.paymentErrorMessage}</div>
+              </div>
+            )}
 
             {(order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED" || order.status === "DELIVERED" || order.status === "PARTIALLY_REFUNDED") && (
               <button
