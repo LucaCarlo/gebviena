@@ -254,6 +254,15 @@ export default function ProductDetail({ product }: { product: Product }) {
           body: JSON.stringify({ storeProductId: product.id }),
         });
         setIsFav(true);
+        // Tracking Meta Pixel: aggiunta alla lista desideri
+        const firstPrice = product.variants?.[0]?.priceCents ?? 0;
+        fbTrack("AddToWishlist", {
+          content_ids: [product.slug],
+          content_name: product.name,
+          content_type: "product",
+          value: firstPrice / 100,
+          currency: "EUR",
+        });
       }
     } finally { setFavBusy(false); }
   }

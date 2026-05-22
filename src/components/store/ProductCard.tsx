@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useStoreT } from "@/lib/use-store-t";
+import { fbTrack } from "@/lib/fbpixel";
 
 export interface ProductCardData {
   id: string;
@@ -56,9 +57,17 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
         });
         setIsFav(true);
         onFavoriteChange?.(true);
+        // Tracking Meta Pixel: aggiunta alla lista desideri
+        fbTrack("AddToWishlist", {
+          content_ids: [p.slug],
+          content_name: p.name,
+          content_type: "product",
+          value: (p.salePriceFromCents ?? p.priceFromCents) / 100,
+          currency: "EUR",
+        });
       }
     } finally { setBusy(false); }
-  }, [customer, busy, isFav, p.id, onFavoriteChange]);
+  }, [customer, busy, isFav, p.id, p.slug, p.name, p.priceFromCents, p.salePriceFromCents, onFavoriteChange]);
 
   return (
     <Link
