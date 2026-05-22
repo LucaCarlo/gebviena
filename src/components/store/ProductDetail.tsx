@@ -213,12 +213,10 @@ export default function ProductDetail({ product }: { product: Product }) {
     setTimeout(() => setJustAdded(false), 1800);
   };
 
-  // Meta Pixel: ViewContent al mount (1 volta per slug, via sessionStorage)
+  // Meta Pixel: ViewContent ad ogni apertura prodotto (Facebook fa la propria
+  // dedup lato server, niente dedup client per non perdere segnali di reinteresse).
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const k = `fb_vc_${product.slug}`;
-    if (sessionStorage.getItem(k)) return;
-    sessionStorage.setItem(k, "1");
     const firstPrice = product.variants?.[0]?.priceCents ?? 0;
     fbTrack("ViewContent", {
       content_ids: [product.slug],
