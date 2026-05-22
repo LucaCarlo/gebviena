@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronLeft, Loader2, Save, KeyRound } from "lucide-react";
+import { ChevronLeft, Loader2, Save } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useStoreT } from "@/lib/use-store-t";
 import AuthForms from "./AuthForms";
@@ -20,12 +20,6 @@ export default function ProfileForm() {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(0);
   const [err, setErr] = useState<string | null>(null);
-
-  const [currentPw, setCurrentPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [newPw2, setNewPw2] = useState("");
-  const [pwBusy, setPwBusy] = useState(false);
-  const [pwMsg, setPwMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   useEffect(() => {
     if (customer) {
@@ -49,26 +43,6 @@ export default function ProfileForm() {
       if (!res.ok || !j.success) setErr(j.error || t("Errore salvataggio", "Erreur d'enregistrement"));
       else { setSavedAt(Date.now()); await refresh(); }
     } finally { setSaving(false); }
-  }
-
-  async function changePassword(e: React.FormEvent) {
-    e.preventDefault();
-    setPwMsg(null);
-    if (newPw !== newPw2) { setPwMsg({ type: "err", text: t("Le due password non coincidono", "Les deux mots de passe ne correspondent pas") }); return; }
-    setPwBusy(true);
-    try {
-      const res = await fetch("/api/store/public/auth/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
-      });
-      const j = await res.json();
-      if (!res.ok || !j.success) setPwMsg({ type: "err", text: j.error || t("Errore", "Erreur") });
-      else {
-        setPwMsg({ type: "ok", text: t("Password aggiornata", "Mot de passe mis à jour") });
-        setCurrentPw(""); setNewPw(""); setNewPw2("");
-      }
-    } finally { setPwBusy(false); }
   }
 
   if (loading) return <div className="max-w-4xl mx-auto p-12 text-center text-warm-500 text-sm">{t("Caricamento…", "Chargement…")}</div>;
@@ -122,35 +96,12 @@ export default function ProfileForm() {
         </div>
       </form>
 
-      <form onSubmit={changePassword} className="border border-warm-200 p-6 space-y-5">
-        <div className="text-xs uppercase tracking-[0.2em] text-warm-500">{t("Cambia password", "Changer le mot de passe")}</div>
-
-        <label className="block">
-          <span className="block text-[11px] uppercase tracking-[0.15em] text-warm-500 mb-1.5">{t("Password attuale", "Mot de passe actuel")}</span>
-          <input type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} className={inputCls} autoComplete="current-password" />
-        </label>
-        <div className="grid grid-cols-2 gap-4">
-          <label className="block">
-            <span className="block text-[11px] uppercase tracking-[0.15em] text-warm-500 mb-1.5">{t("Nuova password", "Nouveau mot de passe")}</span>
-            <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} className={inputCls} minLength={8} autoComplete="new-password" />
-          </label>
-          <label className="block">
-            <span className="block text-[11px] uppercase tracking-[0.15em] text-warm-500 mb-1.5">{t("Conferma nuova password", "Confirmer le nouveau mot de passe")}</span>
-            <input type="password" value={newPw2} onChange={(e) => setNewPw2(e.target.value)} className={inputCls} minLength={8} autoComplete="new-password" />
-          </label>
-        </div>
-
-        {pwMsg && (
-          <div className={`text-sm px-3 py-2 border ${pwMsg.type === "ok" ? "text-green-700 bg-green-50 border-green-200" : "text-red-700 bg-red-50 border-red-200"}`}>
-            {pwMsg.text}
-          </div>
+      <div className="text-xs text-warm-500 leading-relaxed">
+        {t(
+          "L'accesso al tuo account avviene tramite link via email (senza password). Non è quindi necessario impostarne una.",
+          "L'accès à votre compte se fait par lien envoyé par e-mail (sans mot de passe). Il n'est donc pas nécessaire d'en définir un.",
         )}
-
-        <button type="submit" disabled={pwBusy || !currentPw || !newPw} className={btnCls}>
-          {pwBusy ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
-          {t("Aggiorna password", "Mettre à jour le mot de passe")}
-        </button>
-      </form>
+      </div>
       </div>
     </div>
   );

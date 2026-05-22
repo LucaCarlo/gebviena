@@ -1381,14 +1381,18 @@ enum AddressType {
 }
 
 enum OrderStatus {
-  PENDING
-  PAID
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  REFUNDED
-  PARTIALLY_REFUNDED
+  PENDING                // creato, in attesa di pagamento (Stripe pending / bonifico in attesa)
+  ABANDONED_CHECKOUT     // ha iniziato il checkout ma non l'ha completato (timeout pagamento)
+  PAYMENT_FAILED         // errore del sistema di pagamento (Stripe declined, errore tecnico)
+  CANCELLED              // annullato dal cliente o dall'admin
+  PAID                   // pagamento riuscito, in attesa di evasione
+  PROCESSING             // in preparazione / packaging
+  SHIPPED                // spedito al cliente
+  DELIVERED              // consegnato dal corriere
+  PICKED_UP              // ritirato dal cliente in showroom (storePickup=true)
+  RETURNED               // reso dal cliente
+  REFUNDED               // rimborsato totalmente
+  PARTIALLY_REFUNDED     // rimborso parziale
 }
 
 model Customer {
@@ -1502,6 +1506,7 @@ model Order {
   shippingFloor       Int?
   withUnboxingService Boolean          @default(false)
   unboxingFeeCents    Int              @default(0)
+  storePickup         Boolean          @default(false)
   trackingNumber      String?          @db.VarChar(128)
   trackingCarrier   String?          @db.VarChar(64)
   trackingUrl       String?          @db.Text
@@ -1510,8 +1515,10 @@ model Order {
 
   // Pagamento
   paymentProvider       String?   @db.VarChar(32)
+  paymentMethodType     String?   @db.VarChar(32)   // tipo Stripe payment method: card, klarna, link, paypal, sepa_debit…
   stripeSessionId       String?   @unique @db.VarChar(191)
   stripePaymentIntentId String?   @unique @db.VarChar(191)
+  paymentErrorMessage   String?   @db.Text   // motivo decline da Stripe (es. "issuer_declined")
   paidAt                DateTime?
   confirmationEmailSentAt DateTime?
 
@@ -1594,4 +1601,32 @@ model FabricFinishFile {
   updatedAt   DateTime             @updatedAt
 
   @@index([categoryId])
+}
+
+/// Stato carrello dello store (per "carrelli abbandonati").
+/// Persistito lato server: il browser sincronizza il proprio localStorage via
+/// /api/store/public/cart/sync ogni volta che cambia (debounced).
+/// Quando l'utente completa l'ordine, lo flagghiamo come `converted=true`
+/// così è escluso dalla lista degli "abbandonati".
+model Cart {
+  id              String   @id @default(cuid())
+  sessionId       String   @unique @db.VarChar(64) // UUID v4 dal browser
+  customerId      String?  @db.VarChar(191)         // se loggato durante l'add-to-cart
+  email           String?  @db.VarChar(191)         // se l'utente ha compilato l'email al checkout
+  items           String   @db.Text                 // JSON array di CartItem (snapshot)
+  subtotalCents   Int      @default(0)
+  currency        String   @default("EUR") @db.VarChar(3)
+  itemCount       Int      @default(0)
+  language        String?  @db.VarChar(8)
+  userAgent       String?  @db.Text
+  ipAddress       String?  @db.VarChar(64)
+  converted       Boolean  @default(false)          // true = checkout completato → escludi dagli abbandonati
+  convertedOrderId String? @db.VarChar(191)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([updatedAt])
+  @@index([converted])
+  @@index([email])
+  @@index([customerId])
 }

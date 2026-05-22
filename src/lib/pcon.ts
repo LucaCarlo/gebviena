@@ -1,7 +1,8 @@
+// Gatekeeper di produzione GTV. Le regole PropertyList (hide Series, ecc.)
+// sono agganciate qui lato pCon. Tutti i prodotti del sito usano questo
+// gatekeeper. EAIWS è risolto automaticamente dal gatekeeper di produzione.
 export const PCON_BASE_URL =
-  "https://ui.pcon-solutions.com/#GATEKEEPER_ID=data_prev" +
-  "&EAIWS_SERVER=https://data-preview.eaiws.pcon-solutions.com/stable" +
-  "&EAIWS_STARTUP=_manual__demo_gtv_fcabfffc70ec100583d32005aeb1fb52122b9058";
+  "https://ui.pcon-solutions.com/#GATEKEEPER_ID=6a06d3f5a82e1";
 
 export const PCON_DEFAULT_MOC = "GTV";
 export const PCON_DEFAULT_LANG = "it";
@@ -27,6 +28,8 @@ export function buildPconUrl(p: PconConfig): string {
   if (p.ovc && p.ovc.trim()) parts.push(`ovc=${encodeURIComponent(p.ovc.trim())}`);
   const lang = (p.lang && p.lang.trim()) || PCON_DEFAULT_LANG;
   parts.push(`lang=${encodeURIComponent(lang)}`);
+  // sh=false → nasconde la barra "Aprire il catalogo" in alto al configuratore.
+  parts.push("sh=false");
   return parts.join("&");
 }
 
@@ -63,4 +66,21 @@ export function summarizePconOvc(ovc: string | null | undefined): string[] {
     .split(";")
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+/**
+ * Sostituisce il parametro `lang=` nell'URL del configuratore pCon con la
+ * lingua corrente del sito. Se il parametro non c'è, lo aggiunge.
+ * Mantiene intatto l'hash (#) e gli altri parametri.
+ *
+ * Lingue pCon supportate: it, en, de, fr, es, nl, ...
+ */
+export function withPconLang(url: string, lang: string | null | undefined): string {
+  if (!url) return url;
+  const code = (lang || "").trim().toLowerCase() || PCON_DEFAULT_LANG;
+  if (/[?&#]lang=[^&]*/.test(url)) {
+    return url.replace(/([?&#])lang=[^&]*/, `$1lang=${encodeURIComponent(code)}`);
+  }
+  const sep = url.includes("#") || url.includes("?") ? "&" : "#";
+  return `${url}${sep}lang=${encodeURIComponent(code)}`;
 }

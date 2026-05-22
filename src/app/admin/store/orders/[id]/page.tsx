@@ -7,7 +7,19 @@ import {
   Loader2, ArrowLeft, Check, X, AlertCircle, RotateCcw, Truck, Copy,
 } from "lucide-react";
 
-type OrderStatus = "PENDING" | "PAID" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED" | "PARTIALLY_REFUNDED";
+type OrderStatus =
+  | "PENDING"
+  | "ABANDONED_CHECKOUT"
+  | "PAYMENT_FAILED"
+  | "CANCELLED"
+  | "PAID"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "PICKED_UP"
+  | "RETURNED"
+  | "REFUNDED"
+  | "PARTIALLY_REFUNDED";
 
 interface OrderItem {
   id: string;
@@ -54,6 +66,8 @@ interface OrderDetail {
   shippedAt: string | null;
   deliveredAt: string | null;
   paymentProvider: string | null;
+  paymentMethodType: string | null;
+  paymentErrorMessage: string | null;
   stripeSessionId: string | null;
   stripePaymentIntentId: string | null;
   paidAt: string | null;
@@ -70,14 +84,22 @@ interface OrderDetail {
   items: OrderItem[];
 }
 
-const STATUSES: OrderStatus[] = ["PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED"];
+const STATUSES: OrderStatus[] = [
+  "PENDING", "ABANDONED_CHECKOUT", "PAYMENT_FAILED", "CANCELLED",
+  "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP",
+  "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
+];
 const STATUS_LABEL: Record<OrderStatus, string> = {
-  PENDING: "In attesa di pagamento",
-  PAID: "Pagato",
-  PROCESSING: "In lavorazione",
+  PENDING: "In attesa di accredito bonifico",
+  ABANDONED_CHECKOUT: "Checkout abbandonato",
+  PAYMENT_FAILED: "Errore pagamento",
+  CANCELLED: "Annullato dal cliente",
+  PAID: "Pagato (da evadere)",
+  PROCESSING: "In preparazione",
   SHIPPED: "Spedito",
   DELIVERED: "Consegnato",
-  CANCELLED: "Annullato",
+  PICKED_UP: "Ritirato in showroom",
+  RETURNED: "Reso",
   REFUNDED: "Rimborsato",
   PARTIALLY_REFUNDED: "Rimborso parziale",
 };
@@ -188,7 +210,7 @@ export default function OrderDetailPage() {
   if (!order) {
     return (
       <div className="text-center py-24 text-warm-500">
-        Ordine non trovato. <Link href="/admin/store/orders" className="underline text-warm-900">Torna alla lista</Link>
+        Ordine non trovato. <Link href="/admin/store/orders" className="underline text-warm-900">Torna agli ordini</Link> o <Link href="/admin/store/abandoned-carts" className="underline text-warm-900">ai carrelli abbandonati</Link>
       </div>
     );
   }
@@ -196,11 +218,17 @@ export default function OrderDetailPage() {
   const shipAddr = parseAddress(order.shippingAddress);
   const billAddr = parseAddress(order.billingAddress);
 
+  // Il back link punta alla lista da cui presumibilmente arrivi: gli ordini non
+  // finalizzati stanno in "Carrelli abbandonati", quelli pagati in "Ordini".
+  const isAbandoned = ["ABANDONED_CHECKOUT", "PENDING", "PAYMENT_FAILED", "CANCELLED"].includes(order.status);
+  const backHref = isAbandoned ? "/admin/store/abandoned-carts" : "/admin/store/orders";
+  const backLabel = isAbandoned ? "Torna a Carrelli abbandonati" : "Torna agli ordini";
+
   return (
     <div className="max-w-6xl">
       <div className="mb-4">
-        <Link href="/admin/store/orders" className="inline-flex items-center gap-2 text-sm text-warm-500 hover:text-warm-900">
-          <ArrowLeft size={14} /> Torna alla lista
+        <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-warm-500 hover:text-warm-900">
+          <ArrowLeft size={14} /> {backLabel}
         </Link>
       </div>
 
@@ -231,19 +259,27 @@ export default function OrderDetailPage() {
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <div className="text-xs text-warm-500 uppercase tracking-wider mb-1">Stato attuale</div>
-            <div className="text-lg font-semibold text-warm-900">{STATUS_LABEL[order.status]}</div>
+            <div className="text-lg font-semibold text-warm-900">
+              {order.status === "PENDING" && order.paymentProvider !== "bonifico"
+                ? "Pagamento non effettuato"
+                : STATUS_LABEL[order.status]}
+            </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {STATUSES.filter((s) => s !== order.status).map((s) => (
-              <button
-                key={s}
-                onClick={() => changeStatus(s)}
-                disabled={saving}
-                className="px-3 py-1.5 text-xs border border-warm-200 bg-white hover:bg-warm-50 rounded disabled:opacity-50"
-              >
-                → {STATUS_LABEL[s]}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-warm-500 uppercase tracking-wider">Cambia stato</label>
+            <select
+              value={order.status}
+              disabled={saving}
+              onChange={(e) => {
+                const newStatus = e.target.value as OrderStatus;
+                if (newStatus !== order.status) changeStatus(newStatus);
+              }}
+              className="px-3 py-1.5 text-sm border border-warm-200 bg-white rounded focus:border-warm-700 outline-none disabled:opacity-50"
+            >
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+              ))}
+            </select>
           </div>
         </div>
       </section>
@@ -398,6 +434,14 @@ export default function OrderDetailPage() {
             <h3 className="font-medium text-warm-900 mb-2">Pagamento</h3>
             <dl className="space-y-1 text-xs">
               <div className="flex justify-between"><dt className="text-warm-500">Provider</dt><dd className="text-warm-800">{order.paymentProvider || "—"}</dd></div>
+              {order.paymentMethodType && (() => {
+                const map: Record<string, string> = {
+                  card: "Carta", klarna: "Klarna", link: "Link", paypal: "PayPal",
+                  amazon_pay: "Amazon Pay", sepa_debit: "SEPA", bancontact: "Bancontact",
+                  ideal: "iDEAL", giropay: "Giropay", sofort: "Sofort", apple_pay: "Apple Pay", google_pay: "Google Pay",
+                };
+                return <div className="flex justify-between"><dt className="text-warm-500">Metodo</dt><dd className="text-warm-800 font-medium">{map[order.paymentMethodType] || order.paymentMethodType}</dd></div>;
+              })()}
               {order.paidAt && <div className="flex justify-between"><dt className="text-warm-500">Pagato il</dt><dd className="text-warm-800">{new Date(order.paidAt).toLocaleString("it-IT")}</dd></div>}
               {order.stripePaymentIntentId && (
                 <div className="flex justify-between items-center">
@@ -408,6 +452,12 @@ export default function OrderDetailPage() {
                 </div>
               )}
             </dl>
+            {order.paymentErrorMessage && (
+              <div className="mt-3 px-3 py-2 rounded bg-red-50 border border-red-200 text-[12px] text-red-800">
+                <div className="font-medium mb-0.5">Motivo errore pagamento</div>
+                <div className="text-red-700">{order.paymentErrorMessage}</div>
+              </div>
+            )}
 
             {(order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED" || order.status === "DELIVERED" || order.status === "PARTIALLY_REFUNDED") && (
               <button

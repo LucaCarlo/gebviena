@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useStoreT } from "@/lib/use-store-t";
+import { fbTrack } from "@/lib/fbpixel";
 
 export interface ProductCardData {
   id: string;
@@ -56,9 +57,17 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
         });
         setIsFav(true);
         onFavoriteChange?.(true);
+        // Tracking Meta Pixel: aggiunta alla lista desideri
+        fbTrack("AddToWishlist", {
+          content_ids: [p.slug],
+          content_name: p.name,
+          content_type: "product",
+          value: (p.salePriceFromCents ?? p.priceFromCents) / 100,
+          currency: "EUR",
+        });
       }
     } finally { setBusy(false); }
-  }, [customer, busy, isFav, p.id, onFavoriteChange]);
+  }, [customer, busy, isFav, p.id, p.slug, p.name, p.priceFromCents, p.salePriceFromCents, onFavoriteChange]);
 
   return (
     <Link
@@ -122,7 +131,7 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
             const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);
             if (pct < 1) return null;
             return (
-              <div className="absolute top-3 left-3 bg-warm-700/55 text-white text-[11px] font-medium uppercase tracking-wider px-2 py-1 backdrop-blur-sm">
+              <div className="absolute top-3 left-3 bg-warm-700/55 text-white text-[15px] font-semibold uppercase tracking-wider px-3 py-1.5 backdrop-blur-sm">
                 -{pct}%
               </div>
             );
@@ -146,7 +155,7 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
                 const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);
                 return (
                   <span className="inline-flex items-baseline gap-1.5 flex-wrap justify-end">
-                    <span className="text-warm-400 line-through text-[12px]">{eur(p.priceFromCents)}</span>
+                    <span className="text-warm-500 line-through text-[12px]">{eur(p.priceFromCents)}</span>
                     <span className="text-warm-900 font-semibold">{p.variantsCount > 1 ? t("da ", "à partir de ") : ""}{eur(p.salePriceFromCents)}</span>
                     {pct >= 1 && (
                       <span className="text-[10px] uppercase tracking-wider bg-warm-100 text-warm-900 px-1.5 py-0.5 rounded-sm font-sans font-semibold">

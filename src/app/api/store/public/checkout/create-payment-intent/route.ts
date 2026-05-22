@@ -29,8 +29,9 @@ export async function POST(req: NextRequest) {
     const customer = body.customer || {};
     const shippingAddress = body.shippingAddress;
     const billingAddress = body.billingAddress || shippingAddress;
-    const shippingFloor = Number.isFinite(body.shippingFloor) ? Math.max(0, Math.trunc(body.shippingFloor)) : 0;
-    const withUnboxingService = body.withUnboxingService === true;
+    const storePickup = body.storePickup === true;
+    const shippingFloor = storePickup ? 0 : (Number.isFinite(body.shippingFloor) ? Math.max(0, Math.trunc(body.shippingFloor)) : 0);
+    const withUnboxingService = storePickup ? false : body.withUnboxingService === true;
 
     if (!items.length) return NextResponse.json({ success: false, error: "Carrello vuoto" }, { status: 400 });
     if (!customer.email || !customer.firstName || !customer.lastName) {
@@ -149,8 +150,9 @@ export async function POST(req: NextRequest) {
       withUnboxingService,
     });
     // shippingCents (sul DB Order) = standard + piano. unboxingFeeCents resta separato.
-    const shippingCents = shippingResult.standardShippingCents + shippingResult.floorDeliveryCents;
-    const unboxingFeeCents = shippingResult.unboxingFeeCents;
+    // Ritiro in negozio: nessun costo di spedizione né servizi aggiuntivi.
+    const shippingCents = storePickup ? 0 : shippingResult.standardShippingCents + shippingResult.floorDeliveryCents;
+    const unboxingFeeCents = storePickup ? 0 : shippingResult.unboxingFeeCents;
     console.log("[create-payment-intent] shipping calc:", shippingResult.notes.join(" · "));
 
     const cfg = await getStoreGeneralConfig();
@@ -245,6 +247,7 @@ export async function POST(req: NextRequest) {
         shippingFloor,
         withUnboxingService,
         unboxingFeeCents,
+        storePickup,
         taxCents,
         totalCents,
         currency: cfg.currency,
@@ -255,6 +258,15 @@ export async function POST(req: NextRequest) {
         items: { create: orderItems },
       },
     });
+
+    // Marca il Cart come converted (così esce dalla lista "carrelli abbandonati")
+    const cartSessionId = typeof body.cartSessionId === "string" ? body.cartSessionId.trim().slice(0, 64) : "";
+    if (cartSessionId) {
+      prisma.cart.updateMany({
+        where: { sessionId: cartSessionId },
+        data: { converted: true, convertedOrderId: order.id },
+      }).catch(() => { /* silent */ });
+    }
 
     return NextResponse.json({
       success: true,

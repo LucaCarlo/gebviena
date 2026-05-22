@@ -168,7 +168,6 @@ export default function StoreHeader() {
                 <Link href="/account" className="block text-neutral-700 hover:text-neutral-900 uppercase tracking-wider">Area riservata</Link>
                 <Link href="/account/favorites" className="block text-neutral-700 hover:text-neutral-900 uppercase tracking-wider">Preferiti</Link>
                 <Link href="/carrello" className="block text-neutral-700 hover:text-neutral-900 uppercase tracking-wider">Carrello</Link>
-                <Link href="https://dev.gebruederthonetvienna.com" className="block text-neutral-500 hover:text-neutral-800 text-xs mt-6">← Torna al sito principale</Link>
               </div>
             </div>
           </nav>

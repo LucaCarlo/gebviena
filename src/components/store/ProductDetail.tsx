@@ -8,6 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import GallerySlideshow from "@/components/site/GallerySlideshow";
 import ProductCard, { type ProductCardData } from "./ProductCard";
 import { useStoreT } from "@/lib/use-store-t";
+import { fbTrack } from "@/lib/fbpixel";
 
 type AttrType =
   | "MATERIAL"
@@ -212,6 +213,20 @@ export default function ProductDetail({ product }: { product: Product }) {
     setTimeout(() => setJustAdded(false), 1800);
   };
 
+  // Meta Pixel: ViewContent ad ogni apertura prodotto (Facebook fa la propria
+  // dedup lato server, niente dedup client per non perdere segnali di reinteresse).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const firstPrice = product.variants?.[0]?.priceCents ?? 0;
+    fbTrack("ViewContent", {
+      content_ids: [product.slug],
+      content_name: product.name,
+      content_type: "product",
+      value: firstPrice / 100,
+      currency: "EUR",
+    });
+  }, [product.slug, product.name, product.variants]);
+
   useEffect(() => {
     if (!customer) { setIsFav(false); return; }
     fetch("/api/store/public/favorites?lang=it", { cache: "no-store" })
@@ -237,6 +252,15 @@ export default function ProductDetail({ product }: { product: Product }) {
           body: JSON.stringify({ storeProductId: product.id }),
         });
         setIsFav(true);
+        // Tracking Meta Pixel: aggiunta alla lista desideri
+        const firstPrice = product.variants?.[0]?.priceCents ?? 0;
+        fbTrack("AddToWishlist", {
+          content_ids: [product.slug],
+          content_name: product.name,
+          content_type: "product",
+          value: firstPrice / 100,
+          currency: "EUR",
+        });
       }
     } finally { setFavBusy(false); }
   }

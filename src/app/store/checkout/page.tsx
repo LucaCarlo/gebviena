@@ -11,6 +11,7 @@ import { Lock, Loader2, ArrowLeft } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useLang } from "@/contexts/I18nContext";
 import { useStoreT } from "@/lib/use-store-t";
+import { fbTrack } from "@/lib/fbpixel";
 
 const eur = (cents: number) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -41,6 +42,7 @@ interface LiveQuote {
   totalCents: number;
   freeShippingApplied: boolean;
   resolvedRegion: string | null;
+  storePickup?: boolean;
   billableVolumeM3?: number;
   totalVolumeM3?: number;
   missing?: string;
@@ -64,6 +66,55 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [quote, setQuote] = useState<LiveQuote | null>(null);
   const [quoting, setQuoting] = useState(false);
+  const [bonificoEnabled, setBonificoEnabled] = useState(false);
+
+  // Carica eventuale prefill da "Riprova al checkout" (area riservata cliente).
+  // L'oggetto è scritto in localStorage da retryOrderCheckout() e contiene
+  // tutti i campi del form precompilati.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("gtv_checkout_prefill");
+      if (!raw) return;
+      const p = JSON.parse(raw);
+      if (p && typeof p === "object") {
+        setForm((s) => ({
+          ...s,
+          email: p.email || s.email,
+          firstName: p.firstName || s.firstName,
+          lastName: p.lastName || s.lastName,
+          phone: p.phone || s.phone,
+          taxId: p.taxId || s.taxId,
+          street: p.street || s.street,
+          city: p.city || s.city,
+          province: p.province || s.province,
+          postalCode: p.postalCode || s.postalCode,
+          country: p.country || s.country,
+          storePickup: !!p.storePickup,
+          shippingFloor: p.shippingFloor || s.shippingFloor,
+          withUnboxingService: !!p.withUnboxingService,
+          customerNotes: p.customerNotes || s.customerNotes,
+        }));
+      }
+      // Consumalo (no replay accidentale al prossimo checkout)
+      localStorage.removeItem("gtv_checkout_prefill");
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Meta Pixel: InitiateCheckout una sola volta al mount se ci sono items.
+  useEffect(() => {
+    if (count > 0) {
+      fbTrack("InitiateCheckout", {
+        content_ids: items.map((i) => i.variantId),
+        num_items: count,
+        value: subtotalCents / 100,
+        currency: "EUR",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "bonifico">("stripe");
 
   const [form, setForm] = useState({
     email: "",
@@ -78,7 +129,16 @@ export default function CheckoutPage() {
     country: "IT",
     shippingFloor: "0",
     withUnboxingService: false,
+    storePickup: false,
     customerNotes: "",
+    // Indirizzo di fatturazione: di default uguale a quello di spedizione.
+    sameAsBilling: true,
+    billingCompany: "",
+    billingStreet: "",
+    billingCity: "",
+    billingProvince: "",
+    billingPostalCode: "",
+    billingCountry: "IT",
   });
 
   // Load Stripe publishable key once
@@ -90,6 +150,9 @@ export default function CheckoutPage() {
           setStripePromise(loadStripe(d.data.publishableKey));
         } else {
           setError(t("Stripe non configurato. Configura le chiavi su /admin/store/settings.", "Stripe non configuré. Configurez les clés sur /admin/store/settings."));
+        }
+        if (d.success && d.data?.bonificoEnabled === true) {
+          setBonificoEnabled(true);
         }
       })
       .catch(() => setError(t("Errore caricamento configurazione Stripe.", "Erreur de chargement de la configuration Stripe.")));
@@ -120,6 +183,7 @@ export default function CheckoutPage() {
           province: form.province,
           shippingFloor: Number(form.shippingFloor) || 0,
           withUnboxingService: form.withUnboxingService === true,
+          storePickup: form.storePickup === true,
         }),
         signal: ctrl.signal,
       })
@@ -130,14 +194,20 @@ export default function CheckoutPage() {
     }, 350);
     return () => { clearTimeout(t); ctrl.abort(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, itemsFingerprint, form.country, form.postalCode, form.province, form.shippingFloor, form.withUnboxingService]);
+  }, [phase, itemsFingerprint, form.country, form.postalCode, form.province, form.shippingFloor, form.withUnboxingService, form.storePickup]);
 
   const submitAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Validazione minima
-    const required = ["email", "firstName", "lastName", "phone", "taxId", "street", "city", "postalCode", "country"];
+    // Validazione minima. Con ritiro in negozio non serve l'indirizzo di spedizione.
+    const required: string[] = form.storePickup
+      ? ["email", "firstName", "lastName", "phone", "taxId"]
+      : ["email", "firstName", "lastName", "phone", "taxId", "street", "city", "postalCode", "country"];
+    // Se l'utente ha disattivato "stesso indirizzo per fatturazione", validare anche il billing.
+    if (!form.sameAsBilling) {
+      required.push("billingStreet", "billingCity", "billingPostalCode", "billingCountry");
+    }
     for (const k of required) {
       if (!form[k as keyof typeof form]?.toString().trim()) {
         setError(t("Compila tutti i campi obbligatori.", "Veuillez remplir tous les champs obligatoires."));
@@ -151,7 +221,10 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/store/public/checkout/create-payment-intent", {
+      const endpoint = paymentMethod === "bonifico"
+        ? "/api/store/public/checkout/create-bonifico-order"
+        : "/api/store/public/checkout/create-payment-intent";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -163,23 +236,42 @@ export default function CheckoutPage() {
             phone: form.phone,
             taxId: form.taxId,
           },
-          shippingAddress: {
-            street: form.street,
-            city: form.city,
-            province: form.province,
-            postalCode: form.postalCode,
-            country: form.country,
-          },
+          shippingAddress: form.storePickup
+            ? { street: "Via Foggia 23H", city: "Torino", province: "TO", postalCode: "10125", country: "IT" }
+            : {
+                street: form.street,
+                city: form.city,
+                province: form.province,
+                postalCode: form.postalCode,
+                country: form.country,
+              },
+          billingAddress: form.sameAsBilling
+            ? null /* il backend usa shippingAddress come fallback */
+            : {
+                company: form.billingCompany || null,
+                street: form.billingStreet,
+                city: form.billingCity,
+                province: form.billingProvince,
+                postalCode: form.billingPostalCode,
+                country: form.billingCountry,
+              },
           shippingFloor: Number(form.shippingFloor) || 0,
           withUnboxingService: form.withUnboxingService === true,
+          storePickup: form.storePickup === true,
           customerNotes: form.customerNotes,
           lang,
+          cartSessionId: typeof window !== "undefined" ? (localStorage.getItem("gtv_cart_session_v1") || "") : "",
         }),
       });
       const data = await res.json();
       if (!data.success) {
         setError(data.error || t("Errore creazione ordine.", "Erreur lors de la création de la commande."));
         setSubmitting(false);
+        return;
+      }
+      if (paymentMethod === "bonifico") {
+        // Bonifico: ordine creato senza Stripe, email già inviata. Vai diretto alla success page.
+        window.location.href = `/store/checkout/success?order=${encodeURIComponent(data.data.orderId)}`;
         return;
       }
       setIntent(data.data);
@@ -237,24 +329,90 @@ export default function CheckoutPage() {
                 onChange={(v) => updateField("taxId", v.toUpperCase())}
               />
 
-              <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">{t("Indirizzo di spedizione", "Adresse de livraison")}</div>
-              <Field label={t("Via e numero civico *", "Rue et numéro *")} value={form.street} onChange={(v) => updateField("street", v)} />
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2"><Field label={t("Città *", "Ville *")} value={form.city} onChange={(v) => updateField("city", v)} /></div>
-                <Field label={t("Provincia", "Province")} value={form.province} onChange={(v) => updateField("province", v.toUpperCase())} />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <Field label={t("CAP *", "Code postal *")} value={form.postalCode} onChange={(v) => updateField("postalCode", v)} />
-                <div className="col-span-2">
-                  <label className="block text-[13px] text-warm-700 mb-1.5">{t("Paese *", "Pays *")}</label>
-                  <select value={form.country} onChange={(e) => updateField("country", e.target.value)} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none">
-                    <option value="IT">{t("Italia", "Italie")}</option>
-                    <option value="FR">{t("Francia", "France")}</option>
-                  </select>
-                </div>
+              {!form.storePickup && (
+                <>
+                  <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">{t("Indirizzo di spedizione", "Adresse de livraison")}</div>
+                  <Field label={t("Via e numero civico *", "Rue et numéro *")} value={form.street} onChange={(v) => updateField("street", v)} />
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2"><Field label={t("Città *", "Ville *")} value={form.city} onChange={(v) => updateField("city", v)} /></div>
+                    <Field label={t("Provincia", "Province")} value={form.province} onChange={(v) => updateField("province", v.toUpperCase())} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <Field label={t("CAP *", "Code postal *")} value={form.postalCode} onChange={(v) => updateField("postalCode", v)} />
+                    <div className="col-span-2">
+                      <label className="block text-[13px] text-warm-700 mb-1.5">{t("Paese *", "Pays *")}</label>
+                      <select value={form.country} onChange={(e) => updateField("country", e.target.value)} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none">
+                        <option value="IT">{t("Italia", "Italie")}</option>
+                        <option value="FR">{t("Francia", "France")}</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Toggle: indirizzo di fatturazione = spedizione (di default ON). Se OFF, mostra form fatturazione separato. */}
+              <div className={`${form.storePickup ? "" : "pt-4 border-t border-warm-200"}`}>
+                <label className="flex items-start gap-2 cursor-pointer text-[13px] text-warm-800">
+                  <input
+                    type="checkbox"
+                    checked={form.sameAsBilling}
+                    onChange={(e) => updateField("sameAsBilling", e.target.checked)}
+                    className="mt-1 w-4 h-4 accent-warm-800"
+                  />
+                  <span>
+                    {form.storePickup
+                      ? t("Voglio fattura intestata allo stesso nome del ritiro", "Je veux la facture au même nom du retrait")
+                      : t("Indirizzo di fatturazione uguale a quello di spedizione", "Adresse de facturation identique à celle de livraison")}
+                  </span>
+                </label>
               </div>
 
+              {!form.sameAsBilling && (
+                <>
+                  <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-2">{t("Indirizzo di fatturazione", "Adresse de facturation")}</div>
+                  <Field label={t("Ragione sociale / Intestatario (opzionale)", "Raison sociale / Titulaire (facultatif)")} value={form.billingCompany} onChange={(v) => updateField("billingCompany", v)} />
+                  <Field label={t("Via e numero civico *", "Rue et numéro *")} value={form.billingStreet} onChange={(v) => updateField("billingStreet", v)} />
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2"><Field label={t("Città *", "Ville *")} value={form.billingCity} onChange={(v) => updateField("billingCity", v)} /></div>
+                    <Field label={t("Provincia", "Province")} value={form.billingProvince} onChange={(v) => updateField("billingProvince", v.toUpperCase())} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <Field label={t("CAP *", "Code postal *")} value={form.billingPostalCode} onChange={(v) => updateField("billingPostalCode", v)} />
+                    <div className="col-span-2">
+                      <label className="block text-[13px] text-warm-700 mb-1.5">{t("Paese *", "Pays *")}</label>
+                      <select value={form.billingCountry} onChange={(e) => updateField("billingCountry", e.target.value)} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none">
+                        <option value="IT">{t("Italia", "Italie")}</option>
+                        <option value="FR">{t("Francia", "France")}</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">{t("Consegna", "Livraison")}</div>
+
+              <label className={`flex items-start gap-3 cursor-pointer rounded-lg border-2 p-4 transition-colors ${form.storePickup ? "border-warm-800 bg-warm-50" : "border-warm-300 bg-white hover:border-warm-400"}`}>
+                <input
+                  type="checkbox"
+                  checked={form.storePickup}
+                  onChange={(e) => updateField("storePickup", e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-warm-800"
+                />
+                <span className="text-[13px] text-warm-800">
+                  <strong className="block text-sm mb-0.5">{t("Ritiro al punto di vendita — spedizione gratuita", "Retrait en magasin — livraison offerte")}</strong>
+                  {t("Ritiri il tuo ordine direttamente nello showroom: Via Foggia 23H – 10125 Torino. Nessun costo di spedizione.", "Retirez votre commande directement au showroom : Via Foggia 23H – 10125 Turin. Aucun frais de livraison.")}
+                </span>
+              </label>
+
+              {form.storePickup ? (
+                <div className="text-[12px] text-warm-700 bg-warm-50 border border-warm-200 rounded p-3 leading-[1.6]">
+                  {t(
+                    "Hai scelto il ritiro al punto di vendita: nessun costo di spedizione né consegna al piano. Ti contatteremo per concordare il giorno del ritiro presso lo showroom di Via Foggia 23H – 10125 Torino.",
+                    "Vous avez choisi le retrait en magasin : aucun frais de livraison ni de livraison à l'étage. Nous vous contacterons pour convenir du jour de retrait au showroom Via Foggia 23H – 10125 Turin.",
+                  )}
+                </div>
+              ) : (
+              <>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[13px] text-warm-700 mb-1.5">{t("Piano dove scaricare il pacco", "Étage de livraison")}</label>
@@ -301,6 +459,8 @@ export default function CheckoutPage() {
                   )}
                 </p>
               </div>
+              </>
+              )}
 
               {/* Reminder spedizione gratuita (solo se mancano <= 200€ alla soglia) */}
               {(() => {
@@ -328,13 +488,51 @@ export default function CheckoutPage() {
                 <textarea value={form.customerNotes} onChange={(e) => updateField("customerNotes", e.target.value)} rows={2} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm focus:border-warm-700 outline-none" />
               </div>
 
+              {bonificoEnabled && (
+                <div className="pt-4 border-t border-warm-200 space-y-3">
+                  <div className="text-xs uppercase tracking-[0.2em] text-warm-500">{t("Modalità di pagamento", "Mode de paiement")}</div>
+                  <label className={`flex items-start gap-3 cursor-pointer rounded-lg border-2 p-3 transition-colors ${paymentMethod === "stripe" ? "border-warm-800 bg-warm-50" : "border-warm-300 bg-white hover:border-warm-400"}`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="stripe"
+                      checked={paymentMethod === "stripe"}
+                      onChange={() => setPaymentMethod("stripe")}
+                      className="mt-1 w-4 h-4 accent-warm-800"
+                    />
+                    <span className="text-[13px] text-warm-800">
+                      <strong className="block text-sm">{t("Carta di credito / Klarna", "Carte bancaire / Klarna")}</strong>
+                      {t("Pagamento sicuro tramite Stripe. Conferma istantanea dell'ordine.", "Paiement sécurisé via Stripe. Confirmation instantanée de la commande.")}
+                    </span>
+                  </label>
+                  <label className={`flex items-start gap-3 cursor-pointer rounded-lg border-2 p-3 transition-colors ${paymentMethod === "bonifico" ? "border-warm-800 bg-warm-50" : "border-warm-300 bg-white hover:border-warm-400"}`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="bonifico"
+                      checked={paymentMethod === "bonifico"}
+                      onChange={() => setPaymentMethod("bonifico")}
+                      className="mt-1 w-4 h-4 accent-warm-800"
+                    />
+                    <span className="text-[13px] text-warm-800">
+                      <strong className="block text-sm">{t("Bonifico bancario", "Virement bancaire")}</strong>
+                      {t("Riceverai le coordinate bancarie via email. L'ordine sarà elaborato dopo conferma dell'avvenuto accredito.", "Vous recevrez les coordonnées bancaires par e-mail. La commande sera traitée après confirmation de la réception des fonds.")}
+                    </span>
+                  </label>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={submitting}
                 className="w-full inline-flex items-center justify-center gap-2 py-4 bg-warm-900 text-white uppercase text-sm tracking-wider hover:bg-warm-800 disabled:bg-warm-400"
               >
                 {submitting ? <Loader2 className="animate-spin" size={16} /> : <Lock size={14} />}
-                {submitting ? t("Calcolo totale...", "Calcul du total…") : t("Continua al pagamento", "Continuer vers le paiement")}
+                {submitting
+                  ? t("Calcolo totale...", "Calcul du total…")
+                  : paymentMethod === "bonifico"
+                    ? t("Conferma ordine (bonifico)", "Confirmer la commande (virement)")
+                    : t("Continua al pagamento", "Continuer vers le paiement")}
               </button>
             </form>
           )}
@@ -369,7 +567,15 @@ export default function CheckoutPage() {
           </div>
           <div className="border-t border-warm-200 pt-3 space-y-1.5 text-sm">
             <Row label={t("Subtotale", "Sous-total")} value={eur(intent?.subtotalCents ?? quote?.subtotalCents ?? subtotalCents)} />
-            {intent ? (
+            {form.storePickup ? (
+              <>
+                <Row
+                  label={t("Spedizione", "Livraison")}
+                  value={t("Ritiro al punto di vendita — gratuito", "Retrait en magasin — offert")}
+                />
+                {intent && <Row label={t("(IVA inclusa)", "(TVA incluse)")} value={eur(intent.taxCents)} subtle />}
+              </>
+            ) : intent ? (
               <>
                 <Row
                   label={`${t("Spedizione standard", "Livraison standard")}${intent.resolvedRegion ? ` · ${intent.resolvedRegion}` : ""}`}

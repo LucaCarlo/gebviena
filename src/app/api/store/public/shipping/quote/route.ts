@@ -33,8 +33,9 @@ export async function POST(req: NextRequest) {
     const country = String(body.country || "IT").toUpperCase();
     const postalCode = String(body.postalCode || "").trim();
     const province = String(body.province || "").trim();
-    const shippingFloor = Number.isFinite(body.shippingFloor) ? Math.max(0, Math.trunc(body.shippingFloor)) : 0;
-    const withUnboxingService = body.withUnboxingService === true;
+    const storePickup = body.storePickup === true;
+    const shippingFloor = storePickup ? 0 : (Number.isFinite(body.shippingFloor) ? Math.max(0, Math.trunc(body.shippingFloor)) : 0);
+    const withUnboxingService = storePickup ? false : body.withUnboxingService === true;
 
     if (!items.length) {
       return NextResponse.json({
@@ -73,6 +74,33 @@ export async function POST(req: NextRequest) {
       const perBox = Math.max(1, v.storeProduct?.productsPerBox || 1);
       totalBoxes += Math.ceil(qty / perBox);
       totalVolumeM3 += Number(v.volumeM3) * qty;
+    }
+
+    // Ritiro in negozio: nessun costo di spedizione, nessun indirizzo richiesto.
+    if (storePickup) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          ready: true,
+          country,
+          market,
+          lines,
+          subtotalCents,
+          totalVolumeM3,
+          billableVolumeM3: Math.max(1, Math.ceil(totalVolumeM3)),
+          totalBoxes,
+          standardShippingCents: 0,
+          floorDeliveryCents: 0,
+          unboxingFeeCents: 0,
+          totalShippingCents: 0,
+          freeShippingApplied: false,
+          freeShippingThresholdCents: FREE_STANDARD_SHIPPING_THRESHOLD_CENTS,
+          resolvedRegion: "Ritiro al punto di vendita",
+          notes: [],
+          storePickup: true,
+          totalCents: subtotalCents,
+        },
+      });
     }
 
     // Se l'indirizzo non è ancora utilizzabile (no CAP e no provincia per IT,

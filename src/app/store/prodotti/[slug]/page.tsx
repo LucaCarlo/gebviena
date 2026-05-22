@@ -27,7 +27,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const isFr = lang === "fr";
 
   return (
-    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
+    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10 overflow-x-clip">
       <nav className="text-xs text-warm-500 mb-6">
         <Link href="/" className="hover:text-warm-900">{isFr ? "Boutique" : "Shop"}</Link>
         {product.category && (

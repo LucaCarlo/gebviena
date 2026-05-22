@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { fbTrack } from "@/lib/fbpixel";
 
 export interface CartItem {
   variantId: string;
@@ -30,7 +31,30 @@ interface CartContextValue {
 }
 
 const STORAGE_KEY = "gtv_cart_v1";
+const SESSION_KEY = "gtv_cart_session_v1";
 const CartContext = createContext<CartContextValue | null>(null);
+
+function generateSessionId(): string {
+  const r = () => Math.floor(Math.random() * 16).toString(16);
+  let id = "";
+  for (let i = 0; i < 32; i++) {
+    id += r();
+    if (i === 7 || i === 11 || i === 15 || i === 19) id += "-";
+  }
+  return id;
+}
+
+function getOrCreateSessionId(): string {
+  try {
+    const existing = localStorage.getItem(SESSION_KEY);
+    if (existing && existing.length >= 16) return existing;
+    const fresh = generateSessionId();
+    localStorage.setItem(SESSION_KEY, fresh);
+    return fresh;
+  } catch {
+    return generateSessionId();
+  }
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -55,7 +79,44 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } catch { /* quota exceeded — accettabile, in-memory continua */ }
   }, [items, hydrated]);
 
+  // Sync DB Cart (debounce 1.2s) — per "carrelli abbandonati".
+  useEffect(() => {
+    if (!hydrated) return;
+    const sessionId = getOrCreateSessionId();
+    const subtotalCents = items.reduce((acc, i) => acc + i.priceCents * i.quantity, 0);
+    const language = (typeof document !== "undefined" ? document.documentElement.lang : "it") || "it";
+    const t = setTimeout(() => {
+      fetch("/api/store/public/cart/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          items: items.map((i) => ({
+            variantId: i.variantId,
+            productSlug: i.productSlug,
+            productName: i.productName,
+            sku: i.sku,
+            quantity: i.quantity,
+            priceCents: i.priceCents,
+            coverImage: i.coverImage,
+          })),
+          subtotalCents,
+          language,
+        }),
+        keepalive: true,
+      }).catch(() => { /* silent */ });
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [items, hydrated]);
+
   const addItem = useCallback((item: Omit<CartItem, "quantity">, qty: number = 1) => {
+    fbTrack("AddToCart", {
+      content_ids: [item.variantId],
+      content_name: item.productName,
+      content_type: "product",
+      value: (item.priceCents * qty) / 100,
+      currency: "EUR",
+    });
     setItems((prev) => {
       const existing = prev.find((i) => i.variantId === item.variantId);
       if (existing) {

@@ -231,7 +231,7 @@ export default function RegistrantsData() {
                     ? <span className="px-2 py-0.5 rounded text-[11px] bg-green-100 text-green-800">Inviata</span>
                     : st === "error"
                       ? <span className="px-2 py-0.5 rounded text-[11px] bg-red-100 text-red-800">Errore</span>
-                      : <span className="px-2 py-0.5 rounded text-[11px] bg-amber-100 text-amber-800">In attesa</span>;
+                      : <span className="text-warm-400">—</span>;
                   const open = openRow === r.email;
                   return (
                     <Fragment key={r.email + i}>

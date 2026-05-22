@@ -28,7 +28,25 @@ export default function StoreUserMenu() {
   const currentLang = useLang();
   const [open, setOpen] = useState(false);
   const [languages, setLanguages] = useState<Language[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+
+  // Conta ordini in sospeso (PENDING-stripe, ABANDONED_CHECKOUT, PAYMENT_FAILED)
+  useEffect(() => {
+    if (!customer) { setPendingCount(0); return; }
+    fetch("/api/store/public/orders", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.success || !Array.isArray(d.data)) return;
+        const n = d.data.filter((o: { status: string; paymentProvider: string | null }) =>
+          o.status === "ABANDONED_CHECKOUT"
+          || o.status === "PAYMENT_FAILED"
+          || (o.status === "PENDING" && o.paymentProvider !== "bonifico")
+        ).length;
+        setPendingCount(n);
+      })
+      .catch(() => { /* silent */ });
+  }, [customer]);
 
   useEffect(() => {
     fetch("/api/languages")
@@ -70,9 +88,17 @@ export default function StoreUserMenu() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         title={customer ? (customer.email || "Account") : (isFr ? "Mon compte" : "Account")}
-        className="p-1 text-neutral-700 hover:text-neutral-900 transition-colors inline-flex"
+        className="p-1 text-neutral-700 hover:text-neutral-900 transition-colors inline-flex relative"
       >
         <User size={20} strokeWidth={1.6} />
+        {pendingCount > 0 && (
+          <span
+            className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-semibold flex items-center justify-center leading-none"
+            aria-label={`${pendingCount} ordini in sospeso`}
+          >
+            {pendingCount > 9 ? "9+" : pendingCount}
+          </span>
+        )}
       </button>
 
       {open && (
