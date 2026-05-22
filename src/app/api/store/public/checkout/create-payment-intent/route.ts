@@ -163,8 +163,31 @@ export async function POST(req: NextRequest) {
     const taxCents = Math.round((subtotalCents * taxRateBpMarket) / (10000 + taxRateBpMarket));
     const totalCents = subtotalCents + shippingCents + unboxingFeeCents;
 
-    // Genera orderNumber
-    const orderNumber = "GTV-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+    // Se esiste già un Order ABANDONED_CHECKOUT linkato a questo cartSessionId
+    // (creato dall'autosave track-abandoned mentre l'utente compilava il form),
+    // riusiamo il suo orderNumber: cosi' lo promuoveremo poi a PENDING invece
+    // di crearne uno nuovo, e l'orderNumber esposto al cliente resta coerente.
+    const cartSessionId = typeof body.cartSessionId === "string" ? body.cartSessionId.trim().slice(0, 64) : "";
+    let abandonedOrderId: string | null = null;
+    let abandonedOrderNumber: string | null = null;
+    if (cartSessionId) {
+      const cart = await prisma.cart.findUnique({
+        where: { sessionId: cartSessionId },
+        select: { convertedOrderId: true },
+      });
+      if (cart?.convertedOrderId) {
+        const o = await prisma.order.findUnique({
+          where: { id: cart.convertedOrderId },
+          select: { id: true, status: true, orderNumber: true },
+        });
+        if (o && o.status === "ABANDONED_CHECKOUT") {
+          abandonedOrderId = o.id;
+          abandonedOrderNumber = o.orderNumber;
+        }
+      }
+    }
+    const orderNumber = abandonedOrderNumber
+      || ("GTV-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase());
 
     // Cerca o crea customer. Se non esiste, lo creiamo SENZA password (passwordHash=null):
     // dopo il pagamento gli mandiamo un magic-link per impostarla. Se esiste già,
@@ -228,39 +251,74 @@ export async function POST(req: NextRequest) {
       description: `Order ${orderNumber} — ${customer.firstName} ${customer.lastName}`,
     });
 
-    // Crea Order in DB
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        customerId,
-        status: "PENDING",
-        email: customer.email,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        phone: customer.phone || null,
-        language: orderLang,
-        customerTaxId,
-        shippingAddress: JSON.stringify(shippingAddress),
-        billingAddress: JSON.stringify(billingAddress),
-        subtotalCents,
-        shippingCents,
-        shippingFloor,
-        withUnboxingService,
-        unboxingFeeCents,
-        storePickup,
-        taxCents,
-        totalCents,
-        currency: cfg.currency,
-        taxRateBp: taxRateBpMarket,
-        paymentProvider: "stripe",
-        stripePaymentIntentId: paymentIntent.id,
-        customerNotes: body.customerNotes || null,
-        items: { create: orderItems },
-      },
-    });
+    let order;
+    if (abandonedOrderId) {
+      // Promuovi ABANDONED_CHECKOUT → PENDING + stripe. Sostituisci gli items col carrello attuale.
+      await prisma.orderItem.deleteMany({ where: { orderId: abandonedOrderId } });
+      order = await prisma.order.update({
+        where: { id: abandonedOrderId },
+        data: {
+          customerId,
+          status: "PENDING",
+          email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone: customer.phone || null,
+          language: orderLang,
+          customerTaxId,
+          shippingAddress: JSON.stringify(shippingAddress),
+          billingAddress: JSON.stringify(billingAddress),
+          subtotalCents,
+          shippingCents,
+          shippingFloor,
+          withUnboxingService,
+          unboxingFeeCents,
+          storePickup,
+          taxCents,
+          totalCents,
+          currency: cfg.currency,
+          taxRateBp: taxRateBpMarket,
+          paymentProvider: "stripe",
+          paymentMethodType: null,
+          paymentErrorMessage: null,
+          stripePaymentIntentId: paymentIntent.id,
+          customerNotes: body.customerNotes || null,
+          items: { create: orderItems },
+        },
+      });
+    } else {
+      order = await prisma.order.create({
+        data: {
+          orderNumber,
+          customerId,
+          status: "PENDING",
+          email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone: customer.phone || null,
+          language: orderLang,
+          customerTaxId,
+          shippingAddress: JSON.stringify(shippingAddress),
+          billingAddress: JSON.stringify(billingAddress),
+          subtotalCents,
+          shippingCents,
+          shippingFloor,
+          withUnboxingService,
+          unboxingFeeCents,
+          storePickup,
+          taxCents,
+          totalCents,
+          currency: cfg.currency,
+          taxRateBp: taxRateBpMarket,
+          paymentProvider: "stripe",
+          stripePaymentIntentId: paymentIntent.id,
+          customerNotes: body.customerNotes || null,
+          items: { create: orderItems },
+        },
+      });
+    }
 
     // Marca il Cart come converted (così esce dalla lista "carrelli abbandonati")
-    const cartSessionId = typeof body.cartSessionId === "string" ? body.cartSessionId.trim().slice(0, 64) : "";
     if (cartSessionId) {
       prisma.cart.updateMany({
         where: { sessionId: cartSessionId },

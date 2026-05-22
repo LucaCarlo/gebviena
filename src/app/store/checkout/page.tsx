@@ -164,6 +164,53 @@ export default function CheckoutPage() {
   // dovuti al fatto che `items` è una nuova reference ad ogni render.
   const itemsFingerprint = items.map((i) => `${i.variantId}:${i.quantity}`).join("|");
 
+  // Track "Checkout abbandonato": appena l'utente compila email + almeno uno
+  // tra nome/cognome/telefono, dopo 3s di pausa nella digitazione, creiamo o
+  // aggiorniamo silenziosamente un Order ABANDONED_CHECKOUT in DB. Se poi
+  // l'utente clicca "Procedi al pagamento" l'endpoint create-payment-intent /
+  // create-bonifico-order lo promuove a PENDING. Se chiude la tab senza pagare,
+  // l'ordine rimane ABANDONED_CHECKOUT e finisce in "Carrelli abbandonati" admin.
+  const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
+  const hasIdentity = !!(form.firstName.trim() || form.lastName.trim() || form.phone.trim());
+  useEffect(() => {
+    if (phase !== "address") return;
+    if (!hasValidEmail || !hasIdentity) return;
+    if (items.length === 0) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      const cartSessionId = typeof window !== "undefined" ? (localStorage.getItem("gtv_cart_session_v1") || "") : "";
+      if (!cartSessionId) return;
+      fetch("/api/store/public/checkout/track-abandoned", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          phone: form.phone,
+          taxId: form.taxId,
+          items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+          shippingAddress: form.storePickup ? null : {
+            street: form.street,
+            city: form.city,
+            province: form.province,
+            postalCode: form.postalCode,
+            country: form.country,
+          },
+          shippingFloor: Number(form.shippingFloor) || 0,
+          withUnboxingService: form.withUnboxingService === true,
+          storePickup: form.storePickup === true,
+          customerNotes: form.customerNotes,
+          lang,
+          cartSessionId,
+        }),
+        signal: ctrl.signal,
+      }).catch(() => { /* network/abort silent */ });
+    }, 3000);
+    return () => { clearTimeout(t); ctrl.abort(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, hasValidEmail, hasIdentity, itemsFingerprint, form.email, form.firstName, form.lastName, form.phone, form.taxId, form.country, form.postalCode, form.province, form.city, form.street, form.shippingFloor, form.withUnboxingService, form.storePickup]);
+
   // Quote spedizione live: ricalcola appena cambiano country/CAP/provincia/
   // piano/disimballo o il contenuto del carrello. Debounced 350ms per non
   // martellare l'endpoint mentre l'utente digita. Niente bottone richiesto.
