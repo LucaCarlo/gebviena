@@ -82,7 +82,10 @@ export default async function RootLayout({
           rel="stylesheet"
         />
         {fbPixelId && (
-          <Script id="meta-pixel" strategy="afterInteractive">{`
+          // beforeInteractive: lo stub window.fbq deve esistere prima che i componenti
+          // client (es. ProductDetail) eseguano i loro useEffect e chiamino fbTrack().
+          // Con afterInteractive ViewContent / AddToCart / AddToWishlist si perdevano.
+          <Script id="meta-pixel" strategy="beforeInteractive">{`
             !function(f,b,e,v,n,t,s)
             {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
             n.callMethod.apply(n,arguments):n.queue.push(arguments)};
