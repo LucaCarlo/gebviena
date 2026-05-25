@@ -98,38 +98,145 @@ function statusLabel(o: { status: OrderStatus; paymentProvider: string | null })
 const euro = (cents: number, currency: string) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
 
+type PeriodKey = "today" | "7d" | "month" | "year" | "all" | "custom";
+
+interface RevenueStats {
+  revenueCents: number;
+  grossCents: number;
+  refundsCents: number;
+  count: number;
+  pendingBonificoCents: number;
+  pendingBonificoCount: number;
+}
+
+// Calcola from/to (ISO date) per i preset di periodo. Ritorna null per "all".
+function rangeForPeriod(p: PeriodKey, customFrom?: string, customTo?: string): { from: string | null; to: string | null } {
+  if (p === "all") return { from: null, to: null };
+  if (p === "custom") return { from: customFrom || null, to: customTo || null };
+  const now = new Date();
+  if (p === "today") {
+    const start = new Date(now); start.setHours(0, 0, 0, 0);
+    return { from: start.toISOString(), to: null };
+  }
+  if (p === "7d") {
+    const start = new Date(now); start.setDate(start.getDate() - 6); start.setHours(0, 0, 0, 0);
+    return { from: start.toISOString(), to: null };
+  }
+  if (p === "month") {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    return { from: start.toISOString(), to: null };
+  }
+  if (p === "year") {
+    const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+    return { from: start.toISOString(), to: null };
+  }
+  return { from: null, to: null };
+}
+
+const PERIOD_LABELS: Record<PeriodKey, string> = {
+  today: "Oggi",
+  "7d": "Ultimi 7 giorni",
+  month: "Questo mese",
+  year: "Anno in corso",
+  all: "Tutto",
+  custom: "Personalizzato",
+};
+
 export default function StoreOrdersPage() {
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<OrderStatus | "">("");
   const [q, setQ] = useState("");
 
+  const [period, setPeriod] = useState<PeriodKey>("month");
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
+  const [stats, setStats] = useState<RevenueStats | null>(null);
+
+  const { from, to } = rangeForPeriod(period, customFrom, customTo);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.set("scope", "paid"); // questa pagina mostra solo ordini pagati / in evasione / completati / post-vendita
+    params.set("scope", "paid");
     if (status) params.set("status", status);
     if (q) params.set("q", q);
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    params.set("take", "500");
     const res = await fetch(`/api/store/orders?${params}`).then((r) => r.json());
     if (res.success) setOrders(res.data);
     setLoading(false);
-  }, [status, q]);
+  }, [status, q, from, to]);
 
   useEffect(() => {
     const t = setTimeout(() => fetchAll(), 250);
     return () => clearTimeout(t);
   }, [fetchAll]);
 
+  // Carica stats aggregate per il periodo selezionato
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    fetch(`/api/store/orders/stats?${params}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setStats(d.data); })
+      .catch(() => { /* silent */ });
+  }, [from, to]);
+
   const totalBy = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
+  const eurFmt = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
 
   return (
     <div>
-      <header className="flex items-center justify-between mb-4">
+      <header className="flex items-start justify-between mb-4 gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold text-warm-900 flex items-center gap-2">
             <ShoppingCart size={24} /> Ordini
           </h1>
           <p className="text-sm text-warm-500 mt-1">{orders.length} ordini visibili</p>
+        </div>
+
+        {/* Riepilogo periodo + fatturato */}
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as PeriodKey)}
+              className="px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
+            >
+              {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((k) => (
+                <option key={k} value={k}>{PERIOD_LABELS[k]}</option>
+              ))}
+            </select>
+            {period === "custom" && (
+              <>
+                <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="px-2 py-2 border border-warm-200 rounded-lg text-sm bg-white" />
+                <span className="text-xs text-warm-500">→</span>
+                <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="px-2 py-2 border border-warm-200 rounded-lg text-sm bg-white" />
+              </>
+            )}
+          </div>
+          {stats && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-right min-w-[280px]">
+              <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-medium">
+                Fatturato {PERIOD_LABELS[period].toLowerCase()}
+              </div>
+              <div className="text-2xl font-semibold text-emerald-900 mt-1 tabular-nums">
+                {eurFmt(stats.revenueCents)}
+              </div>
+              <div className="text-[11px] text-emerald-700 mt-0.5">
+                {stats.count} {stats.count === 1 ? "ordine incassato" : "ordini incassati"}
+                {stats.refundsCents > 0 && ` · ${eurFmt(stats.refundsCents)} rimborsati`}
+              </div>
+              {stats.pendingBonificoCents > 0 && (
+                <div className="text-[11px] text-amber-700 mt-1 pt-1 border-t border-emerald-200">
+                  + {eurFmt(stats.pendingBonificoCents)} in attesa di bonifico ({stats.pendingBonificoCount})
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
