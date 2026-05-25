@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import {
   Loader2, ArrowLeft, Check, X, AlertCircle, RotateCcw, Truck, Copy,
 } from "lucide-react";
+import { humanizeStripeError } from "@/lib/stripe-error-labels";
 
 type OrderStatus =
   | "PENDING"
@@ -459,12 +460,20 @@ export default function OrderDetailPage() {
                 </div>
               )}
             </dl>
-            {order.paymentErrorMessage && (
-              <div className="mt-3 px-3 py-2 rounded bg-red-50 border border-red-200 text-[12px] text-red-800">
-                <div className="font-medium mb-0.5">Motivo errore pagamento</div>
-                <div className="text-red-700">{order.paymentErrorMessage}</div>
-              </div>
-            )}
+            {order.paymentErrorMessage && (() => {
+              const h = humanizeStripeError(order.paymentErrorMessage);
+              return (
+                <div className="mt-3 px-3 py-2 rounded bg-red-50 border border-red-200 text-[12px] text-red-800">
+                  <div className="font-medium mb-1">{h.shortLabel}</div>
+                  <div className="text-red-700 mb-1.5">{h.description}</div>
+                  <div className="text-warm-700 italic">Cosa suggerire al cliente: {h.customerSuggestion}</div>
+                  <details className="mt-1.5">
+                    <summary className="text-warm-500 cursor-pointer text-[10px] uppercase tracking-wider">Messaggio originale Stripe</summary>
+                    <div className="text-warm-600 text-[11px] mt-1 font-mono break-all">{order.paymentErrorMessage}</div>
+                  </details>
+                </div>
+              );
+            })()}
 
             {(order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED" || order.status === "DELIVERED" || order.status === "PARTIALLY_REFUNDED") && (
               <button

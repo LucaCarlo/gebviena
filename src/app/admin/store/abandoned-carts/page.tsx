@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Search, ShoppingBag, Clock, AlertTriangle, Ban, XCircle } from "lucide-react";
+import { humanizeStripeError } from "@/lib/stripe-error-labels";
 
 type OrderStatus =
   | "PENDING"
@@ -250,11 +251,15 @@ export default function AbandonedCartsPage() {
                         <Icon size={11} />
                         {statusLabel(o)}
                       </span>
-                      {o.status === "PAYMENT_FAILED" && o.paymentErrorMessage && (
-                        <div className="text-[10px] text-red-700 mt-1 max-w-[260px] leading-tight" title={o.paymentErrorMessage}>
-                          {o.paymentErrorMessage.length > 80 ? o.paymentErrorMessage.slice(0, 80) + "…" : o.paymentErrorMessage}
-                        </div>
-                      )}
+                      {o.status === "PAYMENT_FAILED" && o.paymentErrorMessage && (() => {
+                        const h = humanizeStripeError(o.paymentErrorMessage);
+                        return (
+                          <div className="text-[10px] text-red-700 mt-1 max-w-[260px] leading-tight" title={o.paymentErrorMessage}>
+                            <span className="font-medium">{h.shortLabel}</span>
+                            <div className="text-warm-500 leading-tight">{h.description}</div>
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 );
