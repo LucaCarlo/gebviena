@@ -40,12 +40,11 @@ interface OrderListItem {
   items: { id: string; quantity: number }[];
 }
 
-// Solo gli stati "pre-pagamento" che vanno qui:
+// Stati che vanno qui (gestiti via API scope=pending):
 // - ABANDONED_CHECKOUT (compilato form ma uscito prima di cliccare paga)
 // - PAYMENT_FAILED (Stripe ha rifiutato la carta)
 // - PENDING via Stripe (cliente non ha completato il pagamento)
 // NB: PENDING+bonifico e CANCELLED stanno in /admin/store/orders (sono ordini finalizzati).
-const PENDING_STATUSES: OrderStatus[] = ["ABANDONED_CHECKOUT", "PENDING", "PAYMENT_FAILED"];
 
 const STATUS_META: Record<OrderStatus, { label: string; cls: string; Icon: typeof Clock }> = {
   PENDING:            { label: "In attesa di accredito bonifico", cls: "bg-amber-50 text-amber-800 border-amber-200",  Icon: Clock },
@@ -178,9 +177,9 @@ export default function AbandonedCartsPage() {
           className="px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
         >
           <option value="">Tutti gli stati</option>
-          {PENDING_STATUSES.map((s) => (
-            <option key={s} value={s}>{STATUS_META[s].label}</option>
-          ))}
+          <option value="ABANDONED_CHECKOUT">Checkout abbandonato</option>
+          <option value="PENDING">Pagamento non effettuato</option>
+          <option value="PAYMENT_FAILED">Errore pagamento</option>
         </select>
       </div>
 
