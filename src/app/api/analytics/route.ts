@@ -5,6 +5,14 @@ import { getAuthUser } from "@/lib/auth";
 type Row = Record<string, unknown>;
 const num = (v: unknown) => Number(v ?? 0);
 
+// Cache in-memory dei risultati per ridurre il carico: 17 query parallele su
+// 400k+ righe sono costose. Cache 60s per (host, range) e 30s per la pagina
+// dei "recent". Si svuota al restart del processo.
+type CacheEntry = { data: unknown; expires: number };
+const CACHE = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 60_000;       // 60s per i dati aggregati
+const CACHE_TTL_RECENT_MS = 30_000; // 30s per la lista "recent" paginata
+
 export async function GET(req: Request) {
   const auth = await getAuthUser();
   if (!auth) return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
@@ -13,6 +21,14 @@ export async function GET(req: Request) {
   const hostParam = (searchParams.get("host") || "").toUpperCase();
   const host = hostParam === "SITO" || hostParam === "STORE" ? hostParam : "";
   const rangeParam = (searchParams.get("range") || "all").toLowerCase();
+
+  // Chiave cache: include host + range + (eventuale pagina recent).
+  const recentPageKey = searchParams.get("recentPage") ? `recent:${searchParams.get("offset") || "0"}` : "stats";
+  const cacheKey = `${host || "ALL"}|${rangeParam}|${recentPageKey}`;
+  const cached = CACHE.get(cacheKey);
+  if (cached && cached.expires > Date.now()) {
+    return NextResponse.json({ success: true, data: cached.data, cached: true });
+  }
   const RANGE_DAYS: Record<string, number> = { "1d": 1, "7d": 7, "30d": 30, "1y": 365 };
   const days = RANGE_DAYS[rangeParam];
   const isHourly = rangeParam === "1d";
@@ -42,7 +58,9 @@ export async function GET(req: Request) {
   if (searchParams.get("recentPage")) {
     const offset = Math.max(0, parseInt(searchParams.get("offset") || "0", 10) || 0);
     const rec = await q(recentSql(offset));
-    return NextResponse.json({ success: true, data: { recent: mapRecent(rec.slice(0, PAGE)), hasMore: rec.length > PAGE } });
+    const payload = { recent: mapRecent(rec.slice(0, PAGE)), hasMore: rec.length > PAGE };
+    CACHE.set(cacheKey, { data: payload, expires: Date.now() + CACHE_TTL_RECENT_MS });
+    return NextResponse.json({ success: true, data: payload });
   }
 
   const OS = `CASE
@@ -111,9 +129,7 @@ export async function GET(req: Request) {
   const sv = num(sfV[0]?.u);
   const pct = (a: number) => (sv > 0 ? Math.round((a / sv) * 100) : 0);
 
-  return NextResponse.json({
-    success: true,
-    data: {
+  const payload = {
       filterHost: host || "ALL",
       range: rangeParam,
       isHourly,
@@ -152,6 +168,7 @@ export async function GET(req: Request) {
       },
       recent: mapRecent(recent.slice(0, PAGE)),
       recentHasMore: recent.length > PAGE,
-    },
-  });
+  };
+  CACHE.set(cacheKey, { data: payload, expires: Date.now() + CACHE_TTL_MS });
+  return NextResponse.json({ success: true, data: payload });
 }

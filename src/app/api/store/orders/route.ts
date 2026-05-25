@@ -9,16 +9,19 @@ const VALID_STATUSES: OrderStatus[] = [
   "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
 ];
 
-// Ordini "finalizzati" = pagati / spediti / completati / post-vendita
+// Ordini "finalizzati" = pagati / spediti / completati / post-vendita / annullati
+// (CANCELLED presuppone un ordine creato che il cliente o l'admin ha annullato)
 // PIÙ gli ordini PENDING via bonifico (sono finalizzati, aspettano solo l'accredito).
 const PAID_SCOPE_STATUSES: OrderStatus[] = [
   "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP",
-  "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
+  "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED", "CANCELLED",
 ];
-// Ordini "non finalizzati" = checkout abbandonato, errore pagamento, annullato,
-// PIÙ i PENDING via Stripe (cliente non ha completato il pagamento).
+// Carrelli abbandonati = solo le situazioni "pre-pagamento":
+// - ABANDONED_CHECKOUT (compilato form ma uscito prima di cliccare paga)
+// - PAYMENT_FAILED (Stripe ha rifiutato la carta)
+// - PENDING via Stripe (cliente NON ha completato il pagamento sulla pagina Stripe)
 const PENDING_SCOPE_STATUSES: OrderStatus[] = [
-  "ABANDONED_CHECKOUT", "PAYMENT_FAILED", "CANCELLED",
+  "ABANDONED_CHECKOUT", "PAYMENT_FAILED",
 ];
 
 export async function GET(req: NextRequest) {

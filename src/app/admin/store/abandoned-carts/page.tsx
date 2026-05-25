@@ -40,13 +40,12 @@ interface OrderListItem {
   items: { id: string; quantity: number }[];
 }
 
-// Solo gli stati "non finalizzati" che vanno qui:
-// - ABANDONED_CHECKOUT (compilato form ma uscito prima del pagamento)
+// Solo gli stati "pre-pagamento" che vanno qui:
+// - ABANDONED_CHECKOUT (compilato form ma uscito prima di cliccare paga)
 // - PAYMENT_FAILED (Stripe ha rifiutato la carta)
-// - CANCELLED (annullato dal cliente o admin)
-// - PENDING via Stripe (cliente non ha completato il pagamento sulla pagina Stripe)
-// NB: PENDING + bonifico è considerato FINALIZZATO e sta in /admin/store/orders.
-const PENDING_STATUSES: OrderStatus[] = ["ABANDONED_CHECKOUT", "PENDING", "PAYMENT_FAILED", "CANCELLED"];
+// - PENDING via Stripe (cliente non ha completato il pagamento)
+// NB: PENDING+bonifico e CANCELLED stanno in /admin/store/orders (sono ordini finalizzati).
+const PENDING_STATUSES: OrderStatus[] = ["ABANDONED_CHECKOUT", "PENDING", "PAYMENT_FAILED"];
 
 const STATUS_META: Record<OrderStatus, { label: string; cls: string; Icon: typeof Clock }> = {
   PENDING:            { label: "In attesa di accredito bonifico", cls: "bg-amber-50 text-amber-800 border-amber-200",  Icon: Clock },
@@ -139,7 +138,7 @@ export default function AbandonedCartsPage() {
       </header>
 
       {/* Riepilogo conteggi compatti */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
         <div className={`rounded-lg border px-3 py-2 bg-orange-50 text-orange-800 border-orange-200 ${totalBy("ABANDONED_CHECKOUT") === 0 ? "opacity-50" : ""}`}>
           <div className="text-[10px] font-medium uppercase tracking-wider">Checkout abbandonati</div>
           <div className="text-lg font-semibold mt-0.5 leading-tight">{totalBy("ABANDONED_CHECKOUT")}</div>
@@ -154,11 +153,6 @@ export default function AbandonedCartsPage() {
           <div className="text-[10px] font-medium uppercase tracking-wider">Errore pagamento</div>
           <div className="text-lg font-semibold mt-0.5 leading-tight">{totalBy("PAYMENT_FAILED")}</div>
           <div className="text-[10px] text-red-700 leading-tight">carta rifiutata</div>
-        </div>
-        <div className={`rounded-lg border px-3 py-2 bg-blue-50 text-blue-800 border-blue-200 ${totalBy("CANCELLED") === 0 ? "opacity-50" : ""}`}>
-          <div className="text-[10px] font-medium uppercase tracking-wider">Annullati</div>
-          <div className="text-lg font-semibold mt-0.5 leading-tight">{totalBy("CANCELLED")}</div>
-          <div className="text-[10px] text-blue-700 leading-tight">cliente / admin</div>
         </div>
         <div className="rounded-lg border px-3 py-2 bg-warm-100 text-warm-900 border-warm-300">
           <div className="text-[10px] font-medium uppercase tracking-wider">Valore totale</div>

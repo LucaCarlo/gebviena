@@ -220,17 +220,14 @@ export default function OrderDetailPage() {
   const billAddr = parseAddress(order.billingAddress);
 
   // Il back link punta alla lista da cui presumibilmente arrivi.
-  // PENDING+bonifico va in "Ordini" (finalizzato, aspetta accredito);
-  // PENDING+stripe va in "Carrelli abbandonati" (pagamento non completato).
-  const isPendingBonifico = order.status === "PENDING" && order.paymentProvider === "bonifico";
+  // Carrelli abbandonati: ABANDONED_CHECKOUT, PAYMENT_FAILED, PENDING+stripe.
+  // Tutto il resto (CANCELLED incluso, perché presuppone un ordine creato) va in Ordini.
   const isPendingStripe = order.status === "PENDING" && order.paymentProvider !== "bonifico";
   const isAbandoned = order.status === "ABANDONED_CHECKOUT"
     || order.status === "PAYMENT_FAILED"
-    || order.status === "CANCELLED"
     || isPendingStripe;
   const backHref = isAbandoned ? "/admin/store/abandoned-carts" : "/admin/store/orders";
   const backLabel = isAbandoned ? "Torna a Carrelli abbandonati" : "Torna agli ordini";
-  void isPendingBonifico;
 
   return (
     <div className="max-w-6xl">

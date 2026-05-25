@@ -92,6 +92,13 @@ const DEFINITIONS: SettingDef[] = [
     placeholder: "1358148166154402",
     hint: "ID del pixel Meta usato per le campagne sponsorizzate. Solo il numero (es. 1358148166154402). Lascia vuoto per disattivare il tracciamento Facebook.",
   },
+  {
+    key: "abandoned_cart_ttl_days",
+    group: "store_general",
+    label: "Carrelli abbandonati — auto-cancellazione (giorni)",
+    placeholder: "90",
+    hint: "Dopo quanti giorni i carrelli abbandonati (checkout abbandonato, errore pagamento, pagamento non effettuato) vengono cancellati automaticamente dal database. Default 90. Imposta 0 per disabilitare la pulizia automatica.",
+  },
 
   // ── Email ──
   {

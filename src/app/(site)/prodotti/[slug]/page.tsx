@@ -7,7 +7,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import type { Product, Designer, Project } from "@/types";
-import { buildPconUrl } from "@/lib/pcon";
+import { buildPconUrl, withPconLang } from "@/lib/pcon";
 import { useLang, useT } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
 import { localizeHref } from "@/lib/localize-href";
@@ -649,14 +649,17 @@ export default function ProductDetailPage() {
 
               {/* --- CONFIGURATORE (PCON 3D) — sempre visibile, in fondo --- */}
               {(() => {
-                const pconSrc = product.pconBan
-                  ? buildPconUrl({
-                      moc: product.pconMoc,
-                      ban: product.pconBan,
-                      sid: product.pconSid,
-                      ovc: product.pconOvc,
-                    })
-                  : product.pconUrl || null;
+                const pconSrcRaw = (product.pconUrl && product.pconUrl.trim())
+                  || (product.pconBan
+                    ? buildPconUrl({
+                        moc: product.pconMoc,
+                        ban: product.pconBan,
+                        sid: product.pconSid,
+                        ovc: product.pconOvc,
+                        lang,
+                      })
+                    : null);
+                const pconSrc = pconSrcRaw ? withPconLang(pconSrcRaw, lang) : null;
                 if (!pconSrc) return null;
                 return (
                   <div id="pcon">
