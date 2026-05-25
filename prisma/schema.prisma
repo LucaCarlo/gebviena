@@ -1630,3 +1630,16 @@ model Cart {
   @@index([email])
   @@index([customerId])
 }
+
+// Snapshot precalcolato dei dati Analisi Traffico: il cron notturno genera
+// un JSON completo per ogni combinazione (host, range) cosi' la pagina admin
+// li legge istantaneamente. Per i range che includono oggi, il frontend
+// integra al volo i dati del giorno corrente.
+model AnalyticsSnapshot {
+  id          String   @id @default(cuid())
+  cacheKey    String   @unique @db.VarChar(64)   // es. "ALL|all", "STORE|30d", "SITO|7d"
+  data        String   @db.LongText               // JSON output completo dell'API analytics
+  generatedAt DateTime @default(now())
+
+  @@index([generatedAt])
+}

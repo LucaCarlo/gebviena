@@ -212,6 +212,41 @@ export async function GET(req: Request) {
 
   // Sezione singola
   if (section) {
+    // STRATEGIA "snapshot DB":
+    // Se il range non è "1d" (che cambia in tempo reale), prima cerchiamo
+    // uno snapshot precalcolato dal cron notturno nella tabella
+    // AnalyticsSnapshot. Se esiste e è recente, estraiamo la sezione richiesta.
+    // Cosi' la pagina admin si carica istantaneamente.
+    if (rangeParam !== "1d") {
+      try {
+        const snapKey = `${host || "ALL"}|${rangeParam}`;
+        const snap = await prisma.analyticsSnapshot.findUnique({ where: { cacheKey: snapKey } });
+        if (snap) {
+          const full = JSON.parse(snap.data) as Record<string, unknown>;
+          let extracted: unknown = null;
+          switch (section) {
+            case "kpi": extracted = {
+              filterHost: full.filterHost, range: full.range, isHourly: full.isHourly, isStore: full.isStore,
+              kpi: { ...(full.kpi as object), avgSeconds: null }, // session-time va a parte
+              series: full.series,
+            }; break;
+            case "session-time": extracted = { avgSeconds: (full.kpi as { avgSeconds?: number })?.avgSeconds ?? null }; break;
+            case "pages": extracted = { topPages: full.topPages }; break;
+            case "geo": extracted = { geo: full.geo }; break;
+            case "sources": extracted = { sources: full.sources }; break;
+            case "devices": extracted = { devices: full.devices, systems: full.systems }; break;
+            case "store": extracted = { store: full.store }; break;
+            case "recent": extracted = { recent: full.recent, recentHasMore: full.recentHasMore }; break;
+          }
+          if (extracted) {
+            CACHE.set(cacheKey, { data: extracted, expires: Date.now() + CACHE_TTL_MS });
+            return NextResponse.json({ success: true, data: extracted, source: "snapshot", generatedAt: snap.generatedAt });
+          }
+        }
+      } catch { /* fallback al calcolo live */ }
+    }
+
+    // Niente snapshot disponibile o range=1d → calcola al volo
     let data: unknown;
     switch (section) {
       case "kpi":          data = await buildKpi(); break;
