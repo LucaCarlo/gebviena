@@ -8,8 +8,8 @@ const num = (v: unknown) => Number(v ?? 0);
 // Cache in-memory dei risultati per ridurre il carico. Si svuota al restart.
 type CacheEntry = { data: unknown; expires: number };
 const CACHE = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 60_000;        // 60s per dati aggregati
-const CACHE_TTL_RECENT_MS = 30_000; // 30s per recent paginato
+const CACHE_TTL_MS = 300_000;        // 5min per dati aggregati (le metriche cambiano lentamente)
+const CACHE_TTL_RECENT_MS = 30_000;  // 30s per recent paginato
 
 /**
  * GET /api/analytics?host=SITO|STORE&range=1d|7d|30d|1y|all&section=X
@@ -97,17 +97,10 @@ export async function GET(req: Request) {
   const SW = isStore ? W : "WHERE `host`='STORE'";
 
   // Helper per generare ogni sezione separatamente.
+  // "kpi" = solo i 3 KPI VELOCI (visitatori, periodo, serie). NO tempo medio.
   async function buildKpi() {
-    const [uniqueR, avgTimeR, daysR, series] = await Promise.all([
+    const [uniqueR, daysR, series] = await Promise.all([
       q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${W}`),
-      q(`WITH seq AS (
-          SELECT \`ipHash\` h, UNIX_TIMESTAMP(\`createdAt\`) ts,
-                 LAG(UNIX_TIMESTAMP(\`createdAt\`)) OVER (PARTITION BY \`ipHash\` ORDER BY \`createdAt\`) prev
-          FROM \`PageView\` ${W}
-        ),
-        flagged AS (SELECT h, ts, CASE WHEN prev IS NULL OR ts - prev > 1800 THEN 1 ELSE 0 END nw FROM seq),
-        sess AS (SELECT h, ts, SUM(nw) OVER (PARTITION BY h ORDER BY ts) sid FROM flagged)
-        SELECT AVG(d) a FROM (SELECT MAX(ts)-MIN(ts) d FROM sess GROUP BY h, sid) x`),
       q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
       q(`SELECT ${BUCKET} b, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY b ORDER BY b`),
     ]);
@@ -120,7 +113,7 @@ export async function GET(req: Request) {
       isStore,
       kpi: {
         unique: num(uniqueR[0]?.u),
-        avgSeconds: Math.round(num(avgTimeR[0]?.a)),
+        avgSeconds: null, // arriva con la sezione 'session-time'
         avg,
         avgUnit: isHourly ? "ora" : "giorno",
         periodDays: num(daysR[0]?.d) || 0,
@@ -129,6 +122,18 @@ export async function GET(req: Request) {
       },
       series: seriesArr,
     };
+  }
+  // Sezione "session-time" — query con CTE WINDOW lenta, separata.
+  async function buildSessionTime() {
+    const avgTimeR = await q(`WITH seq AS (
+          SELECT \`ipHash\` h, UNIX_TIMESTAMP(\`createdAt\`) ts,
+                 LAG(UNIX_TIMESTAMP(\`createdAt\`)) OVER (PARTITION BY \`ipHash\` ORDER BY \`createdAt\`) prev
+          FROM \`PageView\` ${W}
+        ),
+        flagged AS (SELECT h, ts, CASE WHEN prev IS NULL OR ts - prev > 1800 THEN 1 ELSE 0 END nw FROM seq),
+        sess AS (SELECT h, ts, SUM(nw) OVER (PARTITION BY h ORDER BY ts) sid FROM flagged)
+        SELECT AVG(d) a FROM (SELECT MAX(ts)-MIN(ts) d FROM sess GROUP BY h, sid) x`);
+    return { avgSeconds: Math.round(num(avgTimeR[0]?.a)) };
   }
   async function buildPages() {
     const topPages = await q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY \`path\` ORDER BY v DESC LIMIT 15`);
@@ -209,13 +214,14 @@ export async function GET(req: Request) {
   if (section) {
     let data: unknown;
     switch (section) {
-      case "kpi":     data = await buildKpi(); break;
-      case "pages":   data = await buildPages(); break;
-      case "geo":     data = await buildGeo(); break;
-      case "sources": data = await buildSources(); break;
-      case "devices": data = await buildDevices(); break;
-      case "store":   data = await buildStore(); break;
-      case "recent":  data = await buildRecent(); break;
+      case "kpi":          data = await buildKpi(); break;
+      case "session-time": data = await buildSessionTime(); break;
+      case "pages":        data = await buildPages(); break;
+      case "geo":          data = await buildGeo(); break;
+      case "sources":      data = await buildSources(); break;
+      case "devices":      data = await buildDevices(); break;
+      case "store":        data = await buildStore(); break;
+      case "recent":       data = await buildRecent(); break;
       default: return NextResponse.json({ success: false, error: "section sconosciuta" }, { status: 400 });
     }
     CACHE.set(cacheKey, { data, expires: Date.now() + CACHE_TTL_MS });
@@ -223,10 +229,11 @@ export async function GET(req: Request) {
   }
 
   // Compatibilità: tutto in un colpo (vecchio comportamento)
-  const [kpi, pages, geo, sources, devices, store, recent] = await Promise.all([
-    buildKpi(), buildPages(), buildGeo(), buildSources(), buildDevices(), buildStore(), buildRecent(),
+  const [kpi, sessTime, pages, geo, sources, devices, store, recent] = await Promise.all([
+    buildKpi(), buildSessionTime(), buildPages(), buildGeo(), buildSources(), buildDevices(), buildStore(), buildRecent(),
   ]);
-  const payload = { ...kpi, ...pages, ...geo, ...sources, ...devices, ...store, ...recent };
+  const mergedKpi = { ...kpi, kpi: { ...kpi.kpi, avgSeconds: sessTime.avgSeconds } };
+  const payload = { ...mergedKpi, ...pages, ...geo, ...sources, ...devices, ...store, ...recent };
   CACHE.set(cacheKey, { data: payload, expires: Date.now() + CACHE_TTL_MS });
   return NextResponse.json({ success: true, data: payload });
 }

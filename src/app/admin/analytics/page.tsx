@@ -100,27 +100,43 @@ export default function AdminAnalyticsPage() {
     return `${s ? `?${s}` : ""}${extra ? (s ? "&" : "?") + extra : ""}`;
   }, [host, range]);
 
-  // Carica le sezioni in PARALLELO. Ognuna aggiorna lo state appena pronta
-  // → rendering progressivo dall'alto verso il basso senza aspettare la più lenta.
+  // Carica le sezioni IN SERIE dall'alto verso il basso (kpi → grafico → store
+  // → geo → sources → devices → pages → recent → session-time). Cosi' i dati
+  // appaiono in ordine visivo, e l'utente vede subito quelli sopra.
+  // Il "tempo medio sessione" (CTE lenta) viene caricato per ultimo perche'
+  // sta in alto ma non blocca il rendering del resto.
   const load = useCallback(async () => {
     setLoadedSections(new Set());
     setData({});
     setRecent([]);
-    const SECTIONS = ["kpi", "pages", "geo", "sources", "devices", "store", "recent"] as const;
-    for (const sec of SECTIONS) {
-      fetch(`/api/analytics${qs(`section=${sec}`)}`, { cache: "no-store" })
-        .then((r) => r.json())
-        .then((j) => {
-          if (!j.success || !j.data) return;
+    const fetchSection = async (sec: string) => {
+      try {
+        const r = await fetch(`/api/analytics${qs(`section=${sec}`)}`, { cache: "no-store" });
+        const j = await r.json();
+        if (!j.success || !j.data) return;
+        if (sec === "session-time") {
+          // Aggiorna SOLO avgSeconds dentro kpi
+          setData((prev) => prev.kpi ? { ...prev, kpi: { ...prev.kpi, avgSeconds: j.data.avgSeconds } } : prev);
+        } else {
           setData((prev) => ({ ...prev, ...j.data }));
-          if (sec === "recent") {
-            setRecent(j.data.recent || []);
-            setRecMore(!!j.data.recentHasMore);
-          }
-          setLoadedSections((prev) => new Set(prev).add(sec));
-        })
-        .catch(() => { /* ignore */ });
-    }
+        }
+        if (sec === "recent") {
+          setRecent(j.data.recent || []);
+          setRecMore(!!j.data.recentHasMore);
+        }
+        setLoadedSections((prev) => new Set(prev).add(sec));
+      } catch { /* ignore */ }
+    };
+    // 1) Sezioni "sopra" caricate in SERIE (dall'alto verso il basso visibile)
+    await fetchSection("kpi");      // KPI base + grafico andamento
+    await fetchSection("store");    // Funnel store (se store)
+    await fetchSection("geo");      // Nazioni + città + regioni
+    await fetchSection("sources");  // Sorgenti traffico
+    await fetchSection("devices");  // Dispositivi + sistemi
+    await fetchSection("pages");    // Top pagine
+    await fetchSection("recent");   // Visite recenti
+    // 2) Sezione "session-time" (CTE lenta): la lanciamo per ultima in BG.
+    fetchSection("session-time");
   }, [qs]);
 
   const loadMore = useCallback(async () => {
@@ -170,7 +186,7 @@ export default function AdminAnalyticsPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
                 { i: <Users size={16} />, l: "Visitatori unici", v: k.unique.toLocaleString("it-IT"), s: "" },
-                { i: <Clock size={16} />, l: "Tempo medio sul sito", v: fmtDur(k.avgSeconds), s: "permanenza media per sessione" },
+                { i: <Clock size={16} />, l: "Tempo medio sul sito", v: k.avgSeconds == null ? "…" : fmtDur(k.avgSeconds), s: k.avgSeconds == null ? "calcolo in corso" : "permanenza media per sessione" },
                 { i: <Activity size={16} />, l: `Media / ${k.avgUnit}`, v: k.avg.toLocaleString("it-IT"), s: "visitatori unici" },
                 { i: <CalendarDays size={16} />, l: "Periodo", v: String(k.periodDays), s: periodLabel },
               ].map((c) => (
