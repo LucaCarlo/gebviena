@@ -190,7 +190,6 @@ export default function StoreOrdersPage() {
       .catch(() => { /* silent */ });
   }, [from, to]);
 
-  const totalBy = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
   const eurFmt = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
 
   return (
