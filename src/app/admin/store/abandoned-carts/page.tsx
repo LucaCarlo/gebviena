@@ -39,7 +39,12 @@ interface OrderListItem {
   items: { id: string; quantity: number }[];
 }
 
-// Solo gli stati "non finalizzati" — gli ordini pagati / spediti / completati stanno in /admin/store/orders
+// Solo gli stati "non finalizzati" che vanno qui:
+// - ABANDONED_CHECKOUT (compilato form ma uscito prima del pagamento)
+// - PAYMENT_FAILED (Stripe ha rifiutato la carta)
+// - CANCELLED (annullato dal cliente o admin)
+// - PENDING via Stripe (cliente non ha completato il pagamento sulla pagina Stripe)
+// NB: PENDING + bonifico è considerato FINALIZZATO e sta in /admin/store/orders.
 const PENDING_STATUSES: OrderStatus[] = ["ABANDONED_CHECKOUT", "PENDING", "PAYMENT_FAILED", "CANCELLED"];
 
 const STATUS_META: Record<OrderStatus, { label: string; cls: string; Icon: typeof Clock }> = {

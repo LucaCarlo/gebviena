@@ -9,15 +9,16 @@ const VALID_STATUSES: OrderStatus[] = [
   "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
 ];
 
-// Ordini "finalizzati" = pagati e in lavorazione/spediti/consegnati/post-vendita.
-// Il resto (ABANDONED_CHECKOUT, PENDING, PAYMENT_FAILED, CANCELLED) viene mostrato
-// nella pagina "Carrelli abbandonati".
-const PAID_SCOPE: OrderStatus[] = [
+// Ordini "finalizzati" = pagati / spediti / completati / post-vendita
+// PIÙ gli ordini PENDING via bonifico (sono finalizzati, aspettano solo l'accredito).
+const PAID_SCOPE_STATUSES: OrderStatus[] = [
   "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP",
   "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
 ];
-const PENDING_SCOPE: OrderStatus[] = [
-  "ABANDONED_CHECKOUT", "PENDING", "PAYMENT_FAILED", "CANCELLED",
+// Ordini "non finalizzati" = checkout abbandonato, errore pagamento, annullato,
+// PIÙ i PENDING via Stripe (cliente non ha completato il pagamento).
+const PENDING_SCOPE_STATUSES: OrderStatus[] = [
+  "ABANDONED_CHECKOUT", "PAYMENT_FAILED", "CANCELLED",
 ];
 
 export async function GET(req: NextRequest) {
@@ -32,24 +33,50 @@ export async function GET(req: NextRequest) {
   const to = sp.get("to");
   const take = Math.min(Math.max(parseInt(sp.get("take") || "100"), 1), 500);
 
-  const where: Prisma.OrderWhereInput = {};
+  // Costruiamo le condizioni in AND per non sovrascrivere il where.OR dello scope
+  // col where.OR della search.
+  const conditions: Prisma.OrderWhereInput[] = [];
+
   if (status && VALID_STATUSES.includes(status)) {
-    where.status = status;
+    conditions.push({ status });
+    // Se status=PENDING combinato con scope, applica anche il filtro sul provider:
+    // scope=paid → solo bonifico; scope=pending → solo non-bonifico (stripe ecc.).
+    if (status === "PENDING" && scope === "paid") {
+      conditions.push({ paymentProvider: "bonifico" });
+    } else if (status === "PENDING" && scope === "pending") {
+      conditions.push({ NOT: { paymentProvider: "bonifico" } });
+    }
   } else if (scope === "paid") {
-    where.status = { in: PAID_SCOPE };
+    // PAID_SCOPE_STATUSES OR (PENDING AND paymentProvider="bonifico")
+    conditions.push({
+      OR: [
+        { status: { in: PAID_SCOPE_STATUSES } },
+        { status: "PENDING", paymentProvider: "bonifico" },
+      ],
+    });
   } else if (scope === "pending") {
-    where.status = { in: PENDING_SCOPE };
+    // PENDING_SCOPE_STATUSES OR (PENDING AND paymentProvider != "bonifico")
+    conditions.push({
+      OR: [
+        { status: { in: PENDING_SCOPE_STATUSES } },
+        { status: "PENDING", NOT: { paymentProvider: "bonifico" } },
+      ],
+    });
   }
   if (q) {
-    where.OR = [
-      { orderNumber: { contains: q } },
-      { email: { contains: q } },
-      { lastName: { contains: q } },
-      { firstName: { contains: q } },
-    ];
+    conditions.push({
+      OR: [
+        { orderNumber: { contains: q } },
+        { email: { contains: q } },
+        { lastName: { contains: q } },
+        { firstName: { contains: q } },
+      ],
+    });
   }
-  if (from) where.createdAt = { ...(where.createdAt as object), gte: new Date(from) };
-  if (to) where.createdAt = { ...(where.createdAt as object), lte: new Date(to) };
+  if (from) conditions.push({ createdAt: { gte: new Date(from) } });
+  if (to) conditions.push({ createdAt: { lte: new Date(to) } });
+
+  const where: Prisma.OrderWhereInput = conditions.length ? { AND: conditions } : {};
 
   const orders = await prisma.order.findMany({
     where,

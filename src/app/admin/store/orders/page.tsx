@@ -135,21 +135,21 @@ export default function StoreOrdersPage() {
       {/* Riepilogo conteggi per gruppo (solo ordini finalizzati) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {(() => {
-          const groups = [
-            { key: "da-evadere", label: "Da evadere (pagati)",   statuses: ["PAID", "PROCESSING"] as OrderStatus[], cls: "bg-blue-50 text-blue-800 border-blue-200" },
-            { key: "in-corso",  label: "Spediti / in corso",     statuses: ["SHIPPED"] as OrderStatus[], cls: "bg-purple-50 text-purple-800 border-purple-200" },
-            { key: "completati", label: "Completati",            statuses: ["DELIVERED", "PICKED_UP"] as OrderStatus[], cls: "bg-emerald-50 text-emerald-800 border-emerald-200" },
-            { key: "post",      label: "Resi / rimborsi",        statuses: ["RETURNED", "REFUNDED", "PARTIALLY_REFUNDED"] as OrderStatus[], cls: "bg-orange-50 text-orange-800 border-orange-200" },
+          // Conteggio dedicato per "In attesa di accredito bonifico" (PENDING + bonifico).
+          const pendingBonifico = orders.filter((o) => o.status === "PENDING" && o.paymentProvider === "bonifico").length;
+          const groups: Array<{ key: string; label: string; count: number; cls: string }> = [
+            { key: "bonifico",  label: "In attesa di bonifico", count: pendingBonifico, cls: "bg-amber-50 text-amber-800 border-amber-200" },
+            { key: "da-evadere", label: "Da evadere (pagati)", count: totalBy("PAID") + totalBy("PROCESSING"), cls: "bg-blue-50 text-blue-800 border-blue-200" },
+            { key: "in-corso",   label: "Spediti / in corso",  count: totalBy("SHIPPED"), cls: "bg-purple-50 text-purple-800 border-purple-200" },
+            { key: "completati", label: "Completati",          count: totalBy("DELIVERED") + totalBy("PICKED_UP"), cls: "bg-emerald-50 text-emerald-800 border-emerald-200" },
+            { key: "post",       label: "Resi / rimborsi",      count: totalBy("RETURNED") + totalBy("REFUNDED") + totalBy("PARTIALLY_REFUNDED"), cls: "bg-orange-50 text-orange-800 border-orange-200" },
           ];
-          return groups.filter((g) => g.statuses.some((s) => totalBy(s) > 0)).map((g) => {
-            const count = g.statuses.reduce((acc, s) => acc + totalBy(s), 0);
-            return (
-              <div key={g.key} className={`rounded-lg border p-3 ${g.cls}`}>
-                <div className="text-xs font-medium uppercase tracking-wider">{g.label}</div>
-                <div className="text-2xl font-semibold mt-1">{count}</div>
-              </div>
-            );
-          });
+          return groups.filter((g) => g.count > 0).map((g) => (
+            <div key={g.key} className={`rounded-lg border p-3 ${g.cls}`}>
+              <div className="text-xs font-medium uppercase tracking-wider">{g.label}</div>
+              <div className="text-2xl font-semibold mt-1">{g.count}</div>
+            </div>
+          ));
         })()}
       </div>
 
@@ -170,7 +170,7 @@ export default function StoreOrdersPage() {
           className="px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
         >
           <option value="">Tutti gli stati</option>
-          {(["PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED"] as OrderStatus[]).map((s) => (
+          {(["PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED"] as OrderStatus[]).map((s) => (
             <option key={s} value={s}>{STATUS_META[s].label}</option>
           ))}
         </select>
