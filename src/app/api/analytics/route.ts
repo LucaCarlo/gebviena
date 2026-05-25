@@ -5,14 +5,27 @@ import { getAuthUser } from "@/lib/auth";
 type Row = Record<string, unknown>;
 const num = (v: unknown) => Number(v ?? 0);
 
-// Cache in-memory dei risultati per ridurre il carico: 17 query parallele su
-// 400k+ righe sono costose. Cache 60s per (host, range) e 30s per la pagina
-// dei "recent". Si svuota al restart del processo.
+// Cache in-memory dei risultati per ridurre il carico. Si svuota al restart.
 type CacheEntry = { data: unknown; expires: number };
 const CACHE = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 60_000;       // 60s per i dati aggregati
-const CACHE_TTL_RECENT_MS = 30_000; // 30s per la lista "recent" paginata
+const CACHE_TTL_MS = 60_000;        // 60s per dati aggregati
+const CACHE_TTL_RECENT_MS = 30_000; // 30s per recent paginato
 
+/**
+ * GET /api/analytics?host=SITO|STORE&range=1d|7d|30d|1y|all&section=X
+ *
+ * section può essere:
+ *   - "kpi": visitatori unici, tempo medio, media, periodo, serie temporale
+ *   - "pages": top pagine
+ *   - "geo": countries, regions, cities
+ *   - "sources": referrer aggregati
+ *   - "devices": devices + sistemi operativi
+ *   - "store": funnel store + top products
+ *   - "recent": ultimi 30 eventi (paginabile via recentPage=1&offset=N)
+ *   - (nessuna section) → ritorna TUTTO in un colpo (compat con vecchia chiamata)
+ *
+ * Frontend dovrebbe chiamare le sezioni in parallelo per rendering progressivo.
+ */
 export async function GET(req: Request) {
   const auth = await getAuthUser();
   if (!auth) return NextResponse.json({ success: false, error: "Non autorizzato" }, { status: 401 });
@@ -21,14 +34,17 @@ export async function GET(req: Request) {
   const hostParam = (searchParams.get("host") || "").toUpperCase();
   const host = hostParam === "SITO" || hostParam === "STORE" ? hostParam : "";
   const rangeParam = (searchParams.get("range") || "all").toLowerCase();
+  const section = (searchParams.get("section") || "").toLowerCase();
+  const isRecentPage = !!searchParams.get("recentPage");
 
-  // Chiave cache: include host + range + (eventuale pagina recent).
-  const recentPageKey = searchParams.get("recentPage") ? `recent:${searchParams.get("offset") || "0"}` : "stats";
-  const cacheKey = `${host || "ALL"}|${rangeParam}|${recentPageKey}`;
+  // Cache key
+  const cacheTag = isRecentPage ? `recent:${searchParams.get("offset") || "0"}` : (section || "all");
+  const cacheKey = `${host || "ALL"}|${rangeParam}|${cacheTag}`;
   const cached = CACHE.get(cacheKey);
   if (cached && cached.expires > Date.now()) {
     return NextResponse.json({ success: true, data: cached.data, cached: true });
   }
+
   const RANGE_DAYS: Record<string, number> = { "1d": 1, "7d": 7, "30d": 30, "1y": 365 };
   const days = RANGE_DAYS[rangeParam];
   const isHourly = rangeParam === "1d";
@@ -55,7 +71,8 @@ export async function GET(req: Request) {
     referrer: r.r ? String(r.r) : null, createdAt: r.t, hits: num(r.hits),
   }));
 
-  if (searchParams.get("recentPage")) {
+  // --- RECENT paginato (richiamabile separatamente) ---
+  if (isRecentPage) {
     const offset = Math.max(0, parseInt(searchParams.get("offset") || "0", 10) || 0);
     const rec = await q(recentSql(offset));
     const payload = { recent: mapRecent(rec.slice(0, PAGE)), hasMore: rec.length > PAGE };
@@ -79,15 +96,11 @@ export async function GET(req: Request) {
   const isStore = host === "STORE";
   const SW = isStore ? W : "WHERE `host`='STORE'";
 
-  const [
-    uniqueR, avgTimeR, daysR, series, topPages, countries, regions, cities, sources, devices, osR, recent,
-    sfV, sfP, sfC, sfK, sfOk, sfTop,
-  ] = await Promise.all([
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${W}`),
-    // tempo medio di permanenza per SESSIONE reale: nuova sessione dopo 30
-    // min di inattività (come Google Analytics). Durata = ultima − prima
-    // vista nella sessione, mediata su tutte le sessioni.
-    q(`WITH seq AS (
+  // Helper per generare ogni sezione separatamente.
+  async function buildKpi() {
+    const [uniqueR, avgTimeR, daysR, series] = await Promise.all([
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${W}`),
+      q(`WITH seq AS (
           SELECT \`ipHash\` h, UNIX_TIMESTAMP(\`createdAt\`) ts,
                  LAG(UNIX_TIMESTAMP(\`createdAt\`)) OVER (PARTITION BY \`ipHash\` ORDER BY \`createdAt\`) prev
           FROM \`PageView\` ${W}
@@ -95,48 +108,19 @@ export async function GET(req: Request) {
         flagged AS (SELECT h, ts, CASE WHEN prev IS NULL OR ts - prev > 1800 THEN 1 ELSE 0 END nw FROM seq),
         sess AS (SELECT h, ts, SUM(nw) OVER (PARTITION BY h ORDER BY ts) sid FROM flagged)
         SELECT AVG(d) a FROM (SELECT MAX(ts)-MIN(ts) d FROM sess GROUP BY h, sid) x`),
-    q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
-    q(`SELECT ${BUCKET} b, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY b ORDER BY b`),
-    q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY \`path\` ORDER BY v DESC LIMIT 15`),
-    q(`SELECT COALESCE(NULLIF(\`geoCountry\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
-    q(`SELECT COALESCE(NULLIF(\`geoRegion\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
-    q(`SELECT COALESCE(NULLIF(\`geoCity\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 15`),
-    q(`SELECT CASE
-          WHEN \`referrer\` IS NULL OR \`referrer\`='' OR \`referrer\` LIKE '%gebruederthonetvienna.com%' THEN 'Diretto / interno'
-          WHEN \`referrer\` LIKE '%facebook%' OR \`referrer\` LIKE '%fbclid%' OR \`referrer\` LIKE '%fb.%' THEN 'Facebook'
-          WHEN \`referrer\` LIKE '%instagram%' THEN 'Instagram'
-          WHEN \`referrer\` LIKE '%mailchi%' OR \`referrer\` LIKE '%list-manage%' OR \`referrer\` LIKE '%utm_medium=email%' OR \`referrer\` LIKE '%brid=%' THEN 'Email'
-          WHEN \`referrer\` LIKE '%google%' THEN 'Google'
-          WHEN \`referrer\` LIKE '%bing%' THEN 'Bing'
-          ELSE 'Altro' END src, COUNT(DISTINCT \`ipHash\`) v
-        FROM \`PageView\` ${W} GROUP BY src ORDER BY v DESC`),
-    q(`SELECT ${DEV} dev, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY dev ORDER BY v DESC`),
-    q(`SELECT ${OS} os, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY os ORDER BY v DESC`),
-    q(recentSql(0)),
-    // ---- funnel STORE (sempre calcolato sul traffico STORE del periodo) ----
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW}`),
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%'`),
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%carrello%'`),
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout%' AND \`path\` NOT LIKE '%success%'`),
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout/success%'`),
-    q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%' GROUP BY \`path\` ORDER BY v DESC LIMIT 15`),
-  ]);
-
-  const unique = num(uniqueR[0]?.u);
-  const avgSeconds = Math.round(num(avgTimeR[0]?.a));
-  const seriesArr = series.map((r) => ({ date: String((r as Row).b), views: num((r as Row).v) }));
-  const avg = seriesArr.length ? Math.round(seriesArr.reduce((s, x) => s + x.views, 0) / seriesArr.length) : 0;
-  const sv = num(sfV[0]?.u);
-  const pct = (a: number) => (sv > 0 ? Math.round((a / sv) * 100) : 0);
-
-  const payload = {
+      q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
+      q(`SELECT ${BUCKET} b, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY b ORDER BY b`),
+    ]);
+    const seriesArr = series.map((r) => ({ date: String((r as Row).b), views: num((r as Row).v) }));
+    const avg = seriesArr.length ? Math.round(seriesArr.reduce((s, x) => s + x.views, 0) / seriesArr.length) : 0;
+    return {
       filterHost: host || "ALL",
       range: rangeParam,
       isHourly,
       isStore,
       kpi: {
-        unique,
-        avgSeconds,
+        unique: num(uniqueR[0]?.u),
+        avgSeconds: Math.round(num(avgTimeR[0]?.a)),
         avg,
         avgUnit: isHourly ? "ora" : "giorno",
         periodDays: num(daysR[0]?.d) || 0,
@@ -144,15 +128,60 @@ export async function GET(req: Request) {
         maxDate: daysR[0]?.mx || null,
       },
       series: seriesArr,
-      topPages: topPages.map((r) => ({ path: String((r as Row).p), count: num((r as Row).v) })),
+    };
+  }
+  async function buildPages() {
+    const topPages = await q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY \`path\` ORDER BY v DESC LIMIT 15`);
+    return { topPages: topPages.map((r) => ({ path: String((r as Row).p), count: num((r as Row).v) })) };
+  }
+  async function buildGeo() {
+    const [countries, regions, cities] = await Promise.all([
+      q(`SELECT COALESCE(NULLIF(\`geoCountry\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
+      q(`SELECT COALESCE(NULLIF(\`geoRegion\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
+      q(`SELECT COALESCE(NULLIF(\`geoCity\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 15`),
+    ]);
+    return {
       geo: {
         countries: countries.map((r) => ({ name: String((r as Row).n), count: num((r as Row).v) })),
         regions: regions.map((r) => ({ name: String((r as Row).n), count: num((r as Row).v) })),
         cities: cities.map((r) => ({ name: String((r as Row).n), count: num((r as Row).v) })),
       },
-      sources: sources.map((r) => ({ name: String((r as Row).src), count: num((r as Row).v) })),
+    };
+  }
+  async function buildSources() {
+    const sources = await q(`SELECT CASE
+          WHEN \`referrer\` IS NULL OR \`referrer\`='' OR \`referrer\` LIKE '%gebruederthonetvienna.com%' THEN 'Diretto / interno'
+          WHEN \`referrer\` LIKE '%facebook%' OR \`referrer\` LIKE '%fbclid%' OR \`referrer\` LIKE '%fb.%' THEN 'Facebook'
+          WHEN \`referrer\` LIKE '%instagram%' THEN 'Instagram'
+          WHEN \`referrer\` LIKE '%mailchi%' OR \`referrer\` LIKE '%list-manage%' OR \`referrer\` LIKE '%utm_medium=email%' OR \`referrer\` LIKE '%brid=%' THEN 'Email'
+          WHEN \`referrer\` LIKE '%google%' THEN 'Google'
+          WHEN \`referrer\` LIKE '%bing%' THEN 'Bing'
+          ELSE 'Altro' END src, COUNT(DISTINCT \`ipHash\`) v
+        FROM \`PageView\` ${W} GROUP BY src ORDER BY v DESC`);
+    return { sources: sources.map((r) => ({ name: String((r as Row).src), count: num((r as Row).v) })) };
+  }
+  async function buildDevices() {
+    const [devices, osR] = await Promise.all([
+      q(`SELECT ${DEV} dev, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY dev ORDER BY v DESC`),
+      q(`SELECT ${OS} os, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY os ORDER BY v DESC`),
+    ]);
+    return {
       devices: devices.map((r) => ({ name: String((r as Row).dev), count: num((r as Row).v) })),
       systems: osR.map((r) => ({ name: String((r as Row).os), count: num((r as Row).v) })),
+    };
+  }
+  async function buildStore() {
+    const [sfV, sfP, sfC, sfK, sfOk, sfTop] = await Promise.all([
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW}`),
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%'`),
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%carrello%'`),
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout%' AND \`path\` NOT LIKE '%success%'`),
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout/success%'`),
+      q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%' GROUP BY \`path\` ORDER BY v DESC LIMIT 15`),
+    ]);
+    const sv = num(sfV[0]?.u);
+    const pct = (a: number) => (sv > 0 ? Math.round((a / sv) * 100) : 0);
+    return {
       store: {
         funnel: [
           { name: "Visitatori store", count: sv, pct: 100 },
@@ -166,9 +195,38 @@ export async function GET(req: Request) {
           count: num((r as Row).v),
         })),
       },
+    };
+  }
+  async function buildRecent() {
+    const recent = await q(recentSql(0));
+    return {
       recent: mapRecent(recent.slice(0, PAGE)),
       recentHasMore: recent.length > PAGE,
-  };
+    };
+  }
+
+  // Sezione singola
+  if (section) {
+    let data: unknown;
+    switch (section) {
+      case "kpi":     data = await buildKpi(); break;
+      case "pages":   data = await buildPages(); break;
+      case "geo":     data = await buildGeo(); break;
+      case "sources": data = await buildSources(); break;
+      case "devices": data = await buildDevices(); break;
+      case "store":   data = await buildStore(); break;
+      case "recent":  data = await buildRecent(); break;
+      default: return NextResponse.json({ success: false, error: "section sconosciuta" }, { status: 400 });
+    }
+    CACHE.set(cacheKey, { data, expires: Date.now() + CACHE_TTL_MS });
+    return NextResponse.json({ success: true, data });
+  }
+
+  // Compatibilità: tutto in un colpo (vecchio comportamento)
+  const [kpi, pages, geo, sources, devices, store, recent] = await Promise.all([
+    buildKpi(), buildPages(), buildGeo(), buildSources(), buildDevices(), buildStore(), buildRecent(),
+  ]);
+  const payload = { ...kpi, ...pages, ...geo, ...sources, ...devices, ...store, ...recent };
   CACHE.set(cacheKey, { data: payload, expires: Date.now() + CACHE_TTL_MS });
   return NextResponse.json({ success: true, data: payload });
 }
