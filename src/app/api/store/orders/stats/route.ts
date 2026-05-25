@@ -52,15 +52,31 @@ export async function GET(req: NextRequest) {
     _sum: { refundAmountCents: true },
   });
 
-  // In attesa di bonifico (PENDING + paymentProvider=bonifico)
-  const bonifico = await prisma.order.aggregate({
-    where: {
-      ...dateFilter,
-      status: "PENDING",
-      paymentProvider: "bonifico",
-    },
-    _sum: { totalCents: true },
+  // Conteggi globali per stato — NON filtrati per data: rappresentano lo stato
+  // corrente del sistema (es. "Da evadere: 12" = 12 ordini ancora da spedire
+  // indipendentemente da quando sono stati creati).
+  const globalGroups = await prisma.order.groupBy({
+    by: ["status", "paymentProvider"],
     _count: { _all: true },
+  });
+  let bonificoPending = 0;
+  let daEvadere = 0;
+  let spediti = 0;
+  let consegnati = 0;
+  let rimborsiCount = 0;
+  for (const g of globalGroups) {
+    const n = g._count._all;
+    if (g.status === "PENDING" && g.paymentProvider === "bonifico") bonificoPending += n;
+    else if (g.status === "PAID" || g.status === "PROCESSING") daEvadere += n;
+    else if (g.status === "SHIPPED") spediti += n;
+    else if (g.status === "DELIVERED" || g.status === "PICKED_UP") consegnati += n;
+    else if (g.status === "RETURNED" || g.status === "REFUNDED" || g.status === "PARTIALLY_REFUNDED") rimborsiCount += n;
+  }
+
+  // Totale € in attesa di bonifico (anche questo globale, non per data).
+  const bonifico = await prisma.order.aggregate({
+    where: { status: "PENDING", paymentProvider: "bonifico" },
+    _sum: { totalCents: true },
   });
 
   const grossCents = incassati._sum.totalCents || 0;
@@ -70,12 +86,18 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     success: true,
     data: {
+      // Per periodo
       revenueCents,
       grossCents,
       refundsCents,
       count: incassati._count._all,
+      // Globali (stato corrente, indipendenti dal periodo)
+      pendingBonificoCount: bonificoPending,
       pendingBonificoCents: bonifico._sum.totalCents || 0,
-      pendingBonificoCount: bonifico._count._all,
+      daEvadereCount: daEvadere,
+      shippedCount: spediti,
+      consegnatiCount: consegnati,
+      rimborsiCount,
       from: from || null,
       to: to || null,
     },

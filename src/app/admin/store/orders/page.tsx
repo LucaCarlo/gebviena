@@ -105,8 +105,13 @@ interface RevenueStats {
   grossCents: number;
   refundsCents: number;
   count: number;
-  pendingBonificoCents: number;
+  // Globali (non filtrati per data)
   pendingBonificoCount: number;
+  pendingBonificoCents: number;
+  daEvadereCount: number;
+  shippedCount: number;
+  consegnatiCount: number;
+  rimborsiCount: number;
 }
 
 // Calcola from/to (ISO date) per i preset di periodo. Ritorna null per "all".
@@ -198,67 +203,62 @@ export default function StoreOrdersPage() {
           <p className="text-sm text-warm-500 mt-1">{orders.length} ordini visibili</p>
         </div>
 
-        {/* Riepilogo periodo + fatturato */}
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2 flex-wrap justify-end">
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value as PeriodKey)}
-              className="px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
-            >
-              {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((k) => (
-                <option key={k} value={k}>{PERIOD_LABELS[k]}</option>
-              ))}
-            </select>
-            {period === "custom" && (
-              <>
-                <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="px-2 py-2 border border-warm-200 rounded-lg text-sm bg-white" />
-                <span className="text-xs text-warm-500">→</span>
-                <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="px-2 py-2 border border-warm-200 rounded-lg text-sm bg-white" />
-              </>
-            )}
-          </div>
-          {stats && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-right min-w-[280px]">
-              <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-medium">
-                Fatturato {PERIOD_LABELS[period].toLowerCase()}
-              </div>
-              <div className="text-2xl font-semibold text-emerald-900 mt-1 tabular-nums">
-                {eurFmt(stats.revenueCents)}
-              </div>
-              <div className="text-[11px] text-emerald-700 mt-0.5">
-                {stats.count} {stats.count === 1 ? "ordine incassato" : "ordini incassati"}
-                {stats.refundsCents > 0 && ` · ${eurFmt(stats.refundsCents)} rimborsati`}
-              </div>
-              {stats.pendingBonificoCents > 0 && (
-                <div className="text-[11px] text-amber-700 mt-1 pt-1 border-t border-emerald-200">
-                  + {eurFmt(stats.pendingBonificoCents)} in attesa di bonifico ({stats.pendingBonificoCount})
-                </div>
-              )}
-            </div>
+        {/* Selettore periodo (alto destra) — filtra fatturato e lista. NON filtra
+            i conteggi di stato (Da evadere, In attesa bonifico, Spediti, Consegnati)
+            che rappresentano lo stato corrente del sistema. */}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value as PeriodKey)}
+            className="px-3 py-1.5 border border-warm-200 rounded-lg text-sm bg-white"
+          >
+            {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((k) => (
+              <option key={k} value={k}>{PERIOD_LABELS[k]}</option>
+            ))}
+          </select>
+          {period === "custom" && (
+            <>
+              <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="px-2 py-1.5 border border-warm-200 rounded-lg text-sm bg-white" />
+              <span className="text-xs text-warm-500">→</span>
+              <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="px-2 py-1.5 border border-warm-200 rounded-lg text-sm bg-white" />
+            </>
           )}
         </div>
       </header>
 
-      {/* Riepilogo conteggi per gruppo (solo ordini finalizzati) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {(() => {
-          // Conteggio dedicato per "In attesa di accredito bonifico" (PENDING + bonifico).
-          const pendingBonifico = orders.filter((o) => o.status === "PENDING" && o.paymentProvider === "bonifico").length;
-          const groups: Array<{ key: string; label: string; count: number; cls: string }> = [
-            { key: "bonifico",  label: "In attesa di bonifico", count: pendingBonifico, cls: "bg-amber-50 text-amber-800 border-amber-200" },
-            { key: "da-evadere", label: "Da evadere (pagati)", count: totalBy("PAID") + totalBy("PROCESSING"), cls: "bg-blue-50 text-blue-800 border-blue-200" },
-            { key: "in-corso",   label: "Spediti / in corso",  count: totalBy("SHIPPED"), cls: "bg-purple-50 text-purple-800 border-purple-200" },
-            { key: "completati", label: "Completati",          count: totalBy("DELIVERED") + totalBy("PICKED_UP"), cls: "bg-emerald-50 text-emerald-800 border-emerald-200" },
-            { key: "post",       label: "Resi / rimborsi",      count: totalBy("RETURNED") + totalBy("REFUNDED") + totalBy("PARTIALLY_REFUNDED"), cls: "bg-orange-50 text-orange-800 border-orange-200" },
-          ];
-          return groups.filter((g) => g.count > 0).map((g) => (
-            <div key={g.key} className={`rounded-lg border p-3 ${g.cls}`}>
-              <div className="text-xs font-medium uppercase tracking-wider">{g.label}</div>
-              <div className="text-2xl font-semibold mt-1">{g.count}</div>
-            </div>
-          ));
-        })()}
+      {/* Riepilogo compatto: 4 card stato (sempre live, non filtrate per data)
+          + 1 card fatturato del periodo selezionato. Tutte stesse dimensioni. */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mb-6">
+        <div className={`rounded-lg border px-3 py-2 bg-amber-50 text-amber-800 border-amber-200 ${stats && stats.pendingBonificoCount === 0 ? "opacity-50" : ""}`}>
+          <div className="text-[10px] font-medium uppercase tracking-wider">In attesa bonifico</div>
+          <div className="text-lg font-semibold mt-0.5 leading-tight">{stats?.pendingBonificoCount ?? "—"}</div>
+          {stats && stats.pendingBonificoCents > 0 && (
+            <div className="text-[10px] text-amber-700 leading-tight tabular-nums">{eurFmt(stats.pendingBonificoCents)}</div>
+          )}
+        </div>
+        <div className={`rounded-lg border px-3 py-2 bg-blue-50 text-blue-800 border-blue-200 ${stats && stats.daEvadereCount === 0 ? "opacity-50" : ""}`}>
+          <div className="text-[10px] font-medium uppercase tracking-wider">Da evadere</div>
+          <div className="text-lg font-semibold mt-0.5 leading-tight">{stats?.daEvadereCount ?? "—"}</div>
+          <div className="text-[10px] text-blue-700 leading-tight">pagati, da spedire</div>
+        </div>
+        <div className={`rounded-lg border px-3 py-2 bg-purple-50 text-purple-800 border-purple-200 ${stats && stats.shippedCount === 0 ? "opacity-50" : ""}`}>
+          <div className="text-[10px] font-medium uppercase tracking-wider">Spediti</div>
+          <div className="text-lg font-semibold mt-0.5 leading-tight">{stats?.shippedCount ?? "—"}</div>
+          <div className="text-[10px] text-purple-700 leading-tight">in transito</div>
+        </div>
+        <div className={`rounded-lg border px-3 py-2 bg-emerald-50 text-emerald-800 border-emerald-200 ${stats && stats.consegnatiCount === 0 ? "opacity-50" : ""}`}>
+          <div className="text-[10px] font-medium uppercase tracking-wider">Consegnati</div>
+          <div className="text-lg font-semibold mt-0.5 leading-tight">{stats?.consegnatiCount ?? "—"}</div>
+          <div className="text-[10px] text-emerald-700 leading-tight">o ritirati in showroom</div>
+        </div>
+        <div className="rounded-lg border px-3 py-2 bg-emerald-100/60 text-emerald-900 border-emerald-300">
+          <div className="text-[10px] font-medium uppercase tracking-wider">Fatturato {PERIOD_LABELS[period].toLowerCase()}</div>
+          <div className="text-lg font-semibold mt-0.5 leading-tight tabular-nums">{stats ? eurFmt(stats.revenueCents) : "—"}</div>
+          <div className="text-[10px] text-emerald-700 leading-tight">
+            {stats?.count ?? 0} {stats?.count === 1 ? "ordine" : "ordini"}
+            {stats && stats.refundsCents > 0 && ` · -${eurFmt(stats.refundsCents)}`}
+          </div>
+        </div>
       </div>
 
       {/* Filters */}

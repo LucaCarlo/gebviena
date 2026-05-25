@@ -108,9 +108,10 @@ export default function AbandonedCartsPage() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.set("scope", "pending"); // ABANDONED_CHECKOUT + PENDING + PAYMENT_FAILED + CANCELLED
+    params.set("scope", "pending");
     if (status) params.set("status", status);
     if (q) params.set("q", q);
+    params.set("take", "500");
     const res = await fetch(`/api/store/orders?${params}`).then((r) => r.json());
     if (res.success) setOrders(res.data);
     setLoading(false);
@@ -122,8 +123,9 @@ export default function AbandonedCartsPage() {
   }, [fetchAll]);
 
   const totalBy = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
-  const pendingBonifico = orders.filter((o) => o.status === "PENDING" && o.paymentProvider === "bonifico").length;
   const pendingStripe = orders.filter((o) => o.status === "PENDING" && o.paymentProvider !== "bonifico").length;
+  const totalValueCents = orders.reduce((s, o) => s + (o.totalCents || 0), 0);
+  const eurFmt = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
 
   return (
     <div>
@@ -136,38 +138,33 @@ export default function AbandonedCartsPage() {
         </div>
       </header>
 
-      {/* Riepilogo conteggi */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {totalBy("ABANDONED_CHECKOUT") > 0 && (
-          <div className="rounded-lg border p-3 bg-orange-50 text-orange-800 border-orange-200">
-            <div className="text-xs font-medium uppercase tracking-wider">Checkout abbandonati</div>
-            <div className="text-2xl font-semibold mt-1">{totalBy("ABANDONED_CHECKOUT")}</div>
-          </div>
-        )}
-        {pendingStripe > 0 && (
-          <div className="rounded-lg border p-3 bg-amber-50 text-amber-800 border-amber-200">
-            <div className="text-xs font-medium uppercase tracking-wider">Pagamento non effettuato</div>
-            <div className="text-2xl font-semibold mt-1">{pendingStripe}</div>
-          </div>
-        )}
-        {pendingBonifico > 0 && (
-          <div className="rounded-lg border p-3 bg-amber-50 text-amber-800 border-amber-200">
-            <div className="text-xs font-medium uppercase tracking-wider">In attesa di bonifico</div>
-            <div className="text-2xl font-semibold mt-1">{pendingBonifico}</div>
-          </div>
-        )}
-        {totalBy("PAYMENT_FAILED") > 0 && (
-          <div className="rounded-lg border p-3 bg-red-50 text-red-800 border-red-200">
-            <div className="text-xs font-medium uppercase tracking-wider">Errore pagamento</div>
-            <div className="text-2xl font-semibold mt-1">{totalBy("PAYMENT_FAILED")}</div>
-          </div>
-        )}
-        {totalBy("CANCELLED") > 0 && (
-          <div className="rounded-lg border p-3 bg-blue-50 text-blue-800 border-blue-200">
-            <div className="text-xs font-medium uppercase tracking-wider">Annullati</div>
-            <div className="text-2xl font-semibold mt-1">{totalBy("CANCELLED")}</div>
-          </div>
-        )}
+      {/* Riepilogo conteggi compatti */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mb-6">
+        <div className={`rounded-lg border px-3 py-2 bg-orange-50 text-orange-800 border-orange-200 ${totalBy("ABANDONED_CHECKOUT") === 0 ? "opacity-50" : ""}`}>
+          <div className="text-[10px] font-medium uppercase tracking-wider">Checkout abbandonati</div>
+          <div className="text-lg font-semibold mt-0.5 leading-tight">{totalBy("ABANDONED_CHECKOUT")}</div>
+          <div className="text-[10px] text-orange-700 leading-tight">form parziale</div>
+        </div>
+        <div className={`rounded-lg border px-3 py-2 bg-amber-50 text-amber-800 border-amber-200 ${pendingStripe === 0 ? "opacity-50" : ""}`}>
+          <div className="text-[10px] font-medium uppercase tracking-wider">Pagamento non effettuato</div>
+          <div className="text-lg font-semibold mt-0.5 leading-tight">{pendingStripe}</div>
+          <div className="text-[10px] text-amber-700 leading-tight">Stripe non finalizzato</div>
+        </div>
+        <div className={`rounded-lg border px-3 py-2 bg-red-50 text-red-800 border-red-200 ${totalBy("PAYMENT_FAILED") === 0 ? "opacity-50" : ""}`}>
+          <div className="text-[10px] font-medium uppercase tracking-wider">Errore pagamento</div>
+          <div className="text-lg font-semibold mt-0.5 leading-tight">{totalBy("PAYMENT_FAILED")}</div>
+          <div className="text-[10px] text-red-700 leading-tight">carta rifiutata</div>
+        </div>
+        <div className={`rounded-lg border px-3 py-2 bg-blue-50 text-blue-800 border-blue-200 ${totalBy("CANCELLED") === 0 ? "opacity-50" : ""}`}>
+          <div className="text-[10px] font-medium uppercase tracking-wider">Annullati</div>
+          <div className="text-lg font-semibold mt-0.5 leading-tight">{totalBy("CANCELLED")}</div>
+          <div className="text-[10px] text-blue-700 leading-tight">cliente / admin</div>
+        </div>
+        <div className="rounded-lg border px-3 py-2 bg-warm-100 text-warm-900 border-warm-300">
+          <div className="text-[10px] font-medium uppercase tracking-wider">Valore totale</div>
+          <div className="text-lg font-semibold mt-0.5 leading-tight tabular-nums">{eurFmt(totalValueCents)}</div>
+          <div className="text-[10px] text-warm-600 leading-tight">{orders.length} {orders.length === 1 ? "ordine" : "ordini"} non finalizzati</div>
+        </div>
       </div>
 
       {/* Filters */}
