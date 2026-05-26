@@ -724,7 +724,37 @@ export default function AdminSubscribersPage() {
       ) : isEventoDetail ? (
         /* ═══ Evento detail ═══ */
         filteredEvent.length === 0 ? <EmptyState text="Nessuna registrazione" /> : (
-          <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
+          <>
+          {/* Mobile: card list */}
+          <div className="md:hidden space-y-2">
+            {filteredEvent.map((r) => (
+              <div key={r.id} className="bg-white rounded-lg border border-warm-200 p-3">
+                <div className="flex items-start gap-2 justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-warm-800 truncate">{r.firstName} {r.lastName}</div>
+                    <div className="text-[11px] text-warm-600 font-mono truncate">{r.email}</div>
+                    {(r.city || r.country) && (
+                      <div className="text-[11px] text-warm-500 truncate">{[r.city, r.country].filter(Boolean).join(", ")}</div>
+                    )}
+                    <div className="text-[10px] text-warm-400 font-mono mt-0.5">QR {r.qrCode.slice(0, 8)}\u2026</div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => handleCheckIn(r.id, !r.checkedIn)} title={r.checkedIn ? "Check-in fatto" : "Fai check-in"}>
+                      {r.checkedIn ? <CheckCircle2 size={20} className="text-green-500" /> : <XCircle size={20} className="text-warm-300 hover:text-warm-500" />}
+                    </button>
+                    <button onClick={() => handleDeleteEvent(r.id)} className="text-warm-400 hover:text-red-500 p-1" title="Elimina"><Trash2 size={15} /></button>
+                  </div>
+                </div>
+                <div className="flex items-center flex-wrap gap-1.5 mt-1.5">
+                  {r.profile && <span className="text-[10px] font-medium bg-warm-100 text-warm-600 px-1.5 py-0.5 rounded">{r.profile}</span>}
+                  <span className="text-[10px] text-warm-400 ml-auto">{fmtDate(r.createdAt)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: tabella */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b border-warm-200 bg-warm-50">
                 <Th>Nome</Th><Th>Email</Th><Th className="hidden md:table-cell">Profilo</Th><Th className="hidden lg:table-cell">Luogo</Th><Th className="text-center">Check-in</Th><Th className="hidden md:table-cell">Data</Th><Th className="w-12" />
@@ -748,11 +778,86 @@ export default function AdminSubscribersPage() {
               </tbody>
             </table>
           </div>
+          </>
         )
       ) : (
         /* ═══ Unified contacts ═══ */
         filteredContacts.length === 0 ? <EmptyState text={activeTab !== "all" ? "Nessun utente con questo tag" : "Nessun contatto"} /> : (
-          <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
+          <>
+          {/* Mobile: card list */}
+          <div className="md:hidden space-y-2">
+            {selected.size > 0 && (
+              <div className="bg-warm-50 border border-warm-200 rounded-lg px-3 py-2 text-[12px] text-warm-700 flex items-center gap-2 flex-wrap">
+                {selectAllMatching ? (
+                  <>
+                    <span>Selezionati <strong>tutti i {totalCount}</strong></span>
+                    <button onClick={clearSelection} className="ml-auto text-warm-600 underline">Annulla</button>
+                  </>
+                ) : (
+                  <>
+                    <span><strong>{selected.size}</strong> selezionati</span>
+                    {totalCount > selected.size && (
+                      <button onClick={selectAllAcrossPages} disabled={selectingAll} className="text-warm-900 underline disabled:opacity-50">
+                        {selectingAll ? "…" : `Tutti ${totalCount}`}
+                      </button>
+                    )}
+                    <button onClick={clearSelection} className="ml-auto text-warm-600 underline">Annulla</button>
+                  </>
+                )}
+              </div>
+            )}
+            {filteredContacts.map((c) => {
+              const isSel = selected.has(c.email);
+              return (
+                <div key={c.email} className={`bg-white rounded-lg border border-warm-200 p-3 ${isSel ? "bg-warm-50" : ""}`}>
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isSel}
+                      onChange={() => toggleSelect(c.email)}
+                      className="accent-warm-800 mt-1 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0" onClick={() => setViewContact(c)}>
+                      <div className="font-medium text-warm-800 truncate">{contactName(c)}</div>
+                      {c.company && <div className="text-[11px] text-warm-500 truncate">{c.company}</div>}
+                      <div className="text-[11px] text-warm-600 font-mono truncate">{c.email}</div>
+                      {(c.city || c.country) && (
+                        <div className="text-[11px] text-warm-500 truncate">{[c.city, c.country].filter(Boolean).join(", ")}</div>
+                      )}
+                    </div>
+                  </div>
+                  {c.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2 ml-6">
+                      {c.tags.map((t) => <span key={t.id} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: t.color }}>{t.name}</span>)}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-2 mt-2 ml-6">
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                      c.source === "entrambi" ? "bg-purple-100 text-purple-600" :
+                      c.source === "landing_svendita" ? "bg-rose-100 text-rose-700" :
+                      c.source === "newsletter" ? "bg-blue-100 text-blue-600" :
+                      c.source === "evento" ? "bg-amber-100 text-amber-600" :
+                      "bg-warm-100 text-warm-600"
+                    }`}>
+                      {c.source === "entrambi" ? "Newsletter + Evento" :
+                        c.source === "landing_svendita" ? "Vendita Speciale" :
+                        c.source === "newsletter" ? "Newsletter" :
+                        c.source === "evento" ? "Evento" : "Solo tag"}
+                    </span>
+                    <div className="flex items-center gap-0.5">
+                      <button onClick={() => setViewContact(c)} className="p-1.5 text-warm-400 hover:text-warm-800" title="Visualizza"><Eye size={14} /></button>
+                      <button onClick={() => openEditContact(c)} className="p-1.5 text-warm-400 hover:text-warm-800" title="Modifica"><Pencil size={14} /></button>
+                      <button onClick={() => { setSelected(new Set([c.email])); setShowEmailChoice(true); setSendResult(null); }} className="p-1.5 text-warm-400 hover:text-warm-600" title="Email"><Mail size={14} /></button>
+                      <button onClick={() => handleDeleteContact(c.email)} className="p-1.5 text-warm-400 hover:text-red-500" title="Elimina"><Trash2 size={14} /></button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: tabella */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
             {/* Banner "seleziona tutti cross-pagina" */}
             {selected.size > 0 && (
               <div className="px-4 py-2.5 bg-warm-50 border-b border-warm-200 text-[13px] text-warm-700 flex items-center gap-3 flex-wrap">
@@ -836,6 +941,7 @@ export default function AdminSubscribersPage() {
               </tbody>
             </table>
           </div>
+          </>
         )
       )}
 
