@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Loader2, Search, Users, ShoppingCart } from "lucide-react";
 
 interface CustomerListItem {
@@ -25,6 +26,7 @@ const euro = (cents: number, currency: string) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
 
 export default function StoreCustomersPage() {
+  const router = useRouter();
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -88,7 +90,50 @@ export default function StoreCustomersPage() {
           Nessun cliente. I clienti vengono creati automaticamente al primo checkout.
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-warm-200 overflow-hidden">
+        <>
+        {/* Mobile: card list */}
+        <div className="md:hidden space-y-2">
+          {customers.map((c) => {
+            const fullName = [c.firstName, c.lastName].filter(Boolean).join(" ") || "—";
+            return (
+              <Link
+                key={c.id}
+                href={`/admin/store/customers/${c.id}`}
+                className="block bg-white rounded-lg border border-warm-200 p-3 active:bg-warm-50"
+              >
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-warm-900 truncate">{fullName}</div>
+                    <div className="text-[11px] text-warm-500 font-mono truncate">{c.email}</div>
+                    {c.phone && <div className="text-[11px] text-warm-500">☎ {c.phone}</div>}
+                  </div>
+                  <div className="text-right shrink-0">
+                    {c.lifetimeCents > 0 && (
+                      <div className="font-mono font-semibold text-warm-900 text-[14px]">{euro(c.lifetimeCents, c.currency)}</div>
+                    )}
+                    {c.ordersCount > 0 && (
+                      <div className="text-[11px] text-warm-500 inline-flex items-center gap-1">
+                        <ShoppingCart size={11} /> {c.ordersCount} {c.ordersCount === 1 ? "ordine" : "ordini"}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap mt-1.5 text-[10px]">
+                  {c.isGuest ? (
+                    <span className="text-warm-500 bg-warm-100 px-1.5 py-0.5 rounded">Guest</span>
+                  ) : (
+                    <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">Registrato</span>
+                  )}
+                  {c.marketingOptIn && <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">📧</span>}
+                  <span className="text-warm-400 ml-auto">{new Date(c.createdAt).toLocaleDateString("it-IT")}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Desktop: tabella */}
+        <div className="hidden md:block bg-white rounded-lg border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 text-warm-500 text-xs uppercase tracking-wider">
               <tr>
@@ -104,11 +149,13 @@ export default function StoreCustomersPage() {
               {customers.map((c) => {
                 const fullName = [c.firstName, c.lastName].filter(Boolean).join(" ") || "—";
                 return (
-                  <tr key={c.id} className="hover:bg-warm-50/50">
+                  <tr
+                    key={c.id}
+                    onClick={() => router.push(`/admin/store/customers/${c.id}`)}
+                    className="hover:bg-warm-50/50 cursor-pointer"
+                  >
                     <td className="px-4 py-3">
-                      <Link href={`/admin/store/customers/${c.id}`} className="font-medium text-warm-900 hover:text-warm-700">
-                        {fullName}
-                      </Link>
+                      <span className="font-medium text-warm-900">{fullName}</span>
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="text-warm-700 font-mono text-xs">{c.email}</div>
@@ -145,6 +192,7 @@ export default function StoreCustomersPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );

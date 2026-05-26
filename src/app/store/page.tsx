@@ -1,4 +1,4 @@
-import ShopFilters from "@/components/store/ShopFilters";
+import ShopFiltersDrawer from "@/components/store/ShopFiltersDrawer";
 import StoreHeroSection from "@/components/store/StoreHeroSection";
 import ShopGrid from "@/components/store/ShopGrid";
 import type { ProductCardData } from "@/components/store/ProductCard";
@@ -31,10 +31,11 @@ export default async function ShopHomePage({ searchParams }: { searchParams: { [
     <>
       <StoreHeroSection />
 
-      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
-        <aside>
-          <ShopFilters />
-        </aside>
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10 lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
+        {/* Mobile: bottone "Filtri" sopra ai prodotti; Desktop: sidebar a sinistra */}
+        <div className="mb-4 lg:mb-0">
+          <ShopFiltersDrawer />
+        </div>
 
         <ShopGrid products={products} />
       </div>

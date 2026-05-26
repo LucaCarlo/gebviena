@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
 import type { Designer } from "@/types";
 import AdminListFilters from "@/components/admin/AdminListFilters";
@@ -12,6 +13,7 @@ interface DesignerWithCount extends Designer {
 }
 
 export default function AdminDesignersPage() {
+  const router = useRouter();
   const [designers, setDesigners] = useState<DesignerWithCount[]>([]);
   const [loading, setLoading] = useState(true);
   const importRef = useRef<HTMLInputElement>(null);
@@ -127,7 +129,40 @@ export default function AdminDesignersPage() {
           totalCount={designers.length}
           filteredCount={filteredDesigners.length}
         />
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
+        {/* Mobile: card list */}
+        <div className="md:hidden space-y-2">
+          {filteredDesigners.map((d) => (
+            <div key={d.id} className="bg-white rounded-lg border border-warm-200 p-3">
+              <div className="flex items-start gap-3">
+                <Link href={`/admin/designers/${d.id}`} className="block shrink-0">
+                  <div className="w-14 h-14 relative rounded-full overflow-hidden bg-warm-100">
+                    {d.imageUrl ? (
+                      <Image src={d.imageUrl} alt={d.name} fill className="object-cover" sizes="56px" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-warm-400 text-xs">N/A</div>
+                    )}
+                  </div>
+                </Link>
+                <Link href={`/admin/designers/${d.id}`} className="flex-1 min-w-0 block">
+                  <div className="font-medium text-warm-800 truncate">{d.name}</div>
+                  <div className="text-[11px] text-warm-500 font-mono truncate">{d.slug}</div>
+                  <div className="text-[11px] text-warm-600 truncate">
+                    {(d.country || "—") + " · " + (d._count?.products ?? 0) + " prodotti"}
+                  </div>
+                </Link>
+                <button onClick={() => handleDelete(d.id)} className="p-1.5 text-warm-400 hover:text-red-600 shrink-0">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
+          {filteredDesigners.length === 0 && (
+            <div className="text-center py-12 text-warm-400 bg-white rounded-lg border border-warm-200">Nessun designer trovato</div>
+          )}
+        </div>
+
+        {/* Desktop: tabella */}
+        <div className="hidden md:block bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 border-b border-warm-200">
               <tr>
@@ -141,7 +176,15 @@ export default function AdminDesignersPage() {
             </thead>
             <tbody className="divide-y divide-warm-100">
               {filteredDesigners.map((d) => (
-                <tr key={d.id} className="hover:bg-warm-50 transition-colors">
+                <tr
+                  key={d.id}
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.closest("a, button")) return;
+                    router.push(`/admin/designers/${d.id}`);
+                  }}
+                  className="hover:bg-warm-50 transition-colors cursor-pointer"
+                >
                   <td className="px-6 py-3">
                     <div className="w-10 h-10 relative rounded-full overflow-hidden bg-warm-100">
                       {d.imageUrl ? (

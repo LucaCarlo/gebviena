@@ -130,7 +130,61 @@ export default function AdminRegistrationsPage() {
           <p>Nessuna registrazione trovata</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
+        <>
+        {/* Mobile: card list */}
+        <div className="md:hidden space-y-2">
+          {registrations.map((r) => (
+            <div key={r.id} className="bg-white rounded-lg border border-warm-200 p-3">
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-warm-800 truncate">
+                    {r.firstName} {r.lastName}
+                  </div>
+                  <div className="text-[11px] text-warm-600 truncate">{r.email}</div>
+                  <div className="text-[11px] text-warm-500 truncate">
+                    {r.city}, {r.country}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    {r.profile && (
+                      <span className="inline-block text-[10px] font-medium bg-warm-100 text-warm-600 px-2 py-0.5 rounded">
+                        {r.profile}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-warm-400">
+                      {new Date(r.createdAt).toLocaleDateString("it-IT", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => handleCheckIn(r.id, !r.checkedIn)}
+                    title={r.checkedIn ? "Annulla check-in" : "Effettua check-in"}
+                  >
+                    {r.checkedIn ? (
+                      <CheckCircle2 size={20} className="text-green-500" />
+                    ) : (
+                      <XCircle size={20} className="text-warm-300 hover:text-warm-500 transition-colors" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(r.id)}
+                    className="text-warm-400 hover:text-red-500 transition-colors"
+                    title="Elimina"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: tabella */}
+        <div className="hidden md:block bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-warm-200 bg-warm-50">
@@ -222,6 +276,7 @@ export default function AdminRegistrationsPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );

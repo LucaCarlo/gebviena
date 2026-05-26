@@ -260,7 +260,78 @@ export default function StoreProductsListPage() {
           Nessun prodotto. Esegui <code className="px-1.5 py-0.5 bg-warm-100 rounded text-xs">npm run seed:store-products</code> per generare gli StoreProduct da ogni Product attivo.
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-warm-200 overflow-hidden">
+        <>
+        {/* Mobile: card list */}
+        <div className="md:hidden space-y-2">
+          {items.map((sp) => {
+            const img = sp.coverImage || sp.product.coverImage || sp.product.imageUrl;
+            const cat = categoryLabel(sp.storeCategory);
+            const isSel = selected.has(sp.id);
+            return (
+              <div
+                key={sp.id}
+                className={`bg-white rounded-lg border border-warm-200 p-3 ${isSel ? "bg-warm-50" : ""}`}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={isSel}
+                    onChange={() => toggleOne(sp.id)}
+                    className="cursor-pointer mt-1 shrink-0"
+                    aria-label={`Seleziona ${sp.product.name}`}
+                  />
+                  <Link href={`/admin/store/products/${sp.id}`} className="block shrink-0">
+                    {img ? (
+                      <div className="w-14 h-14 rounded bg-warm-100 bg-cover bg-center" style={{ backgroundImage: `url(${img})` }} />
+                    ) : (
+                      <div className="w-14 h-14 rounded bg-warm-100 flex items-center justify-center text-warm-300">
+                        <ImageIcon size={18} />
+                      </div>
+                    )}
+                  </Link>
+                  <Link href={`/admin/store/products/${sp.id}`} className="flex-1 min-w-0 block">
+                    <div className="font-medium text-warm-900 truncate">{sp.product.name}</div>
+                    {cat ? (
+                      <div className="text-[11px] text-warm-600 truncate">{cat}</div>
+                    ) : (
+                      <div className="text-[11px] text-warm-400 italic">Nessuna categoria</div>
+                    )}
+                    <div className="text-xs text-warm-700 mt-1">
+                      <span className="font-mono">{formatPriceRange(sp.variants)}</span>
+                      <span className="text-warm-400 mx-1.5">·</span>
+                      <span>{sp._count.variants} var.</span>
+                      <span className="text-warm-400 mx-1.5">·</span>
+                      <span>{stockLabel(sp.variants)}</span>
+                    </div>
+                  </Link>
+                </div>
+                <div className="flex items-center justify-between mt-2 ml-[68px]">
+                  {sp.isPublished ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                      <Check size={10} /> Pubblicato
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-warm-500 bg-warm-100 px-1.5 py-0.5 rounded">
+                      <X size={10} /> Bozza
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => duplicateProduct(sp.id)}
+                    disabled={duplicatingId === sp.id}
+                    className="inline-flex items-center gap-1 text-[11px] text-warm-700 hover:text-warm-900 hover:bg-warm-100 px-2 py-1 rounded disabled:opacity-50"
+                  >
+                    {duplicatingId === sp.id ? <Loader2 size={11} className="animate-spin" /> : <Copy size={11} />}
+                    Duplica
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop: tabella */}
+        <div className="hidden md:block bg-white rounded-lg border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 text-warm-500 text-xs uppercase tracking-wider">
               <tr>
@@ -356,6 +427,7 @@ export default function StoreProductsListPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {toast && (

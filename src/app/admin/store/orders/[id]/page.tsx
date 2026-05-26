@@ -237,25 +237,23 @@ export default function OrderDetailPage() {
         </Link>
       </div>
 
-      <header className="flex items-start justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-warm-900 font-mono">{order.orderNumber}</h1>
-          <div className="flex items-center gap-3 mt-1 text-sm">
-            <span className="text-warm-500">
-              {new Date(order.createdAt).toLocaleString("it-IT", { dateStyle: "medium", timeStyle: "short" })}
-            </span>
-            <span className="text-warm-300">·</span>
-            <span className="text-warm-700">{order.firstName} {order.lastName}</span>
-            <span className="text-warm-300">·</span>
-            <span className="text-warm-700 font-mono text-xs">{order.email}</span>
-            {order.customerTaxId && (
-              <>
-                <span className="text-warm-300">·</span>
-                <span className="text-warm-700 font-mono text-xs" title="P.IVA / Codice Fiscale">{order.customerTaxId}</span>
-              </>
-            )}
-            {!order.customer && <span className="text-xs text-warm-400 italic">(guest)</span>}
-          </div>
+      <header className="mb-6">
+        <h1 className="text-xl md:text-2xl font-semibold text-warm-900 font-mono break-all">{order.orderNumber}</h1>
+        <div className="mt-1 text-sm flex flex-col md:flex-row md:flex-wrap md:items-center md:gap-3">
+          <span className="text-warm-500">
+            {new Date(order.createdAt).toLocaleString("it-IT", { dateStyle: "medium", timeStyle: "short" })}
+          </span>
+          <span className="hidden md:inline text-warm-300">·</span>
+          <span className="text-warm-700">{order.firstName} {order.lastName}</span>
+          <span className="hidden md:inline text-warm-300">·</span>
+          <span className="text-warm-700 font-mono text-xs break-all">{order.email}</span>
+          {order.customerTaxId && (
+            <>
+              <span className="hidden md:inline text-warm-300">·</span>
+              <span className="text-warm-700 font-mono text-xs break-all" title="P.IVA / Codice Fiscale">{order.customerTaxId}</span>
+            </>
+          )}
+          {!order.customer && <span className="text-xs text-warm-400 italic">(guest)</span>}
         </div>
       </header>
 
@@ -294,7 +292,59 @@ export default function OrderDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           <section className="bg-white rounded-lg border border-warm-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-warm-200 font-medium text-warm-900">Articoli</div>
-            <table className="w-full text-sm">
+
+            {/* Mobile: card per articolo */}
+            <div className="md:hidden divide-y divide-warm-100">
+              {order.items.map((it) => {
+                const attrs = it.attributesSnapshot ? (() => { try { return JSON.parse(it.attributesSnapshot!) as Record<string, string>; } catch { return {}; } })() : {};
+                return (
+                  <div key={it.id} className="p-3">
+                    <div className="font-medium text-warm-900 break-words">{it.productName}</div>
+                    {it.variantName && <div className="text-xs text-warm-500">{it.variantName}</div>}
+                    {Object.keys(attrs).length > 0 && (
+                      <div className="text-xs text-warm-500 mt-0.5 flex flex-wrap gap-x-2">
+                        {Object.entries(attrs).map(([k, v]) => <span key={k}>{k}: <strong>{v}</strong></span>)}
+                      </div>
+                    )}
+                    <div className="mt-2 flex items-center justify-between text-xs">
+                      <span className="font-mono text-warm-500">SKU {it.sku}</span>
+                      <span className="text-warm-600">
+                        <span className="font-mono">{it.quantity}</span> × <span className="font-mono">{euro(it.unitPriceCents, order.currency)}</span>
+                      </span>
+                      <span className="font-mono font-semibold text-warm-900">{euro(it.totalCents, order.currency)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {/* Totali mobile */}
+              <div className="bg-warm-50 px-4 py-3 text-sm space-y-1">
+                <div className="flex justify-between text-warm-600">
+                  <span>Subtotale</span>
+                  <span className="font-mono">{euro(order.subtotalCents, order.currency)}</span>
+                </div>
+                <div className="flex justify-between text-warm-600">
+                  <span>Spedizione {order.shippingZoneLabel && <span className="text-xs text-warm-400">({order.shippingZoneLabel})</span>}</span>
+                  <span className="font-mono">{euro(order.shippingCents, order.currency)}</span>
+                </div>
+                <div className="flex justify-between text-warm-600">
+                  <span>IVA ({(order.taxRateBp / 100).toFixed(1)}%)</span>
+                  <span className="font-mono">{euro(order.taxCents, order.currency)}</span>
+                </div>
+                <div className="flex justify-between pt-2 mt-1 border-t border-warm-200 font-semibold text-warm-900">
+                  <span>Totale</span>
+                  <span className="font-mono">{euro(order.totalCents, order.currency)}</span>
+                </div>
+                {order.refundAmountCents !== null && order.refundAmountCents > 0 && (
+                  <div className="flex justify-between text-red-700">
+                    <span>Rimborsato</span>
+                    <span className="font-mono">−{euro(order.refundAmountCents, order.currency)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Desktop: tabella */}
+            <table className="hidden md:table w-full text-sm">
               <thead className="bg-warm-50 text-warm-500 text-xs">
                 <tr>
                   <th className="px-4 py-2 text-left">Prodotto</th>
