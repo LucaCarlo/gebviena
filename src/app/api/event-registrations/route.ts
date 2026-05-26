@@ -9,7 +9,7 @@ import {
 import { assignTagBySlug } from "@/lib/tags";
 import { sendCapiEvent } from "@/lib/fb-capi";
 import { verifyRecaptcha } from "@/lib/recaptcha";
-import { normalizeEmail, isLikelyDotSpam } from "@/lib/email-spam";
+import { normalizeEmail, isLikelyDotSpam, isLikelyGibberishName } from "@/lib/email-spam";
 import { headers } from "next/headers";
 
 function generateUUID(): string {
@@ -57,6 +57,15 @@ export async function POST(req: Request) {
       console.warn(`[event-registrations] rifiutata email pattern spam: ${email}`);
       return NextResponse.json(
         { success: false, error: "Invalid email address" },
+        { status: 400 }
+      );
+    }
+
+    // Anti-spam #1b: nome gibberish
+    if (isLikelyGibberishName(firstName) || isLikelyGibberishName(lastName)) {
+      console.warn(`[event-registrations] rifiutato nome gibberish: ${firstName} ${lastName} <${email}>`);
+      return NextResponse.json(
+        { success: false, error: "Invalid name" },
         { status: 400 }
       );
     }

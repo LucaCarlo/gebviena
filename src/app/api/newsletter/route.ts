@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyRecaptcha } from "@/lib/recaptcha";
 import { assignTagBySlug } from "@/lib/tags";
-import { normalizeEmail, isLikelyDotSpam } from "@/lib/email-spam";
+import { normalizeEmail, isLikelyDotSpam, isLikelyGibberishName } from "@/lib/email-spam";
 
 export async function POST(req: Request) {
   try {
@@ -15,6 +15,12 @@ export async function POST(req: Request) {
     if (isLikelyDotSpam(rawEmail)) {
       console.warn(`[newsletter] rifiutata email pattern spam: ${rawEmail}`);
       return NextResponse.json({ success: false, error: "Email non valida" }, { status: 400 });
+    }
+
+    // Anti-spam #1b: nomi gibberish tipo "KMzEvVeXjFvVhIQrNRM"
+    if (isLikelyGibberishName(firstName) || isLikelyGibberishName(lastName)) {
+      console.warn(`[newsletter] rifiutato nome gibberish: ${firstName} ${lastName} <${rawEmail}>`);
+      return NextResponse.json({ success: false, error: "Nome non valido" }, { status: 400 });
     }
 
     // Anti-spam #2: reCAPTCHA SEMPRE (no più "if (recaptchaToken)" bypassabile).

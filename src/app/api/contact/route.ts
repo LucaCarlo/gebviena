@@ -4,7 +4,7 @@ import { verifyRecaptcha } from "@/lib/recaptcha";
 import { sendContactNotification } from "@/lib/mail";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { sendCapiEvent } from "@/lib/fb-capi";
-import { normalizeEmail, isLikelyDotSpam } from "@/lib/email-spam";
+import { normalizeEmail, isLikelyDotSpam, isLikelyGibberishName } from "@/lib/email-spam";
 
 export async function POST(req: Request) {
   try {
@@ -21,6 +21,12 @@ export async function POST(req: Request) {
     if (isLikelyDotSpam(rawEmail)) {
       console.warn(`[contact] rifiutata email pattern spam: ${rawEmail}`);
       return NextResponse.json({ success: false, error: "Email non valida" }, { status: 400 });
+    }
+
+    // Anti-spam #1b: nome gibberish
+    if (isLikelyGibberishName(name)) {
+      console.warn(`[contact] rifiutato nome gibberish: ${name} <${rawEmail}>`);
+      return NextResponse.json({ success: false, error: "Nome non valido" }, { status: 400 });
     }
 
     // Anti-spam #2: reCAPTCHA SEMPRE (no più bypassabile omettendo il token)
