@@ -83,6 +83,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
     year: "",
     isFeatured: false,
     isNew: false,
+    excludeFromCatalog: false,
     seoTitle: "",
     seoDescription: "",
     seoKeywords: "[]",
@@ -138,6 +139,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         year: p.year != null ? String(p.year) : "",
         isFeatured: p.isFeatured,
         isNew: p.isNew || false,
+        excludeFromCatalog: p.excludeFromCatalog || false,
         seoTitle: p.seoTitle || "",
         seoDescription: p.seoDescription || "",
         seoKeywords: p.seoKeywords || "[]",
@@ -467,7 +469,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
           />
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -487,6 +489,18 @@ export default function ProductForm({ productId }: ProductFormProps) {
               className="rounded border-warm-300"
             />
             <label htmlFor="isNew" className="text-sm text-warm-600">Nuovo</label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="excludeFromCatalog"
+              checked={form.excludeFromCatalog}
+              onChange={(e) => updateField("excludeFromCatalog", e.target.checked)}
+              className="rounded border-warm-300"
+            />
+            <label htmlFor="excludeFromCatalog" className="text-sm text-warm-600" title="Spunta se questo prodotto deve apparire SOLO nello store online e NON nel catalogo del sito principale">
+              Solo store (escludi dal catalogo sito)
+            </label>
           </div>
         </div>
       </div>

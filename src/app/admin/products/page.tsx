@@ -73,7 +73,12 @@ export default function AdminProductsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Sei sicuro di voler eliminare questo prodotto?")) return;
-    await fetch(`/api/products/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: "Errore eliminazione" }));
+      alert(data.error || "Impossibile eliminare il prodotto.");
+      return;
+    }
     fetchProducts();
   };
 

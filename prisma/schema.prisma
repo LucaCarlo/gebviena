@@ -1275,7 +1275,10 @@ model StoreProduct {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  product       Product                   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // Restrict: l'eliminazione del Product padre è BLOCCATA se esiste uno StoreProduct
+  // collegato. Evita di perdere uno StoreProduct (con variants/ordini) per sbaglio
+  // cancellando il Product nel catalogo del sito.
+  product       Product                   @relation(fields: [productId], references: [id], onDelete: Restrict)
   storeCategory StoreCategory?            @relation(fields: [storeCategoryId], references: [id], onDelete: SetNull)
   translations  StoreProductTranslation[]
   variants      StoreProductVariant[]
