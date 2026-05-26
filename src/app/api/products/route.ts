@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
       },
       skip: (page - 1) * limit,
       take: limit,
-      orderBy: { sortOrder: "asc" },
+      orderBy: { name: "asc" },
     }),
     prisma.product.count({ where }),
   ]);
