@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Loader2, Search, ShoppingBag, Clock, AlertTriangle, Ban, XCircle } from "lucide-react";
 import { humanizeStripeError } from "@/lib/stripe-error-labels";
 
@@ -98,6 +99,7 @@ const euro = (cents: number, currency: string) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
 
 export default function AbandonedCartsPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<OrderStatus | "">("");
@@ -192,7 +194,48 @@ export default function AbandonedCartsPage() {
           Nessun ordine non finalizzato con i filtri attuali.
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-warm-200 overflow-hidden">
+        <>
+        {/* Mobile: card list — Cliente / Data / Prezzo + stato */}
+        <div className="md:hidden space-y-2">
+          {orders.map((o) => {
+            const meta = STATUS_META[o.status];
+            const Icon = meta.Icon;
+            const lbl = paymentMethodLabel(o);
+            return (
+              <Link
+                key={o.id}
+                href={`/admin/store/orders/${o.id}`}
+                className="block bg-white rounded-lg border border-warm-200 p-3 active:bg-warm-50"
+              >
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-warm-900 truncate">{o.firstName} {o.lastName}</div>
+                    <div className="text-[11px] text-warm-500 truncate">{o.email}</div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="font-mono font-semibold text-warm-900 text-[15px]">{euro(o.totalCents, o.currency)}</div>
+                    <div className="text-[10px] text-warm-500">
+                      {new Date(o.createdAt).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                  <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${meta.cls}`}>
+                    <Icon size={10} />
+                    {statusLabel(o)}
+                  </span>
+                  {lbl && (() => {
+                    const isBonifico = o.paymentProvider === "bonifico";
+                    return <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded ${isBonifico ? "bg-amber-50 text-amber-800" : "bg-warm-100 text-warm-700"}`}>{lbl}</span>;
+                  })()}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Desktop: tabella completa */}
+        <div className="hidden md:block bg-white rounded-lg border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 text-warm-500 text-xs uppercase tracking-wider">
               <tr>
@@ -211,11 +254,13 @@ export default function AbandonedCartsPage() {
                 const Icon = meta.Icon;
                 const totalItems = o.items.reduce((s, it) => s + it.quantity, 0);
                 return (
-                  <tr key={o.id} className="hover:bg-warm-50/50">
+                  <tr
+                    key={o.id}
+                    onClick={() => router.push(`/admin/store/orders/${o.id}`)}
+                    className="hover:bg-warm-50/50 cursor-pointer"
+                  >
                     <td className="px-4 py-3">
-                      <Link href={`/admin/store/orders/${o.id}`} className="font-mono text-warm-900 hover:text-warm-700">
-                        {o.orderNumber}
-                      </Link>
+                      <span className="font-mono text-warm-900">{o.orderNumber}</span>
                     </td>
                     <td className="px-4 py-3 text-warm-600">
                       {new Date(o.createdAt).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}
@@ -257,6 +302,7 @@ export default function AbandonedCartsPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );
