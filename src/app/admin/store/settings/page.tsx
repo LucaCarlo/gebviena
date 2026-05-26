@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon, PowerOff } from "lucide-react";
+import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon, PowerOff, Megaphone } from "lucide-react";
 
-type Group = "store_stripe" | "store_email" | "store_general" | "store_maintenance";
+type Group = "store_stripe" | "store_email" | "store_general" | "store_maintenance" | "store_sale_banner";
 
 type SettingDef = {
   key: string;
@@ -100,6 +100,37 @@ const DEFINITIONS: SettingDef[] = [
     hint: "Dopo quanti giorni i carrelli abbandonati (checkout abbandonato, errore pagamento, pagamento non effettuato) vengono cancellati automaticamente dal database. Default 90. Imposta 0 per disabilitare la pulizia automatica.",
   },
 
+  // ── Sale banner (countdown) ──
+  {
+    key: "store.sale_banner.enabled",
+    group: "store_sale_banner",
+    label: "Banner svendita attivo",
+    type: "boolean",
+    hint: "Quando attivo, sotto al menu dello store appare una barra nera con il messaggio + countdown alla data di fine.",
+  },
+  {
+    key: "store.sale_banner.message_it",
+    group: "store_sale_banner",
+    label: "Messaggio (IT)",
+    placeholder: "Merce in svendita limitata",
+    hint: "Testo italiano mostrato nel banner. Default: \"Merce in svendita limitata\".",
+  },
+  {
+    key: "store.sale_banner.message_fr",
+    group: "store_sale_banner",
+    label: "Messaggio (FR)",
+    placeholder: "Marchandise en vente limitée",
+    hint: "Versione francese del messaggio.",
+  },
+  {
+    key: "store.sale_banner.end_date",
+    group: "store_sale_banner",
+    label: "Data e ora di fine svendita",
+    type: "datetime-local",
+    placeholder: "2026-06-30T23:59",
+    hint: "Il countdown nel banner si aggiorna ogni secondo verso questa data. Quando viene superata, il banner si nasconde automaticamente.",
+  },
+
   // ── Email ──
   {
     key: "store.email.from_name",
@@ -158,20 +189,25 @@ const DEFINITIONS: SettingDef[] = [
 ];
 
 const GROUP_META: Record<Group, { title: string; subtitle: string; icon: typeof CreditCard }> = {
+  store_general: {
+    title: "Generale",
+    subtitle: "Valuta, IVA, paese predefinito, tempi di consegna",
+    icon: SettingsIcon,
+  },
   store_stripe: {
     title: "Stripe — pagamenti",
     subtitle: "Chiavi API e webhook per gestire i pagamenti carta",
     icon: CreditCard,
   },
-  store_general: {
-    title: "Generale",
-    subtitle: "Valuta, IVA, paese predefinito",
-    icon: SettingsIcon,
-  },
   store_email: {
     title: "Email transazionali",
     subtitle: "Mittente e destinatari delle email dello store",
     icon: Mail,
+  },
+  store_sale_banner: {
+    title: "Banner svendita",
+    subtitle: "Barra in cima allo store con messaggio e countdown",
+    icon: Megaphone,
   },
   store_maintenance: {
     title: "Modalità offline (coming soon)",
@@ -180,12 +216,15 @@ const GROUP_META: Record<Group, { title: string; subtitle: string; icon: typeof 
   },
 };
 
+const TAB_ORDER: Group[] = ["store_general", "store_stripe", "store_email", "store_sale_banner", "store_maintenance"];
+
 export default function StoreSettingsPage() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [activeTab, setActiveTab] = useState<Group>("store_general");
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -236,128 +275,151 @@ export default function StoreSettingsPage() {
     );
   }
 
-  const groups: Group[] = ["store_maintenance", "store_stripe", "store_general", "store_email"];
+  const activeMeta = GROUP_META[activeTab];
+  const ActiveIcon = activeMeta.icon;
+  const activeDefs = DEFINITIONS.filter((d) => d.group === activeTab);
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <header className="mb-6">
         <h1 className="text-2xl font-semibold text-warm-900">Impostazioni Store</h1>
         <p className="text-sm text-warm-500 mt-1">
-          Configurazione del modulo e-commerce (Stripe, tasse, email, paese).
+          Configurazione del modulo e-commerce (Stripe, tasse, email, banner, modalità offline).
         </p>
       </header>
 
-      <div className="space-y-6">
-        {groups.map((g) => {
-          const meta = GROUP_META[g];
-          const defs = DEFINITIONS.filter((d) => d.group === g);
-          const Icon = meta.icon;
-          return (
-            <section key={g} className="bg-white rounded-lg border border-warm-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-warm-200 bg-warm-50/50 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-warm-900 text-white flex items-center justify-center">
-                  <Icon size={16} />
-                </div>
-                <div>
-                  <div className="font-medium text-warm-900">{meta.title}</div>
-                  <div className="text-xs text-warm-500">{meta.subtitle}</div>
-                </div>
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Vertical tabs (desktop) / Horizontal pills (mobile) */}
+        <nav className="md:w-56 flex-shrink-0">
+          <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+            {TAB_ORDER.map((g) => {
+              const meta = GROUP_META[g];
+              const Icon = meta.icon;
+              const isActive = activeTab === g;
+              return (
+                <button
+                  key={g}
+                  onClick={() => setActiveTab(g)}
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    isActive
+                      ? "bg-warm-800 text-white"
+                      : "text-warm-600 hover:bg-warm-100 hover:text-warm-800"
+                  }`}
+                >
+                  <Icon size={18} />
+                  <span className="hidden md:inline">{meta.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* Tab content */}
+        <div className="flex-1 min-w-0">
+          <section className="bg-white rounded-lg border border-warm-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-warm-200 bg-warm-50/50 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-warm-900 text-white flex items-center justify-center">
+                <ActiveIcon size={16} />
               </div>
-              <div className="p-6 space-y-4">
-                {defs.map((def) => {
-                  const isRevealed = revealed[def.key];
-                  const v = values[def.key] ?? "";
+              <div>
+                <div className="font-medium text-warm-900">{activeMeta.title}</div>
+                <div className="text-xs text-warm-500">{activeMeta.subtitle}</div>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              {activeDefs.map((def) => {
+                const isRevealed = revealed[def.key];
+                const v = values[def.key] ?? "";
 
-                  if (def.type === "boolean") {
-                    const checked = v === "true";
-                    return (
-                      <div key={def.key}>
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <button
-                            type="button"
-                            onClick={() => setValues((vs) => ({ ...vs, [def.key]: checked ? "false" : "true" }))}
-                            className={`relative w-10 h-6 rounded-full transition-colors ${checked ? "bg-warm-900" : "bg-warm-300"}`}
-                            aria-pressed={checked}
-                          >
-                            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? "left-[18px]" : "left-0.5"}`} />
-                          </button>
-                          <span className="text-sm font-medium text-warm-800">{def.label}</span>
-                        </label>
-                        {def.hint && <div className="text-xs text-warm-500 mt-2 ml-[52px]">{def.hint}</div>}
-                      </div>
-                    );
-                  }
-
-                  if (def.type === "textarea") {
-                    return (
-                      <div key={def.key}>
-                        <label className="flex items-center gap-2 text-xs font-medium text-warm-600 mb-1">{def.label}</label>
-                        <textarea
-                          value={v}
-                          onChange={(e) => setValues((vs) => ({ ...vs, [def.key]: e.target.value }))}
-                          placeholder={def.placeholder}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-                        />
-                        {def.hint && <div className="text-xs text-warm-500 mt-1">{def.hint}</div>}
-                      </div>
-                    );
-                  }
-
-                  const inputType =
-                    def.secret && !isRevealed ? "password" :
-                    def.type === "datetime-local" ? "datetime-local" :
-                    def.type === "date" ? "date" :
-                    def.type === "number" ? "number" :
-                    def.type === "email" ? "email" :
-                    "text";
-
+                if (def.type === "boolean") {
+                  const checked = v === "true";
                   return (
                     <div key={def.key}>
-                      <label className="flex items-center gap-2 text-xs font-medium text-warm-600 mb-1">
-                        {def.secret && <Lock size={11} className="text-warm-400" />}
-                        {def.label}
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <button
+                          type="button"
+                          onClick={() => setValues((vs) => ({ ...vs, [def.key]: checked ? "false" : "true" }))}
+                          className={`relative w-10 h-6 rounded-full transition-colors ${checked ? "bg-warm-900" : "bg-warm-300"}`}
+                          aria-pressed={checked}
+                        >
+                          <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? "left-[18px]" : "left-0.5"}`} />
+                        </button>
+                        <span className="text-sm font-medium text-warm-800">{def.label}</span>
                       </label>
-                      <div className="flex gap-2">
-                        <input
-                          type={inputType}
-                          value={v}
-                          onChange={(e) =>
-                            setValues((vs) => ({ ...vs, [def.key]: e.target.value }))
-                          }
-                          placeholder={def.placeholder}
-                          className="flex-1 px-3 py-2 border border-warm-200 rounded-lg text-sm font-mono"
-                        />
-                        {def.secret && (
-                          <button
-                            type="button"
-                            onClick={() => setRevealed((r) => ({ ...r, [def.key]: !r[def.key] }))}
-                            className="px-3 py-2 bg-warm-100 hover:bg-warm-200 rounded-lg text-warm-600"
-                            title={isRevealed ? "Nascondi" : "Mostra"}
-                          >
-                            {isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
-                          </button>
-                        )}
-                      </div>
+                      {def.hint && <div className="text-xs text-warm-500 mt-2 ml-[52px]">{def.hint}</div>}
+                    </div>
+                  );
+                }
+
+                if (def.type === "textarea") {
+                  return (
+                    <div key={def.key}>
+                      <label className="flex items-center gap-2 text-xs font-medium text-warm-600 mb-1">{def.label}</label>
+                      <textarea
+                        value={v}
+                        onChange={(e) => setValues((vs) => ({ ...vs, [def.key]: e.target.value }))}
+                        placeholder={def.placeholder}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
+                      />
                       {def.hint && <div className="text-xs text-warm-500 mt-1">{def.hint}</div>}
                     </div>
                   );
-                })}
-              </div>
-            </section>
-          );
-        })}
-      </div>
+                }
 
-      <div className="flex justify-end mt-6">
-        <button
-          onClick={save}
-          disabled={saving}
-          className="px-6 py-2.5 bg-warm-900 text-white rounded-lg hover:bg-warm-800 disabled:opacity-50 text-sm inline-flex items-center gap-2"
-        >
-          {saving && <Loader2 className="animate-spin" size={14} />}
-          Salva impostazioni
-        </button>
+                const inputType =
+                  def.secret && !isRevealed ? "password" :
+                  def.type === "datetime-local" ? "datetime-local" :
+                  def.type === "date" ? "date" :
+                  def.type === "number" ? "number" :
+                  def.type === "email" ? "email" :
+                  "text";
+
+                return (
+                  <div key={def.key}>
+                    <label className="flex items-center gap-2 text-xs font-medium text-warm-600 mb-1">
+                      {def.secret && <Lock size={11} className="text-warm-400" />}
+                      {def.label}
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type={inputType}
+                        value={v}
+                        onChange={(e) =>
+                          setValues((vs) => ({ ...vs, [def.key]: e.target.value }))
+                        }
+                        placeholder={def.placeholder}
+                        className="flex-1 px-3 py-2 border border-warm-200 rounded-lg text-sm font-mono"
+                      />
+                      {def.secret && (
+                        <button
+                          type="button"
+                          onClick={() => setRevealed((r) => ({ ...r, [def.key]: !r[def.key] }))}
+                          className="px-3 py-2 bg-warm-100 hover:bg-warm-200 rounded-lg text-warm-600"
+                          title={isRevealed ? "Nascondi" : "Mostra"}
+                        >
+                          {isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      )}
+                    </div>
+                    {def.hint && <div className="text-xs text-warm-500 mt-1">{def.hint}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <div className="flex justify-end mt-6">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="px-6 py-2.5 bg-warm-900 text-white rounded-lg hover:bg-warm-800 disabled:opacity-50 text-sm inline-flex items-center gap-2"
+            >
+              {saving && <Loader2 className="animate-spin" size={14} />}
+              Salva impostazioni
+            </button>
+          </div>
+        </div>
       </div>
 
       {toast && (

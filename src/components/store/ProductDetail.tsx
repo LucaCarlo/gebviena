@@ -1218,6 +1218,22 @@ function abbreviateLabel(label: string): { abbr: string; full: string } {
   return { abbr: norm.charAt(0).toUpperCase(), full: norm.toLowerCase() };
 }
 
+function translateBlockName(name: string, isFr: boolean): string {
+  if (!isFr) return name;
+  // Traduzioni runtime per i blockName comuni dei DimensionBlock (memorizzati nel DB in IT).
+  return name
+    .replace(/Dimensioni complete/gi, "Dimensions complètes")
+    .replace(/Dimensioni/gi, "Dimensions")
+    .replace(/altezza seduta/gi, "hauteur d’assise")
+    .replace(/altezza bracciolo/gi, "hauteur d’accoudoir")
+    .replace(/altezza impilamento/gi, "hauteur d’empilage")
+    .replace(/larghezza/gi, "largeur")
+    .replace(/profondità/gi, "profondeur")
+    .replace(/altezza/gi, "hauteur")
+    .replace(/diametro/gi, "diamètre")
+    .replace(/lunghezza/gi, "longueur");
+}
+
 function DimensionsRow({
   labels,
   values,
@@ -1228,6 +1244,7 @@ function DimensionsRow({
   blockName: string;
 }) {
   const t = useStoreT();
+  const isFr = t("x", "y") === "y";
   const [legendOpen, setLegendOpen] = useState(false);
   const entries = labels
     .filter((l) => values[l])
@@ -1239,7 +1256,7 @@ function DimensionsRow({
     <div className="mt-6 pt-6 border-t border-warm-200">
       <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-3 inline-flex items-center gap-1.5">
         <Ruler size={12} /> {t("Dimensioni", "Dimensions")}
-        <span className="normal-case tracking-normal text-warm-400 ml-1 text-[12px]">· {blockName}</span>
+        <span className="normal-case tracking-normal text-warm-400 ml-1 text-[12px]">· {translateBlockName(blockName, isFr)}</span>
         <span className="relative inline-flex">
           <button
             type="button"

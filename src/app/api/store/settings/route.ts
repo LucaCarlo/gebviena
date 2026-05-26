@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
-const STORE_GROUPS = ["store_stripe", "store_email", "store_general", "store_maintenance"] as const;
+const STORE_GROUPS = ["store_stripe", "store_email", "store_general", "store_maintenance", "store_sale_banner"] as const;
 
 export async function GET() {
   const result = await requirePermission("store_settings", "view");
