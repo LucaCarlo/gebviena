@@ -60,28 +60,27 @@ export default function SaleBanner() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[60] bg-black text-white"
+      className="fixed top-20 md:top-24 left-0 right-0 z-[45] bg-black text-white"
       style={{ height: 40 }}
     >
-      <div className="h-full flex items-center justify-center gap-3 md:gap-6 px-4 text-[11px] md:text-[12px] uppercase tracking-[0.15em] font-light">
-        <span className="hidden sm:inline">{message}</span>
-        <span className="sm:hidden">{message}</span>
-        <span className="inline-flex items-center gap-1 md:gap-1.5 font-mono tracking-[0.08em] text-white/95">
+      <div className="h-full flex items-center justify-center gap-3 md:gap-6 px-4 text-[11px] md:text-[12px] uppercase tracking-[0.15em] font-light text-white">
+        <span>{message}</span>
+        <span className="inline-flex items-center gap-1 md:gap-1.5 font-mono tracking-[0.08em] text-white">
           {d.days > 0 && (
             <>
               <span className="font-semibold">{d.days}</span>
-              <span className="text-white/60">{t("g", "j")}</span>
-              <span className="text-white/40 mx-0.5">·</span>
+              <span>{t("g", "j")}</span>
+              <span className="mx-0.5">·</span>
             </>
           )}
           <span className="font-semibold">{pad(d.hours)}</span>
-          <span className="text-white/60">h</span>
-          <span className="text-white/40 mx-0.5">·</span>
+          <span>h</span>
+          <span className="mx-0.5">·</span>
           <span className="font-semibold">{pad(d.minutes)}</span>
-          <span className="text-white/60">m</span>
-          <span className="text-white/40 mx-0.5">·</span>
+          <span>m</span>
+          <span className="mx-0.5">·</span>
           <span className="font-semibold">{pad(d.seconds)}</span>
-          <span className="text-white/60">s</span>
+          <span>s</span>
         </span>
       </div>
     </div>

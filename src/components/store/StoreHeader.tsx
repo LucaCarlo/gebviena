@@ -58,8 +58,8 @@ export default function StoreHeader() {
   return (
     <>
       <header
-        className="fixed z-50 bg-white"
-        style={{ top: "var(--store-sale-banner-h, 0px)", left: "var(--site-margin)", right: "var(--site-margin)" }}
+        className="fixed top-0 z-50 bg-white"
+        style={{ left: "var(--site-margin)", right: "var(--site-margin)" }}
       >
         <div className="px-4 md:px-6 lg:px-10">
           <div className="flex items-center h-20 md:h-24 gap-4">

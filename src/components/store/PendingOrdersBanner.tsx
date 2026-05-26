@@ -64,7 +64,7 @@ export default function PendingOrdersBanner() {
     : t("Completa l'ordine", "Finaliser la commande");
 
   return (
-    <div className="fixed top-20 md:top-24 right-4 z-40 max-w-sm">
+    <div className="fixed right-4 z-40 max-w-sm top-[calc(var(--store-sale-banner-h,0px)+5rem)] md:top-[calc(var(--store-sale-banner-h,0px)+6rem)]">
       <div className={`shadow-lg border ${hasFailed ? "border-red-300 bg-red-50" : "border-orange-300 bg-orange-50"} rounded-lg p-4`}>
         <div className="flex items-start gap-3">
           <AlertCircle size={18} className={hasFailed ? "text-red-700 mt-0.5" : "text-orange-700 mt-0.5"} />
