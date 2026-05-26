@@ -8,6 +8,8 @@ import {
 } from "@/lib/event-registration";
 import { assignTagBySlug } from "@/lib/tags";
 import { sendCapiEvent } from "@/lib/fb-capi";
+import { verifyRecaptcha } from "@/lib/recaptcha";
+import { normalizeEmail, isLikelyDotSpam } from "@/lib/email-spam";
 import { headers } from "next/headers";
 
 function generateUUID(): string {
@@ -21,7 +23,6 @@ export async function POST(req: Request) {
     const {
       firstName,
       lastName,
-      email,
       profile,
       company,
       phone,
@@ -34,6 +35,7 @@ export async function POST(req: Request) {
       landingPageId,
       inviteToken,
     } = body;
+    let email: string = body.email || "";
 
     if (!firstName || !lastName || !email || !country || !city || !zipCode) {
       return NextResponse.json(
@@ -50,9 +52,31 @@ export async function POST(req: Request) {
       );
     }
 
+    // Anti-spam #1: pattern "Gmail dot abuse" (es. a.b.c.d.e@gmail.com bot)
+    if (isLikelyDotSpam(email)) {
+      console.warn(`[event-registrations] rifiutata email pattern spam: ${email}`);
+      return NextResponse.json(
+        { success: false, error: "Invalid email address" },
+        { status: 400 }
+      );
+    }
+
+    // Anti-spam #2: reCAPTCHA Enterprise (era completamente assente!)
+    const recaptchaToken = typeof body.recaptchaToken === "string" ? body.recaptchaToken : "";
+    const human = await verifyRecaptcha(recaptchaToken, "event_registration");
+    if (!human) {
+      return NextResponse.json(
+        { success: false, error: "Verifica anti-bot fallita" },
+        { status: 400 }
+      );
+    }
+
+    // Canonicalizza email (Gmail dedup tramite punti / +tag)
+    email = normalizeEmail(email);
+
     // Check for duplicate registration
     const existing = await prisma.eventRegistration.findFirst({
-      where: { email: email.toLowerCase().trim(), landingPageId: landingPageId || undefined },
+      where: { email, landingPageId: landingPageId || undefined },
     });
     if (existing) {
       return NextResponse.json(
