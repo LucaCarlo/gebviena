@@ -156,12 +156,66 @@ export async function POST(req: NextRequest) {
       if (cart?.convertedOrderId) {
         const o = await prisma.order.findUnique({
           where: { id: cart.convertedOrderId },
-          select: { id: true, status: true, orderNumber: true },
+          select: { id: true, status: true, orderNumber: true, paymentProvider: true, totalCents: true, email: true },
         });
         if (o && o.status === "ABANDONED_CHECKOUT") {
           abandonedOrderId = o.id;
           abandonedOrderNumber = o.orderNumber;
+        } else if (
+          o
+          && o.status === "PENDING"
+          && o.paymentProvider === "bonifico"
+          && o.email === customer.email
+          && o.totalCents === totalCents
+        ) {
+          // Idempotenza: il cliente ha già completato il checkout bonifico per
+          // questo carrello (es. refresh + re-submit). Restituisce l'ordine esistente
+          // senza creare un duplicato né rimandare la mail di conferma.
+          return NextResponse.json({
+            success: true,
+            data: {
+              orderId: o.id,
+              orderNumber: o.orderNumber,
+              amountCents: o.totalCents,
+              currency: cfg.currency,
+              status: "PENDING",
+              paymentProvider: "bonifico",
+              duplicateAttempt: true,
+            },
+          });
         }
+      }
+    }
+
+    // Fallback aggiuntivo (sempre attivo): stessa email + stesso totale + bonifico
+    // PENDING negli ultimi 30 minuti. Copre il caso in cui il cartSessionId sia
+    // stato perso (nuova tab, incognito, browser diverso) ma il cliente sta in
+    // realtà rifacendo lo stesso ordine. Evita doppi invii email.
+    {
+      const recentDup = await prisma.order.findFirst({
+        where: {
+          email: customer.email,
+          paymentProvider: "bonifico",
+          status: "PENDING",
+          totalCents,
+          createdAt: { gte: new Date(Date.now() - 30 * 60 * 1000) },
+        },
+        select: { id: true, orderNumber: true, totalCents: true },
+        orderBy: { createdAt: "desc" },
+      });
+      if (recentDup) {
+        return NextResponse.json({
+          success: true,
+          data: {
+            orderId: recentDup.id,
+            orderNumber: recentDup.orderNumber,
+            amountCents: recentDup.totalCents,
+            currency: cfg.currency,
+            status: "PENDING",
+            paymentProvider: "bonifico",
+            duplicateAttempt: true,
+          },
+        });
       }
     }
     const orderNumber = abandonedOrderNumber
