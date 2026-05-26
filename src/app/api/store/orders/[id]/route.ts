@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
+import { sendCapiPurchase } from "@/lib/fb-capi";
 import { OrderStatus } from "@prisma/client";
 
 const VALID_STATUSES: OrderStatus[] = [
@@ -55,11 +56,25 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (body.trackingUrl !== undefined) data.trackingUrl = body.trackingUrl || null;
     if (body.adminNotes !== undefined) data.adminNotes = body.adminNotes || null;
 
+    // Snapshot pre-update per detection di transizione → PAID
+    const prev = await prisma.order.findUnique({
+      where: { id: params.id },
+      select: { status: true },
+    });
+
     const updated = await prisma.order.update({
       where: { id: params.id },
       data,
       include: { customer: true, items: true },
     });
+
+    // Meta CAPI: se l'ordine è appena passato a PAID, invia Purchase server-side.
+    // Vale per ordini bonifico marcati PAID manualmente dall'admin (Stripe usa il webhook).
+    if (body.status === "PAID" && prev?.status !== "PAID") {
+      sendCapiPurchase(updated.id, req).catch((err) => {
+        console.error("[orders PUT] sendCapiPurchase error:", err);
+      });
+    }
 
     return NextResponse.json({ success: true, data: updated });
   } catch (e: unknown) {

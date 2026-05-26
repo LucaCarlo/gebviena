@@ -4,6 +4,7 @@ import { getStoreGeneralConfig } from "@/lib/stripe-config";
 import { computeShipping } from "@/lib/shipping-rates";
 import { marketFromCountry, resolveVariantPrice, vatRateBp } from "@/lib/store-pricing";
 import { sendOrderConfirmationEmail } from "@/lib/order-email";
+import { sendCapiEvent } from "@/lib/fb-capi";
 
 export const dynamic = "force-dynamic";
 
@@ -330,6 +331,39 @@ export async function POST(req: NextRequest) {
     sendOrderConfirmationEmail(order.id).catch((err) => {
       console.error("[create-bonifico-order] sendOrderConfirmationEmail error:", err);
     });
+
+    // Meta CAPI: AddPaymentInfo server-side, dedup col client via event_id = `${orderNumber}:api`.
+    // Per bonifico questo è l'unico momento "pre-Purchase" valido: il vero Purchase
+    // partirà quando l'admin marcherà l'ordine PAID.
+    {
+      const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+      const clientUserAgent = req.headers.get("user-agent") || null;
+      sendCapiEvent({
+        eventName: "AddPaymentInfo",
+        eventId: `${order.orderNumber}:api`,
+        actionSource: "website",
+        userData: {
+          email: customer.email,
+          phone: customer.phone || null,
+          firstName: customer.firstName || null,
+          lastName: customer.lastName || null,
+          city: shippingAddress.city || null,
+          postalCode: shippingAddress.postalCode || null,
+          country: shippingAddress.country || null,
+          externalId: customerId,
+          clientIp,
+          clientUserAgent,
+        },
+        customData: {
+          value: totalCents / 100,
+          currency: cfg.currency,
+          content_type: "product",
+          content_ids: orderItems.map((i) => i.variantId).filter((x): x is string => !!x),
+          num_items: orderItems.reduce((s, i) => s + i.quantity, 0),
+          order_id: order.orderNumber,
+        },
+      }).catch((err) => console.error("[create-bonifico-order] CAPI AddPaymentInfo error:", err));
+    }
 
     return NextResponse.json({
       success: true,

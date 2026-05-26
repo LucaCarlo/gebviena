@@ -167,7 +167,11 @@ export default function CollaborazioniPage() {
         return;
       }
 
-      fbTrack("Lead", { content_name: "collaborazioni", content_category: "contact_form" });
+      fbTrack(
+        "Lead",
+        { content_name: "collaborazioni", content_category: "contact_form" },
+        data?.data?.id ? `lead-${data.data.id}` : undefined
+      );
       setSent(true);
     } catch {
       setError("Errore di connessione. Riprova più tardi.");

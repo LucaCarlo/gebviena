@@ -3,11 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { verifyRecaptcha } from "@/lib/recaptcha";
 import { sendContactNotification } from "@/lib/mail";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
+import { sendCapiEvent } from "@/lib/fb-capi";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { name, email, subject, message, type, company, phone, storeId, recaptchaToken, subscribeNewsletter, contactReason } = body;
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+    const clientUserAgent = req.headers.get("user-agent") || null;
 
     if (!name || !email || !message) {
       return NextResponse.json({ success: false, error: "Campi obbligatori mancanti" }, { status: 400 });
@@ -69,6 +72,28 @@ export async function POST(req: Request) {
     sendContactNotification(name, email, subject, message, type || "general").catch((err) =>
       console.error("Failed to send contact notification:", err)
     );
+
+    // Meta CAPI: invia Lead server-side (event_id condiviso col pixel client = `lead-${id}`).
+    // Estrazione naming: il form passa "name" come stringa unica → split su primo spazio.
+    const [firstName, ...rest] = (name || "").trim().split(/\s+/);
+    const lastName = rest.join(" ") || null;
+    sendCapiEvent({
+      eventName: "Lead",
+      eventId: `lead-${data.id}`,
+      actionSource: "website",
+      userData: {
+        email,
+        phone: phone || null,
+        firstName: firstName || null,
+        lastName,
+        clientIp,
+        clientUserAgent,
+      },
+      customData: {
+        content_name: type || "general",
+        content_category: "contact_form",
+      },
+    }).catch((err) => console.error("[contact] sendCapiEvent Lead error:", err));
 
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch {

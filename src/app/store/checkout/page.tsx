@@ -318,13 +318,14 @@ export default function CheckoutPage() {
       }
       // Meta Pixel: AddPaymentInfo — l'utente ha scelto il metodo di pagamento
       // e ha completato gli step pre-pagamento. Non firato per ricarichi (è dentro l'handler submit).
+      // eventID condiviso col CAPI server-side (`${orderNumber}:api`) per deduplica.
       fbTrack("AddPaymentInfo", {
         content_ids: items.map((i) => i.variantId),
         num_items: count,
         value: subtotalCents / 100,
         currency: "EUR",
         payment_method: paymentMethod,
-      });
+      }, data?.data?.orderNumber ? `${data.data.orderNumber}:api` : undefined);
       if (paymentMethod === "bonifico") {
         // Bonifico: ordine creato senza Stripe, email già inviata. Vai diretto alla success page.
         window.location.href = `/store/checkout/success?order=${encodeURIComponent(data.data.orderId)}`;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe, getStripeConfig } from "@/lib/stripe-config";
 import { sendOrderConfirmationEmail } from "@/lib/order-email";
+import { sendCapiPurchase } from "@/lib/fb-capi";
 import type Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
@@ -81,6 +82,11 @@ export async function POST(req: NextRequest) {
         if (promoted) {
           sendOrderConfirmationEmail(order.id).catch((err) => {
             console.error("[stripe-webhook] sendOrderConfirmationEmail error:", err);
+          });
+          // Meta CAPI: invia Purchase server-side (idempotente con pixel client
+          // via event_id = orderNumber). Fire-and-forget per non bloccare il webhook.
+          sendCapiPurchase(order.id).catch((err) => {
+            console.error("[stripe-webhook] sendCapiPurchase error:", err);
           });
         }
         break;

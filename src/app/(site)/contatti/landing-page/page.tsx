@@ -116,7 +116,11 @@ export default function LandingPage() {
       const data = await res.json();
 
       if (data.success) {
-        fbTrack("Lead", { content_name: "landing-page-event", content_category: "event_registration" });
+        fbTrack(
+          "Lead",
+          { content_name: "landing-page-event", content_category: "event_registration" },
+          data?.data?.id ? `lead-event-${data.data.id}` : undefined
+        );
         setQrCode(data.data.qrCode);
         setQrDataUrl(data.data.qrDataUrl || "");
         setSuccess(true);

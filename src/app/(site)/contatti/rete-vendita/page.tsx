@@ -170,7 +170,11 @@ export default function ReteVenditaPage() {
       });
       const data = await res.json();
       if (data.success) {
-        fbTrack("Lead", { content_name: "rete-vendita", content_category: "contact_form" });
+        fbTrack(
+          "Lead",
+          { content_name: "rete-vendita", content_category: "contact_form" },
+          data?.data?.id ? `lead-${data.data.id}` : undefined
+        );
         setContactSent(true);
       } else {
         setContactError(data.error || "Errore durante l'invio.");

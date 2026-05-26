@@ -7,6 +7,7 @@ import {
   getEmailConfig,
 } from "@/lib/event-registration";
 import { assignTagBySlug } from "@/lib/tags";
+import { sendCapiEvent } from "@/lib/fb-capi";
 import { headers } from "next/headers";
 
 function generateUUID(): string {
@@ -111,6 +112,34 @@ export async function POST(req: Request) {
         languageCode: userLang,
       },
     });
+
+    // Meta CAPI: Lead server-side per ogni registrazione evento
+    // event_id condiviso col pixel client = `lead-event-${registration.id}`.
+    {
+      const h = headers();
+      const clientIp = h.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+      const clientUserAgent = h.get("user-agent") || null;
+      sendCapiEvent({
+        eventName: "Lead",
+        eventId: `lead-event-${registration.id}`,
+        actionSource: "website",
+        userData: {
+          email,
+          phone: phone || null,
+          firstName: firstName || null,
+          lastName: lastName || null,
+          city: city || null,
+          postalCode: zipCode || null,
+          country: country || null,
+          clientIp,
+          clientUserAgent,
+        },
+        customData: {
+          content_name: "landing-page-event",
+          content_category: "event_registration",
+        },
+      }).catch((err) => console.error("[event-registrations] sendCapiEvent Lead error:", err));
+    }
 
     // Link invitation to registration if valid
     if (invitation) {

@@ -77,6 +77,7 @@ function SuccessInner() {
             setTimeout(() => setPollCount((n) => n + 1), 2500);
           }
           // Meta Pixel: Purchase event. Una sola volta per orderId (chiave in sessionStorage).
+          // eventID = orderNumber → server CAPI usa lo stesso event_id → Meta dedupa.
           const firedKey = `fb_purchase_${data.data.orderNumber}`;
           if (typeof window !== "undefined" && !sessionStorage.getItem(firedKey)) {
             sessionStorage.setItem(firedKey, "1");
@@ -85,7 +86,7 @@ function SuccessInner() {
               currency: data.data.currency || "EUR",
               content_type: "product",
               order_number: data.data.orderNumber,
-            });
+            }, data.data.orderNumber);
           }
         }
       } catch {

@@ -93,6 +93,21 @@ const DEFINITIONS: SettingDef[] = [
     hint: "ID del pixel Meta usato per le campagne sponsorizzate. Solo il numero (es. 1358148166154402). Lascia vuoto per disattivare il tracciamento Facebook.",
   },
   {
+    key: "store.fb_capi_access_token",
+    group: "store_general",
+    label: "Meta CAPI — Access Token (server-side)",
+    placeholder: "EAAB...",
+    secret: true,
+    hint: "Access token per la Conversions API (CAPI). Generalo da Events Manager → Impostazioni → Conversions API → Generate Access Token. Permette di inviare Purchase/AddPaymentInfo/Lead anche se il browser blocca il pixel.",
+  },
+  {
+    key: "store.fb_capi_test_event_code",
+    group: "store_general",
+    label: "Meta CAPI — Test Event Code (opzionale)",
+    placeholder: "TEST12345",
+    hint: "Solo per debug: codice dalla scheda Test Events di Meta. Quando valorizzato, gli eventi CAPI compaiono lì senza influire sulle campagne. Lascia vuoto in produzione.",
+  },
+  {
     key: "abandoned_cart_ttl_days",
     group: "store_general",
     label: "Carrelli abbandonati — auto-cancellazione (giorni)",

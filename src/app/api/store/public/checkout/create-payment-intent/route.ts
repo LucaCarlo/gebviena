@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getStripe, getStoreGeneralConfig } from "@/lib/stripe-config";
 import { computeShipping } from "@/lib/shipping-rates";
 import { marketFromCountry, resolveVariantPrice, vatRateBp } from "@/lib/store-pricing";
+import { sendCapiEvent } from "@/lib/fb-capi";
 
 export const dynamic = "force-dynamic";
 
@@ -324,6 +325,37 @@ export async function POST(req: NextRequest) {
         where: { sessionId: cartSessionId },
         data: { converted: true, convertedOrderId: order.id },
       }).catch(() => { /* silent */ });
+    }
+
+    // Meta CAPI: AddPaymentInfo server-side, dedup col client via event_id = `${orderNumber}:api`
+    {
+      const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+      const clientUserAgent = req.headers.get("user-agent") || null;
+      sendCapiEvent({
+        eventName: "AddPaymentInfo",
+        eventId: `${order.orderNumber}:api`,
+        actionSource: "website",
+        userData: {
+          email: customer.email,
+          phone: customer.phone || null,
+          firstName: customer.firstName || null,
+          lastName: customer.lastName || null,
+          city: shippingAddress.city || null,
+          postalCode: shippingAddress.postalCode || null,
+          country: shippingAddress.country || null,
+          externalId: customerId,
+          clientIp,
+          clientUserAgent,
+        },
+        customData: {
+          value: totalCents / 100,
+          currency: cfg.currency,
+          content_type: "product",
+          content_ids: orderItems.map((i) => i.variantId).filter((x): x is string => !!x),
+          num_items: orderItems.reduce((s, i) => s + i.quantity, 0),
+          order_id: order.orderNumber,
+        },
+      }).catch((err) => console.error("[create-payment-intent] CAPI AddPaymentInfo error:", err));
     }
 
     return NextResponse.json({
