@@ -844,6 +844,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
               pconBan: next.ban || "",
               pconSid: next.sid || "",
               pconOvc: next.ovc || "",
+              // Svuota pconUrl (link completo): se l'admin sta usando il configuratore
+              // dei 4 campi, il render della pagina prodotto deve usare quelli e non
+              // un eventuale URL completo legacy che farebbe da override silenzioso.
+              pconUrl: "",
             }));
           }}
         />
