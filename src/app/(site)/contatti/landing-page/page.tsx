@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { fbTrack } from "@/lib/fbpixel";
 
 interface LandingConfig {
   id?: string;
@@ -115,6 +116,7 @@ export default function LandingPage() {
       const data = await res.json();
 
       if (data.success) {
+        fbTrack("Lead", { content_name: "landing-page-event", content_category: "event_registration" });
         setQrCode(data.data.qrCode);
         setQrDataUrl(data.data.qrDataUrl || "");
         setSuccess(true);

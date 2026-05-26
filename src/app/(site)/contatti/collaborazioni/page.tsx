@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
+import { fbTrack } from "@/lib/fbpixel";
 import type { HeroSlide } from "@/types";
 
 interface FieldConfig {
@@ -166,6 +167,7 @@ export default function CollaborazioniPage() {
         return;
       }
 
+      fbTrack("Lead", { content_name: "collaborazioni", content_category: "contact_form" });
       setSent(true);
     } catch {
       setError("Errore di connessione. Riprova più tardi.");
