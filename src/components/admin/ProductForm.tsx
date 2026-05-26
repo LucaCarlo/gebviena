@@ -158,11 +158,22 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
   useEffect(() => { loadProduct(); }, [loadProduct]);
 
-  // Track previous subcategory to detect changes
-  const prevSubcategoryRef = useRef(form.subcategory);
+  // Track previous subcategory to detect changes (user-driven only)
+  const prevSubcategoryRef = useRef<string | null>(null);
+  const isInitialLoadRef = useRef(true);
 
-  // Auto-assign typologies ONLY when category changes (not on load)
+  // Auto-assign typologies SOLO quando l'utente cambia subcategory dall'UI,
+  // MAI al caricamento iniziale (altrimenti sovrascrive le tipologie reali
+  // del prodotto con quelle pre-associate alla category, falsando il form).
   useEffect(() => {
+    // Primo render dopo loadProduct: sincronizza ref e basta
+    if (isInitialLoadRef.current) {
+      if (form.subcategory) {
+        prevSubcategoryRef.current = form.subcategory;
+        isInitialLoadRef.current = false;
+      }
+      return;
+    }
     if (form.subcategory && form.subcategory !== prevSubcategoryRef.current) {
       const cat = allCategories.find((c) => c.value === form.subcategory);
       if (cat && cat.typologies.length > 0) {
