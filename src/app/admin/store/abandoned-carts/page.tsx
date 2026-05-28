@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Search, ShoppingBag, Clock, AlertTriangle, Ban, XCircle } from "lucide-react";
+import { Loader2, Search, ShoppingBag, Clock, AlertTriangle, Ban, XCircle, Trash2 } from "lucide-react";
 import { humanizeStripeError } from "@/lib/stripe-error-labels";
 
 type OrderStatus =
@@ -104,6 +104,25 @@ export default function AbandonedCartsPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<OrderStatus | "">("");
   const [q, setQ] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const deleteCart = async (id: string) => {
+    if (!confirm("Eliminare definitivamente questo carrello abbandonato?")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/store/orders/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        setOrders((prev) => prev.filter((o) => o.id !== id));
+      } else {
+        alert(data.error || "Errore durante l'eliminazione");
+      }
+    } catch {
+      alert("Errore durante l'eliminazione");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -228,6 +247,15 @@ export default function AbandonedCartsPage() {
                     const isBonifico = o.paymentProvider === "bonifico";
                     return <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded ${isBonifico ? "bg-amber-50 text-amber-800" : "bg-warm-100 text-warm-700"}`}>{lbl}</span>;
                   })()}
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteCart(o.id); }}
+                    disabled={deletingId === o.id}
+                    className="ml-auto inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    aria-label="Elimina carrello"
+                  >
+                    {deletingId === o.id ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+                    Elimina
+                  </button>
                 </div>
               </Link>
             );
@@ -246,6 +274,7 @@ export default function AbandonedCartsPage() {
                 <th className="px-4 py-3 text-right">Totale</th>
                 <th className="px-4 py-3 text-left">Pagamento</th>
                 <th className="px-4 py-3 text-left">Stato</th>
+                <th className="px-4 py-3 text-right"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
@@ -295,6 +324,17 @@ export default function AbandonedCartsPage() {
                           </div>
                         );
                       })()}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteCart(o.id); }}
+                        disabled={deletingId === o.id}
+                        className="inline-flex items-center justify-center p-1.5 rounded text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        title="Elimina carrello"
+                        aria-label="Elimina carrello"
+                      >
+                        {deletingId === o.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                      </button>
                     </td>
                   </tr>
                 );

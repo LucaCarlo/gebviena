@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Package, ChevronLeft, Loader2 } from "lucide-react";
+import { Package, ChevronLeft, Loader2, Trash2 } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useStoreT } from "@/lib/use-store-t";
 import AuthForms from "./AuthForms";
@@ -90,6 +90,7 @@ export default function OrdersList() {
   const { customer, loading } = useCustomerAuth();
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function onRetry(orderId: string) {
     setRetryingId(orderId);
@@ -99,6 +100,24 @@ export default function OrdersList() {
     } else {
       alert(t("Errore nel recupero dei dati dell'ordine.", "Erreur de récupération des données."));
       setRetryingId(null);
+    }
+  }
+
+  async function onDelete(orderId: string) {
+    if (!confirm(t("Vuoi rimuovere questo carrello? L'operazione non è reversibile.", "Voulez-vous supprimer ce panier ? L'opération est irréversible."))) return;
+    setDeletingId(orderId);
+    try {
+      const res = await fetch(`/api/store/public/orders/${orderId}`, { method: "DELETE" });
+      const j = await res.json();
+      if (j.success) {
+        setOrders((prev) => (prev ? prev.filter((o) => o.id !== orderId) : prev));
+      } else {
+        alert(j.error || t("Errore durante la rimozione.", "Erreur lors de la suppression."));
+      }
+    } catch {
+      alert(t("Errore durante la rimozione.", "Erreur lors de la suppression."));
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -166,14 +185,24 @@ export default function OrdersList() {
                         ? t("Il pagamento non è andato a buon fine.", "Le paiement n'a pas abouti.")
                         : t("Il pagamento non è stato completato.", "Le paiement n'a pas été complété.")}
                     </div>
-                    <button
-                      onClick={(e) => { e.preventDefault(); onRetry(o.id); }}
-                      disabled={retryingId === o.id}
-                      className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] bg-warm-900 text-white px-4 py-2 hover:bg-black disabled:bg-warm-400"
-                    >
-                      {retryingId === o.id && <Loader2 size={12} className="animate-spin" />}
-                      {ui.cta?.label || t("Effettua il pagamento", "Effectuer le paiement")} →
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={(e) => { e.preventDefault(); onDelete(o.id); }}
+                        disabled={deletingId === o.id}
+                        className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.15em] text-warm-500 border border-warm-300 px-3 py-2 hover:text-red-700 hover:border-red-300 disabled:opacity-50"
+                      >
+                        {deletingId === o.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                        {t("Rimuovi", "Supprimer")}
+                      </button>
+                      <button
+                        onClick={(e) => { e.preventDefault(); onRetry(o.id); }}
+                        disabled={retryingId === o.id}
+                        className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] bg-warm-900 text-white px-4 py-2 hover:bg-black disabled:bg-warm-400"
+                      >
+                        {retryingId === o.id && <Loader2 size={12} className="animate-spin" />}
+                        {ui.cta?.label || t("Effettua il pagamento", "Effectuer le paiement")} →
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

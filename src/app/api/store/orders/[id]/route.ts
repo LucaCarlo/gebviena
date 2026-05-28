@@ -83,3 +83,36 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }
+
+// Eliminabili solo i carrelli abbandonati (situazioni pre-pagamento). Gli ordini
+// finalizzati (pagati, spediti, annullati, bonifico in attesa…) NON vanno cancellati.
+function isAbandonedCart(o: { status: OrderStatus; paymentProvider: string | null }): boolean {
+  return (
+    o.status === "ABANDONED_CHECKOUT" ||
+    o.status === "PAYMENT_FAILED" ||
+    (o.status === "PENDING" && o.paymentProvider !== "bonifico")
+  );
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const result = await requirePermission("store_orders", "delete");
+  if (isErrorResponse(result)) return result;
+
+  const order = await prisma.order.findUnique({
+    where: { id: params.id },
+    select: { status: true, paymentProvider: true },
+  });
+  if (!order) {
+    return NextResponse.json({ success: false, error: "Ordine non trovato" }, { status: 404 });
+  }
+  if (!isAbandonedCart(order)) {
+    return NextResponse.json(
+      { success: false, error: "Solo i carrelli abbandonati possono essere eliminati" },
+      { status: 400 }
+    );
+  }
+
+  // OrderItem ha onDelete: Cascade → vengono rimossi automaticamente.
+  await prisma.order.delete({ where: { id: params.id } });
+  return NextResponse.json({ success: true });
+}

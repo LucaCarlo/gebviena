@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Loader2, ArrowLeft, Check, AlertCircle, Clock } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Loader2, ArrowLeft, Check, AlertCircle, Clock, Trash2 } from "lucide-react";
 import { humanizeStripeError } from "@/lib/stripe-error-labels";
 
 type OrderStatus =
@@ -56,10 +56,6 @@ interface CartDetail {
   items: OrderItem[];
 }
 
-// Stati che hanno senso assegnare a un carrello abbandonato dall'admin.
-const STATUSES: OrderStatus[] = [
-  "ABANDONED_CHECKOUT", "PAYMENT_FAILED", "PENDING", "PAID", "CANCELLED",
-];
 const STATUS_LABEL: Record<OrderStatus, string> = {
   PENDING: "In attesa di accredito bonifico",
   ABANDONED_CHECKOUT: "Checkout abbandonato",
@@ -85,9 +81,11 @@ function statusHeadline(c: { status: OrderStatus; paymentProvider: string | null
 
 export default function AbandonedCartDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [cart, setCart] = useState<CartDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
@@ -128,12 +126,25 @@ export default function AbandonedCartDetailPage() {
     }
   };
 
-  const changeStatus = async (newStatus: OrderStatus) => {
-    if (!confirm(`Cambiare stato a "${STATUS_LABEL[newStatus]}"?`)) return;
-    await updateCart({ status: newStatus });
-  };
-
   const saveAdminNotes = async () => updateCart({ adminNotes });
+
+  const deleteCart = async () => {
+    if (!confirm("Eliminare definitivamente questo carrello abbandonato? L'azione non è reversibile.")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/store/orders/${params.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        router.push("/admin/store/abandoned-carts");
+      } else {
+        showToast(data.error || "Errore durante l'eliminazione", false);
+        setDeleting(false);
+      }
+    } catch {
+      showToast("Errore durante l'eliminazione", false);
+      setDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -152,11 +163,10 @@ export default function AbandonedCartDetailPage() {
     );
   }
 
-  // Se il carrello è stato recuperato (stato da "ordine vero"), suggerisci la pagina ordini.
+  // Se il carrello è stato recuperato (è diventato un ordine vero), suggerisci la pagina ordini.
   const isStillCart = cart.status === "ABANDONED_CHECKOUT"
     || cart.status === "PAYMENT_FAILED"
-    || cart.status === "PENDING"
-    || cart.status === "CANCELLED";
+    || (cart.status === "PENDING" && cart.paymentProvider !== "bonifico");
 
   return (
     <div className="max-w-5xl">
@@ -184,28 +194,17 @@ export default function AbandonedCartDetailPage() {
       <section className="bg-white rounded-lg border border-warm-200 p-4 mb-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <div className="text-xs text-warm-500 uppercase tracking-wider mb-1">Stato attuale</div>
+            <div className="text-xs text-warm-500 uppercase tracking-wider mb-1">Stato</div>
             <div className="text-lg font-semibold text-warm-900">{statusHeadline(cart)}</div>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-warm-500 uppercase tracking-wider">Cambia stato</label>
-            <select
-              value={STATUSES.includes(cart.status) ? cart.status : ""}
-              disabled={saving}
-              onChange={(e) => {
-                const newStatus = e.target.value as OrderStatus;
-                if (newStatus && newStatus !== cart.status) changeStatus(newStatus);
-              }}
-              className="px-3 py-1.5 text-sm border border-warm-200 bg-white rounded focus:border-warm-700 outline-none disabled:opacity-50"
-            >
-              {!STATUSES.includes(cart.status) && (
-                <option value="">{STATUS_LABEL[cart.status]}</option>
-              )}
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-              ))}
-            </select>
-          </div>
+          <button
+            onClick={deleteCart}
+            disabled={deleting}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-100 disabled:opacity-50"
+          >
+            {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+            Elimina carrello
+          </button>
         </div>
         {!isStillCart && (
           <p className="mt-3 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-2">
