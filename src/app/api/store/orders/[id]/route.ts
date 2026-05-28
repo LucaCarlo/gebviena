@@ -5,7 +5,8 @@ import { sendCapiPurchase } from "@/lib/fb-capi";
 import { OrderStatus } from "@prisma/client";
 
 const VALID_STATUSES: OrderStatus[] = [
-  "PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED",
+  "PENDING", "ABANDONED_CHECKOUT", "PAYMENT_FAILED", "CANCELLED", "PAID",
+  "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
 ];
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {

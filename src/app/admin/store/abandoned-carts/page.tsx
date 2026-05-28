@@ -204,7 +204,7 @@ export default function AbandonedCartsPage() {
             return (
               <Link
                 key={o.id}
-                href={`/admin/store/orders/${o.id}`}
+                href={`/admin/store/abandoned-carts/${o.id}`}
                 className="block bg-white rounded-lg border border-warm-200 p-3 active:bg-warm-50"
               >
                 <div className="flex items-start justify-between gap-2 mb-1">
@@ -256,7 +256,7 @@ export default function AbandonedCartsPage() {
                 return (
                   <tr
                     key={o.id}
-                    onClick={() => router.push(`/admin/store/orders/${o.id}`)}
+                    onClick={() => router.push(`/admin/store/abandoned-carts/${o.id}`)}
                     className="hover:bg-warm-50/50 cursor-pointer"
                   >
                     <td className="px-4 py-3">

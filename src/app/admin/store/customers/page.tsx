@@ -55,7 +55,7 @@ export default function StoreCustomersPage() {
             <Users size={24} /> Clienti Shop
           </h1>
           <p className="text-sm text-warm-500 mt-1">
-            {customers.length} clienti · {customers.filter((c) => !c.isGuest).length} registrati · {customers.filter((c) => c.isGuest).length} guest
+            {customers.length} {customers.length === 1 ? "cliente" : "clienti"}
           </p>
         </div>
       </header>
