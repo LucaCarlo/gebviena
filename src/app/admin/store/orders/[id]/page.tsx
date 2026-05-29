@@ -122,6 +122,7 @@ export default function OrderDetailPage() {
   const [refundOpen, setRefundOpen] = useState(false);
   const [refundAmount, setRefundAmount] = useState("");
   const [refundReason, setRefundReason] = useState("");
+  const [refunding, setRefunding] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const showToast = (msg: string, ok: boolean) => {
@@ -184,19 +185,29 @@ export default function OrderDetailPage() {
   };
 
   const doRefund = async () => {
-    const cents = refundAmount ? Math.round(Number(refundAmount) * 100) : undefined;
-    const res = await fetch(`/api/store/orders/${params.id}/refund`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amountCents: cents, reason: refundReason }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setOrder(data.data);
-      setRefundOpen(false);
-      showToast(data.note || "Refund registrato", true);
-    } else {
-      showToast(data.error || "Errore", false);
+    if (refunding) return;
+    setRefunding(true);
+    try {
+      const cents = refundAmount ? Math.round(Number(refundAmount) * 100) : undefined;
+      const res = await fetch(`/api/store/orders/${params.id}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amountCents: cents, reason: refundReason }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrder(data.data);
+        setRefundOpen(false);
+        setRefundAmount("");
+        setRefundReason("");
+        showToast(data.note || "Rimborso eseguito", true);
+      } else {
+        showToast(data.error || "Errore", false);
+      }
+    } catch {
+      showToast("Errore durante il rimborso", false);
+    } finally {
+      setRefunding(false);
     }
   };
 
@@ -218,6 +229,9 @@ export default function OrderDetailPage() {
 
   const shipAddr = parseAddress(order.shippingAddress);
   const billAddr = parseAddress(order.billingAddress);
+
+  const remainingRefundableCents = order.totalCents - (order.refundAmountCents ?? 0);
+  const refundViaStripe = !!order.stripePaymentIntentId;
 
   // Il back link punta alla lista da cui presumibilmente arrivi.
   // Carrelli abbandonati: ABANDONED_CHECKOUT, PAYMENT_FAILED, PENDING+stripe.
@@ -522,12 +536,12 @@ export default function OrderDetailPage() {
               );
             })()}
 
-            {(order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED" || order.status === "DELIVERED" || order.status === "PARTIALLY_REFUNDED") && (
+            {(order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED" || order.status === "DELIVERED" || order.status === "PICKED_UP" || order.status === "PARTIALLY_REFUNDED") && remainingRefundableCents > 0 && (
               <button
                 onClick={() => setRefundOpen(true)}
                 className="mt-3 w-full px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded text-sm hover:bg-red-100 inline-flex items-center justify-center gap-2"
               >
-                <RotateCcw size={13} /> Emetti refund
+                <RotateCcw size={13} /> {refundViaStripe ? "Rimborsa cliente (Stripe)" : "Rimborsa cliente"}
               </button>
             )}
           </section>
@@ -538,23 +552,34 @@ export default function OrderDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-xl max-w-md w-full shadow-xl">
             <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
-              <h2 className="font-semibold text-warm-900">Emetti refund</h2>
+              <h2 className="font-semibold text-warm-900">Rimborsa il cliente</h2>
               <button onClick={() => setRefundOpen(false)} className="text-warm-400 hover:text-warm-900"><X size={18} /></button>
             </div>
             <div className="p-6 space-y-3">
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                Il refund viene registrato localmente. L&apos;integrazione Stripe per il refund automatico verrà attivata in fase successiva.
-              </p>
+              {refundViaStripe ? (
+                <p className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-2">
+                  Pagamento tramite Stripe: il rimborso viene eseguito <strong>automaticamente</strong> e l&apos;importo torna sul metodo di pagamento del cliente (es. carta). Operazione non reversibile.
+                </p>
+              ) : (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                  Pagamento non tramite Stripe (es. bonifico): il rimborso viene solo <strong>registrato</strong> qui. Devi eseguirlo manualmente al cliente.
+                </p>
+              )}
+              {order.refundAmountCents !== null && order.refundAmountCents > 0 && (
+                <p className="text-xs text-warm-600">
+                  Già rimborsato: <strong>{euro(order.refundAmountCents, order.currency)}</strong> · Residuo rimborsabile: <strong>{euro(remainingRefundableCents, order.currency)}</strong>
+                </p>
+              )}
               <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1">Importo (€, vuoto = totale)</label>
+                <label className="block text-xs font-medium text-warm-600 mb-1">Importo (€, vuoto = rimborso totale residuo)</label>
                 <input
                   type="number"
                   step="0.01"
                   min={0}
-                  max={order.totalCents / 100}
+                  max={remainingRefundableCents / 100}
                   value={refundAmount}
                   onChange={(e) => setRefundAmount(e.target.value)}
-                  placeholder={`${(order.totalCents / 100).toFixed(2)}`}
+                  placeholder={`${(remainingRefundableCents / 100).toFixed(2)}`}
                   className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
                 />
               </div>
@@ -569,8 +594,11 @@ export default function OrderDetailPage() {
               </div>
             </div>
             <div className="px-6 py-4 border-t border-warm-200 flex justify-end gap-2">
-              <button onClick={() => setRefundOpen(false)} className="px-4 py-2 text-sm text-warm-600">Annulla</button>
-              <button onClick={doRefund} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Conferma refund</button>
+              <button onClick={() => setRefundOpen(false)} disabled={refunding} className="px-4 py-2 text-sm text-warm-600 disabled:opacity-50">Annulla</button>
+              <button onClick={doRefund} disabled={refunding} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50 inline-flex items-center gap-2">
+                {refunding && <Loader2 size={14} className="animate-spin" />}
+                {refundViaStripe ? "Conferma rimborso su Stripe" : "Registra rimborso"}
+              </button>
             </div>
           </div>
         </div>
