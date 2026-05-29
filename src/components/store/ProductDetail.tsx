@@ -953,15 +953,14 @@ export default function ProductDetail({ product }: { product: Product }) {
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setShowVerticalAlt((v) => !v); }}
                         aria-label={t("Info immagine", "Info image")}
-                        className="absolute bottom-3 left-3 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-warm-900 shadow cursor-pointer opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-white"
+                        className="absolute bottom-4 left-4 z-20 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center shadow-sm cursor-pointer opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-warm-100"
                       >
-                        <Info size={15} />
+                        i
                       </button>
                       {showVerticalAlt && (
-                        <div className="absolute bottom-12 left-3 z-20 max-w-[80%] bg-white/95 backdrop-blur px-3 py-2 rounded-lg shadow-md">
-                          <p className="text-[12px] text-warm-700 leading-snug">
-                            {catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]]}
-                          </p>
+                        <div className="absolute bottom-14 left-4 z-20 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug">
+                          {catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]]}
+                          <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
                         </div>
                       )}
                     </>

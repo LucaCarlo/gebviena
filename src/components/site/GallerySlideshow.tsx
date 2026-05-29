@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
-import { Info } from "lucide-react";
 import CarouselProgressBar from "@/components/site/CarouselProgressBar";
 
 interface GallerySlideshowProps {
@@ -130,17 +129,18 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
             onClick={(e) => { e.stopPropagation(); setShowAlt((v) => !v); }}
             aria-label="Info immagine"
             style={{ left: iconLeft, bottom: iconBottom }}
-            className="absolute z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-warm-900 shadow cursor-pointer opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-white"
+            className="absolute z-10 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center shadow-sm cursor-pointer opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-warm-100"
           >
-            <Info size={15} />
+            i
           </button>
           {showAlt && (
             <div
               onClick={(e) => e.stopPropagation()}
               style={{ left: iconLeft, bottom: iconBottom + 40 }}
-              className="absolute z-10 max-w-[min(85%,460px)] bg-white/95 backdrop-blur px-3 py-2 rounded-lg shadow-md"
+              className="absolute z-10 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug"
             >
-              <p className="text-[12px] text-warm-700 leading-snug">{currentAlt}</p>
+              {currentAlt}
+              <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
             </div>
           )}
         </div>
