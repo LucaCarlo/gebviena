@@ -185,10 +185,16 @@ export default function OrderDetailPage() {
   };
 
   const doRefund = async () => {
-    if (refunding) return;
+    if (refunding || !order) return;
+    const cents = refundAmount ? Math.round(Number(refundAmount) * 100) : undefined;
+    const amountForMsg = cents ?? (order.totalCents - (order.refundAmountCents ?? 0));
+    const viaStripe = !!order.stripePaymentIntentId;
+    const confirmMsg = viaStripe
+      ? `Rimborsare ${euro(amountForMsg, order.currency)} al cliente su Stripe?\n\nL'importo tornerà sul metodo di pagamento del cliente (es. carta). L'azione NON è reversibile.`
+      : `Registrare un rimborso di ${euro(amountForMsg, order.currency)}?\n\nIl pagamento non è su Stripe: dovrai eseguire il rimborso manualmente al cliente.`;
+    if (!confirm(confirmMsg)) return;
     setRefunding(true);
     try {
-      const cents = refundAmount ? Math.round(Number(refundAmount) * 100) : undefined;
       const res = await fetch(`/api/store/orders/${params.id}/refund`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
