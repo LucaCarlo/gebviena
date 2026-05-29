@@ -7,6 +7,7 @@ import { slugify } from "@/lib/utils";
 import { Plus, X, Upload, FileText, Trash2, ImageIcon } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
 import GalleryUploadField from "./GalleryUploadField";
+import ImageAltField from "./ImageAltField";
 import MediaPickerModal from "./MediaPickerModal";
 import SeoPanel from "./SeoPanel";
 import PconConfigurator from "./PconConfigurator";
@@ -526,41 +527,50 @@ export default function ProductForm({ productId }: ProductFormProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ImageUploadField
-            label="Immagine Cover"
-            value={form.coverImage}
-            onChange={(url) => updateField("coverImage", url)}
-            onRemove={() => updateField("coverImage", "")}
-            purpose="cover"
-            folder="products"
-            helpText="Mostrata nella griglia prodotti dello shop"
-            recommendedSize="960 x 960 px (quadrata 1:1)"
-            aspectRatio={1}
-          />
+          <div>
+            <ImageUploadField
+              label="Immagine Cover"
+              value={form.coverImage}
+              onChange={(url) => updateField("coverImage", url)}
+              onRemove={() => updateField("coverImage", "")}
+              purpose="cover"
+              folder="products"
+              helpText="Mostrata nella griglia prodotti dello shop"
+              recommendedSize="960 x 960 px (quadrata 1:1)"
+              aspectRatio={1}
+            />
+            <ImageAltField url={form.coverImage} label="Alt text immagine cover" />
+          </div>
 
-          <ImageUploadField
-            label="Immagine Hero"
-            value={form.heroImage}
-            onChange={(url) => updateField("heroImage", url)}
-            onRemove={() => updateField("heroImage", "")}
-            purpose="hero"
-            folder="products"
-            helpText="Banner a tutta larghezza nella pagina prodotto"
-            recommendedSize="1600 x 1000 px (orizzontale 8:5)"
-            aspectRatio={1600 / 1000}
-          />
+          <div>
+            <ImageUploadField
+              label="Immagine Hero"
+              value={form.heroImage}
+              onChange={(url) => updateField("heroImage", url)}
+              onRemove={() => updateField("heroImage", "")}
+              purpose="hero"
+              folder="products"
+              helpText="Banner a tutta larghezza nella pagina prodotto"
+              recommendedSize="1600 x 1000 px (orizzontale 8:5)"
+              aspectRatio={1600 / 1000}
+            />
+            <ImageAltField url={form.heroImage} label="Alt text immagine hero" />
+          </div>
 
-          <ImageUploadField
-            label="Immagine Laterale"
-            value={form.sideImage}
-            onChange={(url) => updateField("sideImage", url)}
-            onRemove={() => updateField("sideImage", "")}
-            purpose="side"
-            folder="products"
-            helpText="Sezione descrizione, affiancata al testo"
-            recommendedSize="1440 x 1920 px (verticale 3:4)"
-            aspectRatio={1440 / 1920}
-          />
+          <div>
+            <ImageUploadField
+              label="Immagine Laterale"
+              value={form.sideImage}
+              onChange={(url) => updateField("sideImage", url)}
+              onRemove={() => updateField("sideImage", "")}
+              purpose="side"
+              folder="products"
+              helpText="Sezione descrizione, affiancata al testo"
+              recommendedSize="1440 x 1920 px (verticale 3:4)"
+              aspectRatio={1440 / 1920}
+            />
+            <ImageAltField url={form.sideImage} label="Alt text immagine laterale" />
+          </div>
         </div>
 
         <GalleryUploadField
@@ -603,6 +613,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                         </button>
                       ))}
                     </div>
+                    <ImageAltField url={url} label="Alt text" />
                   </div>
                 );
               })}
