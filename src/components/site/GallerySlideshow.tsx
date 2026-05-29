@@ -17,6 +17,11 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
   const [altMap, setAltMap] = useState<Record<string, string>>({});
   const [showAlt, setShowAlt] = useState(false);
+  // Dimensioni del contenitore + dimensioni naturali delle immagini: servono a
+  // calcolare il rettangolo reale dell'immagine (object-contain la centra con
+  // bordi vuoti) e posizionare l'icona info nell'angolo dell'IMMAGINE, non della div.
+  const [box, setBox] = useState<{ cw: number; ch: number }>({ cw: 0, ch: 0 });
+  const [natural, setNatural] = useState<Record<string, { w: number; h: number }>>({});
 
   useEffect(() => {
     if (images.length === 0) return;
@@ -29,6 +34,16 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
       .then((d) => { if (d.success) setAltMap(d.data || {}); })
       .catch(() => { /* silent */ });
   }, [images]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setBox({ cw: el.clientWidth, ch: el.clientHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const canGoPrev = current > 0;
   const canGoNext = current < images.length - 1;
@@ -61,6 +76,17 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
 
   const currentAlt = altMap[images[current]] || `${name} ${current + 1}`;
 
+  // Angolo in basso a sinistra dell'immagine visualizzata (object-contain centra
+  // l'immagine; calcoliamo i bordi vuoti per ancorare l'icona all'immagine).
+  const nat = natural[images[current]];
+  let iconLeft = 12;
+  let iconBottom = 12;
+  if (nat && box.cw > 0 && box.ch > 0) {
+    const scale = Math.min(box.cw / nat.w, box.ch / nat.h);
+    iconLeft = (box.cw - nat.w * scale) / 2 + 12;
+    iconBottom = (box.ch - nat.h * scale) / 2 + 12;
+  }
+
   return (
     <section id={id} className="pb-16 lg:pb-24">
       <div className="w-full">
@@ -86,6 +112,12 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
                   className="object-contain"
                   sizes="100vw"
                   priority={i === 0}
+                  onLoad={(e) => {
+                    const tg = e.currentTarget;
+                    if (tg.naturalWidth) {
+                      setNatural((prev) => prev[url] ? prev : { ...prev, [url]: { w: tg.naturalWidth, h: tg.naturalHeight } });
+                    }
+                  }}
                 />
               </div>
             ))}
@@ -97,16 +129,18 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
             type="button"
             onClick={(e) => { e.stopPropagation(); setShowAlt((v) => !v); }}
             aria-label="Info immagine"
-            className="absolute bottom-3 left-3 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-warm-900 shadow cursor-pointer opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-white"
+            style={{ left: iconLeft, bottom: iconBottom }}
+            className="absolute z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-warm-900 shadow cursor-pointer opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-white"
           >
-            <Info size={16} />
+            <Info size={15} />
           </button>
           {showAlt && (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="absolute bottom-14 left-3 z-10 max-w-[min(85%,460px)] bg-white/95 backdrop-blur px-3.5 py-2.5 rounded-lg shadow-md"
+              style={{ left: iconLeft, bottom: iconBottom + 40 }}
+              className="absolute z-10 max-w-[min(85%,460px)] bg-white/95 backdrop-blur px-3 py-2 rounded-lg shadow-md"
             >
-              <p className="text-[13px] text-warm-700 leading-snug">{currentAlt}</p>
+              <p className="text-[12px] text-warm-700 leading-snug">{currentAlt}</p>
             </div>
           )}
         </div>
