@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
+import { Info } from "lucide-react";
 import CarouselProgressBar from "@/components/site/CarouselProgressBar";
 
 interface GallerySlideshowProps {
@@ -15,6 +16,7 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
   const [altMap, setAltMap] = useState<Record<string, string>>({});
+  const [showAlt, setShowAlt] = useState(false);
 
   useEffect(() => {
     if (images.length === 0) return;
@@ -31,8 +33,8 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
   const canGoPrev = current > 0;
   const canGoNext = current < images.length - 1;
 
-  const goNext = () => { if (canGoNext) setCurrent((prev) => prev + 1); };
-  const goPrev = () => { if (canGoPrev) setCurrent((prev) => prev - 1); };
+  const goNext = () => { if (canGoNext) { setCurrent((prev) => prev + 1); setShowAlt(false); } };
+  const goPrev = () => { if (canGoPrev) { setCurrent((prev) => prev - 1); setShowAlt(false); } };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const el = containerRef.current;
@@ -68,7 +70,7 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
           style={{ cursor: cursorStyle }}
           onClick={handleClick}
           onMouseMove={handleMouseMove}
-          onMouseLeave={() => setHoverSide(null)}
+          onMouseLeave={() => { setHoverSide(null); setShowAlt(false); }}
         >
           {/* Slide track: tutte le immagini in riga, shift con translateX */}
           <div
@@ -89,10 +91,24 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
             ))}
           </div>
 
-          {/* Alt text come tooltip: compare SOLO in hover, sopra l'immagine */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 lg:px-6 pt-12 pb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-black/50 via-black/20 to-transparent">
-            <p className="text-[13px] text-white leading-snug text-center drop-shadow-sm">{currentAlt}</p>
-          </div>
+          {/* Icona info in basso a sinistra: invisibile, compare solo in hover.
+              Click → mostra/nasconde l'alt-text dell'immagine corrente. */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setShowAlt((v) => !v); }}
+            aria-label="Info immagine"
+            className="absolute bottom-3 left-3 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-warm-900 shadow cursor-pointer opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-white"
+          >
+            <Info size={16} />
+          </button>
+          {showAlt && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bottom-14 left-3 z-10 max-w-[min(85%,460px)] bg-white/95 backdrop-blur px-3.5 py-2.5 rounded-lg shadow-md"
+            >
+              <p className="text-[13px] text-warm-700 leading-snug">{currentAlt}</p>
+            </div>
+          )}
         </div>
 
         {images.length > 1 && (

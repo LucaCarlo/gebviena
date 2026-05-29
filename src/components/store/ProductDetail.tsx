@@ -537,6 +537,11 @@ export default function ProductDetail({ product }: { product: Product }) {
       .catch(() => { /* silent */ });
   }, [verticalCatalog]);
 
+  // Toggle del popover alt-text sullo slideshow verticale (apre/chiude al click
+  // sull'icona info). Si richiude cambiando immagine.
+  const [showVerticalAlt, setShowVerticalAlt] = useState(false);
+  useEffect(() => { setShowVerticalAlt(false); }, [descrSlideIdx]);
+
   // Quando cambia la variante selezionata salta all'immagine di quella variante
   // (se la variante non ha immagini proprie, va alla prima del prodotto).
   useEffect(() => {
@@ -928,7 +933,11 @@ export default function ProductDetail({ product }: { product: Product }) {
                 con object-contain → niente taglio. Frecce + indicatore. */}
             {verticalCatalog.length > 0 && (
               <div className="self-start">
-                <div className="group relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "3 / 4" }}>
+                <div
+                  className="group relative bg-warm-50 overflow-hidden"
+                  style={{ aspectRatio: "3 / 4" }}
+                  onMouseLeave={() => setShowVerticalAlt(false)}
+                >
                   <Image
                     src={verticalCatalog[descrSlideIdx % verticalCatalog.length]}
                     alt={catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]] || `${product.name} — ${descrSlideIdx + 1}`}
@@ -938,11 +947,24 @@ export default function ProductDetail({ product }: { product: Product }) {
                     priority
                   />
                   {catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]] && (
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pt-12 pb-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-black/55 via-black/20 to-transparent">
-                      <p className="text-[12px] text-white leading-snug text-center drop-shadow-sm">
-                        {catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]]}
-                      </p>
-                    </div>
+                    <>
+                      {/* Icona info in basso a sinistra: invisibile, compare in hover; click → alt-text */}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setShowVerticalAlt((v) => !v); }}
+                        aria-label={t("Info immagine", "Info image")}
+                        className="absolute bottom-3 left-3 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-warm-900 shadow cursor-pointer opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-white"
+                      >
+                        <Info size={15} />
+                      </button>
+                      {showVerticalAlt && (
+                        <div className="absolute bottom-12 left-3 z-20 max-w-[80%] bg-white/95 backdrop-blur px-3 py-2 rounded-lg shadow-md">
+                          <p className="text-[12px] text-warm-700 leading-snug">
+                            {catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]]}
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                   {verticalCatalog.length > 1 && (
                     <>
