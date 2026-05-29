@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { translateSegmentsBackward, translateSegmentsForward } from "@/lib/path-segments";
+import { translateSegmentsBackward } from "@/lib/path-segments";
 
 const KNOWN_PREFIXES = ["en", "de", "fr", "es"];
 const DEFAULT_LANG = "it";
-const LANG_COOKIE = "gtv_lang";
 
 interface RedirectRow {
   fromPath: string;
@@ -102,28 +101,18 @@ export async function middleware(req: NextRequest) {
   const segments = pathname.split("/").filter(Boolean);
   const first = segments[0];
 
+  // La lingua è determinata ESCLUSIVAMENTE dal prefisso nell'URL (/fr, /en, …).
+  // Niente auto-redirect basato su cookie: il dominio "nudo" mostra sempre la
+  // lingua di default (it). Così nessuno resta "incastrato" in francese per un
+  // cookie vecchio. Lo switcher continua a funzionare perché naviga all'URL
+  // con il prefisso giusto.
   let lang = DEFAULT_LANG;
   let rest = segments;
-  let urlHasPrefix = false;
 
   if (first && KNOWN_PREFIXES.includes(first)) {
     lang = first;
     rest = segments.slice(1);
     rest = translateSegmentsBackward(rest, lang);
-    urlHasPrefix = true;
-  }
-
-  // 2b. If URL has NO prefix but cookie says a different lang, redirect to the localized URL
-  if (!urlHasPrefix) {
-    const cookieLang = req.cookies.get(LANG_COOKIE)?.value;
-    if (cookieLang && KNOWN_PREFIXES.includes(cookieLang)) {
-      const translated = translateSegmentsForward(segments, cookieLang);
-      const targetPath = translated.length
-        ? `/${cookieLang}/${translated.join("/")}`
-        : `/${cookieLang}`;
-      const search = req.nextUrl.search || "";
-      return NextResponse.redirect(new URL(targetPath + search, req.url));
-    }
   }
 
   const strippedPath = rest.length ? "/" + rest.join("/") : "/";
@@ -139,13 +128,6 @@ export async function middleware(req: NextRequest) {
   requestHeaders.set("x-gtv-canonical-path", strippedPath);
   const res = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
   res.headers.set("x-gtv-lang", lang);
-  // Persist lang preference whenever the URL has an explicit prefix
-  if (urlHasPrefix) {
-    res.cookies.set(LANG_COOKIE, lang, { maxAge: 60 * 60 * 24 * 365, path: "/", sameSite: "lax" });
-  } else if (lang === DEFAULT_LANG) {
-    // Explicitly visiting a no-prefix Italian URL clears any stale cookie
-    res.cookies.set(LANG_COOKIE, DEFAULT_LANG, { maxAge: 60 * 60 * 24 * 365, path: "/", sameSite: "lax" });
-  }
   return res;
 }
 
