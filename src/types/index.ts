@@ -485,6 +485,7 @@ export interface PageImage {
   imageUrl: string;
   altText: string | null;
   linkUrl: string | null;
+  linkUrlI18n: string | null;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;

@@ -10,7 +10,7 @@ interface SizeConfig {
 
 const SIZE_CONFIGS: Record<ImagePurpose, SizeConfig> = {
   cover:      { maxWidth: 1200, maxHeight: 1500, quality: 92 },
-  hero:       { maxWidth: 1920, maxHeight: 1080, quality: 92 },
+  hero:       { maxWidth: 2560, maxHeight: 1440, quality: 95 },
   side:       { maxWidth: 1000, maxHeight: 1400, quality: 90 },
   gallery:    { maxWidth: 1400, maxHeight: 1800, quality: 90 },
   thumbnail:  { maxWidth: 400,  maxHeight: 400,  quality: 80 },

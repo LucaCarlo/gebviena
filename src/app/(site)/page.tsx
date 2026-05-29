@@ -6,6 +6,7 @@ import ProductSpotlight from "@/components/home/ProductSpotlight";
 import BornInVienna from "@/components/home/BornInVienna";
 import WoodCraftsmanship from "@/components/home/WoodCraftsmanship";
 import { getPageImagesWithLinks } from "@/lib/page-images";
+import { getCurrentLang } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ const HOMEPAGE_DEFAULTS: Record<string, string> = {
 };
 
 export default async function HomePage() {
-  const { images, links } = await getPageImagesWithLinks("homepage", HOMEPAGE_DEFAULTS);
+  const { images, links } = await getPageImagesWithLinks("homepage", HOMEPAGE_DEFAULTS, getCurrentLang());
 
   return (
     <>

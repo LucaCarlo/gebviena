@@ -852,6 +852,8 @@ model PageImage {
   imageUrl  String
   altText   String?
   linkUrl   String?  @db.Text
+  // Link per-lingua (JSON {"fr":"...","en":"..."}); linkUrl resta il default/IT
+  linkUrlI18n String? @db.Text
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -25,14 +25,24 @@ export async function getPageImages(
  */
 export async function getPageImagesWithLinks(
   page: string,
-  defaults: Record<string, string>
+  defaults: Record<string, string>,
+  lang?: string
 ): Promise<{ images: Record<string, string>; links: Record<string, string> }> {
   const dbImages = await prisma.pageImage.findMany({ where: { page } });
   const images = { ...defaults };
   const links: Record<string, string> = {};
   for (const img of dbImages) {
     images[img.section] = img.imageUrl;
-    if (img.linkUrl && img.linkUrl.trim()) links[img.section] = img.linkUrl;
+    // linkUrl è il link di default (IT). Per le altre lingue usa linkUrlI18n se
+    // presente, altrimenti ricade sul link di default.
+    let link = img.linkUrl || "";
+    if (lang && img.linkUrlI18n) {
+      try {
+        const m = JSON.parse(img.linkUrlI18n) as Record<string, string>;
+        if (m && typeof m[lang] === "string" && m[lang].trim()) link = m[lang];
+      } catch { /* JSON malformato: ignora, resta il default */ }
+    }
+    if (link && link.trim()) links[img.section] = link;
   }
   return { images, links };
 }

@@ -150,11 +150,21 @@ export default function GestioneImmaginiPage() {
     return existing?.imageUrl || defaultUrl;
   };
 
-  const getLinkUrl = (page: string, section: string) => {
-    const key = `${page}:${section}`;
+  const defaultLang = languages.find((l) => l.isDefault)?.code || "it";
+
+  const getLinkUrl = (page: string, section: string, lang: string) => {
+    const key = `${lang}:${page}:${section}`;
     if (key in linkEdits) return linkEdits[key];
     const existing = images.find((i) => i.page === page && i.section === section);
-    return existing?.linkUrl || "";
+    if (!existing) return "";
+    if (lang === defaultLang) return existing.linkUrl || "";
+    if (existing.linkUrlI18n) {
+      try {
+        const m = JSON.parse(existing.linkUrlI18n) as Record<string, string>;
+        return m?.[lang] || "";
+      } catch { return ""; }
+    }
+    return "";
   };
 
   const handleImageChange = (page: string, section: string, url: string) => {
@@ -163,8 +173,8 @@ export default function GestioneImmaginiPage() {
     setSaved(false);
   };
 
-  const handleLinkChange = (page: string, section: string, url: string) => {
-    setLinkEdits((prev) => ({ ...prev, [`${page}:${section}`]: url }));
+  const handleLinkChange = (page: string, section: string, lang: string, url: string) => {
+    setLinkEdits((prev) => ({ ...prev, [`${lang}:${page}:${section}`]: url }));
     setDirty(true);
     setSaved(false);
   };
@@ -193,18 +203,28 @@ export default function GestioneImmaginiPage() {
     setSaving(true);
     setSaved(false);
 
-    const imagesToSave: { page: string; section: string; label: string; imageUrl: string; linkUrl?: string | null; sortOrder: number }[] = [];
+    const imagesToSave: { page: string; section: string; label: string; imageUrl: string; linkUrl?: string | null; linkUrlI18n?: string | null; sortOrder: number }[] = [];
     for (const pageConfig of PAGE_IMAGES_CONFIG) {
       for (let idx = 0; idx < pageConfig.images.length; idx++) {
         const imgConfig = pageConfig.images[idx];
         const url = getImageUrl(pageConfig.page, imgConfig.section, imgConfig.defaultUrl);
-        const link = imgConfig.acceptLink ? getLinkUrl(pageConfig.page, imgConfig.section) : null;
+        // Link di default (lingua di default) + mappa per le altre lingue.
+        const link = imgConfig.acceptLink ? getLinkUrl(pageConfig.page, imgConfig.section, defaultLang) : "";
+        let linkI18n: Record<string, string> | null = null;
+        if (imgConfig.acceptLink) {
+          for (const l of languages) {
+            if (l.code === defaultLang) continue;
+            const v = getLinkUrl(pageConfig.page, imgConfig.section, l.code).trim();
+            if (v) { (linkI18n ||= {})[l.code] = v; }
+          }
+        }
         imagesToSave.push({
           page: pageConfig.page,
           section: imgConfig.section,
           label: imgConfig.label,
           imageUrl: url,
           linkUrl: link || null,
+          linkUrlI18n: linkI18n ? JSON.stringify(linkI18n) : null,
           sortOrder: idx,
         });
       }
@@ -549,16 +569,20 @@ export default function GestioneImmaginiPage() {
                             {imgConfig.acceptLink && (
                               <div>
                                 <label className="block text-[11px] font-semibold text-warm-600 uppercase tracking-wider mb-1">
-                                  Link URL (opzionale)
+                                  Link URL — {targetLang.toUpperCase()} (opzionale)
                                 </label>
                                 <input
                                   type="url"
-                                  value={getLinkUrl(pageConfig.page, imgConfig.section)}
-                                  onChange={(e) => handleLinkChange(pageConfig.page, imgConfig.section, e.target.value)}
+                                  value={getLinkUrl(pageConfig.page, imgConfig.section, targetLang)}
+                                  onChange={(e) => handleLinkChange(pageConfig.page, imgConfig.section, targetLang, e.target.value)}
                                   placeholder="https://... oppure /prodotti/nome-prodotto"
                                   className="w-full border border-warm-300 rounded px-3 py-1.5 text-xs focus:border-warm-800 focus:outline-none"
                                 />
-                                <p className="text-[10px] text-warm-400 mt-1">Se compilato, il CTA della sezione punterà a questo URL (accetta path interni o URL completi).</p>
+                                <p className="text-[10px] text-warm-400 mt-1">
+                                  {targetLang === defaultLang
+                                    ? "CTA della sezione (lingua di default). Cambia lingua qui sopra per impostare un link diverso per le altre lingue."
+                                    : `Link per la lingua ${targetLang.toUpperCase()}. Se vuoto, viene usato il link di default (${defaultLang.toUpperCase()}).`}
+                                </p>
                               </div>
                             )}
                             {imgConfig.textKeys && imgConfig.textKeys.length > 0 && (
