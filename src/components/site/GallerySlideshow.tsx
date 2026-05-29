@@ -64,7 +64,7 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
       <div className="w-full">
         <div
           ref={containerRef}
-          className="relative w-full overflow-hidden aspect-video lg:aspect-auto lg:h-[768px]"
+          className="group relative w-full overflow-hidden aspect-video lg:aspect-auto lg:h-[768px]"
           style={{ cursor: cursorStyle }}
           onClick={handleClick}
           onMouseMove={handleMouseMove}
@@ -88,11 +88,11 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Alt text sotto l'immagine (centrato) */}
-        <div className="px-4 lg:px-6 mt-4 min-h-[1.5em] text-center">
-          <p className="text-[13px] text-warm-600 leading-snug">{currentAlt}</p>
+          {/* Alt text come tooltip: compare SOLO in hover, sopra l'immagine */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 lg:px-6 pt-12 pb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-black/50 via-black/20 to-transparent">
+            <p className="text-[13px] text-white leading-snug text-center drop-shadow-sm">{currentAlt}</p>
+          </div>
         </div>
 
         {images.length > 1 && (

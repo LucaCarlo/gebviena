@@ -523,6 +523,20 @@ export default function ProductDetail({ product }: { product: Product }) {
   const [descrSlideIdx, setDescrSlideIdx] = useState(0);
   useEffect(() => { setDescrSlideIdx(0); }, [verticalCatalog.length]);
 
+  // Alt reali delle immagini verticali, per mostrarli come tooltip in hover.
+  const [catalogAltMap, setCatalogAltMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (verticalCatalog.length === 0) return;
+    fetch("/api/media/alt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: verticalCatalog }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setCatalogAltMap((prev) => ({ ...prev, ...(d.data || {}) })); })
+      .catch(() => { /* silent */ });
+  }, [verticalCatalog]);
+
   // Quando cambia la variante selezionata salta all'immagine di quella variante
   // (se la variante non ha immagini proprie, va alla prima del prodotto).
   useEffect(() => {
@@ -914,15 +928,22 @@ export default function ProductDetail({ product }: { product: Product }) {
                 con object-contain → niente taglio. Frecce + indicatore. */}
             {verticalCatalog.length > 0 && (
               <div className="self-start">
-                <div className="relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "3 / 4" }}>
+                <div className="group relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "3 / 4" }}>
                   <Image
                     src={verticalCatalog[descrSlideIdx % verticalCatalog.length]}
-                    alt={`${product.name} — ${descrSlideIdx + 1}`}
+                    alt={catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]] || `${product.name} — ${descrSlideIdx + 1}`}
                     fill
                     sizes="(max-width: 1024px) 100vw, 45vw"
                     className="object-contain"
                     priority
                   />
+                  {catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]] && (
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pt-12 pb-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-t from-black/55 via-black/20 to-transparent">
+                      <p className="text-[12px] text-white leading-snug text-center drop-shadow-sm">
+                        {catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]]}
+                      </p>
+                    </div>
+                  )}
                   {verticalCatalog.length > 1 && (
                     <>
                       <button

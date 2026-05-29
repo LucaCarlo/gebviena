@@ -24,6 +24,10 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* PROVA full-width: azzera il margine laterale SOLO sulla homepage
+          (vale anche per l'header perché usa --site-margin). Reversibile:
+          basta rimuovere questo <style>. */}
+      <style dangerouslySetInnerHTML={{ __html: ":root{--site-margin:0px}" }} />
       <HeroSection />
       <FeaturedProduct
         ambianceImage={images["featured-ambiance"]}
