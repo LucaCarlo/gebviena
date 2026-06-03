@@ -54,19 +54,16 @@ async function buildSnapshot(host: "" | "SITO" | "STORE", rangeParam: string) {
   const isStore = host === "STORE";
   const SW = isStore ? W : "WHERE `host`='STORE'";
 
-  // Session-time (CTE LAG su tutta la finestra) è MOLTO pesante su finestre
-  // lunghe: per 1y/all riempirebbe la tmpfs MariaDB. La saltiamo (avgSeconds=0)
-  // per i range lunghi; la calcoliamo solo per 7d/30d dove è significativa.
-  const sessionTimePromise = isMonthly
-    ? Promise.resolve([{ a: 0 }])
-    : q(`WITH seq AS (
-        SELECT \`ipHash\` h, UNIX_TIMESTAMP(\`createdAt\`) ts,
-               LAG(UNIX_TIMESTAMP(\`createdAt\`)) OVER (PARTITION BY \`ipHash\` ORDER BY \`createdAt\`) prev
-        FROM \`PageView\` ${W}
-      ),
-      flagged AS (SELECT h, ts, CASE WHEN prev IS NULL OR ts - prev > 1800 THEN 1 ELSE 0 END nw FROM seq),
-      sess AS (SELECT h, ts, SUM(nw) OVER (PARTITION BY h ORDER BY ts) sid FROM flagged)
-      SELECT AVG(d) a FROM (SELECT MAX(ts)-MIN(ts) d FROM sess GROUP BY h, sid) x`);
+  // Session-time: CTE LAG sull'intera finestra. Calcolata sempre, anche su 1y/all.
+  // Va su /data/mysql-tmp (45 GB) → nessun problema di tmpfs.
+  const sessionTimePromise = q(`WITH seq AS (
+      SELECT \`ipHash\` h, UNIX_TIMESTAMP(\`createdAt\`) ts,
+             LAG(UNIX_TIMESTAMP(\`createdAt\`)) OVER (PARTITION BY \`ipHash\` ORDER BY \`createdAt\`) prev
+      FROM \`PageView\` ${W}
+    ),
+    flagged AS (SELECT h, ts, CASE WHEN prev IS NULL OR ts - prev > 1800 THEN 1 ELSE 0 END nw FROM seq),
+    sess AS (SELECT h, ts, SUM(nw) OVER (PARTITION BY h ORDER BY ts) sid FROM flagged)
+    SELECT AVG(d) a FROM (SELECT MAX(ts)-MIN(ts) d FROM sess GROUP BY h, sid) x`);
 
   // Eseguiamo le query SEQUENZIALMENTE (non in parallelo) per non saturare il
   // pool connection di Prisma (limit 9) né la tmpfs di MariaDB con temp table

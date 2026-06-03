@@ -292,7 +292,7 @@ export default function AdminAnalyticsPage() {
               <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Pagine store più viste <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.topPages.map((p) => ({ name: p.path, count: p.count }))} color="#b08968" /></Card>
             </div>
           ) : !data.isStore && isLoaded("pages") && data.topPages ? (
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Pagine più viste <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.topPages.map((p) => ({ name: p.path, count: p.count }))} /></Card>
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Pagine più viste</h3><Bars items={data.topPages.map((p) => ({ name: p.path, count: p.count }))} /></Card>
           ) : <Card><div className="h-44 bg-warm-100 rounded animate-pulse" /></Card>}
 
           {/* Recenti */}

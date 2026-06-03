@@ -128,11 +128,9 @@ export async function GET(req: Request) {
       series: seriesArr,
     };
   }
-  // Sezione "session-time" — query con CTE WINDOW pesantissima su finestre
-  // lunghe (rischia di saturare la tmpfs di MariaDB). La calcoliamo solo per
-  // finestre brevi (1d, 7d, 30d). Per 1y/all torniamo null.
+  // Sezione "session-time" — calcolata via CTE LAG. Negli snapshot precalcolati
+  // viene fatta dal cron notturno; qui è il fallback se non c'è snapshot.
   async function buildSessionTime() {
-    if (isMonthly) return { avgSeconds: null as number | null };
     const avgTimeR = await q(`WITH seq AS (
           SELECT \`ipHash\` h, UNIX_TIMESTAMP(\`createdAt\`) ts,
                  LAG(UNIX_TIMESTAMP(\`createdAt\`)) OVER (PARTITION BY \`ipHash\` ORDER BY \`createdAt\`) prev
