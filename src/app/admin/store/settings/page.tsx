@@ -1,9 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon, PowerOff, Megaphone } from "lucide-react";
+import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon, PowerOff, Megaphone, BarChart3, Search } from "lucide-react";
 
-type Group = "store_stripe" | "store_email" | "store_general" | "store_maintenance" | "store_sale_banner";
+type Group =
+  | "store_general"
+  | "store_stripe"
+  | "store_smtp"
+  | "store_analytics"
+  | "store_seo"
+  | "store_sale_banner"
+  | "store_maintenance";
 
 type SettingDef = {
   key: string;
@@ -16,6 +23,59 @@ type SettingDef = {
 };
 
 const DEFINITIONS: SettingDef[] = [
+  // ── Generale ──
+  {
+    key: "store.currency",
+    group: "store_general",
+    label: "Valuta",
+    placeholder: "EUR",
+    hint: "Codice ISO 4217 (es. EUR, USD).",
+  },
+  {
+    key: "store.default_country",
+    group: "store_general",
+    label: "Paese predefinito",
+    placeholder: "IT",
+    hint: "Codice ISO 3166-1 alpha-2.",
+  },
+  {
+    key: "store.tax_rate_bp_it",
+    group: "store_general",
+    label: "IVA Italia (basis points)",
+    type: "number",
+    placeholder: "2200",
+    hint: "2200 = 22% (aliquota standard IT). 1000 basis point = 10%.",
+  },
+  {
+    key: "store.tax_rate_bp_fr",
+    group: "store_general",
+    label: "IVA Francia (basis points)",
+    type: "number",
+    placeholder: "2000",
+    hint: "2000 = 20% (aliquota standard FR). Applicata agli ordini con paese di spedizione FR.",
+  },
+  {
+    key: "store.delivery_lead_time",
+    group: "store_general",
+    label: "Tempi di consegna (IT)",
+    placeholder: "4–6 settimane",
+    hint: "Mostrato sulla pagina prodotto in italiano. Testo libero (es. \"4–6 settimane\", \"Pronta consegna\").",
+  },
+  {
+    key: "store.delivery_lead_time_fr",
+    group: "store_general",
+    label: "Tempi di consegna (FR)",
+    placeholder: "4–6 semaines",
+    hint: "Versione francese mostrata quando lo store è in francese.",
+  },
+  {
+    key: "abandoned_cart_ttl_days",
+    group: "store_general",
+    label: "Carrelli abbandonati — auto-cancellazione (giorni)",
+    placeholder: "90",
+    hint: "Dopo quanti giorni i carrelli abbandonati vengono cancellati automaticamente. Default 90. Imposta 0 per disabilitare la pulizia.",
+  },
+
   // ── Stripe ──
   {
     key: "store.stripe.mode",
@@ -48,94 +108,144 @@ const DEFINITIONS: SettingDef[] = [
     hint: "Usato per verificare i webhook Stripe. Prendilo dalla dashboard Stripe.",
   },
 
-  // ── General ──
+  // ── SMTP (allineato al sito principale; vuoto = fallback al sito) ──
   {
-    key: "store.currency",
-    group: "store_general",
-    label: "Valuta",
-    placeholder: "EUR",
-    hint: "Codice ISO 4217 (es. EUR, USD).",
+    key: "store.smtp_host",
+    group: "store_smtp",
+    label: "Host SMTP",
+    placeholder: "smtp.mailchannels.net",
+    hint: "Server SMTP per le email transazionali store. Se vuoto, lo store usa la configurazione SMTP del sito principale (Impostazioni → SMTP).",
   },
   {
-    key: "store.tax_rate_bp",
-    group: "store_general",
-    label: "IVA di default (basis points)",
+    key: "store.smtp_port",
+    group: "store_smtp",
+    label: "Porta SMTP",
     type: "number",
-    placeholder: "2200",
-    hint: "2200 = 22%. 1000 basis point = 10%.",
+    placeholder: "465",
+    hint: "Tipico: 465 (SSL), 587 (STARTTLS), 25.",
   },
   {
-    key: "store.default_country",
-    group: "store_general",
-    label: "Paese predefinito",
-    placeholder: "IT",
-    hint: "Codice ISO 3166-1 alpha-2.",
+    key: "store.smtp_secure",
+    group: "store_smtp",
+    label: "Connessione sicura (SSL/TLS)",
+    type: "boolean",
+    hint: "Tipicamente attiva per porta 465.",
   },
   {
-    key: "store.delivery_lead_time",
-    group: "store_general",
-    label: "Tempi di consegna (IT)",
-    placeholder: "4–6 settimane",
-    hint: "Mostrato sulla pagina prodotto (lingua italiana). Testo libero (es. \"4–6 settimane\", \"Pronta consegna\", \"Su ordinazione\"). Vale per tutti i prodotti.",
+    key: "store.smtp_user",
+    group: "store_smtp",
+    label: "Utente SMTP",
+    placeholder: "user@mailchannels.net",
   },
   {
-    key: "store.delivery_lead_time_fr",
-    group: "store_general",
-    label: "Tempi di consegna (FR)",
-    placeholder: "4–6 semaines",
-    hint: "Versione francese mostrata quando lo store è in francese (es. \"4–6 semaines\", \"Livraison rapide\", \"Sur commande\").",
+    key: "store.smtp_pass",
+    group: "store_smtp",
+    label: "Password SMTP",
+    secret: true,
   },
+  {
+    key: "store.smtp_from_name",
+    group: "store_smtp",
+    label: "Mittente — Nome",
+    placeholder: "Gebrüder Thonet Vienna",
+  },
+  {
+    key: "store.smtp_from_email",
+    group: "store_smtp",
+    label: "Mittente — Indirizzo",
+    type: "email",
+    placeholder: "shop@gebruederthonetvienna.com",
+    hint: "Indirizzo del mittente delle email transazionali (conferma ordine, ecc.).",
+  },
+  {
+    key: "store.admin_email",
+    group: "store_smtp",
+    label: "Email amministratore (notifiche nuovi ordini)",
+    type: "email",
+    placeholder: "admin@gebruederthonetvienna.com",
+  },
+  {
+    key: "store.brevo_api_key",
+    group: "store_smtp",
+    label: "Brevo API key (opzionale)",
+    secret: true,
+    hint: "Se configurata, le email vengono inviate via API Brevo invece che via SMTP. Sovrascrive i campi qui sopra.",
+  },
+
+  // ── Analytics ──
   {
     key: "store.fb_pixel_id",
-    group: "store_general",
-    label: "Facebook / Meta Pixel ID",
+    group: "store_analytics",
+    label: "Meta / Facebook Pixel ID",
     placeholder: "1358148166154402",
-    hint: "ID del pixel Meta usato per le campagne sponsorizzate. Solo il numero (es. 1358148166154402). Lascia vuoto per disattivare il tracciamento Facebook.",
+    hint: "ID del pixel Meta usato per le campagne sponsorizzate. Solo il numero. Lascia vuoto per disattivare il tracciamento Facebook.",
   },
   {
     key: "store.fb_capi_access_token",
-    group: "store_general",
+    group: "store_analytics",
     label: "Meta CAPI — Access Token (server-side)",
     placeholder: "EAAB...",
     secret: true,
-    hint: "Access token per la Conversions API (CAPI). Generalo da Events Manager → Impostazioni → Conversions API → Generate Access Token. Permette di inviare Purchase/AddPaymentInfo/Lead anche se il browser blocca il pixel.",
+    hint: "Access token per la Conversions API. Generalo da Events Manager → Impostazioni → Conversions API. Permette di inviare eventi server-side anche se il browser blocca il pixel.",
   },
   {
     key: "store.fb_capi_test_event_code",
-    group: "store_general",
+    group: "store_analytics",
     label: "Meta CAPI — Test Event Code (opzionale)",
     placeholder: "TEST12345",
-    hint: "Solo per debug: codice dalla scheda Test Events di Meta. Quando valorizzato, gli eventi CAPI compaiono lì senza influire sulle campagne. Lascia vuoto in produzione.",
-  },
-  {
-    key: "abandoned_cart_ttl_days",
-    group: "store_general",
-    label: "Carrelli abbandonati — auto-cancellazione (giorni)",
-    placeholder: "90",
-    hint: "Dopo quanti giorni i carrelli abbandonati (checkout abbandonato, errore pagamento, pagamento non effettuato) vengono cancellati automaticamente dal database. Default 90. Imposta 0 per disabilitare la pulizia automatica.",
+    hint: "Solo per debug. Codice dalla scheda Test Events di Meta. Lascia vuoto in produzione.",
   },
 
-  // ── Sale banner (countdown) ──
+  // ── SEO ──
+  {
+    key: "store.seo.title",
+    group: "store_seo",
+    label: "Meta title default",
+    placeholder: "Store — Gebrüder Thonet Vienna",
+    hint: "Titolo predefinito mostrato nei risultati Google e nel tab del browser per le pagine dello store senza un title proprio.",
+  },
+  {
+    key: "store.seo.description",
+    group: "store_seo",
+    label: "Meta description default",
+    type: "textarea",
+    placeholder: "Acquista online sedute, tavoli e complementi Gebrüder Thonet Vienna.",
+    hint: "Descrizione predefinita (~155 caratteri max) usata da Google e dalle condivisioni social.",
+  },
+  {
+    key: "store.seo.og_image",
+    group: "store_seo",
+    label: "Immagine social Open Graph (URL)",
+    placeholder: "https://gebruederthonetvienna.com/og-store.jpg",
+    hint: "URL completo dell'immagine usata quando un link dello store viene condiviso su Facebook/WhatsApp/X. Consigliata: 1200×630 px, ≤5 MB.",
+  },
+  {
+    key: "store.seo.google_site_verification",
+    group: "store_seo",
+    label: "Google Search Console — codice verifica",
+    placeholder: "abc123…",
+    hint: "Solo il valore del meta tag google-site-verification (senza tag HTML). Per verificare la proprietà del dominio in Search Console.",
+  },
+
+  // ── Banner svendita ──
   {
     key: "store.sale_banner.enabled",
     group: "store_sale_banner",
     label: "Banner svendita attivo",
     type: "boolean",
-    hint: "Quando attivo, sotto al menu dello store appare una barra nera con il messaggio + countdown alla data di fine.",
+    hint: "Quando attivo, sotto al menu dello store appare una barra nera con messaggio + countdown alla data di fine.",
   },
   {
     key: "store.sale_banner.message_it",
     group: "store_sale_banner",
     label: "Messaggio (IT)",
     placeholder: "Merce in svendita limitata",
-    hint: "Testo italiano mostrato nel banner. Default: \"Merce in svendita limitata\".",
   },
   {
     key: "store.sale_banner.message_fr",
     group: "store_sale_banner",
     label: "Messaggio (FR)",
     placeholder: "Marchandise en vente limitée",
-    hint: "Versione francese del messaggio.",
   },
   {
     key: "store.sale_banner.end_date",
@@ -143,47 +253,22 @@ const DEFINITIONS: SettingDef[] = [
     label: "Data e ora di fine svendita",
     type: "datetime-local",
     placeholder: "2026-06-30T23:59",
-    hint: "Il countdown nel banner si aggiorna ogni secondo verso questa data. Quando viene superata, il banner si nasconde automaticamente.",
+    hint: "Il countdown si aggiorna verso questa data. Superata, il banner si nasconde automaticamente.",
   },
 
-  // ── Email ──
-  {
-    key: "store.email.from_name",
-    group: "store_email",
-    label: "Mittente — Nome",
-    placeholder: "Gebrüder Thonet Vienna",
-  },
-  {
-    key: "store.email.from_address",
-    group: "store_email",
-    label: "Mittente — Indirizzo",
-    type: "email",
-    placeholder: "shop@gebruederthonetvienna.com",
-    hint: "Indirizzo usato per le email transazionali (conferma ordine, ecc.).",
-  },
-  {
-    key: "store.email.admin_notify",
-    group: "store_email",
-    label: "Notifiche admin",
-    type: "email",
-    placeholder: "admin@gebruederthonetvienna.com",
-    hint: "A questo indirizzo arrivano le notifiche di nuovi ordini.",
-  },
-
-  // ── Maintenance / Coming soon ──
+  // ── Modalità offline ──
   {
     key: "store.maintenance.enabled",
     group: "store_maintenance",
     label: "Modalità offline attiva",
     type: "boolean",
-    hint: "Quando attiva, lo store mostra una pagina 'arrivo presto' a tutti i visitatori. L'admin (/admin) resta accessibile.",
+    hint: "Quando attiva, lo store mostra una pagina di attesa a tutti i visitatori. L'admin (/admin) resta accessibile.",
   },
   {
     key: "store.maintenance.title",
     group: "store_maintenance",
     label: "Titolo pagina",
     placeholder: "Stiamo arrivando",
-    hint: "Mostrato in grande sulla pagina di attesa.",
   },
   {
     key: "store.maintenance.message",
@@ -191,7 +276,6 @@ const DEFINITIONS: SettingDef[] = [
     label: "Messaggio",
     type: "textarea",
     placeholder: "Lo store online sarà disponibile a breve. Resta aggiornato.",
-    hint: "Sottotitolo / messaggio mostrato sotto al titolo.",
   },
   {
     key: "store.maintenance.opening_date",
@@ -199,14 +283,14 @@ const DEFINITIONS: SettingDef[] = [
     label: "Data e ora di apertura",
     type: "datetime-local",
     placeholder: "2026-05-15T09:00",
-    hint: "Se valorizzata, viene mostrato un countdown alla data/ora esatta. Lascia vuoto per nasconderlo.",
+    hint: "Se valorizzata, viene mostrato un countdown alla data esatta. Lascia vuoto per nasconderlo.",
   },
 ];
 
 const GROUP_META: Record<Group, { title: string; subtitle: string; icon: typeof CreditCard }> = {
   store_general: {
     title: "Generale",
-    subtitle: "Valuta, IVA, paese predefinito, tempi di consegna",
+    subtitle: "Valuta, IVA IT/FR, paese predefinito, tempi consegna",
     icon: SettingsIcon,
   },
   store_stripe: {
@@ -214,10 +298,20 @@ const GROUP_META: Record<Group, { title: string; subtitle: string; icon: typeof 
     subtitle: "Chiavi API e webhook per gestire i pagamenti carta",
     icon: CreditCard,
   },
-  store_email: {
-    title: "Email transazionali",
-    subtitle: "Mittente e destinatari delle email dello store",
+  store_smtp: {
+    title: "SMTP",
+    subtitle: "Configurazione server email per le transazionali. Se vuoto → fallback all'SMTP del sito principale.",
     icon: Mail,
+  },
+  store_analytics: {
+    title: "Analytics",
+    subtitle: "Meta Pixel e Conversions API per il tracciamento campagne",
+    icon: BarChart3,
+  },
+  store_seo: {
+    title: "SEO",
+    subtitle: "Meta tag default, Open Graph, Search Console",
+    icon: Search,
   },
   store_sale_banner: {
     title: "Banner svendita",
@@ -225,13 +319,21 @@ const GROUP_META: Record<Group, { title: string; subtitle: string; icon: typeof 
     icon: Megaphone,
   },
   store_maintenance: {
-    title: "Modalità offline (coming soon)",
+    title: "Modalità offline",
     subtitle: "Mette lo store in modalità 'arrivo presto' con countdown alla riapertura",
     icon: PowerOff,
   },
 };
 
-const TAB_ORDER: Group[] = ["store_general", "store_stripe", "store_email", "store_sale_banner", "store_maintenance"];
+const TAB_ORDER: Group[] = [
+  "store_general",
+  "store_stripe",
+  "store_smtp",
+  "store_analytics",
+  "store_seo",
+  "store_sale_banner",
+  "store_maintenance",
+];
 
 export default function StoreSettingsPage() {
   const [values, setValues] = useState<Record<string, string>>({});

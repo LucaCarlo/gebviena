@@ -653,6 +653,7 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
     replyTo: COMPANY.email,
     bcc: COMPANY.email,
     attachments: [pdfAttachment],
+    context: "store",
   });
 
   if (ok) {
@@ -727,6 +728,7 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
       fromName: `${COMPANY.name} — Ordini`,
       replyTo: order.email,
       attachments: [pdfAttachment],
+      context: "store",
     },
   ).then((aok) => {
     console.log("[order-email] admin notify", order.orderNumber, aok ? "sent" : "FAILED");

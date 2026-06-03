@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStoreGeneralConfig } from "@/lib/stripe-config";
 import { computeShipping } from "@/lib/shipping-rates";
-import { marketFromCountry, resolveVariantPrice, vatRateBp } from "@/lib/store-pricing";
+import { marketFromCountry, resolveVariantPrice } from "@/lib/store-pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
     const unboxingFeeCents = storePickup ? 0 : shippingResult.unboxingFeeCents;
 
     const cfg = await getStoreGeneralConfig();
-    const taxRateBpMarket = vatRateBp(market);
+    const taxRateBpMarket = market === "FR" ? cfg.taxRateBpFr : cfg.taxRateBpIt;
     const taxCents = Math.round((subtotalCents * taxRateBpMarket) / (10000 + taxRateBpMarket));
     const totalCents = subtotalCents + shippingCents + unboxingFeeCents;
 

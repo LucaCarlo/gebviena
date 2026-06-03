@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe, getStoreGeneralConfig } from "@/lib/stripe-config";
 import { computeShipping } from "@/lib/shipping-rates";
-import { marketFromCountry, resolveVariantPrice, vatRateBp } from "@/lib/store-pricing";
+import { marketFromCountry, resolveVariantPrice } from "@/lib/store-pricing";
 import { sendCapiEvent } from "@/lib/fb-capi";
 
 export const dynamic = "force-dynamic";
@@ -158,9 +158,9 @@ export async function POST(req: NextRequest) {
 
     const cfg = await getStoreGeneralConfig();
     // Prezzi IVA inclusa: la tax è informativa, calcolata come "tax compresa"
-    // (back-out dal lordo). L'aliquota dipende dal mercato di spedizione
-    // (IT 22%, FR 20%) — il prezzo che il cliente vede è già "ivato giusto".
-    const taxRateBpMarket = vatRateBp(market);
+    // (back-out dal lordo). L'aliquota dipende dal mercato di spedizione e
+    // arriva ora dai setting admin (Generale → IVA IT/FR).
+    const taxRateBpMarket = market === "FR" ? cfg.taxRateBpFr : cfg.taxRateBpIt;
     const taxCents = Math.round((subtotalCents * taxRateBpMarket) / (10000 + taxRateBpMarket));
     const totalCents = subtotalCents + shippingCents + unboxingFeeCents;
 

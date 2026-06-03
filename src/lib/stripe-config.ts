@@ -44,6 +44,11 @@ export async function getStripe(): Promise<Stripe> {
 
 export interface StoreGeneralConfig {
   currency: string;
+  /** Aliquota IVA Italia in basis points (es. 2200 = 22%). */
+  taxRateBpIt: number;
+  /** Aliquota IVA Francia in basis points (es. 2000 = 20%). */
+  taxRateBpFr: number;
+  /** @deprecated retro-compat: alias di taxRateBpIt. */
   taxRateBp: number;
   defaultCountry: string;
   deliveryLeadTime: string;
@@ -54,14 +59,21 @@ export async function getStoreGeneralConfig(): Promise<StoreGeneralConfig> {
   const map = await loadSettings([
     "store.currency",
     "store.tax_rate_bp",
+    "store.tax_rate_bp_it",
+    "store.tax_rate_bp_fr",
     "store.default_country",
     "store.delivery_lead_time",
     "store.delivery_lead_time_fr",
   ]);
+  // IT: priorità a `tax_rate_bp_it`, fallback al vecchio `tax_rate_bp`, poi 2200.
+  const taxIt = parseInt(map["store.tax_rate_bp_it"] || map["store.tax_rate_bp"] || "2200", 10) || 2200;
+  const taxFr = parseInt(map["store.tax_rate_bp_fr"] || "2000", 10) || 2000;
   const itLead = (map["store.delivery_lead_time"] || "6 settimane").trim() || "6 settimane";
   return {
     currency: (map["store.currency"] || "EUR").toUpperCase(),
-    taxRateBp: parseInt(map["store.tax_rate_bp"] || "2200", 10) || 2200,
+    taxRateBpIt: taxIt,
+    taxRateBpFr: taxFr,
+    taxRateBp: taxIt,
     defaultCountry: (map["store.default_country"] || "IT").toUpperCase(),
     deliveryLeadTime: itLead,
     deliveryLeadTimeFr: (map["store.delivery_lead_time_fr"] || "6 semaines").trim() || "6 semaines",
