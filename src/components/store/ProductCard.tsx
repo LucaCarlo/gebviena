@@ -188,9 +188,9 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
           </div>
         )}
 
-        {/* shortDescription: nascosta su mobile per non bagaggiare la card stretta */}
+        {/* shortDescription: max 2 righe sia su mobile che desktop */}
         {p.shortDescription && (
-          <div className="hidden sm:block text-xs text-warm-500 line-clamp-1">{p.shortDescription}</div>
+          <div className="text-[11px] sm:text-xs text-warm-500 line-clamp-2 leading-snug">{p.shortDescription}</div>
         )}
       </div>
     </Link>
