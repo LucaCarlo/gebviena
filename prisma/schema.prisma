@@ -1088,6 +1088,37 @@ model ScheduledEmailJob {
   @@index([status])
 }
 
+// ─── Area Professionisti ────────────────────────────────────────────────
+
+enum ProfessionalRole {
+  ARCHITECT_DESIGNER
+  PRESS
+  RESELLER
+  AGENT
+}
+
+model Professional {
+  id             String           @id @default(cuid())
+  email          String           @unique
+  passwordHash   String           @db.Text
+  firstName      String           @db.VarChar(128)
+  lastName       String           @db.VarChar(128)
+  phone          String?          @db.VarChar(32)
+  company        String           @db.VarChar(255)
+  role           ProfessionalRole
+  language       String           @default("it") @db.VarChar(16)
+  acceptsPrivacy Boolean          @default(true)
+  marketingOptIn Boolean          @default(false)
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  lastLoginAt    DateTime?
+
+  @@index([role])
+  @@index([createdAt])
+  @@index([isActive])
+}
+
 // ─── Store: Geography ──────────────────────────────────────────────────
 
 model Region {

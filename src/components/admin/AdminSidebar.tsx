@@ -36,6 +36,8 @@ import {
   ShoppingCart,
   Truck,
   CreditCard,
+  Briefcase,
+  UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -117,6 +119,13 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    label: "Rete Vendita",
+    items: [
+      { href: "/admin/stores", label: "Punti vendita", icon: Store, permission: "stores.view" },
+      { href: "/admin/agents", label: "Agenti", icon: Users, permission: "agents.view" },
+    ],
+  },
+  {
     label: "Store Online",
     items: [
       {
@@ -132,22 +141,21 @@ const navSections: NavSection[] = [
       },
       { href: "/admin/store/orders", label: "Ordini", icon: ShoppingCart, permission: "store_orders.view" },
       { href: "/admin/store/abandoned-carts", label: "Carrelli abbandonati", icon: ShoppingBag, permission: "store_orders.view" },
-      { href: "/admin/store/customers", label: "Clienti", icon: Users, permission: "store_customers.view" },
       { href: "/admin/store/shipping", label: "Spedizioni", icon: Truck, permission: "store_shipping.view" },
       { href: "/admin/store/settings", label: "Impostazioni Store", icon: CreditCard, permission: "store_settings.view" },
     ],
   },
   {
-    label: "Rete Vendita",
+    label: "Persone",
     items: [
-      { href: "/admin/stores", label: "Punti vendita", icon: Store, permission: "stores.view" },
-      { href: "/admin/agents", label: "Agenti", icon: Users, permission: "agents.view" },
+      { href: "/admin/store/customers", label: "Clienti", icon: UserRound, permission: "store_customers.view" },
+      { href: "/admin/subscribers", label: "Utenti", icon: Users, permission: "newsletter.view" },
+      { href: "/admin/persone/professionisti", label: "Professionisti", icon: Briefcase, permission: "newsletter.view" },
     ],
   },
   {
-    label: "Clienti",
+    label: "Marketing",
     items: [
-      { href: "/admin/subscribers", label: "Utenti", icon: Users, permission: "newsletter.view" },
       { href: "/admin/email-templates", label: "Email", icon: FileText, permission: "email_templates.view" },
       { href: "/admin/email-analytics", label: "Analitiche Evento", icon: BarChart3, permission: "newsletter.view" },
       { href: "/admin/landing-page", label: "Landing Page", icon: QrCode, permission: "landing_page.view" },

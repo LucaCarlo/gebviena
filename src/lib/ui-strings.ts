@@ -60,6 +60,71 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
     ],
   },
   {
+    id: "pro",
+    label: "Area Professionisti (drawer + pagina riservata)",
+    strings: [
+      // Header link
+      { key: "pro.header.link", defaultValue: "AREA PROFESSIONISTI" },
+      // Drawer titoli e toggle
+      { key: "pro.drawer.title.login", defaultValue: "ACCEDI AL TUO ACCOUNT" },
+      { key: "pro.drawer.title.register", defaultValue: "CREA IL TUO ACCOUNT" },
+      { key: "pro.drawer.subtitle.login", defaultValue: "Accedi all'area riservata ai professionisti Gebrüder Thonet Vienna." },
+      { key: "pro.drawer.subtitle.register", defaultValue: "Crea un nuovo account per accedere all'area professionisti." },
+      { key: "pro.drawer.close", defaultValue: "Chiudi" },
+      { key: "pro.drawer.tab.login", defaultValue: "Accedi" },
+      { key: "pro.drawer.tab.register", defaultValue: "Crea account" },
+      // Selezione ruolo (registrazione)
+      { key: "pro.role.label", defaultValue: "Seleziona il tipo di utente" },
+      { key: "pro.role.architect.title", defaultValue: "Architetti & Interior Designer" },
+      { key: "pro.role.architect.desc", defaultValue: "Accesso a schede tecniche, 2D/3D, materiali, tessuti e file multimediali." },
+      { key: "pro.role.press.title", defaultValue: "Stampa" },
+      { key: "pro.role.press.desc", defaultValue: "Accesso a file multimediali e comunicati stampa." },
+      { key: "pro.role.reseller.title", defaultValue: "Rivenditori" },
+      { key: "pro.role.reseller.desc", defaultValue: "Strumenti di supporto alla vendita e file multimediali." },
+      { key: "pro.role.agent.title", defaultValue: "Agenti" },
+      { key: "pro.role.agent.desc", defaultValue: "Accedi al tuo account personale." },
+      // Form campi
+      { key: "pro.field.firstName", defaultValue: "Nome" },
+      { key: "pro.field.lastName", defaultValue: "Cognome" },
+      { key: "pro.field.email", defaultValue: "Indirizzo e-mail" },
+      { key: "pro.field.phone", defaultValue: "Telefono" },
+      { key: "pro.field.company", defaultValue: "Azienda / Studio" },
+      { key: "pro.field.password", defaultValue: "Password" },
+      { key: "pro.field.passwordConfirm", defaultValue: "Conferma password" },
+      { key: "pro.field.required", defaultValue: "obbligatorio" },
+      // Regole password
+      { key: "pro.password.rules.title", defaultValue: "La password deve essere composta da:" },
+      { key: "pro.password.rules.length", defaultValue: "almeno 8 caratteri" },
+      { key: "pro.password.rules.upper", defaultValue: "almeno una lettera maiuscola" },
+      { key: "pro.password.rules.lower", defaultValue: "almeno una lettera minuscola" },
+      { key: "pro.password.rules.digit", defaultValue: "almeno un numero" },
+      { key: "pro.password.mismatch", defaultValue: "Le password non coincidono" },
+      // Consensi
+      { key: "pro.consent.privacy", defaultValue: "Accetto la privacy policy" },
+      { key: "pro.consent.marketing", defaultValue: "Voglio ricevere aggiornamenti e novità" },
+      // CTA
+      { key: "pro.cta.register", defaultValue: "CREA ACCOUNT" },
+      { key: "pro.cta.login", defaultValue: "ACCEDI" },
+      { key: "pro.cta.toRegister", defaultValue: "Non hai un account? Crea il tuo" },
+      { key: "pro.cta.toLogin", defaultValue: "Hai già un account? Accedi" },
+      { key: "pro.cta.logout", defaultValue: "Esci" },
+      // Errori
+      { key: "pro.error.missing", defaultValue: "Compila tutti i campi obbligatori" },
+      { key: "pro.error.privacy", defaultValue: "Devi accettare la privacy policy" },
+      { key: "pro.error.email", defaultValue: "Email non valida" },
+      { key: "pro.error.weakPassword", defaultValue: "La password non rispetta i requisiti" },
+      { key: "pro.error.duplicateEmail", defaultValue: "Esiste già un account con questa email" },
+      { key: "pro.error.credentials", defaultValue: "Email o password errati" },
+      { key: "pro.error.disabled", defaultValue: "Account disattivato. Contatta Gebrüder Thonet Vienna." },
+      { key: "pro.error.generic", defaultValue: "Errore. Riprova più tardi." },
+      // Pagina /area-professionisti placeholder
+      { key: "pro.page.welcome", defaultValue: "Benvenuto," },
+      { key: "pro.page.title", defaultValue: "Area Professionisti" },
+      { key: "pro.page.subtitle", defaultValue: "L'area riservata sarà accessibile a breve." },
+      { key: "pro.page.body", defaultValue: "Stiamo finalizzando la tua area dedicata con schede tecniche, file 3D, materiali e contenuti riservati. Ti scriveremo all'indirizzo email registrato non appena sarà disponibile." },
+    ],
+  },
+  {
     id: "nav",
     label: "Menu di navigazione (chiavi extra)",
     strings: [

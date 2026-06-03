@@ -7,14 +7,18 @@ import Link from "next/link";
 import MobileMenu from "./MobileMenu";
 import SearchPanel from "./SearchPanel";
 import HeaderLanguageSwitcher from "./HeaderLanguageSwitcher";
+import ProfessionalDrawer from "./ProfessionalDrawer";
+import { useT } from "@/contexts/I18nContext";
 
 export default function Header() {
   const pathname = usePathname();
   const canonicalPath = pathname.replace(/^\/(en|de|fr)(?=\/|$)/, "") || "/";
   const isHomepage = canonicalPath === "/";
+  const t = useT();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isProOpen, setIsProOpen] = useState(false);
   const heroEndRef = useRef(0);
 
   useEffect(() => {
@@ -99,8 +103,17 @@ export default function Header() {
               </Link>
             </div>
 
-            {/* Right — language + search */}
+            {/* Right — area professionisti + language + search */}
             <div className="flex items-center gap-4 md:gap-6">
+              <button
+                onClick={() => setIsProOpen(true)}
+                className={`hidden md:inline-block text-[11px] tracking-[0.18em] uppercase font-semibold transition-colors hover:opacity-70 ${
+                  isScrolled ? "text-neutral-700" : "text-white"
+                }`}
+                aria-label={t("pro.header.link")}
+              >
+                {t("pro.header.link")}
+              </button>
               <HeaderLanguageSwitcher isScrolled={isScrolled} />
               <button
                 onClick={() => setIsSearchOpen(true)}
@@ -121,6 +134,7 @@ export default function Header() {
 
       <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
       <SearchPanel isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <ProfessionalDrawer open={isProOpen} onClose={() => setIsProOpen(false)} />
     </>
   );
 }
