@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Save, Check, AlertCircle, RotateCcw, Database, Upload, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { Loader2, Save, Check, AlertCircle, RotateCcw, Database, Upload, ChevronDown, ChevronRight, Clock, Power, Trash2 } from "lucide-react";
 
 interface Settings {
   freeThresholdCents: number;
@@ -42,7 +42,9 @@ export default function StoreShippingPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [countries, setCountries] = useState<Array<{ countryCode: string; name: string; regions: number; provinces: number; cities: number }>>([]);
+  const [countries, setCountries] = useState<Array<{ countryCode: string; name: string; regions: number; provinces: number; cities: number; disabled: boolean }>>([]);
+  // Flag in-flight per il bottone azioni per ogni paese (evita doppi click).
+  const [busyCountry, setBusyCountry] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   // Accordion state per ciascun blocco regioni — chiuso di default
@@ -155,6 +157,54 @@ export default function StoreShippingPage() {
       showToast("Errore di rete", false);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const toggleCountryDisabled = async (countryCode: string, nextDisabled: boolean) => {
+    setBusyCountry(countryCode);
+    try {
+      const res = await fetch("/api/store/geo/countries", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ countryCode, disabled: nextDisabled }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCountries((cs) => cs.map((c) => c.countryCode === countryCode ? { ...c, disabled: nextDisabled } : c));
+        showToast(nextDisabled ? `${countryCode} disattivato` : `${countryCode} riattivato`, true);
+      } else {
+        showToast(data.error || "Errore", false);
+      }
+    } catch {
+      showToast("Errore di rete", false);
+    } finally {
+      setBusyCountry(null);
+    }
+  };
+
+  const deleteCountry = async (countryCode: string, name: string, cityCount: number) => {
+    const msg = `Eliminare definitivamente il dataset geografico di ${name} (${countryCode})?\n\n` +
+      `Verranno cancellati: ${cityCount.toLocaleString("it-IT")} città, le province, le regioni, ` +
+      `e i valori di consegna al piano, tempi di consegna, IVA e tariffe regionali specifici per ${countryCode}.\n\n` +
+      `Gli ordini già effettuati NON saranno toccati (l'indirizzo è salvato come snapshot).\n\n` +
+      `Questa operazione è IRREVERSIBILE. Continuare?`;
+    if (!confirm(msg)) return;
+    setBusyCountry(countryCode);
+    try {
+      const res = await fetch(`/api/store/geo/countries?code=${encodeURIComponent(countryCode)}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        setCountries((cs) => cs.filter((c) => c.countryCode !== countryCode));
+        showToast(`${name} eliminato (${data.data?.cities ?? 0} città)`, true);
+        // Ricarica la shipping config: le ShippingRegionRate e i Setting sono stati cancellati.
+        fetchConfig();
+      } else {
+        showToast(data.error || "Errore", false);
+      }
+    } catch {
+      showToast("Errore di rete", false);
+    } finally {
+      setBusyCountry(null);
     }
   };
 
@@ -398,19 +448,57 @@ export default function StoreShippingPage() {
                   <th className="px-4 py-2 text-right">Regioni</th>
                   <th className="px-4 py-2 text-right">Province</th>
                   <th className="px-4 py-2 text-right">Città</th>
+                  <th className="px-4 py-2 text-center w-44">Azioni</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-warm-100">
-                {countries.map((c) => (
-                  <tr key={c.countryCode}>
-                    <td className="px-4 py-2.5 text-warm-800">
-                      <span className="font-mono text-warm-500 mr-2">{c.countryCode}</span> {c.name}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.regions}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.provinces}</td>
-                    <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.cities.toLocaleString("it-IT")}</td>
-                  </tr>
-                ))}
+                {countries.map((c) => {
+                  const isBusy = busyCountry === c.countryCode;
+                  return (
+                    <tr key={c.countryCode} className={c.disabled ? "bg-warm-50/60 opacity-75" : ""}>
+                      <td className="px-4 py-2.5 text-warm-800">
+                        <span className="font-mono text-warm-500 mr-2">{c.countryCode}</span> {c.name}
+                        {c.disabled && (
+                          <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider bg-warm-200 text-warm-700">
+                            disattivato
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.regions}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.provinces}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.cities.toLocaleString("it-IT")}</td>
+                      <td className="px-2 py-1.5 text-center">
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => toggleCountryDisabled(c.countryCode, !c.disabled)}
+                            disabled={isBusy}
+                            title={c.disabled
+                              ? "Riattiva: i clienti potranno di nuovo selezionare questo paese al checkout"
+                              : "Disattiva: il paese resta in database ma non sarà selezionabile dai clienti al checkout"}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border transition-colors disabled:opacity-50 ${
+                              c.disabled
+                                ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                : "border-warm-300 text-warm-700 hover:bg-warm-50"
+                            }`}
+                          >
+                            {isBusy ? <Loader2 size={12} className="animate-spin" /> : <Power size={12} />}
+                            {c.disabled ? "Riattiva" : "Disattiva"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteCountry(c.countryCode, c.name, c.cities)}
+                            disabled={isBusy}
+                            title="Elimina definitivamente regioni, province, città e impostazioni geografiche per questo paese"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-300 text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
