@@ -1159,6 +1159,9 @@ model ShippingRegionRate {
   label       String   @db.VarChar(128)
   // null = nessun override, ricade sul default del paese (es. FR 186€/m³).
   rateCents   Int?
+  // Override testo libero del tempo di consegna per questa regione
+  // (es. "4 settimane"). null = usa il fallback paese.
+  leadTime    String?  @db.VarChar(64)
   sortOrder   Int      @default(0)
   updatedAt   DateTime @updatedAt
 

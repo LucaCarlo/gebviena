@@ -238,6 +238,10 @@ export interface ShippingConfig {
   rowPerBoxCents: number;
   // Tariffa consegna al piano per paese (keys UPPERCASE ISO; "ROW" = fallback).
   floorDeliveryByCountry: Record<string, number>;
+  // Tempi di consegna per paese (testo libero); "ROW" = fallback.
+  leadTimeByCountry: Record<string, string>;
+  // Override per regione (key = "{countryCode}/{regionCode}", value = testo libero o null).
+  leadTimeByRegion: Record<string, string | null>;
   // Tariffe regionali. null = nessun override → fallback al default del paese.
   itRegionRates: Record<string, number | null>;
   frRegionRates: Record<string, number | null>;
@@ -264,15 +268,34 @@ export async function loadShippingConfig(): Promise<ShippingConfig> {
   if (_cache && now - _cache.ts < CACHE_TTL_MS) return _cache.config;
 
   try {
-    const [settings, rates, frProvinces] = await Promise.all([
+    const [settings, rates, frProvinces, leadSettings] = await Promise.all([
       prisma.setting.findMany({ where: { group: "shipping" } }),
       prisma.shippingRegionRate.findMany(),
       prisma.province.findMany({
         where: { countryCode: "FR" },
         select: { code: true, regionCode: true },
       }),
+      prisma.setting.findMany({ where: { key: { startsWith: "shipping.lead_time_" } } }),
     ]);
     const sMap = new Map(settings.map((s) => [s.key, s.value] as const));
+    // Lead time per paese: chiavi shipping.lead_time_{cc}
+    const leadTimeByCountry: Record<string, string> = {};
+    for (const r of leadSettings) {
+      const m = r.key.match(/^shipping\.lead_time_([a-z]+)$/);
+      if (!m) continue;
+      const cc = m[1].toUpperCase();
+      if (r.value && r.value.trim()) leadTimeByCountry[cc] = r.value.trim();
+    }
+    // Default safety
+    if (!leadTimeByCountry.IT) leadTimeByCountry.IT = "6 settimane";
+    if (!leadTimeByCountry.FR) leadTimeByCountry.FR = "6 semaines";
+    if (!leadTimeByCountry.ROW) leadTimeByCountry.ROW = "8-10 settimane";
+    // Lead time per regione: usa ShippingRegionRate.leadTime
+    const leadTimeByRegion: Record<string, string | null> = {};
+    for (const r of rates) {
+      const key = `${r.countryCode.toUpperCase()}/${r.code.toUpperCase()}`;
+      leadTimeByRegion[key] = r.leadTime || null;
+    }
 
     // Tariffe regionali per paese (rateCents può essere null = nessun override)
     const itRegionRates: Record<string, number | null> = {};
@@ -293,6 +316,8 @@ export async function loadShippingConfig(): Promise<ShippingConfig> {
       unboxingPerM3Cents:        toInt(sMap.get("shipping.unboxing_per_m3_cents"),        DEFAULTS.unboxingPerM3Cents),
       rowPerBoxCents:            toInt(sMap.get("shipping.row_per_box_cents"),            DEFAULTS.rowPerBoxCents),
       floorDeliveryByCountry:    floorDeliveryFromSettings(sMap),
+      leadTimeByCountry,
+      leadTimeByRegion,
       itRegionRates:             Object.keys(itRegionRates).length > 0
                                    ? { ...DEFAULT_REGION_RATES, ...itRegionRates }
                                    : DEFAULT_REGION_RATES,
@@ -309,6 +334,8 @@ export async function loadShippingConfig(): Promise<ShippingConfig> {
       frRegionRates: {},
       frDepartementToRegion: {},
       floorDeliveryByCountry: { ...DEFAULT_FLOOR_DELIVERY },
+      leadTimeByCountry: { IT: "6 settimane", FR: "6 semaines", ROW: "8-10 settimane" },
+      leadTimeByRegion: {},
     };
   }
 }
@@ -449,5 +476,7 @@ export function getDefaultShippingConfig(): ShippingConfig {
     frRegionRates: {},
     frDepartementToRegion: {},
     floorDeliveryByCountry: { ...DEFAULT_FLOOR_DELIVERY },
+    leadTimeByCountry: { IT: "6 settimane", FR: "6 semaines", ROW: "8-10 settimane" },
+    leadTimeByRegion: {},
   };
 }

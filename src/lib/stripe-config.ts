@@ -44,38 +44,73 @@ export async function getStripe(): Promise<Stripe> {
 
 export interface StoreGeneralConfig {
   currency: string;
-  /** Aliquota IVA Italia in basis points (es. 2200 = 22%). */
+  /** IVA in basis points per paese (es. {IT: 2200, FR: 2000, ROW: 0}).
+   *  La key 'ROW' è il fallback per paesi senza un override esplicito. */
+  taxRateBpByCountry: Record<string, number>;
+  /** Helper retro-compat: alias di taxRateBpByCountry.IT. */
   taxRateBpIt: number;
-  /** Aliquota IVA Francia in basis points (es. 2000 = 20%). */
+  /** Helper retro-compat: alias di taxRateBpByCountry.FR. */
   taxRateBpFr: number;
-  /** @deprecated retro-compat: alias di taxRateBpIt. */
+  /** @deprecated alias di taxRateBpIt. */
   taxRateBp: number;
   defaultCountry: string;
+  /** @deprecated leggere shipping.lead_time_it/fr direttamente. Backward-compat. */
   deliveryLeadTime: string;
   deliveryLeadTimeFr: string;
 }
 
+// Helper: ritorna l'aliquota IVA in basis points per il paese richiesto.
+// Cerca prima il setting specifico, poi cade su ROW, poi 0.
+export function getTaxRateBp(cfg: StoreGeneralConfig, countryCode: string): number {
+  const cc = (countryCode || "").toUpperCase();
+  return cfg.taxRateBpByCountry[cc] ?? cfg.taxRateBpByCountry.ROW ?? 0;
+}
+
 export async function getStoreGeneralConfig(): Promise<StoreGeneralConfig> {
-  const map = await loadSettings([
+  // Carica TUTTI i setting in un colpo: i singoli noti + tutti i tax_rate_pct_*.
+  const knownKeys = [
     "store.currency",
-    "store.tax_rate_bp",
-    "store.tax_rate_bp_it",
-    "store.tax_rate_bp_fr",
     "store.default_country",
+    "shipping.lead_time_it",
+    "shipping.lead_time_fr",
+    // legacy fallback (se la migrazione non avesse rinominato)
     "store.delivery_lead_time",
     "store.delivery_lead_time_fr",
+  ];
+  const [knownRows, pctRows] = await Promise.all([
+    prisma.setting.findMany({ where: { key: { in: knownKeys } } }),
+    prisma.setting.findMany({ where: { key: { startsWith: "store.tax_rate_pct_" } } }),
   ]);
-  // IT: priorità a `tax_rate_bp_it`, fallback al vecchio `tax_rate_bp`, poi 2200.
-  const taxIt = parseInt(map["store.tax_rate_bp_it"] || map["store.tax_rate_bp"] || "2200", 10) || 2200;
-  const taxFr = parseInt(map["store.tax_rate_bp_fr"] || "2000", 10) || 2000;
-  const itLead = (map["store.delivery_lead_time"] || "6 settimane").trim() || "6 settimane";
+  const map: Record<string, string> = {};
+  for (const r of knownRows) map[r.key] = r.value;
+
+  // Costruisce taxRateBpByCountry dai setting store.tax_rate_pct_{cc}
+  const taxRateBpByCountry: Record<string, number> = {};
+  for (const r of pctRows) {
+    const m = r.key.match(/^store\.tax_rate_pct_([a-z]+)$/);
+    if (!m) continue;
+    const cc = m[1].toUpperCase();
+    const pct = parseFloat((r.value || "0").replace(",", "."));
+    if (Number.isFinite(pct) && pct >= 0) {
+      taxRateBpByCountry[cc] = Math.round(pct * 100); // % → basis points
+    }
+  }
+  // Default safety: se mancano IT/FR/ROW, fissa quelli legacy.
+  if (taxRateBpByCountry.IT == null) taxRateBpByCountry.IT = 2200;
+  if (taxRateBpByCountry.FR == null) taxRateBpByCountry.FR = 2000;
+  if (taxRateBpByCountry.ROW == null) taxRateBpByCountry.ROW = 0;
+
+  const itLead = (map["shipping.lead_time_it"] || map["store.delivery_lead_time"] || "6 settimane").trim() || "6 settimane";
+  const frLead = (map["shipping.lead_time_fr"] || map["store.delivery_lead_time_fr"] || "6 semaines").trim() || "6 semaines";
+
   return {
     currency: (map["store.currency"] || "EUR").toUpperCase(),
-    taxRateBpIt: taxIt,
-    taxRateBpFr: taxFr,
-    taxRateBp: taxIt,
+    taxRateBpByCountry,
+    taxRateBpIt: taxRateBpByCountry.IT,
+    taxRateBpFr: taxRateBpByCountry.FR,
+    taxRateBp: taxRateBpByCountry.IT,
     defaultCountry: (map["store.default_country"] || "IT").toUpperCase(),
     deliveryLeadTime: itLead,
-    deliveryLeadTimeFr: (map["store.delivery_lead_time_fr"] || "6 semaines").trim() || "6 semaines",
+    deliveryLeadTimeFr: frLead,
   };
 }

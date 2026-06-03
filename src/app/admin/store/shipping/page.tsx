@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Save, Check, AlertCircle, RotateCcw, Database, Upload, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, Save, Check, AlertCircle, RotateCcw, Database, Upload, ChevronDown, ChevronRight, Clock } from "lucide-react";
 
 interface Settings {
   freeThresholdCents: number;
@@ -16,12 +16,14 @@ interface Region {
   label: string;
   rateCents: number | null;
   sortOrder: number;
+  leadTime: string | null;
 }
 
 interface Config {
   settings: Settings;
   regionsByCountry: Record<string, Region[]>;
   floorDeliveryByCountry: Record<string, number>;
+  leadTimeByCountry: Record<string, string>;
 }
 
 const centsToEur = (c: number): string => (c / 100).toFixed(2);
@@ -106,6 +108,23 @@ export default function StoreShippingPage() {
     setDirty(true);
   };
 
+  const updateCountryLeadTime = (countryCode: string, value: string) => {
+    if (!config) return;
+    const newMap = { ...(config.leadTimeByCountry || {}) };
+    newMap[countryCode] = value;
+    setConfig({ ...config, leadTimeByCountry: newMap });
+    setDirty(true);
+  };
+
+  const updateRegionLeadTime = (country: string, code: string, value: string) => {
+    if (!config) return;
+    const list = config.regionsByCountry[country] || [];
+    const trimmed = value.trim();
+    const newList = list.map((r) => r.code === code ? { ...r, leadTime: trimmed || null } : r);
+    setConfig({ ...config, regionsByCountry: { ...config.regionsByCountry, [country]: newList } });
+    setDirty(true);
+  };
+
   const save = async () => {
     if (!config) return;
     setSaving(true);
@@ -118,10 +137,11 @@ export default function StoreShippingPage() {
           regionsByCountry: Object.fromEntries(
             Object.entries(config.regionsByCountry).map(([country, list]) => [
               country,
-              list.map((r) => ({ code: r.code, label: r.label, rateCents: r.rateCents })),
+              list.map((r) => ({ code: r.code, label: r.label, rateCents: r.rateCents, leadTime: r.leadTime })),
             ])
           ),
           floorDeliveryByCountry: config.floorDeliveryByCountry || {},
+          leadTimeByCountry: config.leadTimeByCountry || {},
         }),
       });
       const data = await res.json();
@@ -251,7 +271,9 @@ export default function StoreShippingPage() {
         onToggle={() => setOpenCountry((s) => ({ ...s, IT: !s.IT }))}
         regions={itRegions}
         onChange={(code, v) => updateRegionRate("IT", code, v)}
+        onLeadTimeChange={(code, v) => updateRegionLeadTime("IT", code, v)}
         defaultFallbackLabel={`Fallback IT: ${centsToEur(config.settings.itFallbackCents)} €`}
+        leadTimeFallback={config.leadTimeByCountry?.IT || "6 settimane"}
       />
 
       {/* ===== FRANCIA — accordion con 18 régions ===== */}
@@ -262,7 +284,9 @@ export default function StoreShippingPage() {
         onToggle={() => setOpenCountry((s) => ({ ...s, FR: !s.FR }))}
         regions={frRegions}
         onChange={(code, v) => updateRegionRate("FR", code, v)}
+        onLeadTimeChange={(code, v) => updateRegionLeadTime("FR", code, v)}
         defaultFallbackLabel={`Fallback FR: ${centsToEur(config.settings.frStandardPerM3Cents)} €/m³`}
+        leadTimeFallback={config.leadTimeByCountry?.FR || "6 semaines"}
         rateSuffix="€/m³"
       />
 
@@ -309,6 +333,46 @@ export default function StoreShippingPage() {
             onChange={(v) => updateSetting("unboxingPerM3Cents", v)}
             suffix="€/m³"
           />
+        </div>
+      </section>
+
+      {/* Tempi di consegna — fallback per paese (override per régione disponibile negli accordion) */}
+      <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider inline-flex items-center gap-2">
+          <Clock size={15} /> Tempi di consegna
+        </h2>
+        <p className="text-xs text-warm-500 -mt-2">
+          Stima mostrata al cliente nel checkout e nelle email transazionali. Ogni paese ha il suo fallback;
+          per le régions con esigenze particolari (es. Corse, isole) puoi sovrascrivere il valore singolarmente
+          dall&apos;accordion del paese qui sopra. &quot;Resto del mondo&quot; è il fallback usato per le nazioni senza valore esplicito.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(() => {
+            const seen = new Set<string>();
+            const items: { code: string; label: string }[] = [];
+            for (const c of countries) {
+              const cc = c.countryCode.toUpperCase();
+              if (cc === "ROW" || seen.has(cc)) continue;
+              seen.add(cc);
+              items.push({ code: cc, label: c.name });
+            }
+            items.push({ code: "ROW", label: "Resto del mondo" });
+            return items.map((it) => (
+              <div key={it.code}>
+                <label className="block text-xs font-medium text-warm-700 mb-1">
+                  {it.label}{it.code !== "ROW" ? ` (${it.code})` : ""}
+                </label>
+                <input
+                  type="text"
+                  maxLength={64}
+                  value={config.leadTimeByCountry?.[it.code] ?? ""}
+                  onChange={(e) => updateCountryLeadTime(it.code, e.target.value)}
+                  placeholder={it.code === "IT" ? "es. 6 settimane" : it.code === "FR" ? "es. 6 semaines" : "es. 8-10 settimane"}
+                  className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:border-warm-700 outline-none"
+                />
+              </div>
+            ));
+          })()}
         </div>
       </section>
 
@@ -414,7 +478,7 @@ export default function StoreShippingPage() {
 }
 
 function CountryAccordion({
-  title, info, open, onToggle, regions, onChange, defaultFallbackLabel, rateSuffix = "€",
+  title, info, open, onToggle, regions, onChange, onLeadTimeChange, defaultFallbackLabel, leadTimeFallback, rateSuffix = "€",
 }: {
   title: string;
   info?: string;
@@ -422,10 +486,13 @@ function CountryAccordion({
   onToggle: () => void;
   regions: Region[];
   onChange: (code: string, eurValue: string) => void;
+  onLeadTimeChange: (code: string, value: string) => void;
   defaultFallbackLabel: string;
+  leadTimeFallback: string;
   rateSuffix?: string;
 }) {
   const overrides = regions.filter((r) => r.rateCents != null).length;
+  const leadOverrides = regions.filter((r) => r.leadTime).length;
   return (
     <section className="bg-white rounded-lg border border-warm-200 overflow-hidden">
       <button
@@ -441,7 +508,7 @@ function CountryAccordion({
           </div>
         </div>
         <span className="text-[11px] text-warm-500 shrink-0">
-          {regions.length} regioni · {overrides} con override
+          {regions.length} regioni · {overrides} tariffa · {leadOverrides} tempi
         </span>
       </button>
       {open && (
@@ -450,7 +517,8 @@ function CountryAccordion({
             <thead className="bg-warm-50 text-warm-500 text-xs">
               <tr>
                 <th className="px-5 py-2 text-left">Regione</th>
-                <th className="px-5 py-2 text-right w-56">Tariffa ({rateSuffix})</th>
+                <th className="px-5 py-2 text-right w-44">Tariffa ({rateSuffix})</th>
+                <th className="px-5 py-2 text-right w-56">Tempo di consegna</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
@@ -468,7 +536,17 @@ function CountryAccordion({
                       value={centsOrEmpty(r.rateCents)}
                       onChange={(e) => onChange(r.code, e.target.value)}
                       placeholder={defaultFallbackLabel}
-                      className="w-44 text-right border border-warm-200 rounded px-2 py-1 text-sm focus:border-warm-700 outline-none placeholder:text-warm-400 placeholder:text-[11px]"
+                      className="w-36 text-right border border-warm-200 rounded px-2 py-1 text-sm focus:border-warm-700 outline-none placeholder:text-warm-400 placeholder:text-[11px]"
+                    />
+                  </td>
+                  <td className="px-5 py-1.5 text-right">
+                    <input
+                      type="text"
+                      maxLength={64}
+                      value={r.leadTime ?? ""}
+                      onChange={(e) => onLeadTimeChange(r.code, e.target.value)}
+                      placeholder={leadTimeFallback}
+                      className="w-48 border border-warm-200 rounded px-2 py-1 text-sm focus:border-warm-700 outline-none placeholder:text-warm-400 placeholder:text-[11px]"
                     />
                   </td>
                 </tr>

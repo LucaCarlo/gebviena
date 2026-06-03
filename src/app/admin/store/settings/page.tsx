@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon, PowerOff, Megaphone, BarChart3, Search } from "lucide-react";
+import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon, PowerOff, Megaphone, BarChart3, Search, ShoppingCart } from "lucide-react";
 
 type Group =
   | "store_general"
@@ -9,6 +9,7 @@ type Group =
   | "store_smtp"
   | "store_analytics"
   | "store_seo"
+  | "store_abandoned"
   | "store_sale_banner"
   | "store_maintenance";
 
@@ -38,43 +39,9 @@ const DEFINITIONS: SettingDef[] = [
     placeholder: "IT",
     hint: "Codice ISO 3166-1 alpha-2.",
   },
-  {
-    key: "store.tax_rate_bp_it",
-    group: "store_general",
-    label: "IVA Italia (basis points)",
-    type: "number",
-    placeholder: "2200",
-    hint: "2200 = 22% (aliquota standard IT). 1000 basis point = 10%.",
-  },
-  {
-    key: "store.tax_rate_bp_fr",
-    group: "store_general",
-    label: "IVA Francia (basis points)",
-    type: "number",
-    placeholder: "2000",
-    hint: "2000 = 20% (aliquota standard FR). Applicata agli ordini con paese di spedizione FR.",
-  },
-  {
-    key: "store.delivery_lead_time",
-    group: "store_general",
-    label: "Tempi di consegna (IT)",
-    placeholder: "4–6 settimane",
-    hint: "Mostrato sulla pagina prodotto in italiano. Testo libero (es. \"4–6 settimane\", \"Pronta consegna\").",
-  },
-  {
-    key: "store.delivery_lead_time_fr",
-    group: "store_general",
-    label: "Tempi di consegna (FR)",
-    placeholder: "4–6 semaines",
-    hint: "Versione francese mostrata quando lo store è in francese.",
-  },
-  {
-    key: "abandoned_cart_ttl_days",
-    group: "store_general",
-    label: "Carrelli abbandonati — auto-cancellazione (giorni)",
-    placeholder: "90",
-    hint: "Dopo quanti giorni i carrelli abbandonati vengono cancellati automaticamente. Default 90. Imposta 0 per disabilitare la pulizia.",
-  },
+  // Nota: le aliquote IVA per paese sono gestite dinamicamente dal componente
+  // (un campo per ciascun paese spedibile + "Resto del mondo"), e i tempi di
+  // consegna sono ora nella pagina Spedizioni. Vedi `taxRates` state.
 
   // ── Stripe ──
   {
@@ -227,6 +194,62 @@ const DEFINITIONS: SettingDef[] = [
     hint: "Solo il valore del meta tag google-site-verification (senza tag HTML). Per verificare la proprietà del dominio in Search Console.",
   },
 
+  // ── Carrelli abbandonati ──
+  {
+    key: "abandoned_cart_ttl_days",
+    group: "store_abandoned",
+    label: "Auto-cancellazione carrello (giorni)",
+    type: "number",
+    placeholder: "90",
+    hint: "Dopo quanti giorni i carrelli abbandonati vengono cancellati automaticamente dal database. Default 90. Imposta 0 per disabilitare la pulizia.",
+  },
+  {
+    key: "abandoned_cart.reminders_enabled",
+    group: "store_abandoned",
+    label: "Invio email di recupero automatiche",
+    type: "boolean",
+    hint: "Quando attivo, ai clienti che hanno abbandonato il checkout (e lasciato email) parte automaticamente una sequenza di promemoria.",
+  },
+  {
+    key: "abandoned_cart.reminder_1_hours",
+    group: "store_abandoned",
+    label: "Primo promemoria — ore dopo l'abbandono",
+    type: "number",
+    placeholder: "2",
+    hint: "Dopo quante ore dall'ultima attività nel checkout parte il primo promemoria. Default 2 ore (cattura clienti distratti). Imposta 0 per disattivare il primo.",
+  },
+  {
+    key: "abandoned_cart.reminder_2_hours",
+    group: "store_abandoned",
+    label: "Secondo promemoria — ore dopo l'abbandono",
+    type: "number",
+    placeholder: "24",
+    hint: "Default 24 ore. Promemoria \"completa il tuo ordine\". 0 = disattivato.",
+  },
+  {
+    key: "abandoned_cart.reminder_3_hours",
+    group: "store_abandoned",
+    label: "Terzo promemoria — ore dopo l'abbandono",
+    type: "number",
+    placeholder: "72",
+    hint: "Default 72 ore (3 giorni). Ultimo tentativo, di solito con coupon recupero. 0 = disattivato.",
+  },
+  {
+    key: "abandoned_cart.min_subtotal_cents",
+    group: "store_abandoned",
+    label: "Soglia minima subtotale per inviare i promemoria (centesimi)",
+    type: "number",
+    placeholder: "0",
+    hint: "Sotto questo subtotale carrello, i promemoria non vengono inviati. Valore in centesimi (es. 5000 = 50 €). Imposta 0 per inviare sempre.",
+  },
+  {
+    key: "abandoned_cart.recovery_coupon",
+    group: "store_abandoned",
+    label: "Codice coupon per il terzo promemoria (opzionale)",
+    placeholder: "RECUPERO10",
+    hint: "Se valorizzato, viene incluso nell'email del terzo promemoria come ultimo incentivo. Il codice deve esistere nella sezione Coupon.",
+  },
+
   // ── Banner svendita ──
   {
     key: "store.sale_banner.enabled",
@@ -290,7 +313,7 @@ const DEFINITIONS: SettingDef[] = [
 const GROUP_META: Record<Group, { title: string; subtitle: string; icon: typeof CreditCard }> = {
   store_general: {
     title: "Generale",
-    subtitle: "Valuta, IVA IT/FR, paese predefinito, tempi consegna",
+    subtitle: "Valuta, paese predefinito e aliquote IVA per ciascun paese spedibile",
     icon: SettingsIcon,
   },
   store_stripe: {
@@ -313,6 +336,11 @@ const GROUP_META: Record<Group, { title: string; subtitle: string; icon: typeof 
     subtitle: "Meta tag default, Open Graph, Search Console",
     icon: Search,
   },
+  store_abandoned: {
+    title: "Carrelli abbandonati",
+    subtitle: "Pulizia automatica e sequenza email di recupero per i checkout abbandonati",
+    icon: ShoppingCart,
+  },
   store_sale_banner: {
     title: "Banner svendita",
     subtitle: "Barra in cima allo store con messaggio e countdown",
@@ -331,12 +359,23 @@ const TAB_ORDER: Group[] = [
   "store_smtp",
   "store_analytics",
   "store_seo",
+  "store_abandoned",
   "store_sale_banner",
   "store_maintenance",
 ];
 
+// Per IVA: l'utente inserisce la percentuale (es. "22"); internamente la
+// convertiamo in basis points. Accetta numeri con decimali (es. "5.5").
+function taxRateKey(countryCode: string): string {
+  return `store.tax_rate_pct_${countryCode.toLowerCase()}`;
+}
+
 export default function StoreSettingsPage() {
   const [values, setValues] = useState<Record<string, string>>({});
+  // Aliquote IVA dinamiche per paese (codice ISO UPPERCASE → percentuale come stringa).
+  const [taxRates, setTaxRates] = useState<Record<string, string>>({});
+  // Paesi importati (per generare il set di campi IVA + ROW).
+  const [countries, setCountries] = useState<Array<{ countryCode: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
@@ -350,27 +389,75 @@ export default function StoreSettingsPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/store/settings").then((r) => r.json());
-    if (res.success) {
+    const [settingsRes, countriesRes] = await Promise.all([
+      fetch("/api/store/settings").then((r) => r.json()).catch(() => null),
+      fetch("/api/store/geo/countries").then((r) => r.json()).catch(() => null),
+    ]);
+    if (settingsRes?.success) {
       const next: Record<string, string> = {};
       for (const def of DEFINITIONS) {
-        next[def.key] = res.data[def.key]?.value ?? "";
+        next[def.key] = settingsRes.data[def.key]?.value ?? "";
+      }
+      // Estrae le aliquote IVA da tutti i setting store.tax_rate_pct_*
+      const taxNext: Record<string, string> = {};
+      for (const k of Object.keys(settingsRes.data || {})) {
+        const m = k.match(/^store\.tax_rate_pct_([a-z]+)$/);
+        if (m) taxNext[m[1].toUpperCase()] = settingsRes.data[k]?.value ?? "";
       }
       setValues(next);
+      setTaxRates(taxNext);
+    }
+    if (countriesRes?.success) {
+      setCountries((countriesRes.data || []).map((c: { countryCode: string; name: string }) => ({
+        countryCode: c.countryCode,
+        name: c.name,
+      })));
     }
     setLoading(false);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  // Lista completa dei paesi per cui mostriamo un campo IVA: countries importati
+  // + ROW (fallback). Quando l'admin importa una nuova nazione dalla pagina
+  // Spedizioni, qui appare automaticamente la voce IVA.
+  const taxCountriesList: { code: string; label: string }[] = (() => {
+    const seen = new Set<string>();
+    const items: { code: string; label: string }[] = [];
+    for (const c of countries) {
+      const cc = c.countryCode.toUpperCase();
+      if (cc === "ROW" || seen.has(cc)) continue;
+      seen.add(cc);
+      items.push({ code: cc, label: c.name });
+    }
+    // Aggiungo anche eventuali codici già presenti in taxRates ma non in countries
+    // (es. setting esistenti da prima dell'import — non perdiamo dati).
+    for (const cc of Object.keys(taxRates)) {
+      if (cc !== "ROW" && !seen.has(cc)) {
+        seen.add(cc);
+        items.push({ code: cc, label: cc });
+      }
+    }
+    items.push({ code: "ROW", label: "Resto del mondo" });
+    return items;
+  })();
+
   const save = async () => {
     setSaving(true);
     try {
-      const settings = DEFINITIONS.map((d) => ({
+      const settings: Array<{ key: string; group: string; value: string }> = DEFINITIONS.map((d) => ({
         key: d.key,
         group: d.group,
         value: values[d.key] ?? "",
       }));
+      // Aggiungo le aliquote IVA dinamiche (group=store_general). Accetto
+      // solo numeri non negativi (la stringa vuota viene normalizzata a "0").
+      for (const cc of Object.keys(taxRates)) {
+        const raw = (taxRates[cc] ?? "").toString().trim().replace(",", ".");
+        const n = parseFloat(raw);
+        const normalized = Number.isFinite(n) && n >= 0 ? String(n) : "0";
+        settings.push({ key: taxRateKey(cc), group: "store_general", value: normalized });
+      }
       const res = await fetch("/api/store/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -444,6 +531,39 @@ export default function StoreSettingsPage() {
               </div>
             </div>
             <div className="p-6 space-y-4">
+              {activeTab === "store_general" && (
+                <div className="border border-warm-200 rounded-lg p-4 bg-warm-50/30 space-y-3">
+                  <div>
+                    <div className="text-sm font-medium text-warm-800">Aliquote IVA per paese</div>
+                    <div className="text-xs text-warm-500 mt-0.5">
+                      Inserisci la percentuale (es. <code>22</code> per il 22%). Si applica all&apos;ordine in
+                      base al paese di spedizione. &quot;Resto del mondo&quot; è il fallback per i paesi senza
+                      una propria aliquota. Aggiungi un paese dalla pagina <a href="/admin/store/shipping" className="underline">Spedizioni</a> per farne apparire qui l&apos;IVA.
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {taxCountriesList.map((it) => (
+                      <div key={it.code}>
+                        <label className="block text-xs font-medium text-warm-700 mb-1">
+                          {it.label}{it.code !== "ROW" ? ` (${it.code})` : ""}
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            step="0.1"
+                            min={0}
+                            value={taxRates[it.code] ?? ""}
+                            onChange={(e) => setTaxRates((t) => ({ ...t, [it.code]: e.target.value }))}
+                            placeholder={it.code === "IT" ? "22" : it.code === "FR" ? "20" : "0"}
+                            className="w-full px-3 py-2 pr-8 border border-warm-200 rounded-lg text-sm font-mono"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-warm-500 pointer-events-none">%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {activeDefs.map((def) => {
                 const isRevealed = revealed[def.key];
                 const v = values[def.key] ?? "";

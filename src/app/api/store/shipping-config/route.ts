@@ -25,6 +25,11 @@ function floorDeliveryKey(countryCode: string): string {
   return `shipping.floor_delivery_${countryCode.toLowerCase()}_per_m3_cents`;
 }
 
+// Chiave dinamica per il tempo di consegna fallback per-paese.
+function leadTimeKey(countryCode: string): string {
+  return `shipping.lead_time_${countryCode.toLowerCase()}`;
+}
+
 interface SettingsPayload {
   freeThresholdCents: number;
   itFallbackCents: number;
@@ -37,6 +42,7 @@ interface RegionPayload {
   code: string;
   label: string;
   rateCents: number | null;
+  leadTime?: string | null;
 }
 
 async function readCurrentSettings(): Promise<SettingsPayload> {
@@ -122,6 +128,17 @@ async function ensureSeeded(): Promise<void> {
       await prisma.setting.create({ data: { key, value: String(value), group: "shipping" } });
     }
   }
+  // Seed dei tempi di consegna per paese (testo libero) se mancanti
+  const leadTimeDefaults: Record<string, string> = {
+    [leadTimeKey("IT")]: defaults.leadTimeByCountry.IT || "6 settimane",
+    [leadTimeKey("FR")]: defaults.leadTimeByCountry.FR || "6 semaines",
+    [leadTimeKey("ROW")]: defaults.leadTimeByCountry.ROW || "8-10 settimane",
+  };
+  for (const [key, value] of Object.entries(leadTimeDefaults)) {
+    if (!haveSet.has(key)) {
+      await prisma.setting.create({ data: { key, value, group: "shipping" } });
+    }
+  }
 }
 
 export async function GET() {
@@ -130,12 +147,13 @@ export async function GET() {
 
   await ensureSeeded();
 
-  const [settings, allRegions, floorRows] = await Promise.all([
+  const [settings, allRegions, floorRows, leadRows] = await Promise.all([
     readCurrentSettings(),
     prisma.shippingRegionRate.findMany({ orderBy: [{ countryCode: "asc" }, { sortOrder: "asc" }] }),
     prisma.setting.findMany({ where: { group: "shipping", key: { startsWith: "shipping.floor_delivery_" } } }),
+    prisma.setting.findMany({ where: { group: "shipping", key: { startsWith: "shipping.lead_time_" } } }),
   ]);
-  const regionsByCountry: Record<string, { code: string; label: string; rateCents: number | null; sortOrder: number }[]> = { IT: [], FR: [] };
+  const regionsByCountry: Record<string, { code: string; label: string; rateCents: number | null; sortOrder: number; leadTime: string | null }[]> = { IT: [], FR: [] };
   for (const r of allRegions) {
     if (!regionsByCountry[r.countryCode]) regionsByCountry[r.countryCode] = [];
     regionsByCountry[r.countryCode].push({
@@ -143,6 +161,7 @@ export async function GET() {
       label: r.label,
       rateCents: r.rateCents,
       sortOrder: r.sortOrder,
+      leadTime: r.leadTime || null,
     });
   }
   // Costruisci floorDeliveryByCountry leggendo le chiavi dinamiche
@@ -154,10 +173,18 @@ export async function GET() {
     const v = parseInt(r.value, 10);
     if (Number.isFinite(v)) floorDeliveryByCountry[cc] = v;
   }
+  // Costruisci leadTimeByCountry leggendo le chiavi dinamiche
+  const leadTimeByCountry: Record<string, string> = {};
+  for (const r of leadRows) {
+    const m = r.key.match(/^shipping\.lead_time_([a-z]+)$/);
+    if (!m) continue;
+    const cc = m[1].toUpperCase();
+    if (r.value && r.value.trim()) leadTimeByCountry[cc] = r.value.trim();
+  }
 
   return NextResponse.json({
     success: true,
-    data: { settings, regionsByCountry, floorDeliveryByCountry },
+    data: { settings, regionsByCountry, floorDeliveryByCountry, leadTimeByCountry },
   });
 }
 
@@ -170,6 +197,7 @@ export async function PUT(req: Request) {
       settings?: Partial<SettingsPayload>;
       regionsByCountry?: Record<string, RegionPayload[]>;
       floorDeliveryByCountry?: Record<string, number>;
+      leadTimeByCountry?: Record<string, string>;
     };
 
     const validateInt = (v: unknown): boolean =>
@@ -214,6 +242,17 @@ export async function PUT(req: Request) {
       }
     }
 
+    // Validazione leadTimeByCountry (testo libero, max 64 char)
+    const incomingLead = body.leadTimeByCountry || {};
+    for (const [cc, v] of Object.entries(incomingLead)) {
+      if (!/^[A-Z]{2,3}$/.test(cc)) {
+        return NextResponse.json({ success: false, error: `Codice paese non valido per tempo di consegna: ${cc}` }, { status: 400 });
+      }
+      if (typeof v !== "string" || v.length > 64) {
+        return NextResponse.json({ success: false, error: `Tempo di consegna non valido per ${cc}` }, { status: 400 });
+      }
+    }
+
     // Scrittura atomica
     await prisma.$transaction(async (tx) => {
       for (const k of Object.keys(SETTING_KEYS) as SettingFieldKey[]) {
@@ -235,10 +274,21 @@ export async function PUT(req: Request) {
           update: { value: String(Math.trunc(v)), group: "shipping" },
         });
       }
+      // Tempi di consegna fallback per paese (chiavi dinamiche)
+      for (const [cc, v] of Object.entries(incomingLead)) {
+        const key = leadTimeKey(cc);
+        const value = (v || "").trim();
+        await tx.setting.upsert({
+          where: { key },
+          create: { key, value, group: "shipping" },
+          update: { value, group: "shipping" },
+        });
+      }
       // Region rates per ogni paese
       for (const [country, list] of Object.entries(incomingRegions)) {
         for (const r of list) {
           const code = r.code.trim().toUpperCase();
+          const leadTimeVal = r.leadTime == null ? null : String(r.leadTime).trim().slice(0, 64) || null;
           await tx.shippingRegionRate.upsert({
             where: { countryCode_code: { countryCode: country, code } },
             create: {
@@ -247,10 +297,12 @@ export async function PUT(req: Request) {
               label: (r.label || code).trim(),
               rateCents: r.rateCents === null ? null : Math.trunc(r.rateCents),
               sortOrder: 0,
+              leadTime: leadTimeVal,
             },
             update: {
               label: (r.label || code).trim(),
               rateCents: r.rateCents === null ? null : Math.trunc(r.rateCents),
+              leadTime: leadTimeVal,
             },
           });
         }
