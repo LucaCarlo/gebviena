@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon, PowerOff, Megaphone, BarChart3, Search, ShoppingCart } from "lucide-react";
+import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon, PowerOff, Megaphone, BarChart3, Search, ShoppingCart, ArrowDownUp } from "lucide-react";
+import SortingTab from "./SortingTab";
 
 type Group =
   | "store_general"
@@ -9,6 +10,7 @@ type Group =
   | "store_smtp"
   | "store_analytics"
   | "store_seo"
+  | "store_sorting"
   | "store_abandoned"
   | "store_sale_banner"
   | "store_maintenance";
@@ -336,6 +338,11 @@ const GROUP_META: Record<Group, { title: string; subtitle: string; icon: typeof 
     subtitle: "Meta tag default, Open Graph, Search Console",
     icon: Search,
   },
+  store_sorting: {
+    title: "Ordinamento",
+    subtitle: "Come sono ordinati i prodotti nella vetrina, e quali pinnare in cima",
+    icon: ArrowDownUp,
+  },
   store_abandoned: {
     title: "Carrelli abbandonati",
     subtitle: "Pulizia automatica e sequenza email di recupero per i checkout abbandonati",
@@ -359,10 +366,28 @@ const TAB_ORDER: Group[] = [
   "store_smtp",
   "store_analytics",
   "store_seo",
+  "store_sorting",
   "store_abandoned",
   "store_sale_banner",
   "store_maintenance",
 ];
+
+// Strategie e modalità random — devono restare allineate con SortingTab.tsx e
+// con l'API /api/store/public/products.
+type SortStrategy = "newest" | "oldest" | "name-asc" | "name-desc" | "price-asc" | "price-desc" | "manual" | "random";
+type SortRandomMode = "per-request" | "per-session";
+interface SortingValues {
+  strategy: SortStrategy;
+  randomMode: SortRandomMode;
+  pinnedIds: string[];
+  allowUserOverride: boolean;
+}
+const SORTING_DEFAULTS: SortingValues = {
+  strategy: "newest",
+  randomMode: "per-request",
+  pinnedIds: [],
+  allowUserOverride: true,
+};
 
 // Per IVA: l'utente inserisce la percentuale (es. "22"); internamente la
 // convertiamo in basis points. Accetta numeri con decimali (es. "5.5").
@@ -376,6 +401,8 @@ export default function StoreSettingsPage() {
   const [taxRates, setTaxRates] = useState<Record<string, string>>({});
   // Paesi importati (per generare il set di campi IVA + ROW).
   const [countries, setCountries] = useState<Array<{ countryCode: string; name: string }>>([]);
+  // Stato isolato per il tab Ordinamento — non passa per il loop DEFINITIONS.
+  const [sorting, setSorting] = useState<SortingValues>(SORTING_DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
@@ -404,6 +431,19 @@ export default function StoreSettingsPage() {
         const m = k.match(/^store\.tax_rate_pct_([a-z]+)$/);
         if (m) taxNext[m[1].toUpperCase()] = settingsRes.data[k]?.value ?? "";
       }
+      // Carica il sub-state dell'ordinamento (separato dal DEFINITIONS loop).
+      const strategyRaw = settingsRes.data["store.sort.strategy"]?.value ?? "newest";
+      const allowedStrategies: SortStrategy[] = ["newest", "oldest", "name-asc", "name-desc", "price-asc", "price-desc", "manual", "random"];
+      const strategy: SortStrategy = allowedStrategies.includes(strategyRaw as SortStrategy) ? (strategyRaw as SortStrategy) : "newest";
+      const randomMode: SortRandomMode = (settingsRes.data["store.sort.random_mode"]?.value ?? "per-request") === "per-session" ? "per-session" : "per-request";
+      let pinnedIds: string[] = [];
+      try {
+        const raw = settingsRes.data["store.sort.pinned_ids"]?.value || "[]";
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) pinnedIds = parsed.filter((x): x is string => typeof x === "string");
+      } catch { /* ignore */ }
+      const allowUserOverride = (settingsRes.data["store.sort.allow_user_override"]?.value ?? "true") !== "false";
+      setSorting({ strategy, randomMode, pinnedIds, allowUserOverride });
       setValues(next);
       setTaxRates(taxNext);
     }
@@ -458,6 +498,11 @@ export default function StoreSettingsPage() {
         const normalized = Number.isFinite(n) && n >= 0 ? String(n) : "0";
         settings.push({ key: taxRateKey(cc), group: "store_general", value: normalized });
       }
+      // Sotto-state ordinamento: 4 chiavi nel group store_sorting.
+      settings.push({ key: "store.sort.strategy",            group: "store_sorting", value: sorting.strategy });
+      settings.push({ key: "store.sort.random_mode",         group: "store_sorting", value: sorting.randomMode });
+      settings.push({ key: "store.sort.pinned_ids",          group: "store_sorting", value: JSON.stringify(sorting.pinnedIds) });
+      settings.push({ key: "store.sort.allow_user_override", group: "store_sorting", value: sorting.allowUserOverride ? "true" : "false" });
       const res = await fetch("/api/store/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -531,6 +576,9 @@ export default function StoreSettingsPage() {
               </div>
             </div>
             <div className="p-6 space-y-4">
+              {activeTab === "store_sorting" && (
+                <SortingTab values={sorting} onChange={setSorting} />
+              )}
               {activeTab === "store_general" && (
                 <div className="border border-warm-200 rounded-lg p-4 bg-warm-50/30 space-y-3">
                   <div>

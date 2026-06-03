@@ -103,11 +103,11 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
           onClick={toggleFav}
           title={isFav ? t("Rimuovi dai preferiti", "Retirer des favoris") : t("Aggiungi ai preferiti", "Ajouter aux favoris")}
           aria-pressed={isFav}
-          className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/95 hover:bg-white shadow-sm flex items-center justify-center transition-all ${
+          className={`absolute top-2 right-2 sm:top-3 sm:right-3 z-10 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/95 hover:bg-white shadow-sm flex items-center justify-center transition-all ${
             isFav ? "text-red-500" : "text-neutral-500 hover:text-neutral-900"
           } ${busy ? "opacity-60" : ""}`}
         >
-          <Heart size={16} strokeWidth={1.8} fill={isFav ? "currentColor" : "none"} />
+          <Heart size={14} strokeWidth={1.8} fill={isFav ? "currentColor" : "none"} className="sm:!w-4 sm:!h-4" />
         </button>
 
         {/* Overlay quick info on hover */}
@@ -131,34 +131,32 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
             const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);
             if (pct < 1) return null;
             return (
-              <div className="absolute top-3 left-3 bg-warm-700/55 text-white text-[15px] font-semibold uppercase tracking-wider px-3 py-1.5 backdrop-blur-sm">
+              <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-warm-700/55 text-white text-[12px] sm:text-[15px] font-semibold uppercase tracking-wider px-2 py-1 sm:px-3 sm:py-1.5 backdrop-blur-sm">
                 -{pct}%
               </div>
             );
           })()}
       </div>
 
-      <div className="mt-3 space-y-1">
+      <div className="mt-2 sm:mt-3 space-y-1">
         {p.category && (
-          <div className="text-[10px] uppercase tracking-[0.15em] text-warm-500">{p.category.name}</div>
+          <div className="text-[9px] sm:text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.15em] text-warm-500 truncate">{p.category.name}</div>
         )}
-        {/* Nome + prezzo: stessa riga se ci stanno; se il nome è lungo il nome
-            occupa l'intera riga (mai troncato, mai spezzato accanto al prezzo)
-            e il prezzo SLITTA tutto nella riga sotto, allineato a destra.
-            (niente flex-1/min-w-0 sul nome → prende la larghezza naturale e
-            con flex-wrap spinge giù il prezzo invece di accapezzarsi.) */}
-        <div className="flex items-baseline justify-between gap-x-3 gap-y-1 flex-wrap">
-          <div className="text-sm font-medium text-warm-900">{p.name}</div>
-          <div className="text-sm font-mono text-warm-900 shrink-0">
+        {/* Mobile (2 colonne): nome e prezzo SEMPRE su righe diverse — niente
+            flex-wrap che farebbe inestetismi quando il nome è lungo. Da sm in
+            su: stessa riga con wrap di sicurezza per nomi lunghi. */}
+        <div className="block sm:flex sm:items-baseline sm:justify-between sm:gap-x-3 sm:gap-y-1 sm:flex-wrap">
+          <div className="text-[12px] sm:text-sm font-medium text-warm-900 leading-snug">{p.name}</div>
+          <div className="text-[12px] sm:text-sm font-mono text-warm-900 sm:shrink-0 mt-0.5 sm:mt-0">
             {p.priceFromCents > 0 ? (
               p.salePriceFromCents != null && p.salePriceFromCents > 0 && p.salePriceFromCents < p.priceFromCents ? (() => {
                 const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);
                 return (
-                  <span className="inline-flex items-baseline gap-1.5 flex-wrap justify-end">
-                    <span className="text-warm-500 line-through text-[12px]">{eur(p.priceFromCents)}</span>
+                  <span className="inline-flex items-baseline gap-1 sm:gap-1.5 flex-wrap sm:justify-end">
+                    <span className="text-warm-500 line-through text-[10px] sm:text-[12px]">{eur(p.priceFromCents)}</span>
                     <span className="text-warm-900 font-semibold">{p.variantsCount > 1 ? t("da ", "à partir de ") : ""}{eur(p.salePriceFromCents)}</span>
                     {pct >= 1 && (
-                      <span className="text-[10px] uppercase tracking-wider bg-warm-100 text-warm-900 px-1.5 py-0.5 rounded-sm font-sans font-semibold">
+                      <span className="hidden sm:inline text-[10px] uppercase tracking-wider bg-warm-100 text-warm-900 px-1.5 py-0.5 rounded-sm font-sans font-semibold">
                         -{pct}%
                       </span>
                     )}
@@ -168,19 +166,19 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
                 <>{p.variantsCount > 1 ? t("da ", "à partir de ") : ""}{eur(p.priceFromCents)}</>
               )
             ) : (
-              <span className="text-warm-500 italic font-sans text-[12px]">{t("Su richiesta", "Sur demande")}</span>
+              <span className="text-warm-500 italic font-sans text-[11px] sm:text-[12px]">{t("Su richiesta", "Sur demande")}</span>
             )}
           </div>
         </div>
 
-        {/* Color swatches */}
+        {/* Color swatches — leggermente più piccoli su mobile */}
         {p.colors.length > 0 && (
-          <div className="flex items-center gap-1.5 pt-1">
+          <div className="flex items-center gap-1 sm:gap-1.5 pt-0.5 sm:pt-1">
             {p.colors.slice(0, 5).map((c) => (
               <span
                 key={c.id}
                 title={c.code}
-                className="w-3.5 h-3.5 rounded-full border border-warm-200"
+                className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-warm-200"
                 style={{ backgroundColor: c.hex || "#ddd" }}
               />
             ))}
@@ -190,8 +188,9 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
           </div>
         )}
 
+        {/* shortDescription: nascosta su mobile per non bagaggiare la card stretta */}
         {p.shortDescription && (
-          <div className="text-xs text-warm-500 line-clamp-1">{p.shortDescription}</div>
+          <div className="hidden sm:block text-xs text-warm-500 line-clamp-1">{p.shortDescription}</div>
         )}
       </div>
     </Link>

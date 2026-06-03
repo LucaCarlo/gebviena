@@ -12,6 +12,7 @@ const STORE_GROUPS = [
   "store_maintenance",
   "store_sale_banner",
   "store_abandoned",
+  "store_sorting",
 ] as const;
 
 export async function GET() {
