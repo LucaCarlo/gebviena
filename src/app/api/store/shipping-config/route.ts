@@ -14,20 +14,21 @@ const SETTING_KEYS = {
   freeThresholdCents: "shipping.free_threshold_cents",
   itFallbackCents: "shipping.it_fallback_cents",
   frStandardPerM3Cents: "shipping.fr_standard_per_m3_cents",
-  floorDeliveryItPerM3Cents: "shipping.floor_delivery_it_per_m3_cents",
-  floorDeliveryFrPerM3Cents: "shipping.floor_delivery_fr_per_m3_cents",
   unboxingPerM3Cents: "shipping.unboxing_per_m3_cents",
   rowPerBoxCents: "shipping.row_per_box_cents",
 } as const;
 
 type SettingFieldKey = keyof typeof SETTING_KEYS;
 
+// Chiave dinamica per la consegna al piano per-paese.
+function floorDeliveryKey(countryCode: string): string {
+  return `shipping.floor_delivery_${countryCode.toLowerCase()}_per_m3_cents`;
+}
+
 interface SettingsPayload {
   freeThresholdCents: number;
   itFallbackCents: number;
   frStandardPerM3Cents: number;
-  floorDeliveryItPerM3Cents: number;
-  floorDeliveryFrPerM3Cents: number;
   unboxingPerM3Cents: number;
   rowPerBoxCents: number;
 }
@@ -52,8 +53,6 @@ async function readCurrentSettings(): Promise<SettingsPayload> {
     freeThresholdCents:        num(SETTING_KEYS.freeThresholdCents,        defaults.freeThresholdCents),
     itFallbackCents:           num(SETTING_KEYS.itFallbackCents,           defaults.itFallbackCents),
     frStandardPerM3Cents:      num(SETTING_KEYS.frStandardPerM3Cents,      defaults.frStandardPerM3Cents),
-    floorDeliveryItPerM3Cents: num(SETTING_KEYS.floorDeliveryItPerM3Cents, defaults.floorDeliveryItPerM3Cents),
-    floorDeliveryFrPerM3Cents: num(SETTING_KEYS.floorDeliveryFrPerM3Cents, defaults.floorDeliveryFrPerM3Cents),
     unboxingPerM3Cents:        num(SETTING_KEYS.unboxingPerM3Cents,        defaults.unboxingPerM3Cents),
     rowPerBoxCents:            num(SETTING_KEYS.rowPerBoxCents,            defaults.rowPerBoxCents),
   };
@@ -111,10 +110,12 @@ async function ensureSeeded(): Promise<void> {
     [SETTING_KEYS.freeThresholdCents]: defaults.freeThresholdCents,
     [SETTING_KEYS.itFallbackCents]: defaults.itFallbackCents,
     [SETTING_KEYS.frStandardPerM3Cents]: defaults.frStandardPerM3Cents,
-    [SETTING_KEYS.floorDeliveryItPerM3Cents]: defaults.floorDeliveryItPerM3Cents,
-    [SETTING_KEYS.floorDeliveryFrPerM3Cents]: defaults.floorDeliveryFrPerM3Cents,
     [SETTING_KEYS.unboxingPerM3Cents]: defaults.unboxingPerM3Cents,
     [SETTING_KEYS.rowPerBoxCents]: defaults.rowPerBoxCents,
+    // Consegna al piano: seed con i default per IT, FR, ROW
+    [floorDeliveryKey("IT")]: defaults.floorDeliveryByCountry.IT,
+    [floorDeliveryKey("FR")]: defaults.floorDeliveryByCountry.FR,
+    [floorDeliveryKey("ROW")]: defaults.floorDeliveryByCountry.ROW,
   };
   for (const [key, value] of Object.entries(settingValuesByKey)) {
     if (!haveSet.has(key)) {
@@ -129,9 +130,10 @@ export async function GET() {
 
   await ensureSeeded();
 
-  const [settings, allRegions] = await Promise.all([
+  const [settings, allRegions, floorRows] = await Promise.all([
     readCurrentSettings(),
     prisma.shippingRegionRate.findMany({ orderBy: [{ countryCode: "asc" }, { sortOrder: "asc" }] }),
+    prisma.setting.findMany({ where: { group: "shipping", key: { startsWith: "shipping.floor_delivery_" } } }),
   ]);
   const regionsByCountry: Record<string, { code: string; label: string; rateCents: number | null; sortOrder: number }[]> = { IT: [], FR: [] };
   for (const r of allRegions) {
@@ -143,10 +145,19 @@ export async function GET() {
       sortOrder: r.sortOrder,
     });
   }
+  // Costruisci floorDeliveryByCountry leggendo le chiavi dinamiche
+  const floorDeliveryByCountry: Record<string, number> = {};
+  for (const r of floorRows) {
+    const m = r.key.match(/^shipping\.floor_delivery_([a-z]+)_per_m3_cents$/);
+    if (!m) continue;
+    const cc = m[1].toUpperCase();
+    const v = parseInt(r.value, 10);
+    if (Number.isFinite(v)) floorDeliveryByCountry[cc] = v;
+  }
 
   return NextResponse.json({
     success: true,
-    data: { settings, regionsByCountry },
+    data: { settings, regionsByCountry, floorDeliveryByCountry },
   });
 }
 
@@ -158,6 +169,7 @@ export async function PUT(req: Request) {
     const body = (await req.json()) as {
       settings?: Partial<SettingsPayload>;
       regionsByCountry?: Record<string, RegionPayload[]>;
+      floorDeliveryByCountry?: Record<string, number>;
     };
 
     const validateInt = (v: unknown): boolean =>
@@ -191,6 +203,17 @@ export async function PUT(req: Request) {
       }
     }
 
+    // Validazione floorDeliveryByCountry
+    const incomingFloor = body.floorDeliveryByCountry || {};
+    for (const [cc, v] of Object.entries(incomingFloor)) {
+      if (!/^[A-Z]{2,3}$/.test(cc)) {
+        return NextResponse.json({ success: false, error: `Codice paese non valido per consegna al piano: ${cc}` }, { status: 400 });
+      }
+      if (!validateInt(v)) {
+        return NextResponse.json({ success: false, error: `Tariffa consegna al piano non valida per ${cc}` }, { status: 400 });
+      }
+    }
+
     // Scrittura atomica
     await prisma.$transaction(async (tx) => {
       for (const k of Object.keys(SETTING_KEYS) as SettingFieldKey[]) {
@@ -201,6 +224,15 @@ export async function PUT(req: Request) {
           where: { key },
           create: { key, value: String(v), group: "shipping" },
           update: { value: String(v), group: "shipping" },
+        });
+      }
+      // Consegna al piano per paese (chiavi dinamiche)
+      for (const [cc, v] of Object.entries(incomingFloor)) {
+        const key = floorDeliveryKey(cc);
+        await tx.setting.upsert({
+          where: { key },
+          create: { key, value: String(Math.trunc(v)), group: "shipping" },
+          update: { value: String(Math.trunc(v)), group: "shipping" },
         });
       }
       // Region rates per ogni paese

@@ -7,8 +7,6 @@ interface Settings {
   freeThresholdCents: number;
   itFallbackCents: number;
   frStandardPerM3Cents: number;
-  floorDeliveryItPerM3Cents: number;
-  floorDeliveryFrPerM3Cents: number;
   unboxingPerM3Cents: number;
   rowPerBoxCents: number;
 }
@@ -23,6 +21,7 @@ interface Region {
 interface Config {
   settings: Settings;
   regionsByCountry: Record<string, Region[]>;
+  floorDeliveryByCountry: Record<string, number>;
 }
 
 const centsToEur = (c: number): string => (c / 100).toFixed(2);
@@ -97,6 +96,16 @@ export default function StoreShippingPage() {
     setDirty(true);
   };
 
+  const updateFloorDelivery = (countryCode: string, eurValue: string) => {
+    if (!config) return;
+    const c = eurToCents(eurValue);
+    const newMap = { ...(config.floorDeliveryByCountry || {}) };
+    if (c == null) delete newMap[countryCode];
+    else newMap[countryCode] = c;
+    setConfig({ ...config, floorDeliveryByCountry: newMap });
+    setDirty(true);
+  };
+
   const save = async () => {
     if (!config) return;
     setSaving(true);
@@ -112,6 +121,7 @@ export default function StoreShippingPage() {
               list.map((r) => ({ code: r.code, label: r.label, rateCents: r.rateCents })),
             ])
           ),
+          floorDeliveryByCountry: config.floorDeliveryByCountry || {},
         }),
       });
       const data = await res.json();
@@ -256,24 +266,42 @@ export default function StoreShippingPage() {
         rateSuffix="€/m³"
       />
 
-      {/* Servizi aggiuntivi */}
+      {/* Servizi aggiuntivi — Consegna al piano (per paese) + Disimballo */}
       <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
         <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Servizi aggiuntivi (additivi alla standard)</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <EurField
-            label="Consegna al piano — Italia"
-            help="Per ogni m³ fatturabile, se il cliente sceglie consegna a un piano ≥1."
-            value={config.settings.floorDeliveryItPerM3Cents}
-            onChange={(v) => updateSetting("floorDeliveryItPerM3Cents", v)}
-            suffix="€/m³"
-          />
-          <EurField
-            label="Consegna al piano — Francia"
-            help="Per ogni m³ fatturabile."
-            value={config.settings.floorDeliveryFrPerM3Cents}
-            onChange={(v) => updateSetting("floorDeliveryFrPerM3Cents", v)}
-            suffix="€/m³"
-          />
+        <div className="space-y-3">
+          <h3 className="text-xs font-medium text-warm-700 uppercase tracking-wide">Consegna al piano (€/m³)</h3>
+          <p className="text-[11px] text-warm-500 -mt-2">
+            Quando il cliente sceglie un piano ≥1. Ogni paese ha la sua tariffa; &quot;Resto del mondo&quot; è il fallback usato per le nazioni senza valore esplicito.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {(() => {
+              // Lista paesi: quelli importati (countries) + ROW alla fine.
+              // Quando importi una nuova nazione, qui appare automaticamente.
+              const seen = new Set<string>();
+              const items: { code: string; label: string }[] = [];
+              for (const c of countries) {
+                const cc = c.countryCode.toUpperCase();
+                if (cc === "ROW" || seen.has(cc)) continue;
+                seen.add(cc);
+                items.push({ code: cc, label: c.name });
+              }
+              items.push({ code: "ROW", label: "Resto del mondo" });
+              return items.map((it) => (
+                <EurField
+                  key={it.code}
+                  label={`${it.label}${it.code !== "ROW" ? ` (${it.code})` : ""}`}
+                  help={it.code === "ROW" ? "Tariffa applicata ai paesi senza un valore esplicito impostato." : undefined}
+                  value={config.floorDeliveryByCountry?.[it.code] ?? 0}
+                  onChange={(v) => updateFloorDelivery(it.code, v)}
+                  suffix="€/m³"
+                />
+              ));
+            })()}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-warm-100">
           <EurField
             label="Disimballo + smaltimento"
             help="Per ogni m³ fatturabile, se il cliente lo seleziona."

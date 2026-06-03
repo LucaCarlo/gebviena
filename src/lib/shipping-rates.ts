@@ -59,10 +59,17 @@ const DEFAULTS = {
   freeThresholdCents: 95000,         // 950 EUR
   itFallbackCents: 16200,            // 162 EUR
   frStandardPerM3Cents: 18600,       // 186 EUR/m³ (default Francia)
-  floorDeliveryItPerM3Cents: 12000,  // 120 EUR/m³
-  floorDeliveryFrPerM3Cents: 14000,  // 140 EUR/m³
   unboxingPerM3Cents: 2000,          // 20 EUR/m³
   rowPerBoxCents: 9000,              // 90 EUR/scatola (resto del mondo)
+};
+// Tariffa di consegna al piano per paese. La chiave "ROW" funge da fallback
+// per qualsiasi paese non esplicitamente listato. Quando viene caricata una
+// nuova nazione via admin, la sua chiave (es. "DE") va aggiunta qui per il
+// default e diventa modificabile dalla pagina Spedizioni.
+const DEFAULT_FLOOR_DELIVERY: Record<string, number> = {
+  IT: 12000,   // 120 EUR/m³
+  FR: 14000,   // 140 EUR/m³
+  ROW: 12000,  // 120 EUR/m³ (fallback per tutti gli altri paesi)
 };
 // NOTE: il vecchio fallback Corse (300€/m³) è ora un override esplicito sulla
 // régione "94" Corse in ShippingRegionRate. Vedi computeShipping FR sotto.
@@ -227,10 +234,10 @@ export interface ShippingConfig {
   freeThresholdCents: number;
   itFallbackCents: number;
   frStandardPerM3Cents: number;
-  floorDeliveryItPerM3Cents: number;
-  floorDeliveryFrPerM3Cents: number;
   unboxingPerM3Cents: number;
   rowPerBoxCents: number;
+  // Tariffa consegna al piano per paese (keys UPPERCASE ISO; "ROW" = fallback).
+  floorDeliveryByCountry: Record<string, number>;
   // Tariffe regionali. null = nessun override → fallback al default del paese.
   itRegionRates: Record<string, number | null>;
   frRegionRates: Record<string, number | null>;
@@ -283,10 +290,9 @@ export async function loadShippingConfig(): Promise<ShippingConfig> {
       freeThresholdCents:        toInt(sMap.get("shipping.free_threshold_cents"),         DEFAULTS.freeThresholdCents),
       itFallbackCents:           toInt(sMap.get("shipping.it_fallback_cents"),            DEFAULTS.itFallbackCents),
       frStandardPerM3Cents:      toInt(sMap.get("shipping.fr_standard_per_m3_cents"),     DEFAULTS.frStandardPerM3Cents),
-      floorDeliveryItPerM3Cents: toInt(sMap.get("shipping.floor_delivery_it_per_m3_cents"), DEFAULTS.floorDeliveryItPerM3Cents),
-      floorDeliveryFrPerM3Cents: toInt(sMap.get("shipping.floor_delivery_fr_per_m3_cents"), DEFAULTS.floorDeliveryFrPerM3Cents),
       unboxingPerM3Cents:        toInt(sMap.get("shipping.unboxing_per_m3_cents"),        DEFAULTS.unboxingPerM3Cents),
       rowPerBoxCents:            toInt(sMap.get("shipping.row_per_box_cents"),            DEFAULTS.rowPerBoxCents),
+      floorDeliveryByCountry:    floorDeliveryFromSettings(sMap),
       itRegionRates:             Object.keys(itRegionRates).length > 0
                                    ? { ...DEFAULT_REGION_RATES, ...itRegionRates }
                                    : DEFAULT_REGION_RATES,
@@ -302,8 +308,24 @@ export async function loadShippingConfig(): Promise<ShippingConfig> {
       itRegionRates: DEFAULT_REGION_RATES,
       frRegionRates: {},
       frDepartementToRegion: {},
+      floorDeliveryByCountry: { ...DEFAULT_FLOOR_DELIVERY },
     };
   }
+}
+
+// Costruisce la mappa floorDeliveryByCountry leggendo i setting
+// `shipping.floor_delivery_{cc}_per_m3_cents` (lowercase) per ogni paese.
+// Esempio: chiave 'shipping.floor_delivery_it_per_m3_cents' → mappa['IT']
+function floorDeliveryFromSettings(sMap: Map<string, string>): Record<string, number> {
+  const result: Record<string, number> = { ...DEFAULT_FLOOR_DELIVERY };
+  sMap.forEach((value, key) => {
+    const m = key.match(/^shipping\.floor_delivery_([a-z]+)_per_m3_cents$/);
+    if (!m) return;
+    const cc = m[1].toUpperCase();
+    const v = parseInt(value, 10);
+    if (Number.isFinite(v) && v >= 0) result[cc] = v;
+  });
+  return result;
 }
 
 // Backward-compat: il vecchio import FREE_STANDARD_SHIPPING_THRESHOLD_CENTS
@@ -395,7 +417,8 @@ export async function computeShipping(input: ShippingComputeInput): Promise<Ship
   // 3. Consegna al piano (additiva, anche con free standard)
   let floorDeliveryCents = 0;
   if (input.shippingFloor > 0) {
-    const ratePerM3 = country === "FR" ? cfg.floorDeliveryFrPerM3Cents : cfg.floorDeliveryItPerM3Cents;
+    const cc = country.toUpperCase();
+    const ratePerM3 = cfg.floorDeliveryByCountry[cc] ?? cfg.floorDeliveryByCountry.ROW ?? DEFAULT_FLOOR_DELIVERY.ROW;
     floorDeliveryCents = ratePerM3 * billableVol;
     notes.push(`Consegna al piano (piano ${input.shippingFloor}): ${ratePerM3 / 100}€/m³ × ${billableVol}m³ fatturabili = ${(floorDeliveryCents / 100).toFixed(2)} EUR`);
   }
@@ -423,7 +446,8 @@ export function getDefaultShippingConfig(): ShippingConfig {
   return {
     ...DEFAULTS,
     itRegionRates: { ...DEFAULT_REGION_RATES },
-    frRegionRates: {}, // FR di default ha tutti null = usa fallback
+    frRegionRates: {},
     frDepartementToRegion: {},
+    floorDeliveryByCountry: { ...DEFAULT_FLOOR_DELIVERY },
   };
 }
