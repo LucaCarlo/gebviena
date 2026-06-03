@@ -42,6 +42,7 @@ interface LiveQuote {
   totalShippingCents: number;
   totalCents: number;
   freeShippingApplied: boolean;
+  freeShippingThresholdCents?: number;
   resolvedRegion: string | null;
   storePickup?: boolean;
   billableVolumeM3?: number;
@@ -51,8 +52,9 @@ interface LiveQuote {
   lines?: Array<{ variantId: string; unitPriceCents: number; quantity: number; lineCents: number }>;
 }
 
-const FREE_SHIPPING_THRESHOLD_CENTS = 95000; // 950 EUR
-const SHIPPING_REMINDER_RANGE_CENTS = 20000; // mostra reminder se manca <= 200 EUR
+// Soglia spedizione gratuita di fallback se il quote non è ancora caricato.
+// Il valore reale arriva da `quote.freeShippingThresholdCents` (= setting admin).
+const FREE_SHIPPING_FALLBACK_CENTS = 95000;
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -522,27 +524,6 @@ export default function CheckoutPage() {
               </>
               )}
 
-              {/* Reminder spedizione gratuita (solo se mancano <= 200€ alla soglia) */}
-              {(() => {
-                const sub = subtotalCents;
-                const missing = FREE_SHIPPING_THRESHOLD_CENTS - sub;
-                if (sub >= FREE_SHIPPING_THRESHOLD_CENTS) {
-                  return (
-                    <div className="text-[13px] bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-800">
-                      🎉 {t("Hai diritto alla", "Vous bénéficiez de la")} <strong>{t("spedizione gratuita", "livraison gratuite")}</strong> !
-                    </div>
-                  );
-                }
-                if (missing > 0 && missing <= SHIPPING_REMINDER_RANGE_CENTS) {
-                  return (
-                    <div className="text-[13px] bg-amber-50 border border-amber-200 rounded p-3 text-amber-800">
-                      {t("Aggiungi ancora", "Ajoutez encore")} <strong>{eur(missing)}</strong> {t(`per la spedizione gratuita (soglia ${eur(FREE_SHIPPING_THRESHOLD_CENTS)}).`, `pour bénéficier de la livraison gratuite (seuil ${eur(FREE_SHIPPING_THRESHOLD_CENTS)}).`)}
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-
               <div className="pt-4 border-t border-warm-200">
                 <label className="block text-[13px] text-warm-700 mb-1.5">{t("Note (opzionale)", "Remarques (facultatif)")}</label>
                 <textarea value={form.customerNotes} onChange={(e) => updateField("customerNotes", e.target.value)} rows={2} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm focus:border-warm-700 outline-none" />
@@ -625,6 +606,33 @@ export default function CheckoutPage() {
               );
             })}
           </div>
+          {/* Box "spedizione gratuita": quanto manca alla soglia o conferma se raggiunta.
+              Nascosto in caso di ritiro al negozio (è già gratis). Soglia dinamica dall'admin. */}
+          {!form.storePickup && (() => {
+            const sub = intent?.subtotalCents ?? quote?.subtotalCents ?? subtotalCents;
+            const threshold = quote?.freeShippingThresholdCents ?? FREE_SHIPPING_FALLBACK_CENTS;
+            if (threshold <= 0) return null;
+            const missing = threshold - sub;
+            if (sub >= threshold) {
+              return (
+                <div className="text-[13px] bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-800">
+                  🎉 {t("Hai raggiunto la soglia! La spedizione standard è", "Vous avez atteint le seuil ! La livraison standard est")} <strong>{t("gratuita", "offerte")}</strong>.
+                </div>
+              );
+            }
+            const pct = Math.max(2, Math.min(100, Math.round((sub / threshold) * 100)));
+            return (
+              <div className="bg-amber-50 border border-amber-200 rounded p-3 space-y-2">
+                <div className="text-[13px] text-amber-800">
+                  {t("Aggiungi", "Ajoutez")} <strong>{eur(missing)}</strong> {t("e la spedizione standard è gratuita", "et la livraison standard est offerte")} <span className="text-amber-600">({t("soglia", "seuil")} {eur(threshold)})</span>.
+                </div>
+                <div className="h-2 bg-amber-100 rounded overflow-hidden">
+                  <div className="h-2 bg-amber-500 rounded transition-all" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="border-t border-warm-200 pt-3 space-y-1.5 text-sm">
             <Row label={t("Subtotale", "Sous-total")} value={eur(intent?.subtotalCents ?? quote?.subtotalCents ?? subtotalCents)} />
             {form.storePickup ? (
