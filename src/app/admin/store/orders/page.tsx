@@ -155,7 +155,7 @@ export default function StoreOrdersPage() {
   const [status, setStatus] = useState<OrderStatus | "">("");
   const [q, setQ] = useState("");
 
-  const [period, setPeriod] = useState<PeriodKey>("month");
+  const [period, setPeriod] = useState<PeriodKey>("all");
   const [customFrom, setCustomFrom] = useState<string>("");
   const [customTo, setCustomTo] = useState<string>("");
   const [stats, setStats] = useState<RevenueStats | null>(null);
