@@ -66,7 +66,7 @@ const DEFAULTS = {
   rowPerBoxCents: 9000,              // 90 EUR/scatola (resto del mondo)
 };
 
-// Ordine canonico di visualizzazione per le regioni (geografico nord→sud).
+// Ordine canonico di visualizzazione per le regioni IT (geografico nord→sud).
 export const REGION_ORDER: { code: string; label: string }[] = [
   { code: "LOMBARDIA", label: "Lombardia" },
   { code: "PIEMONTE", label: "Piemonte" },
@@ -88,6 +88,28 @@ export const REGION_ORDER: { code: string; label: string }[] = [
   { code: "CALABRIA", label: "Calabria" },
   { code: "SICILIA", label: "Sicilia" },
   { code: "SARDEGNA", label: "Sardegna" },
+];
+
+// Régions FR (codici INSEE) — i 18 totali. Default = null = usa fallback FR (186 / 300 Corsica).
+export const FR_REGION_ORDER: { code: string; label: string }[] = [
+  { code: "11", label: "Île-de-France" },
+  { code: "24", label: "Centre-Val de Loire" },
+  { code: "27", label: "Bourgogne-Franche-Comté" },
+  { code: "28", label: "Normandie" },
+  { code: "32", label: "Hauts-de-France" },
+  { code: "44", label: "Grand Est" },
+  { code: "52", label: "Pays de la Loire" },
+  { code: "53", label: "Bretagne" },
+  { code: "75", label: "Nouvelle-Aquitaine" },
+  { code: "76", label: "Occitanie" },
+  { code: "84", label: "Auvergne-Rhône-Alpes" },
+  { code: "93", label: "Provence-Alpes-Côte d'Azur" },
+  { code: "94", label: "Corse" },
+  { code: "01", label: "Guadeloupe" },
+  { code: "02", label: "Martinique" },
+  { code: "03", label: "Guyane" },
+  { code: "04", label: "La Réunion" },
+  { code: "06", label: "Mayotte" },
 ];
 
 // ─── Geografia (FISSA, non cambia) ─────────────────────────────────────
@@ -209,7 +231,11 @@ export interface ShippingConfig {
   floorDeliveryFrPerM3Cents: number;
   unboxingPerM3Cents: number;
   rowPerBoxCents: number;
-  itRegionRates: Record<string, number>;
+  // Tariffe regionali. null = nessun override → fallback al default del paese.
+  itRegionRates: Record<string, number | null>;
+  frRegionRates: Record<string, number | null>;
+  // Mappa département FR → région (per risolvere la régione dalla provincia).
+  frDepartementToRegion: Record<string, string>;
 }
 
 // ─── Cache ─────────────────────────────────────────────────────────────
@@ -231,13 +257,27 @@ export async function loadShippingConfig(): Promise<ShippingConfig> {
   if (_cache && now - _cache.ts < CACHE_TTL_MS) return _cache.config;
 
   try {
-    const [settings, rates] = await Promise.all([
+    const [settings, rates, frProvinces] = await Promise.all([
       prisma.setting.findMany({ where: { group: "shipping" } }),
       prisma.shippingRegionRate.findMany(),
+      prisma.province.findMany({
+        where: { countryCode: "FR" },
+        select: { code: true, regionCode: true },
+      }),
     ]);
     const sMap = new Map(settings.map((s) => [s.key, s.value] as const));
-    const regionRates: Record<string, number> = {};
-    for (const r of rates) regionRates[r.code.toUpperCase()] = r.rateCents;
+
+    // Tariffe regionali per paese (rateCents può essere null = nessun override)
+    const itRegionRates: Record<string, number | null> = {};
+    const frRegionRates: Record<string, number | null> = {};
+    for (const r of rates) {
+      if (r.countryCode === "IT") itRegionRates[r.code.toUpperCase()] = r.rateCents;
+      else if (r.countryCode === "FR") frRegionRates[r.code.toUpperCase()] = r.rateCents;
+    }
+
+    // Mappa département → région (FR) per il lookup nel computeShipping
+    const frDepartementToRegion: Record<string, string> = {};
+    for (const p of frProvinces) frDepartementToRegion[p.code.toUpperCase()] = p.regionCode;
 
     const config: ShippingConfig = {
       freeThresholdCents:        toInt(sMap.get("shipping.free_threshold_cents"),         DEFAULTS.freeThresholdCents),
@@ -248,9 +288,11 @@ export async function loadShippingConfig(): Promise<ShippingConfig> {
       floorDeliveryFrPerM3Cents: toInt(sMap.get("shipping.floor_delivery_fr_per_m3_cents"), DEFAULTS.floorDeliveryFrPerM3Cents),
       unboxingPerM3Cents:        toInt(sMap.get("shipping.unboxing_per_m3_cents"),        DEFAULTS.unboxingPerM3Cents),
       rowPerBoxCents:            toInt(sMap.get("shipping.row_per_box_cents"),            DEFAULTS.rowPerBoxCents),
-      itRegionRates:             Object.keys(regionRates).length > 0
-                                   ? { ...DEFAULT_REGION_RATES, ...regionRates }
+      itRegionRates:             Object.keys(itRegionRates).length > 0
+                                   ? { ...DEFAULT_REGION_RATES, ...itRegionRates }
                                    : DEFAULT_REGION_RATES,
+      frRegionRates,
+      frDepartementToRegion,
     };
     _cache = { config, ts: now };
     return config;
@@ -259,6 +301,8 @@ export async function loadShippingConfig(): Promise<ShippingConfig> {
     return {
       ...DEFAULTS,
       itRegionRates: DEFAULT_REGION_RATES,
+      frRegionRates: {},
+      frDepartementToRegion: {},
     };
   }
 }
@@ -321,9 +365,24 @@ export async function computeShipping(input: ShippingComputeInput): Promise<Ship
       notes.push(`IT: né provincia "${input.province}" né CAP "${cap}" riconosciuti → fallback ${(cfg.itFallbackCents / 100).toFixed(2)} EUR`);
     }
   } else if (country === "FR") {
-    const ratePerM3 = cap.startsWith("20") ? cfg.frCorsicaPerM3Cents : cfg.frStandardPerM3Cents;
+    // Risolvi département → région per cercare un override specifico per régione.
+    // Priorità: override régione > fallback Corse (CAP "20") > standard FR.
+    const depCode = (input.province || "").trim().toUpperCase() || cap.slice(0, 2).toUpperCase();
+    const regionCode = cfg.frDepartementToRegion[depCode] || null;
+    const isCorsica = cap.startsWith("20") || regionCode === "94";
+    let ratePerM3 = cfg.frStandardPerM3Cents;
+    let appliedLabel = "standard FR";
+    if (regionCode && cfg.frRegionRates[regionCode] != null) {
+      ratePerM3 = cfg.frRegionRates[regionCode] as number;
+      appliedLabel = `régione ${regionCode}`;
+      resolvedRegion = regionCode;
+    } else if (isCorsica) {
+      ratePerM3 = cfg.frCorsicaPerM3Cents;
+      appliedLabel = "Corse (default)";
+      resolvedRegion = "94";
+    }
     standardShippingCents = ratePerM3 * billableVol;
-    notes.push(`FR: CAP ${cap} → ${ratePerM3 / 100}€/m³ × ${billableVol}m³ fatturabili (reali ${vol.toFixed(3)}m³) = ${(standardShippingCents / 100).toFixed(2)} EUR`);
+    notes.push(`FR: ${appliedLabel} → ${ratePerM3 / 100}€/m³ × ${billableVol}m³ fatturabili (reali ${vol.toFixed(3)}m³) = ${(standardShippingCents / 100).toFixed(2)} EUR`);
   } else {
     const boxes = Math.max(1, Math.floor(input.totalBoxes));
     standardShippingCents = cfg.rowPerBoxCents * boxes;
@@ -366,5 +425,10 @@ export async function computeShipping(input: ShippingComputeInput): Promise<Ship
 
 // ─── Esposizione defaults (utile per seed iniziale dall'admin) ─────────
 export function getDefaultShippingConfig(): ShippingConfig {
-  return { ...DEFAULTS, itRegionRates: { ...DEFAULT_REGION_RATES } };
+  return {
+    ...DEFAULTS,
+    itRegionRates: { ...DEFAULT_REGION_RATES },
+    frRegionRates: {}, // FR di default ha tutti null = usa fallback
+    frDepartementToRegion: {},
+  };
 }

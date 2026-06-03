@@ -1153,12 +1153,17 @@ enum ShippingClass {
 // (soglia free shipping, tariffe FR, consegna al piano, disimballo, fallback)
 // stanno nel Setting con group='shipping'. Vedi src/lib/shipping-rates.ts.
 model ShippingRegionRate {
-  id        String   @id @default(cuid())
-  code      String   @unique @db.VarChar(64)
-  label     String   @db.VarChar(128)
-  rateCents Int
-  sortOrder Int      @default(0)
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  code        String   @db.VarChar(64)
+  countryCode String   @default("IT") @db.VarChar(2)
+  label       String   @db.VarChar(128)
+  // null = nessun override, ricade sul default del paese (es. FR 186€/m³).
+  rateCents   Int?
+  sortOrder   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([countryCode, code])
+  @@index([countryCode])
 }
 
 model ShippingTariff {

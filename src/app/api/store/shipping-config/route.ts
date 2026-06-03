@@ -5,11 +5,11 @@ import {
   getDefaultShippingConfig,
   invalidateShippingCache,
   REGION_ORDER,
+  FR_REGION_ORDER,
 } from "@/lib/shipping-rates";
 
 export const dynamic = "force-dynamic";
 
-// Le chiavi dei Setting con group='shipping' (devono combaciare con shipping-rates.ts).
 const SETTING_KEYS = {
   freeThresholdCents: "shipping.free_threshold_cents",
   itFallbackCents: "shipping.it_fallback_cents",
@@ -37,13 +37,13 @@ interface SettingsPayload {
 interface RegionPayload {
   code: string;
   label: string;
-  rateCents: number;
+  rateCents: number | null;
 }
 
 async function readCurrentSettings(): Promise<SettingsPayload> {
   const defaults = getDefaultShippingConfig();
   const rows = await prisma.setting.findMany({ where: { group: "shipping" } });
-  const map = new Map(rows.map((r) => [r.key, r.value] as const));
+  const map = new Map(rows.map((r) => [r.key, r.value]));
   const num = (k: string, fallback: number): number => {
     const v = map.get(k);
     if (v === undefined) return fallback;
@@ -65,23 +65,45 @@ async function readCurrentSettings(): Promise<SettingsPayload> {
 async function ensureSeeded(): Promise<void> {
   const defaults = getDefaultShippingConfig();
 
-  // Seed delle 20 regioni se mancanti
-  const existingRegions = await prisma.shippingRegionRate.findMany({ select: { code: true } });
-  const have = new Set(existingRegions.map((r) => r.code.toUpperCase()));
-  const toCreate: { code: string; label: string; rateCents: number; sortOrder: number }[] = [];
+  // Seed IT regions con i valori storici (rateCents valorizzato)
+  const existingIt = await prisma.shippingRegionRate.findMany({
+    where: { countryCode: "IT" },
+    select: { code: true },
+  });
+  const haveIt = new Set(existingIt.map((r) => r.code.toUpperCase()));
+  const itToCreate: { code: string; label: string; countryCode: string; rateCents: number; sortOrder: number }[] = [];
   REGION_ORDER.forEach((r, idx) => {
-    if (!have.has(r.code.toUpperCase())) {
-      toCreate.push({
+    if (!haveIt.has(r.code.toUpperCase())) {
+      itToCreate.push({
         code: r.code,
         label: r.label,
+        countryCode: "IT",
         rateCents: defaults.itRegionRates[r.code] ?? 0,
         sortOrder: idx,
       });
     }
   });
-  if (toCreate.length > 0) {
-    await prisma.shippingRegionRate.createMany({ data: toCreate });
-  }
+  if (itToCreate.length > 0) await prisma.shippingRegionRate.createMany({ data: itToCreate });
+
+  // Seed FR régions con rateCents=null (= usa fallback del paese)
+  const existingFr = await prisma.shippingRegionRate.findMany({
+    where: { countryCode: "FR" },
+    select: { code: true },
+  });
+  const haveFr = new Set(existingFr.map((r) => r.code.toUpperCase()));
+  const frToCreate: { code: string; label: string; countryCode: string; rateCents: number | null; sortOrder: number }[] = [];
+  FR_REGION_ORDER.forEach((r, idx) => {
+    if (!haveFr.has(r.code.toUpperCase())) {
+      frToCreate.push({
+        code: r.code,
+        label: r.label,
+        countryCode: "FR",
+        rateCents: null,
+        sortOrder: idx,
+      });
+    }
+  });
+  if (frToCreate.length > 0) await prisma.shippingRegionRate.createMany({ data: frToCreate });
 
   // Seed dei Setting globali se mancanti
   const settingRows = await prisma.setting.findMany({ where: { group: "shipping" } });
@@ -98,9 +120,7 @@ async function ensureSeeded(): Promise<void> {
   };
   for (const [key, value] of Object.entries(settingValuesByKey)) {
     if (!haveSet.has(key)) {
-      await prisma.setting.create({
-        data: { key, value: String(value), group: "shipping" },
-      });
+      await prisma.setting.create({ data: { key, value: String(value), group: "shipping" } });
     }
   }
 }
@@ -111,22 +131,24 @@ export async function GET() {
 
   await ensureSeeded();
 
-  const [settings, regions] = await Promise.all([
+  const [settings, allRegions] = await Promise.all([
     readCurrentSettings(),
-    prisma.shippingRegionRate.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.shippingRegionRate.findMany({ orderBy: [{ countryCode: "asc" }, { sortOrder: "asc" }] }),
   ]);
+  const regionsByCountry: Record<string, { code: string; label: string; rateCents: number | null; sortOrder: number }[]> = { IT: [], FR: [] };
+  for (const r of allRegions) {
+    if (!regionsByCountry[r.countryCode]) regionsByCountry[r.countryCode] = [];
+    regionsByCountry[r.countryCode].push({
+      code: r.code,
+      label: r.label,
+      rateCents: r.rateCents,
+      sortOrder: r.sortOrder,
+    });
+  }
 
   return NextResponse.json({
     success: true,
-    data: {
-      settings,
-      regions: regions.map((r) => ({
-        code: r.code,
-        label: r.label,
-        rateCents: r.rateCents,
-        sortOrder: r.sortOrder,
-      })),
-    },
+    data: { settings, regionsByCountry },
   });
 }
 
@@ -135,10 +157,15 @@ export async function PUT(req: Request) {
   if (isErrorResponse(result)) return result;
 
   try {
-    const body = (await req.json()) as { settings?: Partial<SettingsPayload>; regions?: RegionPayload[] };
+    const body = (await req.json()) as {
+      settings?: Partial<SettingsPayload>;
+      regionsByCountry?: Record<string, RegionPayload[]>;
+    };
 
-    // Validazione minimale: tutti i valori devono essere interi non negativi.
-    const validateInt = (v: unknown): boolean => Number.isFinite(v) && Math.trunc(v as number) === v && (v as number) >= 0;
+    const validateInt = (v: unknown): boolean =>
+      Number.isFinite(v) && Math.trunc(v as number) === v && (v as number) >= 0;
+
+    // Validazione settings
     const incomingSettings = body.settings || {};
     for (const k of Object.keys(SETTING_KEYS) as SettingFieldKey[]) {
       const v = incomingSettings[k];
@@ -146,19 +173,28 @@ export async function PUT(req: Request) {
         return NextResponse.json({ success: false, error: `Valore non valido per ${k}` }, { status: 400 });
       }
     }
-    const incomingRegions = Array.isArray(body.regions) ? body.regions : [];
-    for (const r of incomingRegions) {
-      if (typeof r.code !== "string" || !r.code.trim()) {
-        return NextResponse.json({ success: false, error: "Codice regione mancante" }, { status: 400 });
+
+    // Validazione regions
+    const incomingRegions = body.regionsByCountry || {};
+    for (const [country, list] of Object.entries(incomingRegions)) {
+      if (!/^[A-Z]{2}$/.test(country)) {
+        return NextResponse.json({ success: false, error: `Codice paese non valido: ${country}` }, { status: 400 });
       }
-      if (!validateInt(r.rateCents)) {
-        return NextResponse.json({ success: false, error: `Tariffa non valida per ${r.code}` }, { status: 400 });
+      if (!Array.isArray(list)) {
+        return NextResponse.json({ success: false, error: `Regions per ${country} deve essere array` }, { status: 400 });
+      }
+      for (const r of list) {
+        if (typeof r.code !== "string" || !r.code.trim()) {
+          return NextResponse.json({ success: false, error: `Codice regione mancante (${country})` }, { status: 400 });
+        }
+        if (r.rateCents !== null && !validateInt(r.rateCents)) {
+          return NextResponse.json({ success: false, error: `Tariffa non valida per ${country}/${r.code}` }, { status: 400 });
+        }
       }
     }
 
-    // Scrittura atomica: tutto o niente.
+    // Scrittura atomica
     await prisma.$transaction(async (tx) => {
-      // Settings: upsert per chiave
       for (const k of Object.keys(SETTING_KEYS) as SettingFieldKey[]) {
         const v = incomingSettings[k];
         if (v === undefined) continue;
@@ -169,28 +205,29 @@ export async function PUT(req: Request) {
           update: { value: String(v), group: "shipping" },
         });
       }
-      // Regioni: upsert per code (label e rate aggiornabili)
-      for (const r of incomingRegions) {
-        const code = r.code.trim().toUpperCase();
-        await tx.shippingRegionRate.upsert({
-          where: { code },
-          create: {
-            code,
-            label: (r.label || code).trim(),
-            rateCents: Math.trunc(r.rateCents),
-            sortOrder: REGION_ORDER.findIndex((x) => x.code === code),
-          },
-          update: {
-            label: (r.label || code).trim(),
-            rateCents: Math.trunc(r.rateCents),
-          },
-        });
+      // Region rates per ogni paese
+      for (const [country, list] of Object.entries(incomingRegions)) {
+        for (const r of list) {
+          const code = r.code.trim().toUpperCase();
+          await tx.shippingRegionRate.upsert({
+            where: { countryCode_code: { countryCode: country, code } },
+            create: {
+              code,
+              countryCode: country,
+              label: (r.label || code).trim(),
+              rateCents: r.rateCents === null ? null : Math.trunc(r.rateCents),
+              sortOrder: 0,
+            },
+            update: {
+              label: (r.label || code).trim(),
+              rateCents: r.rateCents === null ? null : Math.trunc(r.rateCents),
+            },
+          });
+        }
       }
     });
 
-    // Invalida la cache della lib così il prossimo quote vede i valori nuovi.
     invalidateShippingCache();
-
     return NextResponse.json({ success: true });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);

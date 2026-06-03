@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Save, Check, AlertCircle, Info, RotateCcw, Database, Upload } from "lucide-react";
+import { Loader2, Save, Check, AlertCircle, RotateCcw, Database, Upload, ChevronDown, ChevronRight } from "lucide-react";
 
 interface Settings {
   freeThresholdCents: number;
@@ -17,20 +17,22 @@ interface Settings {
 interface Region {
   code: string;
   label: string;
-  rateCents: number;
+  rateCents: number | null;
   sortOrder: number;
 }
 
 interface Config {
   settings: Settings;
-  regions: Region[];
+  regionsByCountry: Record<string, Region[]>;
 }
 
-// Helpers EUR <-> cents
 const centsToEur = (c: number): string => (c / 100).toFixed(2);
-const eurToCents = (s: string): number => {
-  const v = parseFloat(s.replace(",", "."));
-  if (!Number.isFinite(v)) return 0;
+const centsOrEmpty = (c: number | null): string => (c == null ? "" : (c / 100).toFixed(2));
+const eurToCents = (s: string): number | null => {
+  const trimmed = s.trim();
+  if (!trimmed) return null;
+  const v = parseFloat(trimmed.replace(",", "."));
+  if (!Number.isFinite(v)) return null;
   return Math.round(v * 100);
 };
 
@@ -43,6 +45,8 @@ export default function StoreShippingPage() {
   const [countries, setCountries] = useState<Array<{ countryCode: string; name: string; regions: number; provinces: number; cities: number }>>([]);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Accordion state per ciascun blocco regioni — chiuso di default
+  const [openCountry, setOpenCountry] = useState<Record<string, boolean>>({ IT: false, FR: false });
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -79,47 +83,18 @@ export default function StoreShippingPage() {
 
   useEffect(() => { fetchCountries(); }, [fetchCountries]);
 
-  const handleImportFile = async (file: File) => {
-    setImporting(true);
-    try {
-      const text = await file.text();
-      let payload: unknown;
-      try { payload = JSON.parse(text); } catch {
-        showToast("File JSON non valido", false);
-        return;
-      }
-      const res = await fetch("/api/store/geo/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast(`${data.countryName || data.countryCode}: ${data.citiesInserted} città inserite (totale ${data.totalCitiesInDb})`, true);
-        await fetchCountries();
-      } else {
-        showToast(data.error || "Errore durante l'import", false);
-      }
-    } catch {
-      showToast("Errore di rete o file troppo grande", false);
-    } finally {
-      setImporting(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
   const updateSetting = (key: keyof Settings, eurValue: string) => {
     if (!config) return;
-    setConfig({ ...config, settings: { ...config.settings, [key]: eurToCents(eurValue) } });
+    const c = eurToCents(eurValue);
+    setConfig({ ...config, settings: { ...config.settings, [key]: c == null ? 0 : c } });
     setDirty(true);
   };
 
-  const updateRegionRate = (code: string, eurValue: string) => {
+  const updateRegionRate = (country: string, code: string, eurValue: string) => {
     if (!config) return;
-    setConfig({
-      ...config,
-      regions: config.regions.map((r) => r.code === code ? { ...r, rateCents: eurToCents(eurValue) } : r),
-    });
+    const list = config.regionsByCountry[country] || [];
+    const newList = list.map((r) => r.code === code ? { ...r, rateCents: eurToCents(eurValue) } : r);
+    setConfig({ ...config, regionsByCountry: { ...config.regionsByCountry, [country]: newList } });
     setDirty(true);
   };
 
@@ -132,7 +107,12 @@ export default function StoreShippingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           settings: config.settings,
-          regions: config.regions.map((r) => ({ code: r.code, label: r.label, rateCents: r.rateCents })),
+          regionsByCountry: Object.fromEntries(
+            Object.entries(config.regionsByCountry).map(([country, list]) => [
+              country,
+              list.map((r) => ({ code: r.code, label: r.label, rateCents: r.rateCents })),
+            ])
+          ),
         }),
       });
       const data = await res.json();
@@ -149,6 +129,35 @@ export default function StoreShippingPage() {
     }
   };
 
+  const handleImportFile = async (file: File) => {
+    setImporting(true);
+    try {
+      const text = await file.text();
+      let payload: unknown;
+      try { payload = JSON.parse(text); } catch {
+        showToast("File JSON non valido", false);
+        return;
+      }
+      const res = await fetch("/api/store/geo/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`${data.countryName || data.countryCode}: ${data.citiesInserted} città inserite`, true);
+        await fetchCountries();
+      } else {
+        showToast(data.error || "Errore durante l'import", false);
+      }
+    } catch {
+      showToast("Errore di rete o file troppo grande", false);
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   if (loading || !config) {
     return (
       <div className="flex items-center justify-center py-24 text-warm-400">
@@ -157,9 +166,12 @@ export default function StoreShippingPage() {
     );
   }
 
+  const itRegions = config.regionsByCountry.IT || [];
+  const frRegions = config.regionsByCountry.FR || [];
+
   return (
-    <div className="max-w-5xl space-y-6">
-      <header className="flex items-start justify-between gap-4">
+    <div className="space-y-6">
+      <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl md:text-2xl font-semibold text-warm-900">Spedizioni</h1>
           <p className="text-sm text-warm-500 mt-1">
@@ -186,7 +198,7 @@ export default function StoreShippingPage() {
         </div>
       </header>
 
-      {/* Soglia + fallback IT */}
+      {/* Soglie generali */}
       <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
         <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Soglie generali</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -199,7 +211,7 @@ export default function StoreShippingPage() {
           />
           <EurField
             label="Fallback IT (indirizzo non riconosciuto)"
-            help="Prezzo applicato se né la provincia né il CAP corrispondono a nessuna regione. Conviene tenerlo alto (= Sicilia/Sardegna) per non sottostimare."
+            help="Prezzo applicato se né la provincia né il CAP corrispondono a nessuna regione."
             value={config.settings.itFallbackCents}
             onChange={(v) => updateSetting("itFallbackCents", v)}
             suffix="€"
@@ -207,55 +219,43 @@ export default function StoreShippingPage() {
         </div>
       </section>
 
-      {/* Italia — 20 regioni */}
-      <section className="bg-white rounded-lg border border-warm-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-warm-200 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Italia — tariffa flat per regione</h2>
-          <span className="text-[11px] text-warm-500 inline-flex items-center gap-1">
-            <Info size={12} /> Lookup via provincia, fallback CAP 2 cifre
-          </span>
-        </div>
-        <table className="w-full text-sm">
-          <thead className="bg-warm-50 text-warm-500 text-xs">
-            <tr>
-              <th className="px-5 py-2 text-left">Regione</th>
-              <th className="px-5 py-2 text-right w-48">Tariffa (€)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-warm-100">
-            {config.regions.map((r) => (
-              <tr key={r.code}>
-                <td className="px-5 py-2.5 text-warm-800">{r.label}</td>
-                <td className="px-5 py-1.5 text-right">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    value={centsToEur(r.rateCents)}
-                    onChange={(e) => updateRegionRate(r.code, e.target.value)}
-                    className="w-32 text-right border border-warm-200 rounded px-2 py-1 text-sm focus:border-warm-700 outline-none"
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      {/* ===== ITALIA — accordion con 20 regioni ===== */}
+      <CountryAccordion
+        title="Italia — tariffa flat per regione"
+        info="Lookup via sigla provincia (es. MI → Lombardia), fallback prefisso CAP."
+        open={openCountry.IT}
+        onToggle={() => setOpenCountry((s) => ({ ...s, IT: !s.IT }))}
+        regions={itRegions}
+        onChange={(code, v) => updateRegionRate("IT", code, v)}
+        defaultFallbackLabel={`Fallback IT: ${centsToEur(config.settings.itFallbackCents)} €`}
+      />
 
-      {/* Francia */}
+      {/* ===== FRANCIA — accordion con 18 régions ===== */}
+      <CountryAccordion
+        title="Francia — tariffa flat per régione"
+        info={`Default Francia continentale: ${centsToEur(config.settings.frStandardPerM3Cents)} €/m³ · Corse: ${centsToEur(config.settings.frCorsicaPerM3Cents)} €/m³. Lasciando vuoto, una régione usa il default Francia (o Corse per la régione Corse).`}
+        open={openCountry.FR}
+        onToggle={() => setOpenCountry((s) => ({ ...s, FR: !s.FR }))}
+        regions={frRegions}
+        onChange={(code, v) => updateRegionRate("FR", code, v)}
+        defaultFallbackLabel={`Default FR: ${centsToEur(config.settings.frStandardPerM3Cents)} €/m³`}
+        rateSuffix="€/m³"
+      />
+
+      {/* Francia: fallback per régione standard + Corse */}
       <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Francia — al m³</h2>
+        <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Francia — default per régione (usato se non c&apos;è override)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <EurField
             label="Francia continentale"
-            help="Tariffa al m³ fatturabile (arrotondato all'm³ superiore, minimo 1m³)."
+            help="Tariffa al m³ fatturabile applicata alle régioni FR senza override esplicito."
             value={config.settings.frStandardPerM3Cents}
             onChange={(v) => updateSetting("frStandardPerM3Cents", v)}
             suffix="€/m³"
           />
           <EurField
-            label="Corsica (CAP che inizia con 20)"
-            help="Tariffa applicata se il CAP francese inizia con &quot;20&quot;."
+            label="Corse (CAP che inizia con 20)"
+            help="Tariffa per la régione Corse (override implicito)."
             value={config.settings.frCorsicaPerM3Cents}
             onChange={(v) => updateSetting("frCorsicaPerM3Cents", v)}
             suffix="€/m³"
@@ -276,7 +276,7 @@ export default function StoreShippingPage() {
           />
           <EurField
             label="Consegna al piano — Francia"
-            help="Per ogni m³ fatturabile, se il cliente sceglie consegna a un piano ≥1."
+            help="Per ogni m³ fatturabile."
             value={config.settings.floorDeliveryFrPerM3Cents}
             onChange={(v) => updateSetting("floorDeliveryFrPerM3Cents", v)}
             suffix="€/m³"
@@ -305,7 +305,7 @@ export default function StoreShippingPage() {
         </div>
       </section>
 
-      {/* Database geografici — aggiunta nazioni via upload JSON */}
+      {/* Database geografici */}
       <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
@@ -313,7 +313,7 @@ export default function StoreShippingPage() {
               <Database size={15} /> Database geografici
             </h2>
             <p className="text-xs text-warm-600 mt-1">
-              Nazioni il cui dataset (regioni, province, città con CAP) è caricato. Vengono usate per i dropdown a cascata del checkout.
+              Nazioni il cui dataset (regioni, province, città con CAP) è caricato. Usate per i dropdown del checkout.
             </p>
           </div>
         </div>
@@ -350,9 +350,9 @@ export default function StoreShippingPage() {
             <Upload size={13} /> Carica una nuova nazione (file JSON)
           </div>
           <p className="text-[11px] text-warm-500 leading-relaxed">
-            Formato richiesto: un file JSON con la struttura
+            Formato JSON:
             <code className="ml-1 px-1 py-0.5 bg-warm-50 rounded">{`{ "countryCode": "DE", "countryName": "Germania", "regions": [{"code","name"}], "provinces": [{"code","name","regionCode"}], "cities": [{"code","name","provinceCode","caps":[]}] }`}</code>.
-            L&apos;import è idempotente (rieseguibile, non duplica). Per re-importare con dati aggiornati, prima cancella i record DB della nazione.
+            Import idempotente (non duplica). Per re-importare, cancellare prima i record DB della nazione.
           </p>
           <div className="flex items-center gap-2">
             <input
@@ -368,14 +368,14 @@ export default function StoreShippingPage() {
             />
             {importing && (
               <span className="text-xs text-warm-500 inline-flex items-center gap-1">
-                <Loader2 size={12} className="animate-spin" /> Import in corso (può richiedere alcuni minuti per dataset grandi)…
+                <Loader2 size={12} className="animate-spin" /> Import in corso (può richiedere minuti)…
               </span>
             )}
           </div>
         </div>
       </section>
 
-      {/* Bottom save bar (sticky-ish) */}
+      {/* Bottom save bar */}
       <div className="flex items-center justify-end gap-2 pt-2 pb-6">
         {dirty && (
           <span className="text-xs text-amber-700 inline-flex items-center gap-1 mr-2">
@@ -406,12 +406,76 @@ export default function StoreShippingPage() {
   );
 }
 
+function CountryAccordion({
+  title, info, open, onToggle, regions, onChange, defaultFallbackLabel, rateSuffix = "€",
+}: {
+  title: string;
+  info?: string;
+  open: boolean;
+  onToggle: () => void;
+  regions: Region[];
+  onChange: (code: string, eurValue: string) => void;
+  defaultFallbackLabel: string;
+  rateSuffix?: string;
+}) {
+  const overrides = regions.filter((r) => r.rateCents != null).length;
+  return (
+    <section className="bg-white rounded-lg border border-warm-200 overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full px-5 py-4 flex items-center justify-between gap-3 hover:bg-warm-50 transition-colors"
+      >
+        <div className="flex items-center gap-3 text-left">
+          {open ? <ChevronDown size={16} className="text-warm-500" /> : <ChevronRight size={16} className="text-warm-500" />}
+          <div>
+            <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">{title}</h2>
+            {info && <p className="text-[11px] text-warm-500 mt-0.5 normal-case font-normal tracking-normal">{info}</p>}
+          </div>
+        </div>
+        <span className="text-[11px] text-warm-500 shrink-0">
+          {regions.length} regioni · {overrides} con override
+        </span>
+      </button>
+      {open && (
+        <div className="border-t border-warm-200">
+          <table className="w-full text-sm">
+            <thead className="bg-warm-50 text-warm-500 text-xs">
+              <tr>
+                <th className="px-5 py-2 text-left">Regione</th>
+                <th className="px-5 py-2 text-right w-56">Tariffa ({rateSuffix})</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-warm-100">
+              {regions.map((r) => (
+                <tr key={r.code}>
+                  <td className="px-5 py-2.5 text-warm-800">
+                    <span className="font-mono text-[11px] text-warm-400 mr-2">{r.code}</span>
+                    {r.label}
+                  </td>
+                  <td className="px-5 py-1.5 text-right">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={centsOrEmpty(r.rateCents)}
+                      onChange={(e) => onChange(r.code, e.target.value)}
+                      placeholder={defaultFallbackLabel}
+                      className="w-44 text-right border border-warm-200 rounded px-2 py-1 text-sm focus:border-warm-700 outline-none placeholder:text-warm-400 placeholder:text-[11px]"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function EurField({
-  label,
-  help,
-  value,
-  onChange,
-  suffix,
+  label, help, value, onChange, suffix,
 }: {
   label: string;
   help?: string;
