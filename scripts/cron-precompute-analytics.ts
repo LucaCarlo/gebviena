@@ -23,6 +23,7 @@ async function buildSnapshot(host: "" | "SITO" | "STORE", rangeParam: string) {
   const RANGE_DAYS: Record<string, number> = { "1d": 1, "7d": 7, "30d": 30, "1y": 365 };
   const days = RANGE_DAYS[rangeParam];
   const isHourly = rangeParam === "1d";
+  const isMonthly = rangeParam === "1y" || rangeParam === "all";
 
   const conds: string[] = [];
   if (host) conds.push(`\`host\` = '${host}'`);
@@ -32,7 +33,8 @@ async function buildSnapshot(host: "" | "SITO" | "STORE", rangeParam: string) {
   const q = <T = Row>(sql: string) => prisma.$queryRawUnsafe<T[]>(sql);
   const DAY = "DATE(CONVERT_TZ(`createdAt`,'+00:00','+02:00'))";
   const HOUR = "DATE_FORMAT(CONVERT_TZ(`createdAt`,'+00:00','+02:00'),'%Y-%m-%d %H:00')";
-  const BUCKET = isHourly ? HOUR : DAY;
+  const MONTH = "DATE_FORMAT(CONVERT_TZ(`createdAt`,'+00:00','+02:00'),'%Y-%m')";
+  const BUCKET = isHourly ? HOUR : (isMonthly ? MONTH : DAY);
   const DEDUP = "`ipHash`, `path`, DATE_FORMAT(CONVERT_TZ(`createdAt`,'+00:00','+02:00'),'%Y-%m-%d %H:%i')";
   const PAGE = 30;
 
@@ -52,26 +54,32 @@ async function buildSnapshot(host: "" | "SITO" | "STORE", rangeParam: string) {
   const isStore = host === "STORE";
   const SW = isStore ? W : "WHERE `host`='STORE'";
 
-  const [
-    uniqueR, avgTimeR, daysR, series, topPages, countries, regions, cities, sources, devices, osR, recent,
-    sfV, sfP, sfC, sfK, sfOk, sfTop,
-  ] = await Promise.all([
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${W}`),
-    q(`WITH seq AS (
+  // Session-time (CTE LAG su tutta la finestra) è MOLTO pesante su finestre
+  // lunghe: per 1y/all riempirebbe la tmpfs MariaDB. La saltiamo (avgSeconds=0)
+  // per i range lunghi; la calcoliamo solo per 7d/30d dove è significativa.
+  const sessionTimePromise = isMonthly
+    ? Promise.resolve([{ a: 0 }])
+    : q(`WITH seq AS (
         SELECT \`ipHash\` h, UNIX_TIMESTAMP(\`createdAt\`) ts,
                LAG(UNIX_TIMESTAMP(\`createdAt\`)) OVER (PARTITION BY \`ipHash\` ORDER BY \`createdAt\`) prev
         FROM \`PageView\` ${W}
       ),
       flagged AS (SELECT h, ts, CASE WHEN prev IS NULL OR ts - prev > 1800 THEN 1 ELSE 0 END nw FROM seq),
       sess AS (SELECT h, ts, SUM(nw) OVER (PARTITION BY h ORDER BY ts) sid FROM flagged)
-      SELECT AVG(d) a FROM (SELECT MAX(ts)-MIN(ts) d FROM sess GROUP BY h, sid) x`),
-    q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
-    q(`SELECT ${BUCKET} b, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY b ORDER BY b`),
-    q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY \`path\` ORDER BY v DESC LIMIT 15`),
-    q(`SELECT COALESCE(NULLIF(\`geoCountry\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
-    q(`SELECT COALESCE(NULLIF(\`geoRegion\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
-    q(`SELECT COALESCE(NULLIF(\`geoCity\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 15`),
-    q(`SELECT CASE
+      SELECT AVG(d) a FROM (SELECT MAX(ts)-MIN(ts) d FROM sess GROUP BY h, sid) x`);
+
+  // Eseguiamo le query SEQUENZIALMENTE (non in parallelo) per non saturare il
+  // pool connection di Prisma (limit 9) né la tmpfs di MariaDB con temp table
+  // multiple. È un cron notturno: la velocità non è critica.
+  const uniqueR  = await q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${W}`);
+  const avgTimeR = await sessionTimePromise;
+  const daysR    = await q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`);
+  const series   = await q(`SELECT ${BUCKET} b, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY b ORDER BY b`);
+  const topPages = await q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY \`path\` ORDER BY v DESC LIMIT 15`);
+  const countries= await q(`SELECT COALESCE(NULLIF(\`geoCountry\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`);
+  const regions  = await q(`SELECT COALESCE(NULLIF(\`geoRegion\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 12`);
+  const cities   = await q(`SELECT COALESCE(NULLIF(\`geoCity\`,''),'(sconosciuto)') n, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY n ORDER BY v DESC LIMIT 15`);
+  const sources  = await q(`SELECT CASE
           WHEN \`referrer\` IS NULL OR \`referrer\`='' OR \`referrer\` LIKE '%gebruederthonetvienna.com%' THEN 'Diretto / interno'
           WHEN \`referrer\` LIKE '%facebook%' OR \`referrer\` LIKE '%fbclid%' OR \`referrer\` LIKE '%fb.%' THEN 'Facebook'
           WHEN \`referrer\` LIKE '%instagram%' THEN 'Instagram'
@@ -79,19 +87,18 @@ async function buildSnapshot(host: "" | "SITO" | "STORE", rangeParam: string) {
           WHEN \`referrer\` LIKE '%google%' THEN 'Google'
           WHEN \`referrer\` LIKE '%bing%' THEN 'Bing'
           ELSE 'Altro' END src, COUNT(DISTINCT \`ipHash\`) v
-        FROM \`PageView\` ${W} GROUP BY src ORDER BY v DESC`),
-    q(`SELECT ${DEV} dev, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY dev ORDER BY v DESC`),
-    q(`SELECT ${OS} os, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY os ORDER BY v DESC`),
-    q(`SELECT MAX(\`path\`) p, MAX(\`host\`) h, MAX(\`geoCity\`) c, MAX(\`geoCountry\`) co,
+        FROM \`PageView\` ${W} GROUP BY src ORDER BY v DESC`);
+  const devices  = await q(`SELECT ${DEV} dev, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY dev ORDER BY v DESC`);
+  const osR      = await q(`SELECT ${OS} os, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${W} GROUP BY os ORDER BY v DESC`);
+  const recent   = await q(`SELECT MAX(\`path\`) p, MAX(\`host\`) h, MAX(\`geoCity\`) c, MAX(\`geoCountry\`) co,
               MAX(\`referrer\`) r, MAX(\`createdAt\`) t, COUNT(*) hits
-         FROM \`PageView\` ${W} GROUP BY ${DEDUP} ORDER BY t DESC LIMIT ${PAGE + 1} OFFSET 0`),
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW}`),
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%'`),
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%carrello%'`),
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout%' AND \`path\` NOT LIKE '%success%'`),
-    q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout/success%'`),
-    q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%' GROUP BY \`path\` ORDER BY v DESC LIMIT 15`),
-  ]);
+         FROM \`PageView\` ${W} GROUP BY ${DEDUP} ORDER BY t DESC LIMIT ${PAGE + 1} OFFSET 0`);
+  const sfV      = await q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW}`);
+  const sfP      = await q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%'`);
+  const sfC      = await q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%carrello%'`);
+  const sfK      = await q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout%' AND \`path\` NOT LIKE '%success%'`);
+  const sfOk     = await q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout/success%'`);
+  const sfTop    = await q(`SELECT \`path\` p, COUNT(DISTINCT \`ipHash\`) v FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%' GROUP BY \`path\` ORDER BY v DESC LIMIT 15`);
 
   const unique = num(uniqueR[0]?.u);
   const avgSeconds = Math.round(num(avgTimeR[0]?.a));
@@ -109,10 +116,11 @@ async function buildSnapshot(host: "" | "SITO" | "STORE", rangeParam: string) {
     filterHost: host || "ALL",
     range: rangeParam,
     isHourly,
+    isMonthly,
     isStore,
     kpi: {
       unique, avgSeconds, avg,
-      avgUnit: isHourly ? "ora" : "giorno",
+      avgUnit: isHourly ? "ora" : (isMonthly ? "mese" : "giorno"),
       periodDays: num(daysR[0]?.d) || 0,
       minDate: daysR[0]?.mn || null,
       maxDate: daysR[0]?.mx || null,

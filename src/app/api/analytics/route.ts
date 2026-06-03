@@ -48,6 +48,9 @@ export async function GET(req: Request) {
   const RANGE_DAYS: Record<string, number> = { "1d": 1, "7d": 7, "30d": 30, "1y": 365 };
   const days = RANGE_DAYS[rangeParam];
   const isHourly = rangeParam === "1d";
+  // Per range lunghi (1 anno o totale) il bucket diventa mensile, altrimenti
+  // il grafico avrebbe 365+ barre illeggibili.
+  const isMonthly = rangeParam === "1y" || rangeParam === "all";
 
   const conds: string[] = [];
   if (host) conds.push(`\`host\` = '${host}'`);
@@ -57,7 +60,8 @@ export async function GET(req: Request) {
   const q = <T = Row>(sql: string) => prisma.$queryRawUnsafe<T[]>(sql);
   const DAY = "DATE(CONVERT_TZ(`createdAt`,'+00:00','+02:00'))";
   const HOUR = "DATE_FORMAT(CONVERT_TZ(`createdAt`,'+00:00','+02:00'),'%Y-%m-%d %H:00')";
-  const BUCKET = isHourly ? HOUR : DAY;
+  const MONTH = "DATE_FORMAT(CONVERT_TZ(`createdAt`,'+00:00','+02:00'),'%Y-%m')";
+  const BUCKET = isHourly ? HOUR : (isMonthly ? MONTH : DAY);
   const DEDUP = "`ipHash`, `path`, DATE_FORMAT(CONVERT_TZ(`createdAt`,'+00:00','+02:00'),'%Y-%m-%d %H:%i')";
 
   const PAGE = 30;
@@ -110,12 +114,13 @@ export async function GET(req: Request) {
       filterHost: host || "ALL",
       range: rangeParam,
       isHourly,
+      isMonthly,
       isStore,
       kpi: {
         unique: num(uniqueR[0]?.u),
-        avgSeconds: null, // arriva con la sezione 'session-time'
+        avgSeconds: null,
         avg,
-        avgUnit: isHourly ? "ora" : "giorno",
+        avgUnit: isHourly ? "ora" : (isMonthly ? "mese" : "giorno"),
         periodDays: num(daysR[0]?.d) || 0,
         minDate: daysR[0]?.mn || null,
         maxDate: daysR[0]?.mx || null,
@@ -123,8 +128,11 @@ export async function GET(req: Request) {
       series: seriesArr,
     };
   }
-  // Sezione "session-time" — query con CTE WINDOW lenta, separata.
+  // Sezione "session-time" — query con CTE WINDOW pesantissima su finestre
+  // lunghe (rischia di saturare la tmpfs di MariaDB). La calcoliamo solo per
+  // finestre brevi (1d, 7d, 30d). Per 1y/all torniamo null.
   async function buildSessionTime() {
+    if (isMonthly) return { avgSeconds: null as number | null };
     const avgTimeR = await q(`WITH seq AS (
           SELECT \`ipHash\` h, UNIX_TIMESTAMP(\`createdAt\`) ts,
                  LAG(UNIX_TIMESTAMP(\`createdAt\`)) OVER (PARTITION BY \`ipHash\` ORDER BY \`createdAt\`) prev
@@ -226,8 +234,9 @@ export async function GET(req: Request) {
           let extracted: unknown = null;
           switch (section) {
             case "kpi": extracted = {
-              filterHost: full.filterHost, range: full.range, isHourly: full.isHourly, isStore: full.isStore,
-              kpi: { ...(full.kpi as object), avgSeconds: null }, // session-time va a parte
+              filterHost: full.filterHost, range: full.range,
+              isHourly: full.isHourly, isMonthly: full.isMonthly, isStore: full.isStore,
+              kpi: { ...(full.kpi as object), avgSeconds: null },
               series: full.series,
             }; break;
             case "session-time": extracted = { avgSeconds: (full.kpi as { avgSeconds?: number })?.avgSeconds ?? null }; break;

@@ -10,7 +10,7 @@ interface Kpi {
   minDate: string | null; maxDate: string | null;
 }
 interface Data {
-  filterHost: string; range: string; isHourly: boolean; isStore: boolean;
+  filterHost: string; range: string; isHourly: boolean; isMonthly: boolean; isStore: boolean;
   kpi: Kpi;
   series: { date: string; views: number }[];
   topPages: { path: string; count: number }[];
@@ -25,7 +25,16 @@ interface Data {
 
 const PIE = ["#8a6d3b", "#b08968", "#cdb38b", "#7d8c7a", "#9c6644", "#6b705c", "#a5a58d", "#c9ada7"];
 const fmtD = (s: string) => { try { return new Date(s).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" }); } catch { return s; } };
-const fmtBucket = (s: string, hourly: boolean) => { if (hourly) { const m = s.match(/(\d{2}):00$/); return m ? m[1] + "h" : s; } return fmtD(s); };
+const MONTH_IT = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+const fmtBucket = (s: string, hourly: boolean, monthly = false) => {
+  if (hourly) { const m = s.match(/(\d{2}):00$/); return m ? m[1] + "h" : s; }
+  if (monthly) {
+    const m = s.match(/^(\d{4})-(\d{2})$/);
+    if (m) return `${MONTH_IT[parseInt(m[2], 10) - 1]} ${m[1].slice(2)}`;
+    return s;
+  }
+  return fmtD(s);
+};
 const fmtDT = (s: string) => { try { return new Date(s).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); } catch { return s; } };
 const fmtDur = (sec: number) => {
   if (!sec || sec < 1) return "0s";
@@ -100,11 +109,11 @@ export default function AdminAnalyticsPage() {
     return `${s ? `?${s}` : ""}${extra ? (s ? "&" : "?") + extra : ""}`;
   }, [host, range]);
 
-  // Carica le sezioni IN SERIE dall'alto verso il basso (kpi → grafico → store
-  // → geo → sources → devices → pages → recent → session-time). Cosi' i dati
-  // appaiono in ordine visivo, e l'utente vede subito quelli sopra.
-  // Il "tempo medio sessione" (CTE lenta) viene caricato per ultimo perche'
-  // sta in alto ma non blocca il rendering del resto.
+  // Carica TUTTE le sezioni IN PARALLELO (snapshot precalcolati = read DB veloci).
+  // Ogni sezione aggiorna lo state appena pronta, quindi compaiono in modo
+  // progressivo ma senza aspettare la più lenta prima di partire con la successiva.
+  // session-time resta una CTE pesante: gira in parallelo come le altre e si
+  // aggiorna quando finisce — non blocca il render.
   const load = useCallback(async () => {
     setLoadedSections(new Set());
     setData({});
@@ -115,7 +124,6 @@ export default function AdminAnalyticsPage() {
         const j = await r.json();
         if (!j.success || !j.data) return;
         if (sec === "session-time") {
-          // Aggiorna SOLO avgSeconds dentro kpi
           setData((prev) => prev.kpi ? { ...prev, kpi: { ...prev.kpi, avgSeconds: j.data.avgSeconds } } : prev);
         } else {
           setData((prev) => ({ ...prev, ...j.data }));
@@ -127,16 +135,16 @@ export default function AdminAnalyticsPage() {
         setLoadedSections((prev) => new Set(prev).add(sec));
       } catch { /* ignore */ }
     };
-    // 1) Sezioni "sopra" caricate in SERIE (dall'alto verso il basso visibile)
-    await fetchSection("kpi");      // KPI base + grafico andamento
-    await fetchSection("store");    // Funnel store (se store)
-    await fetchSection("geo");      // Nazioni + città + regioni
-    await fetchSection("sources");  // Sorgenti traffico
-    await fetchSection("devices");  // Dispositivi + sistemi
-    await fetchSection("pages");    // Top pagine
-    await fetchSection("recent");   // Visite recenti
-    // 2) Sezione "session-time" (CTE lenta): la lanciamo per ultima in BG.
-    fetchSection("session-time");
+    await Promise.all([
+      fetchSection("kpi"),
+      fetchSection("store"),
+      fetchSection("geo"),
+      fetchSection("sources"),
+      fetchSection("devices"),
+      fetchSection("pages"),
+      fetchSection("recent"),
+      fetchSection("session-time"),
+    ]);
   }, [qs]);
 
   const loadMore = useCallback(async () => {
@@ -226,14 +234,14 @@ export default function AdminAnalyticsPage() {
           {/* Andamento (visitatori unici) — dentro la sez. "kpi" */}
           {isLoaded("kpi") && data.series ? (
             <Card>
-              <h3 className="text-sm font-semibold text-warm-800 mb-4">Andamento {data.isHourly ? "orario" : "giornaliero"} (visitatori unici)</h3>
+              <h3 className="text-sm font-semibold text-warm-800 mb-4">Andamento {data.isHourly ? "orario" : data.isMonthly ? "mensile" : "giornaliero"} (visitatori unici)</h3>
               {data.series.length === 0 ? <p className="text-xs text-warm-400">Nessun dato.</p> : (
                 <div className="flex items-end gap-1.5 h-44">
                   {data.series.map((s) => (
                     <div key={s.date} className="flex-1 flex flex-col items-center gap-1 group min-w-[8px]">
                       <div className="text-[10px] text-warm-500 opacity-0 group-hover:opacity-100">{s.views.toLocaleString("it-IT")}</div>
                       <div className="w-full bg-warm-700 rounded-t" style={{ height: `${(s.views / maxSeries) * 150}px` }} />
-                      <div className="text-[9px] text-warm-400 -rotate-45 origin-top-left whitespace-nowrap mt-1">{fmtBucket(s.date, !!data.isHourly)}</div>
+                      <div className="text-[9px] text-warm-400 -rotate-45 origin-top-left whitespace-nowrap mt-1">{fmtBucket(s.date, !!data.isHourly, !!data.isMonthly)}</div>
                     </div>
                   ))}
                 </div>
