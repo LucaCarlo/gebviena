@@ -7,7 +7,6 @@ interface Settings {
   freeThresholdCents: number;
   itFallbackCents: number;
   frStandardPerM3Cents: number;
-  frCorsicaPerM3Cents: number;
   floorDeliveryItPerM3Cents: number;
   floorDeliveryFrPerM3Cents: number;
   unboxingPerM3Cents: number;
@@ -198,7 +197,8 @@ export default function StoreShippingPage() {
         </div>
       </header>
 
-      {/* Soglie generali */}
+      {/* Soglie generali — contiene la soglia free shipping e i fallback paese.
+          Quando aggiungeremo altre nazioni, qui dovranno apparire anche i loro fallback. */}
       <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
         <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Soglie generali</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -210,11 +210,25 @@ export default function StoreShippingPage() {
             suffix="€"
           />
           <EurField
-            label="Fallback IT (indirizzo non riconosciuto)"
-            help="Prezzo applicato se né la provincia né il CAP corrispondono a nessuna regione."
+            label="Fallback Italia"
+            help="Tariffa flat applicata se né la provincia né il CAP corrispondono a nessuna regione IT."
             value={config.settings.itFallbackCents}
             onChange={(v) => updateSetting("itFallbackCents", v)}
             suffix="€"
+          />
+          <EurField
+            label="Fallback Francia"
+            help="Tariffa al m³ applicata a tutte le régions FR senza override esplicito. La Corse parte di default con override 300 €/m³ (modificabile dall'accordion Francia)."
+            value={config.settings.frStandardPerM3Cents}
+            onChange={(v) => updateSetting("frStandardPerM3Cents", v)}
+            suffix="€/m³"
+          />
+          <EurField
+            label="Fallback Resto del mondo"
+            help="Stima grezza per spedizioni in paesi diversi da IT e FR."
+            value={config.settings.rowPerBoxCents}
+            onChange={(v) => updateSetting("rowPerBoxCents", v)}
+            suffix="€/scatola"
           />
         </div>
       </section>
@@ -233,35 +247,14 @@ export default function StoreShippingPage() {
       {/* ===== FRANCIA — accordion con 18 régions ===== */}
       <CountryAccordion
         title="Francia — tariffa flat per régione"
-        info={`Default Francia continentale: ${centsToEur(config.settings.frStandardPerM3Cents)} €/m³ · Corse: ${centsToEur(config.settings.frCorsicaPerM3Cents)} €/m³. Lasciando vuoto, una régione usa il default Francia (o Corse per la régione Corse).`}
+        info={`Lasciando vuoto, la régione usa il fallback Francia (${centsToEur(config.settings.frStandardPerM3Cents)} €/m³). La Corse parte già con override 300 €/m³ (modificabile).`}
         open={openCountry.FR}
         onToggle={() => setOpenCountry((s) => ({ ...s, FR: !s.FR }))}
         regions={frRegions}
         onChange={(code, v) => updateRegionRate("FR", code, v)}
-        defaultFallbackLabel={`Default FR: ${centsToEur(config.settings.frStandardPerM3Cents)} €/m³`}
+        defaultFallbackLabel={`Fallback FR: ${centsToEur(config.settings.frStandardPerM3Cents)} €/m³`}
         rateSuffix="€/m³"
       />
-
-      {/* Francia: fallback per régione standard + Corse */}
-      <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Francia — default per régione (usato se non c&apos;è override)</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <EurField
-            label="Francia continentale"
-            help="Tariffa al m³ fatturabile applicata alle régioni FR senza override esplicito."
-            value={config.settings.frStandardPerM3Cents}
-            onChange={(v) => updateSetting("frStandardPerM3Cents", v)}
-            suffix="€/m³"
-          />
-          <EurField
-            label="Corse (CAP che inizia con 20)"
-            help="Tariffa per la régione Corse (override implicito)."
-            value={config.settings.frCorsicaPerM3Cents}
-            onChange={(v) => updateSetting("frCorsicaPerM3Cents", v)}
-            suffix="€/m³"
-          />
-        </div>
-      </section>
 
       {/* Servizi aggiuntivi */}
       <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
@@ -287,20 +280,6 @@ export default function StoreShippingPage() {
             value={config.settings.unboxingPerM3Cents}
             onChange={(v) => updateSetting("unboxingPerM3Cents", v)}
             suffix="€/m³"
-          />
-        </div>
-      </section>
-
-      {/* Resto del mondo */}
-      <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Resto del mondo</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <EurField
-            label="Tariffa per scatola"
-            help="Stima grezza per spedizioni in paesi diversi da IT e FR."
-            value={config.settings.rowPerBoxCents}
-            onChange={(v) => updateSetting("rowPerBoxCents", v)}
-            suffix="€/scatola"
           />
         </div>
       </section>

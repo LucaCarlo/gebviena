@@ -14,7 +14,6 @@ const SETTING_KEYS = {
   freeThresholdCents: "shipping.free_threshold_cents",
   itFallbackCents: "shipping.it_fallback_cents",
   frStandardPerM3Cents: "shipping.fr_standard_per_m3_cents",
-  frCorsicaPerM3Cents: "shipping.fr_corsica_per_m3_cents",
   floorDeliveryItPerM3Cents: "shipping.floor_delivery_it_per_m3_cents",
   floorDeliveryFrPerM3Cents: "shipping.floor_delivery_fr_per_m3_cents",
   unboxingPerM3Cents: "shipping.unboxing_per_m3_cents",
@@ -27,7 +26,6 @@ interface SettingsPayload {
   freeThresholdCents: number;
   itFallbackCents: number;
   frStandardPerM3Cents: number;
-  frCorsicaPerM3Cents: number;
   floorDeliveryItPerM3Cents: number;
   floorDeliveryFrPerM3Cents: number;
   unboxingPerM3Cents: number;
@@ -54,7 +52,6 @@ async function readCurrentSettings(): Promise<SettingsPayload> {
     freeThresholdCents:        num(SETTING_KEYS.freeThresholdCents,        defaults.freeThresholdCents),
     itFallbackCents:           num(SETTING_KEYS.itFallbackCents,           defaults.itFallbackCents),
     frStandardPerM3Cents:      num(SETTING_KEYS.frStandardPerM3Cents,      defaults.frStandardPerM3Cents),
-    frCorsicaPerM3Cents:       num(SETTING_KEYS.frCorsicaPerM3Cents,      defaults.frCorsicaPerM3Cents),
     floorDeliveryItPerM3Cents: num(SETTING_KEYS.floorDeliveryItPerM3Cents, defaults.floorDeliveryItPerM3Cents),
     floorDeliveryFrPerM3Cents: num(SETTING_KEYS.floorDeliveryFrPerM3Cents, defaults.floorDeliveryFrPerM3Cents),
     unboxingPerM3Cents:        num(SETTING_KEYS.unboxingPerM3Cents,        defaults.unboxingPerM3Cents),
@@ -98,7 +95,9 @@ async function ensureSeeded(): Promise<void> {
         code: r.code,
         label: r.label,
         countryCode: "FR",
-        rateCents: null,
+        // Corse parte con override esplicito 300€/m³. Le altre régions con null
+        // (= usano il default Francia continentale).
+        rateCents: r.code === "94" ? 30000 : null,
         sortOrder: idx,
       });
     }
@@ -112,7 +111,6 @@ async function ensureSeeded(): Promise<void> {
     [SETTING_KEYS.freeThresholdCents]: defaults.freeThresholdCents,
     [SETTING_KEYS.itFallbackCents]: defaults.itFallbackCents,
     [SETTING_KEYS.frStandardPerM3Cents]: defaults.frStandardPerM3Cents,
-    [SETTING_KEYS.frCorsicaPerM3Cents]: defaults.frCorsicaPerM3Cents,
     [SETTING_KEYS.floorDeliveryItPerM3Cents]: defaults.floorDeliveryItPerM3Cents,
     [SETTING_KEYS.floorDeliveryFrPerM3Cents]: defaults.floorDeliveryFrPerM3Cents,
     [SETTING_KEYS.unboxingPerM3Cents]: defaults.unboxingPerM3Cents,

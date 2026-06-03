@@ -58,13 +58,14 @@ const DEFAULT_REGION_RATES: Record<string, number> = {
 const DEFAULTS = {
   freeThresholdCents: 95000,         // 950 EUR
   itFallbackCents: 16200,            // 162 EUR
-  frStandardPerM3Cents: 18600,       // 186 EUR/m³
-  frCorsicaPerM3Cents: 30000,        // 300 EUR/m³
+  frStandardPerM3Cents: 18600,       // 186 EUR/m³ (default Francia)
   floorDeliveryItPerM3Cents: 12000,  // 120 EUR/m³
   floorDeliveryFrPerM3Cents: 14000,  // 140 EUR/m³
   unboxingPerM3Cents: 2000,          // 20 EUR/m³
   rowPerBoxCents: 9000,              // 90 EUR/scatola (resto del mondo)
 };
+// NOTE: il vecchio fallback Corse (300€/m³) è ora un override esplicito sulla
+// régione "94" Corse in ShippingRegionRate. Vedi computeShipping FR sotto.
 
 // Ordine canonico di visualizzazione per le regioni IT (geografico nord→sud).
 export const REGION_ORDER: { code: string; label: string }[] = [
@@ -226,7 +227,6 @@ export interface ShippingConfig {
   freeThresholdCents: number;
   itFallbackCents: number;
   frStandardPerM3Cents: number;
-  frCorsicaPerM3Cents: number;
   floorDeliveryItPerM3Cents: number;
   floorDeliveryFrPerM3Cents: number;
   unboxingPerM3Cents: number;
@@ -283,7 +283,6 @@ export async function loadShippingConfig(): Promise<ShippingConfig> {
       freeThresholdCents:        toInt(sMap.get("shipping.free_threshold_cents"),         DEFAULTS.freeThresholdCents),
       itFallbackCents:           toInt(sMap.get("shipping.it_fallback_cents"),            DEFAULTS.itFallbackCents),
       frStandardPerM3Cents:      toInt(sMap.get("shipping.fr_standard_per_m3_cents"),     DEFAULTS.frStandardPerM3Cents),
-      frCorsicaPerM3Cents:       toInt(sMap.get("shipping.fr_corsica_per_m3_cents"),      DEFAULTS.frCorsicaPerM3Cents),
       floorDeliveryItPerM3Cents: toInt(sMap.get("shipping.floor_delivery_it_per_m3_cents"), DEFAULTS.floorDeliveryItPerM3Cents),
       floorDeliveryFrPerM3Cents: toInt(sMap.get("shipping.floor_delivery_fr_per_m3_cents"), DEFAULTS.floorDeliveryFrPerM3Cents),
       unboxingPerM3Cents:        toInt(sMap.get("shipping.unboxing_per_m3_cents"),        DEFAULTS.unboxingPerM3Cents),
@@ -365,21 +364,17 @@ export async function computeShipping(input: ShippingComputeInput): Promise<Ship
       notes.push(`IT: né provincia "${input.province}" né CAP "${cap}" riconosciuti → fallback ${(cfg.itFallbackCents / 100).toFixed(2)} EUR`);
     }
   } else if (country === "FR") {
-    // Risolvi département → région per cercare un override specifico per régione.
-    // Priorità: override régione > fallback Corse (CAP "20") > standard FR.
+    // Risolvi département → région. Se la régione ha un override esplicito
+    // (rateCents != null), usalo. Altrimenti applica il default FR.
+    // (La Corse 300€/m³ è impostata di base come override sulla régione "94".)
     const depCode = (input.province || "").trim().toUpperCase() || cap.slice(0, 2).toUpperCase();
     const regionCode = cfg.frDepartementToRegion[depCode] || null;
-    const isCorsica = cap.startsWith("20") || regionCode === "94";
     let ratePerM3 = cfg.frStandardPerM3Cents;
-    let appliedLabel = "standard FR";
+    let appliedLabel = "default FR";
     if (regionCode && cfg.frRegionRates[regionCode] != null) {
       ratePerM3 = cfg.frRegionRates[regionCode] as number;
       appliedLabel = `régione ${regionCode}`;
       resolvedRegion = regionCode;
-    } else if (isCorsica) {
-      ratePerM3 = cfg.frCorsicaPerM3Cents;
-      appliedLabel = "Corse (default)";
-      resolvedRegion = "94";
     }
     standardShippingCents = ratePerM3 * billableVol;
     notes.push(`FR: ${appliedLabel} → ${ratePerM3 / 100}€/m³ × ${billableVol}m³ fatturabili (reali ${vol.toFixed(3)}m³) = ${(standardShippingCents / 100).toFixed(2)} EUR`);
