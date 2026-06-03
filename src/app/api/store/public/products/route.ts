@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { marketFromLang, resolveVariantPrice } from "@/lib/store-pricing";
-import { randomBytes } from "node:crypto";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -265,31 +264,33 @@ export async function GET(req: NextRequest) {
   } else if (sort === "random") {
     // Seed:
     // - per-request: nuovo seed ad ogni chiamata (Math.random) → ordine sempre diverso
-    // - per-session: seed dal cookie gtv_shop_seed (creato sotto se mancante) →
-    //                stabile per quella sessione browser
+    // - per-session: seed da query param `seed` (passato dalla Server Component
+    //                che legge il cookie gtv_shop_seed settato dal middleware),
+    //                fallback al cookie diretto del browser se chiamata client-side,
+    //                fallback random se proprio non c'è (caso edge: prima richiesta
+    //                client-only senza middleware path).
     let seed: number;
-    let setCookieSeed: string | null = null;
     if (sortCfg.randomMode === "per-session") {
-      const cookieHeader = req.headers.get("cookie") || "";
-      const m = cookieHeader.match(/(?:^|; )gtv_shop_seed=([^;]+)/);
-      const cookieVal = m ? decodeURIComponent(m[1]) : "";
-      if (cookieVal) {
-        seed = seedFromString(cookieVal);
+      const seedParam = sp.get("seed");
+      let cookieVal: string | null = null;
+      if (!seedParam) {
+        const cookieHeader = req.headers.get("cookie") || "";
+        const m = cookieHeader.match(/(?:^|; )gtv_shop_seed=([^;]+)/);
+        cookieVal = m ? decodeURIComponent(m[1]) : null;
+      }
+      const seedSource = seedParam || cookieVal || "";
+      if (seedSource) {
+        seed = seedFromString(seedSource);
       } else {
-        setCookieSeed = randomBytes(8).toString("hex");
-        seed = seedFromString(setCookieSeed);
+        // Caso edge: nessun cookie/seed — usa random ma non lo persistiamo
+        // (lo farà il middleware al prossimo navigation della pagina).
+        seed = (Math.floor(Math.random() * 0xffffffff)) >>> 0;
       }
     } else {
       seed = (Math.floor(Math.random() * 0xffffffff)) >>> 0;
     }
     const rng = mulberry32(seed);
     sorted = shuffleInPlace([...filtered], rng);
-    // Set cookie session-seed se appena generato (durata 24h)
-    if (setCookieSeed) {
-      const res = NextResponse.json({ success: true, data: applyPinned(sorted, sortCfg.pinnedIds) });
-      res.headers.set("Set-Cookie", `gtv_shop_seed=${setCookieSeed}; Path=/; Max-Age=86400; SameSite=Lax`);
-      return res;
-    }
   }
 
   return NextResponse.json({ success: true, data: applyPinned(sorted, sortCfg.pinnedIds) });

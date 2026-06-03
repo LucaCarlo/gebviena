@@ -128,6 +128,24 @@ export async function middleware(req: NextRequest) {
   requestHeaders.set("x-gtv-canonical-path", strippedPath);
   const res = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
   res.headers.set("x-gtv-lang", lang);
+
+  // Cookie "gtv_shop_seed": stabile per sessione browser, usato dall'API
+  // /api/store/public/products quando la strategia random è "per-session" per
+  // generare uno shuffle deterministico. Va settato qui in middleware perché
+  // la pagina /store usa un fetch server-side (Server Component) che non
+  // propagherebbe Set-Cookie al browser. Lo settiamo solo su host store.
+  if (isStoreHost && !req.cookies.get("gtv_shop_seed")) {
+    // 8 byte (16 hex char) sufficienti come seed; uso randomUUID per evitare
+    // di pesare l'Edge runtime con node:crypto.
+    const seed = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+    res.cookies.set({
+      name: "gtv_shop_seed",
+      value: seed,
+      path: "/",
+      maxAge: 60 * 60 * 24, // 24h
+      sameSite: "lax",
+    });
+  }
   return res;
 }
 
