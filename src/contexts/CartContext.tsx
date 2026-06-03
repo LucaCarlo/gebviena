@@ -110,13 +110,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items, hydrated]);
 
   const addItem = useCallback((item: Omit<CartItem, "quantity">, qty: number = 1) => {
+    // eventID univoco per questa AddToCart: lo stesso passa a pixel client e
+    // CAPI server-side per la deduplicazione Meta.
+    const eventID = `atc-${item.variantId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const value = (item.priceCents * qty) / 100;
     fbTrack("AddToCart", {
       content_ids: [item.variantId],
       content_name: item.productName,
       content_type: "product",
-      value: (item.priceCents * qty) / 100,
+      value,
       currency: "EUR",
-    });
+    }, eventID);
+    // CAPI server gemello — fire-and-forget.
+    if (typeof window !== "undefined") {
+      fetch("/api/store/public/track/add-to-cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventID,
+          variantId: item.variantId,
+          productName: item.productName,
+          value,
+          currency: "EUR",
+          num_items: qty,
+          eventSourceUrl: window.location.href,
+        }),
+        keepalive: true,
+      }).catch(() => { /* silent */ });
+    }
     setItems((prev) => {
       const existing = prev.find((i) => i.variantId === item.variantId);
       if (existing) {

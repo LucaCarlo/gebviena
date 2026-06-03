@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useLang } from "@/contexts/I18nContext";
+import { fbTrack } from "@/lib/fbpixel";
 
 const COUNTRIES = [
   "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria",
@@ -163,6 +164,13 @@ export default function GenericLandingTemplate({ config: rawConfig }: GenericLan
       const data = await res.json();
 
       if (data.success) {
+        // Meta Pixel: Lead client gemello del CAPI server (event_id condiviso
+        // `lead-event-${id}` → Meta dedupa).
+        fbTrack(
+          "Lead",
+          { content_name: "landing-page-event", content_category: "event_registration" },
+          data?.data?.id ? `lead-event-${data.data.id}` : undefined
+        );
         setQrCode(data.data.qrCode);
         setQrDataUrl(data.data.qrDataUrl || "");
         setSuccess(true);

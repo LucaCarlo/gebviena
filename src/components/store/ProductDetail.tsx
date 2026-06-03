@@ -213,18 +213,38 @@ export default function ProductDetail({ product }: { product: Product }) {
     setTimeout(() => setJustAdded(false), 1800);
   };
 
-  // Meta Pixel: ViewContent ad ogni apertura prodotto (Facebook fa la propria
-  // dedup lato server, niente dedup client per non perdere segnali di reinteresse).
+  // Meta Pixel: ViewContent ad ogni apertura prodotto. event_id condiviso col
+  // CAPI server-side (lo stesso slug + un timestamp arrotondato a 30s perché
+  // ricariche entro 30s siano viste da Meta come lo stesso evento e dedupate
+  // tra browser e server; oltre i 30s diventano due eventi distinti come
+  // segnali di reinteresse).
   useEffect(() => {
     if (typeof window === "undefined") return;
     const firstPrice = product.variants?.[0]?.priceCents ?? 0;
+    const bucket30s = Math.floor(Date.now() / 30000);
+    const eventID = `vc-${product.slug}-${bucket30s}`;
+    const value = firstPrice / 100;
     fbTrack("ViewContent", {
       content_ids: [product.slug],
       content_name: product.name,
       content_type: "product",
-      value: firstPrice / 100,
+      value,
       currency: "EUR",
-    });
+    }, eventID);
+    // CAPI server gemello — fire-and-forget.
+    fetch("/api/store/public/track/view-content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventID,
+        content_ids: [product.slug],
+        content_name: product.name,
+        value,
+        currency: "EUR",
+        eventSourceUrl: window.location.href,
+      }),
+      keepalive: true,
+    }).catch(() => { /* silent */ });
   }, [product.slug, product.name, product.variants]);
 
   useEffect(() => {

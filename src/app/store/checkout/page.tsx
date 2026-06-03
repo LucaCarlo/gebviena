@@ -106,14 +106,36 @@ export default function CheckoutPage() {
   }, []);
 
   // Meta Pixel: InitiateCheckout una sola volta al mount se ci sono items.
+  // eventID = cartSessionId del carrello (univoco per sessione) → il CAPI
+  // server-side usa lo stesso id per la deduplicazione lato Meta.
   useEffect(() => {
     if (count > 0) {
+      const cartSessionId = typeof window !== "undefined" ? (localStorage.getItem("gtv_cart_session_v1") || "") : "";
+      const eventID = cartSessionId ? `ic-${cartSessionId}` : undefined;
+      const variantIds = items.map((i) => i.variantId);
+      const value = subtotalCents / 100;
       fbTrack("InitiateCheckout", {
-        content_ids: items.map((i) => i.variantId),
+        content_ids: variantIds,
         num_items: count,
-        value: subtotalCents / 100,
+        value,
         currency: "EUR",
-      });
+      }, eventID);
+      // CAPI server gemello: fire-and-forget, mai bloccare il render.
+      if (eventID) {
+        fetch("/api/store/public/track/initiate-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventID,
+            content_ids: variantIds,
+            num_items: count,
+            value,
+            currency: "EUR",
+            eventSourceUrl: typeof window !== "undefined" ? window.location.href : undefined,
+          }),
+          keepalive: true,
+        }).catch(() => { /* silent */ });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
