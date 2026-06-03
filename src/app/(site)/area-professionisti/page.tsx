@@ -30,9 +30,9 @@ export default async function AreaProfessionistiPage() {
 
   const pro = await getAuthProfessional();
   if (!pro) {
-    // Niente accesso → redirect alla home, dove l'utente può aprire il drawer.
+    // Niente accesso → manda alla pagina dedicata di login/registrazione.
     const prefix = lang === "it" ? "" : `/${lang}`;
-    redirect(`${prefix}/`);
+    redirect(`${prefix}/area-professionisti/accesso`);
   }
 
   const t = await buildT(lang);
