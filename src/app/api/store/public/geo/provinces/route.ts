@@ -10,10 +10,8 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: NextRequest) {
   const country = (req.nextUrl.searchParams.get("country") || "IT").toUpperCase();
-  if (country !== "IT") {
-    return NextResponse.json({ success: true, data: [] });
-  }
   const provinces = await prisma.province.findMany({
+    where: { countryCode: country },
     select: { code: true, name: true, regionCode: true },
     orderBy: { name: "asc" },
   });

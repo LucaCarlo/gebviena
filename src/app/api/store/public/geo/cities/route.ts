@@ -15,12 +15,16 @@ interface CityOut {
  * (Roma, Milano…) hanno decine di CAP.
  */
 export async function GET(req: NextRequest) {
-  const provinceCode = (req.nextUrl.searchParams.get("provinceCode") || "").toUpperCase();
+  const provinceCode = (req.nextUrl.searchParams.get("provinceCode") || "").trim();
+  const country = (req.nextUrl.searchParams.get("country") || "").toUpperCase().trim();
   if (!provinceCode) {
     return NextResponse.json({ success: false, error: "provinceCode mancante" }, { status: 400 });
   }
   const cities = await prisma.city.findMany({
-    where: { provinceCode },
+    where: {
+      provinceCode,
+      ...(country ? { countryCode: country } : {}),
+    },
     select: { code: true, name: true, caps: true },
     orderBy: { name: "asc" },
   });

@@ -12,7 +12,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useLang } from "@/contexts/I18nContext";
 import { useStoreT } from "@/lib/use-store-t";
 import { fbTrack } from "@/lib/fbpixel";
-import ItGeoFields from "@/components/store/checkout/ItGeoFields";
+import AddressGeoFields from "@/components/store/checkout/AddressGeoFields";
 
 const eur = (cents: number) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
@@ -391,38 +391,18 @@ export default function CheckoutPage() {
                 <>
                   <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">{t("Indirizzo di spedizione", "Adresse de livraison")}</div>
                   <Field label={t("Via e numero civico *", "Rue et numéro *")} value={form.street} onChange={(v) => updateField("street", v)} />
-                  <div>
-                    <label className="block text-[13px] text-warm-700 mb-1.5">{t("Paese *", "Pays *")}</label>
-                    <select
-                      value={form.country}
-                      onChange={(e) => {
-                        const nc = e.target.value;
-                        // Cambiando paese resettiamo i campi che dipendono da una geografia diversa
-                        setForm((f) => ({ ...f, country: nc, province: "", city: "", postalCode: "" }));
-                      }}
-                      className="w-full max-w-xs border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none"
-                    >
-                      <option value="IT">{t("Italia", "Italie")}</option>
-                      <option value="FR">{t("Francia", "France")}</option>
-                    </select>
-                  </div>
-                  {form.country === "IT" ? (
-                    <ItGeoFields
-                      cityName={form.city}
-                      province={form.province}
-                      postalCode={form.postalCode}
-                      onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
-                      t={t}
-                    />
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="col-span-2"><Field label={t("Città *", "Ville *")} value={form.city} onChange={(v) => updateField("city", v)} /></div>
-                        <Field label={t("Provincia", "Province")} value={form.province} onChange={(v) => updateField("province", v.toUpperCase())} />
-                      </div>
-                      <Field label={t("CAP *", "Code postal *")} value={form.postalCode} onChange={(v) => updateField("postalCode", v)} />
-                    </>
-                  )}
+                  <AddressGeoFields
+                    country={form.country}
+                    cityName={form.city}
+                    province={form.province}
+                    postalCode={form.postalCode}
+                    onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+                    t={t}
+                    countryOptions={[
+                      { code: "IT", label: t("Italia", "Italie") },
+                      { code: "FR", label: t("Francia", "France") },
+                    ]}
+                  />
                 </>
               )}
 
@@ -448,42 +428,24 @@ export default function CheckoutPage() {
                   <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-2">{t("Indirizzo di fatturazione", "Adresse de facturation")}</div>
                   <Field label={t("Ragione sociale / Intestatario (opzionale)", "Raison sociale / Titulaire (facultatif)")} value={form.billingCompany} onChange={(v) => updateField("billingCompany", v)} />
                   <Field label={t("Via e numero civico *", "Rue et numéro *")} value={form.billingStreet} onChange={(v) => updateField("billingStreet", v)} />
-                  <div>
-                    <label className="block text-[13px] text-warm-700 mb-1.5">{t("Paese *", "Pays *")}</label>
-                    <select
-                      value={form.billingCountry}
-                      onChange={(e) => {
-                        const nc = e.target.value;
-                        setForm((f) => ({ ...f, billingCountry: nc, billingProvince: "", billingCity: "", billingPostalCode: "" }));
-                      }}
-                      className="w-full max-w-xs border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none"
-                    >
-                      <option value="IT">{t("Italia", "Italie")}</option>
-                      <option value="FR">{t("Francia", "France")}</option>
-                    </select>
-                  </div>
-                  {form.billingCountry === "IT" ? (
-                    <ItGeoFields
-                      cityName={form.billingCity}
-                      province={form.billingProvince}
-                      postalCode={form.billingPostalCode}
-                      onChange={(patch) => setForm((f) => ({
-                        ...f,
-                        ...(patch.city !== undefined ? { billingCity: patch.city } : {}),
-                        ...(patch.province !== undefined ? { billingProvince: patch.province } : {}),
-                        ...(patch.postalCode !== undefined ? { billingPostalCode: patch.postalCode } : {}),
-                      }))}
-                      t={t}
-                    />
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="col-span-2"><Field label={t("Città *", "Ville *")} value={form.billingCity} onChange={(v) => updateField("billingCity", v)} /></div>
-                        <Field label={t("Provincia", "Province")} value={form.billingProvince} onChange={(v) => updateField("billingProvince", v.toUpperCase())} />
-                      </div>
-                      <Field label={t("CAP *", "Code postal *")} value={form.billingPostalCode} onChange={(v) => updateField("billingPostalCode", v)} />
-                    </>
-                  )}
+                  <AddressGeoFields
+                    country={form.billingCountry}
+                    cityName={form.billingCity}
+                    province={form.billingProvince}
+                    postalCode={form.billingPostalCode}
+                    onChange={(patch) => setForm((f) => ({
+                      ...f,
+                      ...(patch.country !== undefined ? { billingCountry: patch.country } : {}),
+                      ...(patch.city !== undefined ? { billingCity: patch.city } : {}),
+                      ...(patch.province !== undefined ? { billingProvince: patch.province } : {}),
+                      ...(patch.postalCode !== undefined ? { billingPostalCode: patch.postalCode } : {}),
+                    }))}
+                    t={t}
+                    countryOptions={[
+                      { code: "IT", label: t("Italia", "Italie") },
+                      { code: "FR", label: t("Francia", "France") },
+                    ]}
+                  />
                 </>
               )}
 

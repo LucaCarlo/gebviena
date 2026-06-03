@@ -1091,34 +1091,39 @@ model ScheduledEmailJob {
 // ─── Store: Geography ──────────────────────────────────────────────────
 
 model Region {
-  code      String           @id @db.VarChar(8)
-  name      String           @db.VarChar(64)
-  sortOrder Int              @default(0)
-  provinces Province[]
-  tariffs   ShippingTariff[]
+  code        String           @id @db.VarChar(8)
+  name        String           @db.VarChar(64)
+  countryCode String           @default("IT") @db.VarChar(2)
+  sortOrder   Int              @default(0)
+  provinces   Province[]
+  tariffs     ShippingTariff[]
 
   @@index([sortOrder])
+  @@index([countryCode])
 }
 
 model Province {
-  code       String           @id @db.VarChar(8)
-  name       String           @db.VarChar(64)
-  regionCode String           @db.VarChar(8)
-  sortOrder  Int              @default(0)
-  region     Region           @relation(fields: [regionCode], references: [code], onDelete: Restrict)
-  cities     City[]
-  tariffs    ShippingTariff[]
+  code        String           @id @db.VarChar(8)
+  name        String           @db.VarChar(64)
+  regionCode  String           @db.VarChar(8)
+  countryCode String           @default("IT") @db.VarChar(2)
+  sortOrder   Int              @default(0)
+  region      Region           @relation(fields: [regionCode], references: [code], onDelete: Restrict)
+  cities      City[]
+  tariffs     ShippingTariff[]
 
   @@index([regionCode])
   @@index([sortOrder])
+  @@index([countryCode])
 }
 
 model City {
   code         String           @id @default(cuid())
   name         String           @db.VarChar(128)
   provinceCode String           @db.VarChar(8)
+  countryCode  String           @default("IT") @db.VarChar(2)
   // CAPs come JSON array (es. ["20121","20122",...]). Per la maggior parte dei
-  // comuni è un solo CAP; città grandi (Roma, Milano…) hanno decine di CAP.
+  // comuni è un solo CAP; città grandi hanno decine di CAP.
   caps         String?          @db.Text
   createdAt    DateTime         @default(now())
   province     Province         @relation(fields: [provinceCode], references: [code], onDelete: Restrict)
@@ -1126,6 +1131,7 @@ model City {
 
   @@unique([provinceCode, name])
   @@index([provinceCode])
+  @@index([countryCode])
 }
 
 // ─── Store: Shipping ───────────────────────────────────────────────────

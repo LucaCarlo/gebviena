@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Loader2, Save, Check, AlertCircle, Info, RotateCcw, Database } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Loader2, Save, Check, AlertCircle, Info, RotateCcw, Database, Upload } from "lucide-react";
 
 interface Settings {
   freeThresholdCents: number;
@@ -40,8 +40,9 @@ export default function StoreShippingPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [seeding, setSeeding] = useState(false);
-  const [seedInfo, setSeedInfo] = useState<{ totalInDb: number; lastInsert?: number } | null>(null);
+  const [countries, setCountries] = useState<Array<{ countryCode: string; name: string; regions: number; provinces: number; cities: number }>>([]);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -68,33 +69,42 @@ export default function StoreShippingPage() {
 
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
 
-  // Stato attuale del DB comuni (per mostrare quanti comuni sono importati)
-  useEffect(() => {
-    fetch("/api/store/public/geo/cities?provinceCode=MI")
-      .then((r) => r.json())
-      .then((d) => {
-        // Banale ping: se la chiamata torna almeno qualche città, c'è il dato.
-        if (d.success) setSeedInfo({ totalInDb: Array.isArray(d.data) ? d.data.length : 0 });
-      })
-      .catch(() => {});
+  const fetchCountries = useCallback(async () => {
+    try {
+      const res = await fetch("/api/store/geo/countries");
+      const data = await res.json();
+      if (data.success) setCountries(data.data || []);
+    } catch { /* silent */ }
   }, []);
 
-  const seedItaly = async () => {
-    if (!confirm("Importare il dataset comuni Italia? Operazione idempotente (non duplica), serve eseguirla una volta.")) return;
-    setSeeding(true);
+  useEffect(() => { fetchCountries(); }, [fetchCountries]);
+
+  const handleImportFile = async (file: File) => {
+    setImporting(true);
     try {
-      const res = await fetch("/api/store/geo/seed-italy", { method: "POST" });
+      const text = await file.text();
+      let payload: unknown;
+      try { payload = JSON.parse(text); } catch {
+        showToast("File JSON non valido", false);
+        return;
+      }
+      const res = await fetch("/api/store/geo/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       const data = await res.json();
       if (data.success) {
-        showToast(`Importati ${data.inserted} comuni (totale in DB: ${data.totalInDb})`, true);
-        setSeedInfo({ totalInDb: data.totalInDb, lastInsert: data.inserted });
+        showToast(`${data.countryName || data.countryCode}: ${data.citiesInserted} città inserite (totale ${data.totalCitiesInDb})`, true);
+        await fetchCountries();
       } else {
-        showToast(data.error || "Errore import", false);
+        showToast(data.error || "Errore durante l'import", false);
       }
     } catch {
-      showToast("Errore di rete", false);
+      showToast("Errore di rete o file troppo grande", false);
     } finally {
-      setSeeding(false);
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -295,32 +305,74 @@ export default function StoreShippingPage() {
         </div>
       </section>
 
-      {/* Database geografico — import dei comuni Italia con CAP */}
-      <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider inline-flex items-center gap-2">
-          <Database size={15} /> Database geografico (comuni Italia)
-        </h2>
-        <p className="text-xs text-warm-600">
-          Il checkout usa un dropdown a cascata Provincia → Città → CAP. Devi importare una volta il dataset
-          completo dei ~7.900 comuni italiani. È un&apos;operazione idempotente (re-eseguibile senza danni).
-        </p>
-        {seedInfo && (
-          <p className="text-xs text-warm-500">
-            {seedInfo.lastInsert !== undefined
-              ? <>Ultimo import: <strong>{seedInfo.lastInsert}</strong> nuovi inseriti.</>
-              : seedInfo.totalInDb > 0
-                ? <>Database già popolato (comuni MI di esempio: <strong>{seedInfo.totalInDb}</strong>).</>
-                : <>Database vuoto, fai click qui sotto per importare.</>}
-          </p>
+      {/* Database geografici — aggiunta nazioni via upload JSON */}
+      <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider inline-flex items-center gap-2">
+              <Database size={15} /> Database geografici
+            </h2>
+            <p className="text-xs text-warm-600 mt-1">
+              Nazioni il cui dataset (regioni, province, città con CAP) è caricato. Vengono usate per i dropdown a cascata del checkout.
+            </p>
+          </div>
+        </div>
+
+        {countries.length > 0 && (
+          <div className="border border-warm-200 rounded overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-warm-50 text-warm-500 text-xs">
+                <tr>
+                  <th className="px-4 py-2 text-left">Nazione</th>
+                  <th className="px-4 py-2 text-right">Regioni</th>
+                  <th className="px-4 py-2 text-right">Province</th>
+                  <th className="px-4 py-2 text-right">Città</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-warm-100">
+                {countries.map((c) => (
+                  <tr key={c.countryCode}>
+                    <td className="px-4 py-2.5 text-warm-800">
+                      <span className="font-mono text-warm-500 mr-2">{c.countryCode}</span> {c.name}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.regions}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.provinces}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.cities.toLocaleString("it-IT")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-        <button
-          onClick={seedItaly}
-          disabled={seeding}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-warm-100 text-warm-800 border border-warm-300 rounded hover:bg-warm-200 disabled:opacity-50"
-        >
-          {seeding ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
-          {seeding ? "Importazione in corso (può richiedere 30-60s)…" : "Importa dataset comuni Italia"}
-        </button>
+
+        <div className="border border-dashed border-warm-300 rounded p-4 space-y-3">
+          <div className="text-xs font-semibold text-warm-700 inline-flex items-center gap-2">
+            <Upload size={13} /> Carica una nuova nazione (file JSON)
+          </div>
+          <p className="text-[11px] text-warm-500 leading-relaxed">
+            Formato richiesto: un file JSON con la struttura
+            <code className="ml-1 px-1 py-0.5 bg-warm-50 rounded">{`{ "countryCode": "DE", "countryName": "Germania", "regions": [{"code","name"}], "provinces": [{"code","name","regionCode"}], "cities": [{"code","name","provinceCode","caps":[]}] }`}</code>.
+            L&apos;import è idempotente (rieseguibile, non duplica). Per re-importare con dati aggiornati, prima cancella i record DB della nazione.
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              disabled={importing}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleImportFile(f);
+              }}
+              className="block w-full max-w-md text-xs text-warm-700 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-warm-100 file:text-warm-800 file:cursor-pointer hover:file:bg-warm-200 disabled:opacity-50"
+            />
+            {importing && (
+              <span className="text-xs text-warm-500 inline-flex items-center gap-1">
+                <Loader2 size={12} className="animate-spin" /> Import in corso (può richiedere alcuni minuti per dataset grandi)…
+              </span>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* Bottom save bar (sticky-ish) */}
