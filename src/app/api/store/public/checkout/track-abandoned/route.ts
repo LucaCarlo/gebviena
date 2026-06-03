@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Nessuna variante valida nel carrello" }, { status: 400 });
     }
 
-    const shippingResult = computeShipping({
+    const shippingResult = await computeShipping({
       country,
       postalCode: shippingAddress?.postalCode || "",
       province: shippingAddress?.province || "",

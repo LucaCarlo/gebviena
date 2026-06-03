@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
     // Altri paesi: 90€/scatola fallback.
     // Soglia free shipping 950€ azzera SOLO la standard.
     // Piano (consegna al piano) e disimballo restano additivi anche con free.
-    const shippingResult = computeShipping({
+    const shippingResult = await computeShipping({
       country: (shippingAddress.country || "IT").toUpperCase(),
       postalCode: shippingAddress.postalCode || "",
       province: shippingAddress.province || "",

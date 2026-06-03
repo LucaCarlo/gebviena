@@ -1140,6 +1140,18 @@ enum ShippingClass {
   QUOTE_ONLY
 }
 
+// Tariffe spedizione regionali IT (modificabili dall'admin). I valori globali
+// (soglia free shipping, tariffe FR, consegna al piano, disimballo, fallback)
+// stanno nel Setting con group='shipping'. Vedi src/lib/shipping-rates.ts.
+model ShippingRegionRate {
+  id        String   @id @default(cuid())
+  code      String   @unique @db.VarChar(64)
+  label     String   @db.VarChar(128)
+  rateCents Int
+  sortOrder Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
 model ShippingTariff {
   id              String          @id @default(cuid())
   countryCode     String          @db.VarChar(2)

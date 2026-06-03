@@ -1,35 +1,38 @@
 /**
- * Tariffe di spedizione — specifiche cliente vendita speciale 2026.
+ * Tariffe di spedizione — versione dinamica (modificabili dall'admin via DB).
+ *
+ * I valori vivono in DB su due sorgenti:
+ *  - Setting (group="shipping") per i valori globali (soglia free shipping,
+ *    fallback IT, tariffe FR, consegna al piano, disimballo, RoW per scatola).
+ *  - ShippingRegionRate per le 20 tariffe flat per regione italiana.
+ *
+ * Geografia (mapping provincia→regione e CAP-prefix→regione) resta nel codice
+ * perché non cambia mai. Cambiano solo i prezzi.
+ *
+ * Cache in-memory 30s per non interrogare il DB ad ogni quote.
+ *
+ * Comportamento di sicurezza: se per qualsiasi motivo il DB non risponde o un
+ * valore è mancante, si fa fallback al DEFAULT hardcoded — che è IDENTICO ai
+ * valori attivi prima dell'introduzione del sistema dinamico. Quindi prima del
+ * primo salvataggio dall'admin, il sito gira esattamente come prima.
  *
  * IT:  tariffa FLAT per regione. Lookup primario via codice provincia
- *      (es. "MI" → Lombardia → 70€). Fallback: prefisso CAP 2 cifre.
- *      Se nessuno match, fallback alla tariffa massima (Sicilia/Sardegna 162€).
+ *      (es. "MI" → Lombardia). Fallback: prefisso CAP 2 cifre.
+ *      Se nessuno match, fallback alla tariffa configurata (default 162€).
  * FR:  per m³. 186€/m³ standard; 300€/m³ se CAP inizia con "20" (Corsica).
- * Altri paesi: fallback flat per scatola (logica precedente, 90€/scatola).
+ * Altri paesi: fallback flat per scatola (default 90€/scatola).
  *
  * Volume fatturabile: il m³ è un'unità fissa e indivisibile.
  *   billableVol = max(1, ceil(volReale)).
- *   0.4m³ → 1m³;  1.0m³ → 1m³;  1.3m³ → 2m³;  2.0m³ → 2m³.
  *
- * Soglia spedizione gratuita: 950€ subtotale (azzera SOLO la quota standard).
- * Servizi aggiuntivi (consegna al piano, disimballo) restano fatturati anche
- * quando la spedizione standard è gratuita.
+ * Soglia spedizione gratuita: configurabile (default 950€); azzera SOLO la
+ * quota standard. Servizi aggiuntivi (piano, disimballo) restano fatturati.
  */
 
-// ─── Costanti tariffe ──────────────────────────────────────────────────
-export const FREE_STANDARD_SHIPPING_THRESHOLD_CENTS = 95000; // 950 EUR
+import { prisma } from "./prisma";
 
-// Servizi aggiuntivi (cents per m³)
-export const FLOOR_DELIVERY_PER_M3_CENTS_IT = 12000; // 120€/m³
-export const FLOOR_DELIVERY_PER_M3_CENTS_FR = 14000; // 140€/m³
-export const UNBOXING_PER_M3_CENTS = 2000;           // 20€/m³
-
-// Francia per m³
-export const FR_STANDARD_PER_M3_CENTS = 18600;       // 186€/m³
-export const FR_CORSICA_PER_M3_CENTS = 30000;        // 300€/m³ (CAP "20…")
-
-// ─── IT: tariffa flat per regione (cents) ─────────────────────────────
-const REGION_RATE_CENTS: Record<string, number> = {
+// ─── Defaults (= valori in produzione prima del passaggio a DB) ─────────
+const DEFAULT_REGION_RATES: Record<string, number> = {
   LOMBARDIA: 7000,
   PIEMONTE: 8200,
   "VALLE D'AOSTA": 9200,
@@ -52,11 +55,43 @@ const REGION_RATE_CENTS: Record<string, number> = {
   SARDEGNA: 16200,
 };
 
-// Tariffa di fallback IT se non riconosciamo né provincia né CAP.
-const IT_FALLBACK_CENTS = 16200; // = max (Sicilia/Sardegna), così non sottostimo
+const DEFAULTS = {
+  freeThresholdCents: 95000,         // 950 EUR
+  itFallbackCents: 16200,            // 162 EUR
+  frStandardPerM3Cents: 18600,       // 186 EUR/m³
+  frCorsicaPerM3Cents: 30000,        // 300 EUR/m³
+  floorDeliveryItPerM3Cents: 12000,  // 120 EUR/m³
+  floorDeliveryFrPerM3Cents: 14000,  // 140 EUR/m³
+  unboxingPerM3Cents: 2000,          // 20 EUR/m³
+  rowPerBoxCents: 9000,              // 90 EUR/scatola (resto del mondo)
+};
 
-// ─── IT: mapping codice provincia ISO 3166-2:IT → regione ──────────────
-// Le 107 province italiane (post-riforma 2015).
+// Ordine canonico di visualizzazione per le regioni (geografico nord→sud).
+export const REGION_ORDER: { code: string; label: string }[] = [
+  { code: "LOMBARDIA", label: "Lombardia" },
+  { code: "PIEMONTE", label: "Piemonte" },
+  { code: "VALLE D'AOSTA", label: "Valle d'Aosta" },
+  { code: "VENETO", label: "Veneto" },
+  { code: "FRIULI-VENEZIA GIULIA", label: "Friuli-Venezia Giulia" },
+  { code: "TRENTINO-ALTO ADIGE", label: "Trentino-Alto Adige" },
+  { code: "EMILIA-ROMAGNA", label: "Emilia-Romagna" },
+  { code: "LIGURIA", label: "Liguria" },
+  { code: "TOSCANA", label: "Toscana" },
+  { code: "UMBRIA", label: "Umbria" },
+  { code: "MARCHE", label: "Marche" },
+  { code: "LAZIO", label: "Lazio" },
+  { code: "ABRUZZO", label: "Abruzzo" },
+  { code: "MOLISE", label: "Molise" },
+  { code: "CAMPANIA", label: "Campania" },
+  { code: "BASILICATA", label: "Basilicata" },
+  { code: "PUGLIA", label: "Puglia" },
+  { code: "CALABRIA", label: "Calabria" },
+  { code: "SICILIA", label: "Sicilia" },
+  { code: "SARDEGNA", label: "Sardegna" },
+];
+
+// ─── Geografia (FISSA, non cambia) ─────────────────────────────────────
+// Mapping codice provincia ISO 3166-2:IT → regione (107 province post-2015).
 const PROVINCE_TO_REGION: Record<string, string> = {
   // ABRUZZO
   AQ: "ABRUZZO", CH: "ABRUZZO", PE: "ABRUZZO", TE: "ABRUZZO",
@@ -88,7 +123,7 @@ const PROVINCE_TO_REGION: Record<string, string> = {
   // PIEMONTE
   AL: "PIEMONTE", AT: "PIEMONTE", BI: "PIEMONTE", CN: "PIEMONTE",
   NO: "PIEMONTE", TO: "PIEMONTE", VB: "PIEMONTE", VC: "PIEMONTE",
-  // PUGLIA — sia BT (ISO) che BAT (codice alternativo) per Barletta-Andria-Trani
+  // PUGLIA — sia BT (ISO) che BAT (codice alternativo)
   BA: "PUGLIA", BT: "PUGLIA", BAT: "PUGLIA", BR: "PUGLIA",
   FG: "PUGLIA", LE: "PUGLIA", TA: "PUGLIA",
   // SARDEGNA — SU = Sud Sardegna
@@ -110,34 +145,37 @@ const PROVINCE_TO_REGION: Record<string, string> = {
   VE: "VENETO", VI: "VENETO", VR: "VENETO",
 };
 
-// ─── IT: fallback CAP-prefix → tariffa (cents) ────────────────────────
-// Usato solo se la provincia non viene trovata o è vuota.
-const IT_RATE_BY_CAP_PREFIX: Record<string, number> = {
-  "00": 10300, "01": 10300, "02": 10300, "03": 10300, "04": 10300, // LAZIO
-  "05": 9900, "06": 9900,                                            // UMBRIA
-  "07": 16200, "08": 16200, "09": 16200,                              // SARDEGNA
-  "10": 8200, "12": 8200, "13": 8200, "14": 8200, "15": 8200, "28": 8200, // PIEMONTE
-  "11": 9200,                                                          // VALLE D'AOSTA
-  "16": 8800, "17": 8800, "18": 8800, "19": 8800,                       // LIGURIA
-  "20": 7000, "21": 7000, "22": 7000, "23": 7000, "24": 7000,
-  "25": 7000, "26": 7000, "27": 7000, "46": 7000,                       // LOMBARDIA
-  "29": 8200, "40": 8200, "41": 8200, "42": 8200, "43": 8200,
-  "44": 8200, "47": 8200, "48": 8200,                                   // EMILIA-ROMAGNA
-  "30": 8200, "31": 8200, "32": 8200, "35": 8200, "36": 8200,
-  "37": 8200, "45": 8200,                                               // VENETO
-  "33": 8800, "34": 8800,                                               // FRIULI VG
-  "38": 8800, "39": 8800,                                               // TRENTINO AA
-  "50": 9400, "51": 9400, "52": 9400, "53": 9400, "54": 9400,
-  "55": 9400, "56": 9400, "57": 9400, "58": 9400, "59": 9400,            // TOSCANA
-  "60": 9400, "61": 9400, "62": 9400, "63": 9400,                       // MARCHE
-  "64": 11000, "65": 11000, "66": 11000, "67": 11000,                   // ABRUZZO
-  "70": 12000, "71": 12000, "72": 12000, "73": 12000, "74": 12000,       // PUGLIA
-  "75": 14300, "85": 14300,                                             // BASILICATA
-  "80": 12000, "81": 12000, "82": 12000, "83": 12000, "84": 12000,       // CAMPANIA
-  "86": 12200,                                                          // MOLISE
-  "87": 14300, "88": 14300, "89": 14300,                                // CALABRIA
-  "90": 16200, "91": 16200, "92": 16200, "93": 16200, "94": 16200,
-  "95": 16200, "96": 16200, "97": 16200, "98": 16200,                   // SICILIA
+// CAP-prefix → regione (fallback geografico, non dipende dai prezzi).
+const CAP_PREFIX_TO_REGION: Record<string, string> = {
+  "00": "LAZIO", "01": "LAZIO", "02": "LAZIO", "03": "LAZIO", "04": "LAZIO",
+  "05": "UMBRIA", "06": "UMBRIA",
+  "07": "SARDEGNA", "08": "SARDEGNA", "09": "SARDEGNA",
+  "10": "PIEMONTE", "12": "PIEMONTE", "13": "PIEMONTE", "14": "PIEMONTE",
+  "15": "PIEMONTE", "28": "PIEMONTE",
+  "11": "VALLE D'AOSTA",
+  "16": "LIGURIA", "17": "LIGURIA", "18": "LIGURIA", "19": "LIGURIA",
+  "20": "LOMBARDIA", "21": "LOMBARDIA", "22": "LOMBARDIA", "23": "LOMBARDIA",
+  "24": "LOMBARDIA", "25": "LOMBARDIA", "26": "LOMBARDIA", "27": "LOMBARDIA",
+  "46": "LOMBARDIA",
+  "29": "EMILIA-ROMAGNA", "40": "EMILIA-ROMAGNA", "41": "EMILIA-ROMAGNA",
+  "42": "EMILIA-ROMAGNA", "43": "EMILIA-ROMAGNA", "44": "EMILIA-ROMAGNA",
+  "47": "EMILIA-ROMAGNA", "48": "EMILIA-ROMAGNA",
+  "30": "VENETO", "31": "VENETO", "32": "VENETO", "35": "VENETO",
+  "36": "VENETO", "37": "VENETO", "45": "VENETO",
+  "33": "FRIULI-VENEZIA GIULIA", "34": "FRIULI-VENEZIA GIULIA",
+  "38": "TRENTINO-ALTO ADIGE", "39": "TRENTINO-ALTO ADIGE",
+  "50": "TOSCANA", "51": "TOSCANA", "52": "TOSCANA", "53": "TOSCANA",
+  "54": "TOSCANA", "55": "TOSCANA", "56": "TOSCANA", "57": "TOSCANA",
+  "58": "TOSCANA", "59": "TOSCANA",
+  "60": "MARCHE", "61": "MARCHE", "62": "MARCHE", "63": "MARCHE",
+  "64": "ABRUZZO", "65": "ABRUZZO", "66": "ABRUZZO", "67": "ABRUZZO",
+  "70": "PUGLIA", "71": "PUGLIA", "72": "PUGLIA", "73": "PUGLIA", "74": "PUGLIA",
+  "75": "BASILICATA", "85": "BASILICATA",
+  "80": "CAMPANIA", "81": "CAMPANIA", "82": "CAMPANIA", "83": "CAMPANIA", "84": "CAMPANIA",
+  "86": "MOLISE",
+  "87": "CALABRIA", "88": "CALABRIA", "89": "CALABRIA",
+  "90": "SICILIA", "91": "SICILIA", "92": "SICILIA", "93": "SICILIA", "94": "SICILIA",
+  "95": "SICILIA", "96": "SICILIA", "97": "SICILIA", "98": "SICILIA",
 };
 
 // ─── Tipi ──────────────────────────────────────────────────────────────
@@ -145,10 +183,10 @@ export interface ShippingComputeInput {
   country: string;          // ISO Alpha-2 (es. "IT", "FR")
   postalCode: string;       // CAP
   province: string;         // codice provincia ISO (es. "MI", "RM", "AN")
-  totalVolumeM3: number;    // volume totale m³
-  totalBoxes: number;       // numero scatole (fallback RoW)
-  subtotalCents: number;    // subtotale ordine in cents
-  shippingFloor: number;    // 0 = piano terra (bordo strada), >0 = consegna al piano
+  totalVolumeM3: number;
+  totalBoxes: number;
+  subtotalCents: number;
+  shippingFloor: number;    // 0 = piano terra, >0 = consegna al piano
   withUnboxingService: boolean;
 }
 
@@ -162,88 +200,157 @@ export interface ShippingComputeResult {
   notes: string[];
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────
-function lookupItalyByProvince(provCode: string): { rateCents: number; region: string } | null {
-  const code = (provCode || "").trim().toUpperCase();
-  if (!code) return null;
-  const region = PROVINCE_TO_REGION[code];
-  if (!region) return null;
-  const rate = REGION_RATE_CENTS[region];
-  if (rate == null) return null;
-  return { rateCents: rate, region };
+export interface ShippingConfig {
+  freeThresholdCents: number;
+  itFallbackCents: number;
+  frStandardPerM3Cents: number;
+  frCorsicaPerM3Cents: number;
+  floorDeliveryItPerM3Cents: number;
+  floorDeliveryFrPerM3Cents: number;
+  unboxingPerM3Cents: number;
+  rowPerBoxCents: number;
+  itRegionRates: Record<string, number>;
 }
 
-function lookupItalyByCAP(postalCode: string): { rateCents: number; region: string } | null {
+// ─── Cache ─────────────────────────────────────────────────────────────
+let _cache: { config: ShippingConfig; ts: number } | null = null;
+const CACHE_TTL_MS = 30_000;
+
+export function invalidateShippingCache() {
+  _cache = null;
+}
+
+function toInt(v: string | undefined, fallback: number): number {
+  if (v === undefined) return fallback;
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+export async function loadShippingConfig(): Promise<ShippingConfig> {
+  const now = Date.now();
+  if (_cache && now - _cache.ts < CACHE_TTL_MS) return _cache.config;
+
+  try {
+    const [settings, rates] = await Promise.all([
+      prisma.setting.findMany({ where: { group: "shipping" } }),
+      prisma.shippingRegionRate.findMany(),
+    ]);
+    const sMap = new Map(settings.map((s) => [s.key, s.value] as const));
+    const regionRates: Record<string, number> = {};
+    for (const r of rates) regionRates[r.code.toUpperCase()] = r.rateCents;
+
+    const config: ShippingConfig = {
+      freeThresholdCents:        toInt(sMap.get("shipping.free_threshold_cents"),         DEFAULTS.freeThresholdCents),
+      itFallbackCents:           toInt(sMap.get("shipping.it_fallback_cents"),            DEFAULTS.itFallbackCents),
+      frStandardPerM3Cents:      toInt(sMap.get("shipping.fr_standard_per_m3_cents"),     DEFAULTS.frStandardPerM3Cents),
+      frCorsicaPerM3Cents:       toInt(sMap.get("shipping.fr_corsica_per_m3_cents"),      DEFAULTS.frCorsicaPerM3Cents),
+      floorDeliveryItPerM3Cents: toInt(sMap.get("shipping.floor_delivery_it_per_m3_cents"), DEFAULTS.floorDeliveryItPerM3Cents),
+      floorDeliveryFrPerM3Cents: toInt(sMap.get("shipping.floor_delivery_fr_per_m3_cents"), DEFAULTS.floorDeliveryFrPerM3Cents),
+      unboxingPerM3Cents:        toInt(sMap.get("shipping.unboxing_per_m3_cents"),        DEFAULTS.unboxingPerM3Cents),
+      rowPerBoxCents:            toInt(sMap.get("shipping.row_per_box_cents"),            DEFAULTS.rowPerBoxCents),
+      itRegionRates:             Object.keys(regionRates).length > 0
+                                   ? { ...DEFAULT_REGION_RATES, ...regionRates }
+                                   : DEFAULT_REGION_RATES,
+    };
+    _cache = { config, ts: now };
+    return config;
+  } catch (e) {
+    console.error("[shipping-rates] errore lettura DB, uso defaults:", e);
+    return {
+      ...DEFAULTS,
+      itRegionRates: DEFAULT_REGION_RATES,
+    };
+  }
+}
+
+// Backward-compat: il vecchio import FREE_STANDARD_SHIPPING_THRESHOLD_CENTS
+// resta esposto come funzione asincrona; per i pochi callers che lo usavano
+// come costante numerica forniamo anche un default sincrono.
+export async function getFreeShippingThresholdCents(): Promise<number> {
+  return (await loadShippingConfig()).freeThresholdCents;
+}
+export const FREE_STANDARD_SHIPPING_THRESHOLD_CENTS = DEFAULTS.freeThresholdCents;
+
+// ─── Helpers di lookup ─────────────────────────────────────────────────
+function lookupRegionByProvince(provCode: string): string | null {
+  const code = (provCode || "").trim().toUpperCase();
+  if (!code) return null;
+  return PROVINCE_TO_REGION[code] || null;
+}
+function lookupRegionByCAP(postalCode: string): string | null {
   const prefix = (postalCode || "").trim().slice(0, 2);
   if (!prefix) return null;
-  const rate = IT_RATE_BY_CAP_PREFIX[prefix];
-  if (rate == null) return null;
-  // Cerca la regione corrispondente per il display
-  const region = Object.keys(REGION_RATE_CENTS).find((r) => REGION_RATE_CENTS[r] === rate) || null;
-  return { rateCents: rate, region: region || "" };
+  return CAP_PREFIX_TO_REGION[prefix] || null;
 }
 
 // ─── API pubblica ──────────────────────────────────────────────────────
-export function computeShipping(input: ShippingComputeInput): ShippingComputeResult {
+export async function computeShipping(input: ShippingComputeInput): Promise<ShippingComputeResult> {
+  const cfg = await loadShippingConfig();
   const notes: string[] = [];
   const country = (input.country || "IT").toUpperCase();
   const cap = (input.postalCode || "").trim();
   const vol = Math.max(0, input.totalVolumeM3);
-  // m³ è un'unità fissa: si parte sempre da 1 m³ minimo e si arrotonda al
-  // m³ superiore per qualsiasi frazione (0.4→1, 1.0→1, 1.3→2, 2.0→2).
   const billableVol = Math.max(1, Math.ceil(vol));
   let resolvedRegion: string | null = null;
 
   // 1. Spedizione standard
   let standardShippingCents = 0;
   if (country === "IT") {
-    const byProv = lookupItalyByProvince(input.province);
-    if (byProv) {
-      standardShippingCents = byProv.rateCents;
-      resolvedRegion = byProv.region;
-      notes.push(`IT: provincia ${input.province.toUpperCase()} → ${byProv.region} → ${(byProv.rateCents / 100).toFixed(2)} EUR (flat)`);
-    } else {
-      const byCap = lookupItalyByCAP(cap);
-      if (byCap) {
-        standardShippingCents = byCap.rateCents;
-        resolvedRegion = byCap.region;
-        notes.push(`IT: CAP ${cap} → ${byCap.region} → ${(byCap.rateCents / 100).toFixed(2)} EUR (flat, fallback CAP)`);
-      } else {
-        standardShippingCents = IT_FALLBACK_CENTS;
-        notes.push(`IT: né provincia "${input.province}" né CAP "${cap}" riconosciuti → fallback ${(IT_FALLBACK_CENTS / 100).toFixed(2)} EUR`);
+    const regionByProv = lookupRegionByProvince(input.province);
+    if (regionByProv) {
+      const rate = cfg.itRegionRates[regionByProv];
+      if (rate != null) {
+        standardShippingCents = rate;
+        resolvedRegion = regionByProv;
+        notes.push(`IT: provincia ${input.province.toUpperCase()} → ${regionByProv} → ${(rate / 100).toFixed(2)} EUR (flat)`);
       }
     }
+    if (standardShippingCents === 0) {
+      const regionByCap = lookupRegionByCAP(cap);
+      if (regionByCap) {
+        const rate = cfg.itRegionRates[regionByCap];
+        if (rate != null) {
+          standardShippingCents = rate;
+          resolvedRegion = regionByCap;
+          notes.push(`IT: CAP ${cap} → ${regionByCap} → ${(rate / 100).toFixed(2)} EUR (flat, fallback CAP)`);
+        }
+      }
+    }
+    if (standardShippingCents === 0) {
+      standardShippingCents = cfg.itFallbackCents;
+      notes.push(`IT: né provincia "${input.province}" né CAP "${cap}" riconosciuti → fallback ${(cfg.itFallbackCents / 100).toFixed(2)} EUR`);
+    }
   } else if (country === "FR") {
-    const ratePerM3 = cap.startsWith("20") ? FR_CORSICA_PER_M3_CENTS : FR_STANDARD_PER_M3_CENTS;
+    const ratePerM3 = cap.startsWith("20") ? cfg.frCorsicaPerM3Cents : cfg.frStandardPerM3Cents;
     standardShippingCents = ratePerM3 * billableVol;
     notes.push(`FR: CAP ${cap} → ${ratePerM3 / 100}€/m³ × ${billableVol}m³ fatturabili (reali ${vol.toFixed(3)}m³) = ${(standardShippingCents / 100).toFixed(2)} EUR`);
   } else {
     const boxes = Math.max(1, Math.floor(input.totalBoxes));
-    standardShippingCents = 9000 * boxes;
-    notes.push(`RoW (${country}): 90€ × ${boxes} scatola/e = ${(standardShippingCents / 100).toFixed(2)} EUR`);
+    standardShippingCents = cfg.rowPerBoxCents * boxes;
+    notes.push(`RoW (${country}): ${cfg.rowPerBoxCents / 100}€ × ${boxes} scatola/e = ${(standardShippingCents / 100).toFixed(2)} EUR`);
   }
 
   // 2. Soglia free shipping (zera SOLO la standard)
   let freeShippingApplied = false;
-  if (input.subtotalCents >= FREE_STANDARD_SHIPPING_THRESHOLD_CENTS) {
+  if (input.subtotalCents >= cfg.freeThresholdCents) {
     standardShippingCents = 0;
     freeShippingApplied = true;
-    notes.push(`Subtotale ≥ 950€ → spedizione standard gratuita`);
+    notes.push(`Subtotale ≥ ${(cfg.freeThresholdCents / 100).toFixed(2)}€ → spedizione standard gratuita`);
   }
 
   // 3. Consegna al piano (additiva, anche con free standard)
   let floorDeliveryCents = 0;
   if (input.shippingFloor > 0) {
-    const ratePerM3 = country === "FR" ? FLOOR_DELIVERY_PER_M3_CENTS_FR : FLOOR_DELIVERY_PER_M3_CENTS_IT;
+    const ratePerM3 = country === "FR" ? cfg.floorDeliveryFrPerM3Cents : cfg.floorDeliveryItPerM3Cents;
     floorDeliveryCents = ratePerM3 * billableVol;
-    notes.push(`Consegna al piano (piano ${input.shippingFloor}): ${ratePerM3 / 100}€/m³ × ${billableVol}m³ fatturabili (reali ${vol.toFixed(3)}m³) = ${(floorDeliveryCents / 100).toFixed(2)} EUR`);
+    notes.push(`Consegna al piano (piano ${input.shippingFloor}): ${ratePerM3 / 100}€/m³ × ${billableVol}m³ fatturabili = ${(floorDeliveryCents / 100).toFixed(2)} EUR`);
   }
 
   // 4. Disimballo + smaltimento (additivo)
   let unboxingFeeCents = 0;
   if (input.withUnboxingService) {
-    unboxingFeeCents = UNBOXING_PER_M3_CENTS * billableVol;
-    notes.push(`Disimballo: 20€/m³ × ${billableVol}m³ fatturabili (reali ${vol.toFixed(3)}m³) = ${(unboxingFeeCents / 100).toFixed(2)} EUR`);
+    unboxingFeeCents = cfg.unboxingPerM3Cents * billableVol;
+    notes.push(`Disimballo: ${cfg.unboxingPerM3Cents / 100}€/m³ × ${billableVol}m³ fatturabili = ${(unboxingFeeCents / 100).toFixed(2)} EUR`);
   }
 
   return {
@@ -255,4 +362,9 @@ export function computeShipping(input: ShippingComputeInput): ShippingComputeRes
     resolvedRegion,
     notes,
   };
+}
+
+// ─── Esposizione defaults (utile per seed iniziale dall'admin) ─────────
+export function getDefaultShippingConfig(): ShippingConfig {
+  return { ...DEFAULTS, itRegionRates: { ...DEFAULT_REGION_RATES } };
 }

@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const shippingResult = computeShipping({
+    const shippingResult = await computeShipping({
       country: (shippingAddress.country || "IT").toUpperCase(),
       postalCode: shippingAddress.postalCode || "",
       province: shippingAddress.province || "",
