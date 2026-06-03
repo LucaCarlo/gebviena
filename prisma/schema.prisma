@@ -1117,6 +1117,9 @@ model City {
   code         String           @id @default(cuid())
   name         String           @db.VarChar(128)
   provinceCode String           @db.VarChar(8)
+  // CAPs come JSON array (es. ["20121","20122",...]). Per la maggior parte dei
+  // comuni è un solo CAP; città grandi (Roma, Milano…) hanno decine di CAP.
+  caps         String?          @db.Text
   createdAt    DateTime         @default(now())
   province     Province         @relation(fields: [provinceCode], references: [code], onDelete: Restrict)
   tariffs      ShippingTariff[]

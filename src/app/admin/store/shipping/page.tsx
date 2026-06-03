@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Save, Check, AlertCircle, Info, RotateCcw } from "lucide-react";
+import { Loader2, Save, Check, AlertCircle, Info, RotateCcw, Database } from "lucide-react";
 
 interface Settings {
   freeThresholdCents: number;
@@ -40,6 +40,8 @@ export default function StoreShippingPage() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedInfo, setSeedInfo] = useState<{ totalInDb: number; lastInsert?: number } | null>(null);
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -65,6 +67,36 @@ export default function StoreShippingPage() {
   }, []);
 
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
+
+  // Stato attuale del DB comuni (per mostrare quanti comuni sono importati)
+  useEffect(() => {
+    fetch("/api/store/public/geo/cities?provinceCode=MI")
+      .then((r) => r.json())
+      .then((d) => {
+        // Banale ping: se la chiamata torna almeno qualche città, c'è il dato.
+        if (d.success) setSeedInfo({ totalInDb: Array.isArray(d.data) ? d.data.length : 0 });
+      })
+      .catch(() => {});
+  }, []);
+
+  const seedItaly = async () => {
+    if (!confirm("Importare il dataset comuni Italia? Operazione idempotente (non duplica), serve eseguirla una volta.")) return;
+    setSeeding(true);
+    try {
+      const res = await fetch("/api/store/geo/seed-italy", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Importati ${data.inserted} comuni (totale in DB: ${data.totalInDb})`, true);
+        setSeedInfo({ totalInDb: data.totalInDb, lastInsert: data.inserted });
+      } else {
+        showToast(data.error || "Errore import", false);
+      }
+    } catch {
+      showToast("Errore di rete", false);
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const updateSetting = (key: keyof Settings, eurValue: string) => {
     if (!config) return;
@@ -261,6 +293,34 @@ export default function StoreShippingPage() {
             suffix="€/scatola"
           />
         </div>
+      </section>
+
+      {/* Database geografico — import dei comuni Italia con CAP */}
+      <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider inline-flex items-center gap-2">
+          <Database size={15} /> Database geografico (comuni Italia)
+        </h2>
+        <p className="text-xs text-warm-600">
+          Il checkout usa un dropdown a cascata Provincia → Città → CAP. Devi importare una volta il dataset
+          completo dei ~7.900 comuni italiani. È un&apos;operazione idempotente (re-eseguibile senza danni).
+        </p>
+        {seedInfo && (
+          <p className="text-xs text-warm-500">
+            {seedInfo.lastInsert !== undefined
+              ? <>Ultimo import: <strong>{seedInfo.lastInsert}</strong> nuovi inseriti.</>
+              : seedInfo.totalInDb > 0
+                ? <>Database già popolato (comuni MI di esempio: <strong>{seedInfo.totalInDb}</strong>).</>
+                : <>Database vuoto, fai click qui sotto per importare.</>}
+          </p>
+        )}
+        <button
+          onClick={seedItaly}
+          disabled={seeding}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-warm-100 text-warm-800 border border-warm-300 rounded hover:bg-warm-200 disabled:opacity-50"
+        >
+          {seeding ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
+          {seeding ? "Importazione in corso (può richiedere 30-60s)…" : "Importa dataset comuni Italia"}
+        </button>
       </section>
 
       {/* Bottom save bar (sticky-ish) */}
