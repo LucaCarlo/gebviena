@@ -256,20 +256,23 @@ export default function AdminSubscribersPage() {
   /* ───── Delete ───── */
 
   const handleDeleteContact = async (email: string) => {
-    if (!confirm("Eliminare questo contatto?")) return;
-    const contact = contacts.find((c) => c.email === email);
-    if (contact?.subscriberId) {
-      await fetch(`/api/newsletter/subscribers/${contact.subscriberId}`, { method: "DELETE" });
-    }
+    if (!confirm("Eliminare definitivamente questo contatto?\n\nVerranno cancellati: iscrizione newsletter, registrazioni eventi e tutti i tag associati. L'operazione è irreversibile.")) return;
+    await fetch("/api/contacts/unified/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emails: [email] }),
+    });
     fetchContacts(); fetchTags();
   };
 
   const handleBulkDelete = async () => {
-    if (!selected.size || !confirm(`Eliminare ${selected.size} contatti?`)) return;
-    const ids = getSelectedSubscriberIds();
-    if (ids.length > 0) {
-      await fetch("/api/newsletter/subscribers", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
-    }
+    if (!selected.size || !confirm(`Eliminare definitivamente ${selected.size} contatti?\n\nVerranno cancellati: iscrizione newsletter, registrazioni eventi e tag. L'operazione è irreversibile.`)) return;
+    const emails = Array.from(selected);
+    await fetch("/api/contacts/unified/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emails }),
+    });
     clearSelection();
     fetchContacts(); fetchTags();
   };
