@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-interface Province { code: string; name: string; regionCode: string }
+interface Province { code: string; name: string; regionCode: string; regionName?: string | null }
 interface City { code: string; name: string; caps: string[] }
 
 interface CountryOption { code: string; label: string }
@@ -68,6 +68,18 @@ export default function AddressGeoFields({
   const availableCaps = useMemo(() => currentCity?.caps || [], [currentCity]);
   const hasData = provinces.length > 0; // se il paese è stato importato
 
+  // Raggruppa le province per régione (utile soprattutto per FR: l'utente che
+  // cerca "Corse" trova il gruppo che contiene "Corse-du-Sud" e "Haute-Corse").
+  const provincesGrouped = useMemo(() => {
+    const map = new Map<string, Province[]>();
+    for (const p of provinces) {
+      const key = p.regionName || "—";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(p);
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [provinces]);
+
   useEffect(() => {
     if (availableCaps.length === 1) {
       const key = `${country}/${province}/${cityName}`;
@@ -103,8 +115,12 @@ export default function AddressGeoFields({
               className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none disabled:bg-warm-50"
             >
               <option value="">{loadingProvinces ? t("Caricamento…", "Chargement…") : "—"}</option>
-              {provinces.map((p) => (
-                <option key={p.code} value={p.code}>{p.name} ({p.code})</option>
+              {provincesGrouped.map(([regionName, list]) => (
+                <optgroup key={regionName} label={regionName}>
+                  {list.map((p) => (
+                    <option key={p.code} value={p.code}>{p.name} ({p.code})</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           ) : (
