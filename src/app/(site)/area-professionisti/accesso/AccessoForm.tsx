@@ -321,7 +321,12 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label={t("pro.field.phone")} type="tel" value={form.phone} onChange={(v) => update("phone", v)} autoComplete="tel" />
-              <Field label={t("pro.field.company")} required value={form.company} onChange={(v) => update("company", v)} />
+              <Field
+                label={t(isRequestOnly ? "pro.field.company" : "pro.field.companyExtended")}
+                required
+                value={form.company}
+                onChange={(v) => update("company", v)}
+              />
             </div>
 
             {!isRequestOnly && (
