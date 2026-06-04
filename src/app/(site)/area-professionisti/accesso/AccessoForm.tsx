@@ -197,7 +197,7 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
         <h1 className="text-3xl md:text-5xl font-serif text-warm-900 tracking-tight leading-tight">
           {t("pro.request.sent.title")}
         </h1>
-        <p className="text-base md:text-lg text-warm-800 mt-6 leading-relaxed">
+        <p className="text-[16px] md:text-lg text-warm-800 mt-6 leading-relaxed">
           {t("pro.request.sent.body")}
         </p>
         <a
@@ -228,7 +228,7 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
         <h1 className="text-3xl md:text-5xl font-serif text-warm-900 tracking-tight leading-tight">
           {t(mode === "login" ? "pro.drawer.title.login" : "pro.drawer.title.register")}
         </h1>
-        <p className="text-[15px] md:text-base text-warm-800 mt-4 leading-relaxed max-w-2xl">
+        <p className="text-[15px] md:text-[16px] text-warm-800 mt-4 leading-relaxed max-w-2xl">
           {t(mode === "login" ? "pro.drawer.subtitle.login" : "pro.drawer.subtitle.register")}
         </p>
 
