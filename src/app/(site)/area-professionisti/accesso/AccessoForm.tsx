@@ -34,8 +34,10 @@ const EMPTY_FORM: FormState = {
   marketingOptIn: false,
 };
 
-/** Form login + registrazione professionisti — versione "pagina dedicata" del
- *  vecchio drawer. Layout più ariso, scelta ruolo a card grandi. */
+// Rivenditori e Agenti = "richiesta accesso" (approvazione manuale).
+// Architetti e Stampa = "self-service" con password immediata.
+const REQUEST_ONLY_ROLES = new Set<Role>(["RESELLER", "AGENT"]);
+
 export default function AccessoForm({ initialMode = "login" }: { initialMode?: Mode }) {
   const t = useT();
   const lang = useLang();
@@ -46,6 +48,8 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Stato "richiesta inviata" (solo per RESELLER/AGENT): mostra schermata thank-you.
+  const [requestSent, setRequestSent] = useState(false);
 
   const update = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -54,29 +58,46 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
   const validatePassword = (pwd: string): boolean =>
     pwd.length >= 8 && /[A-Z]/.test(pwd) && /[a-z]/.test(pwd) && /\d/.test(pwd);
 
+  const isRequestOnly = REQUEST_ONLY_ROLES.has(form.role);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (mode === "register") {
-      if (!form.firstName || !form.lastName || !form.email || !form.company || !form.password) {
-        setError(t("pro.error.missing"));
-        return;
-      }
-      if (!form.acceptsPrivacy) {
-        setError(t("pro.error.privacy"));
-        return;
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-        setError(t("pro.error.email"));
-        return;
-      }
-      if (!validatePassword(form.password)) {
-        setError(t("pro.error.weakPassword"));
-        return;
-      }
-      if (form.password !== form.passwordConfirm) {
-        setError(t("pro.password.mismatch"));
-        return;
+      if (isRequestOnly) {
+        if (!form.firstName || !form.lastName || !form.email || !form.company) {
+          setError(t("pro.error.missing"));
+          return;
+        }
+        if (!form.acceptsPrivacy) {
+          setError(t("pro.error.privacy"));
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+          setError(t("pro.error.email"));
+          return;
+        }
+      } else {
+        if (!form.firstName || !form.lastName || !form.email || !form.company || !form.password) {
+          setError(t("pro.error.missing"));
+          return;
+        }
+        if (!form.acceptsPrivacy) {
+          setError(t("pro.error.privacy"));
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+          setError(t("pro.error.email"));
+          return;
+        }
+        if (!validatePassword(form.password)) {
+          setError(t("pro.error.weakPassword"));
+          return;
+        }
+        if (form.password !== form.passwordConfirm) {
+          setError(t("pro.password.mismatch"));
+          return;
+        }
       }
     } else {
       if (!form.email || !form.password) {
@@ -89,25 +110,47 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
     try {
       let recaptchaToken = "";
       if (executeRecaptcha) {
-        recaptchaToken = await executeRecaptcha(mode === "register" ? "professional_register" : "professional_login");
+        const action = mode === "login"
+          ? "professional_login"
+          : isRequestOnly ? "professional_request_access" : "professional_register";
+        recaptchaToken = await executeRecaptcha(action);
       }
 
-      const url = mode === "register" ? "/api/professionals/register" : "/api/professionals/login";
-      const payload = mode === "register"
-        ? {
-            firstName: form.firstName,
-            lastName: form.lastName,
-            email: form.email,
-            phone: form.phone || undefined,
-            company: form.company,
-            password: form.password,
-            role: form.role,
-            language: lang,
-            acceptsPrivacy: form.acceptsPrivacy,
-            marketingOptIn: form.marketingOptIn,
-            recaptchaToken,
-          }
-        : { email: form.email, password: form.password, recaptchaToken };
+      let url: string;
+      let payload: Record<string, unknown>;
+      if (mode === "register" && isRequestOnly) {
+        url = "/api/professionals/request-access";
+        payload = {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          phone: form.phone || undefined,
+          company: form.company,
+          role: form.role,
+          language: lang,
+          acceptsPrivacy: form.acceptsPrivacy,
+          marketingOptIn: form.marketingOptIn,
+          recaptchaToken,
+        };
+      } else if (mode === "register") {
+        url = "/api/professionals/register";
+        payload = {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          phone: form.phone || undefined,
+          company: form.company,
+          password: form.password,
+          role: form.role,
+          language: lang,
+          acceptsPrivacy: form.acceptsPrivacy,
+          marketingOptIn: form.marketingOptIn,
+          recaptchaToken,
+        };
+      } else {
+        url = "/api/professionals/login";
+        payload = { email: form.email, password: form.password, recaptchaToken };
+      }
 
       const res = await fetch(url, {
         method: "POST",
@@ -118,11 +161,22 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
       if (!data.success) {
         if (res.status === 409) setError(t("pro.error.duplicateEmail"));
         else if (res.status === 401) setError(t("pro.error.credentials"));
-        else if (res.status === 403) setError(t("pro.error.disabled"));
+        else if (res.status === 403) {
+          // backend ritorna messaggio specifico tra pending/disabled
+          setError(data.error?.includes("attesa") || data.error?.includes("pending") || data.error?.includes("attente")
+            ? t("pro.error.pending")
+            : t("pro.error.disabled"));
+        }
         else setError(data.error || t("pro.error.generic"));
         return;
       }
-      // Successo → la pagina riservata (mantiene il prefisso lingua corrente).
+      // Successo:
+      // - register self-service o login → vai alla pagina riservata
+      // - request-access → schermata "richiesta inviata"
+      if (mode === "register" && isRequestOnly) {
+        setRequestSent(true);
+        return;
+      }
       const prefix = lang === "it" ? "" : `/${lang}`;
       window.location.href = `${prefix}/area-professionisti`;
     } catch {
@@ -132,6 +186,31 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
     }
   };
 
+  // ─── Schermata "richiesta inviata" ──────────────────────────────────────
+  if (requestSent) {
+    const prefix = lang === "it" ? "" : `/${lang}`;
+    return (
+      <div className="max-w-2xl">
+        <div className="text-[11px] uppercase tracking-[0.2em] text-neutral-500 mb-3">
+          {t("pro.header.link")}
+        </div>
+        <h1 className="text-3xl md:text-5xl font-serif text-neutral-900 tracking-tight leading-tight">
+          {t("pro.request.sent.title")}
+        </h1>
+        <p className="text-base md:text-lg text-neutral-700 mt-6 leading-relaxed">
+          {t("pro.request.sent.body")}
+        </p>
+        <a
+          href={`${prefix}/`}
+          className="inline-block mt-10 text-[12px] tracking-[0.18em] uppercase text-neutral-900 border-b border-neutral-900 pb-1 hover:opacity-70"
+          style={{ textUnderlineOffset: "6px", textDecorationThickness: "0.5px" }}
+        >
+          ← {t("pro.request.sent.back")}
+        </a>
+      </div>
+    );
+  }
+
   const ROLE_OPTIONS: { value: Role; titleKey: string; descKey: string }[] = [
     { value: "ARCHITECT_DESIGNER", titleKey: "pro.role.architect.title", descKey: "pro.role.architect.desc" },
     { value: "PRESS",              titleKey: "pro.role.press.title",     descKey: "pro.role.press.desc" },
@@ -140,28 +219,28 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-6 lg:px-8">
+    <div>
       {/* Header pagina */}
-      <header className="mb-10 lg:mb-14">
-        <div className="text-[11px] uppercase tracking-[0.2em] text-warm-500 mb-3">
+      <header className="mb-10">
+        <div className="text-[11px] uppercase tracking-[0.2em] text-neutral-500 mb-3">
           {t("pro.header.link")}
         </div>
-        <h1 className="text-3xl md:text-5xl font-serif text-warm-900 tracking-tight">
+        <h1 className="text-3xl md:text-5xl font-serif text-neutral-900 tracking-tight leading-tight">
           {t(mode === "login" ? "pro.drawer.title.login" : "pro.drawer.title.register")}
         </h1>
-        <p className="text-[15px] md:text-base text-warm-600 mt-3 leading-relaxed max-w-2xl">
+        <p className="text-[15px] md:text-base text-neutral-700 mt-4 leading-relaxed max-w-2xl">
           {t(mode === "login" ? "pro.drawer.subtitle.login" : "pro.drawer.subtitle.register")}
         </p>
 
         {/* Tabs */}
-        <div className="flex gap-8 mt-8 border-b border-warm-200">
+        <div className="flex gap-8 mt-8 border-b border-neutral-200">
           <button
             type="button"
             onClick={() => { setMode("login"); setError(""); }}
             className={`pb-3 text-[12px] tracking-[0.18em] uppercase transition-colors border-b-2 -mb-px ${
               mode === "login"
-                ? "text-warm-900 border-warm-900 font-semibold"
-                : "text-warm-400 border-transparent hover:text-warm-700"
+                ? "text-neutral-900 border-neutral-900 font-semibold"
+                : "text-neutral-500 border-transparent hover:text-neutral-900"
             }`}
           >
             {t("pro.drawer.tab.login")}
@@ -171,8 +250,8 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
             onClick={() => { setMode("register"); setError(""); }}
             className={`pb-3 text-[12px] tracking-[0.18em] uppercase transition-colors border-b-2 -mb-px ${
               mode === "register"
-                ? "text-warm-900 border-warm-900 font-semibold"
-                : "text-warm-400 border-transparent hover:text-warm-700"
+                ? "text-neutral-900 border-neutral-900 font-semibold"
+                : "text-neutral-500 border-transparent hover:text-neutral-900"
             }`}
           >
             {t("pro.drawer.tab.register")}
@@ -180,16 +259,15 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
         </div>
       </header>
 
-      {/* Form */}
-      <form onSubmit={submit} className="space-y-7 max-w-2xl">
+      <form onSubmit={submit} className="space-y-8">
         {mode === "register" && (
           <>
-            {/* Selezione ruolo */}
+            {/* Selezione ruolo: 4 card allineate alla griglia, 1 colonna su mobile, 2 da sm, 4 da lg */}
             <div>
-              <div className="text-[11px] uppercase tracking-[0.15em] text-warm-500 mb-4">
+              <div className="text-[11px] uppercase tracking-[0.15em] text-neutral-500 mb-4">
                 {t("pro.role.label")} <span className="text-red-500">*</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {ROLE_OPTIONS.map((opt) => {
                   const active = form.role === opt.value;
                   return (
@@ -197,28 +275,31 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
                       key={opt.value}
                       type="button"
                       onClick={() => update("role", opt.value)}
-                      className={`text-left p-4 border transition-colors ${
+                      className={`text-left p-4 border transition-colors h-full flex flex-col ${
                         active
-                          ? "border-warm-900 bg-warm-50"
-                          : "border-warm-200 hover:border-warm-400"
+                          ? "border-neutral-900 bg-neutral-50"
+                          : "border-neutral-200 hover:border-neutral-400"
                       }`}
                     >
-                      <div className="flex items-start gap-3">
-                        <span className={`mt-1 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                          active ? "border-warm-900" : "border-warm-300"
-                        }`}>
-                          {active && <span className="w-2 h-2 rounded-full bg-warm-900" />}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="text-[14px] font-semibold text-warm-900 leading-tight">{t(opt.titleKey)}</div>
-                          <div className="text-[12px] text-warm-500 mt-1.5 leading-relaxed">{t(opt.descKey)}</div>
-                        </div>
-                      </div>
+                      <span className={`mb-3 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+                        active ? "border-neutral-900" : "border-neutral-300"
+                      }`}>
+                        {active && <span className="w-2 h-2 rounded-full bg-neutral-900" />}
+                      </span>
+                      <div className="text-[14px] font-semibold text-neutral-900 leading-tight">{t(opt.titleKey)}</div>
+                      <div className="text-[12px] text-neutral-600 mt-2 leading-relaxed">{t(opt.descKey)}</div>
                     </button>
                   );
                 })}
               </div>
             </div>
+
+            {/* Banner informativo per ruoli con approvazione manuale */}
+            {isRequestOnly && (
+              <div className="border-l-2 border-neutral-900 bg-neutral-50 p-4 text-[13px] leading-relaxed text-neutral-700">
+                {t("pro.request.info")}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label={t("pro.field.firstName")} required value={form.firstName} onChange={(v) => update("firstName", v)} />
@@ -238,39 +319,40 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
 
         {mode === "register" && (
           <>
-            <Field label={t("pro.field.phone")} type="tel" value={form.phone} onChange={(v) => update("phone", v)} autoComplete="tel" />
-            <Field label={t("pro.field.company")} required value={form.company} onChange={(v) => update("company", v)} />
-          </>
-        )}
-
-        <PasswordField
-          label={t("pro.field.password")}
-          value={form.password}
-          onChange={(v) => update("password", v)}
-          show={showPassword}
-          onToggleShow={() => setShowPassword((s) => !s)}
-          autoComplete={mode === "register" ? "new-password" : "current-password"}
-        />
-
-        {mode === "register" && (
-          <>
-            <div className="text-[12px] text-warm-500 -mt-3 pl-1">
-              <div className="font-medium text-warm-700 mb-1">{t("pro.password.rules.title")}</div>
-              <ul className="list-disc pl-4 space-y-0.5">
-                <li>{t("pro.password.rules.length")}</li>
-                <li>{t("pro.password.rules.upper")}</li>
-                <li>{t("pro.password.rules.lower")}</li>
-                <li>{t("pro.password.rules.digit")}</li>
-              </ul>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label={t("pro.field.phone")} type="tel" value={form.phone} onChange={(v) => update("phone", v)} autoComplete="tel" />
+              <Field label={t("pro.field.company")} required value={form.company} onChange={(v) => update("company", v)} />
             </div>
-            <PasswordField
-              label={t("pro.field.passwordConfirm")}
-              value={form.passwordConfirm}
-              onChange={(v) => update("passwordConfirm", v)}
-              show={showPasswordConfirm}
-              onToggleShow={() => setShowPasswordConfirm((s) => !s)}
-              autoComplete="new-password"
-            />
+
+            {!isRequestOnly && (
+              <>
+                <PasswordField
+                  label={t("pro.field.password")}
+                  value={form.password}
+                  onChange={(v) => update("password", v)}
+                  show={showPassword}
+                  onToggleShow={() => setShowPassword((s) => !s)}
+                  autoComplete="new-password"
+                />
+                <div className="text-[12px] text-neutral-600 -mt-4 pl-1">
+                  <div className="font-medium text-neutral-800 mb-1">{t("pro.password.rules.title")}</div>
+                  <ul className="list-disc pl-5 space-y-0.5">
+                    <li>{t("pro.password.rules.length")}</li>
+                    <li>{t("pro.password.rules.upper")}</li>
+                    <li>{t("pro.password.rules.lower")}</li>
+                    <li>{t("pro.password.rules.digit")}</li>
+                  </ul>
+                </div>
+                <PasswordField
+                  label={t("pro.field.passwordConfirm")}
+                  value={form.passwordConfirm}
+                  onChange={(v) => update("passwordConfirm", v)}
+                  show={showPasswordConfirm}
+                  onToggleShow={() => setShowPasswordConfirm((s) => !s)}
+                  autoComplete="new-password"
+                />
+              </>
+            )}
 
             <div className="space-y-3 pt-2">
               <Checkbox
@@ -287,28 +369,42 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
           </>
         )}
 
+        {mode === "login" && (
+          <PasswordField
+            label={t("pro.field.password")}
+            value={form.password}
+            onChange={(v) => update("password", v)}
+            show={showPassword}
+            onToggleShow={() => setShowPassword((s) => !s)}
+            autoComplete="current-password"
+          />
+        )}
+
         {error && (
           <div className="text-[13px] text-red-700 bg-red-50 border border-red-200 px-4 py-3">
             {error}
           </div>
         )}
 
-        <div className="pt-2">
+        <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-4">
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center justify-center gap-2 bg-warm-900 hover:bg-black text-white text-[12px] tracking-[0.18em] uppercase font-semibold px-12 py-4 transition-colors disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 bg-neutral-900 hover:bg-black text-white text-[12px] tracking-[0.18em] uppercase font-semibold px-10 py-4 transition-colors disabled:opacity-60"
           >
             {submitting && <Loader2 size={14} className="animate-spin" />}
-            {t(mode === "register" ? "pro.cta.register" : "pro.cta.login")}
+            {t(
+              mode === "login"
+                ? "pro.cta.login"
+                : isRequestOnly
+                  ? "pro.request.cta"
+                  : "pro.cta.register"
+            )}
           </button>
-        </div>
-
-        <div className="pt-4 border-t border-warm-200">
           <button
             type="button"
             onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
-            className="text-[13px] text-warm-700 hover:text-warm-900 transition-colors"
+            className="text-[13px] text-neutral-700 hover:text-neutral-900 transition-colors"
             style={{ textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}
           >
             <span className="hover:underline">{t(mode === "login" ? "pro.cta.toRegister" : "pro.cta.toLogin")}</span>
@@ -329,7 +425,7 @@ function Field({ label, type = "text", required, value, onChange, autoComplete }
 }) {
   return (
     <div>
-      <label className="block text-[11px] uppercase tracking-[0.12em] text-warm-500 mb-2">
+      <label className="block text-[11px] uppercase tracking-[0.12em] text-neutral-600 mb-2">
         {label}{required && <span className="text-red-500"> *</span>}
       </label>
       <input
@@ -338,7 +434,7 @@ function Field({ label, type = "text", required, value, onChange, autoComplete }
         onChange={(e) => onChange(e.target.value)}
         required={required}
         autoComplete={autoComplete}
-        className="w-full border border-warm-200 focus:border-warm-900 outline-none px-3 py-3 text-[15px] bg-white"
+        className="w-full border border-neutral-300 focus:border-neutral-900 outline-none px-3 py-3 text-[15px] text-neutral-900 bg-white"
       />
     </div>
   );
@@ -354,7 +450,7 @@ function PasswordField({ label, value, onChange, show, onToggleShow, autoComplet
 }) {
   return (
     <div>
-      <label className="block text-[11px] uppercase tracking-[0.12em] text-warm-500 mb-2">
+      <label className="block text-[11px] uppercase tracking-[0.12em] text-neutral-600 mb-2">
         {label}<span className="text-red-500"> *</span>
       </label>
       <div className="relative">
@@ -364,13 +460,13 @@ function PasswordField({ label, value, onChange, show, onToggleShow, autoComplet
           onChange={(e) => onChange(e.target.value)}
           required
           autoComplete={autoComplete}
-          className="w-full border border-warm-200 focus:border-warm-900 outline-none px-3 py-3 pr-10 text-[15px] bg-white"
+          className="w-full border border-neutral-300 focus:border-neutral-900 outline-none px-3 py-3 pr-10 text-[15px] text-neutral-900 bg-white"
         />
         <button
           type="button"
           onClick={onToggleShow}
           tabIndex={-1}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-warm-400 hover:text-warm-900"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-500 hover:text-neutral-900"
         >
           {show ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
@@ -381,18 +477,18 @@ function PasswordField({ label, value, onChange, show, onToggleShow, autoComplet
 
 function Checkbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex items-start gap-3 cursor-pointer text-[13px] text-warm-700">
+    <label className="flex items-start gap-3 cursor-pointer text-[13px] text-neutral-700">
       <button
         type="button"
         onClick={() => onChange(!checked)}
         className={`mt-0.5 w-4 h-4 border-2 shrink-0 flex items-center justify-center transition-colors ${
-          checked ? "border-warm-900 bg-warm-900" : "border-warm-300 hover:border-warm-500"
+          checked ? "border-neutral-900 bg-neutral-900" : "border-neutral-300 hover:border-neutral-500"
         }`}
         aria-pressed={checked}
       >
         {checked && <Check size={11} className="text-white" strokeWidth={3} />}
       </button>
-      <span dangerouslySetInnerHTML={{ __html: label }} />
+      <span>{label}</span>
     </label>
   );
 }

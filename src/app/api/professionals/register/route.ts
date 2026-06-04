@@ -8,7 +8,10 @@ import type { ProfessionalRole } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-const VALID_ROLES = new Set(["ARCHITECT_DESIGNER", "PRESS", "RESELLER", "AGENT"]);
+// Solo i ruoli self-service: chi imposta direttamente una password e accede subito.
+// Rivenditori/Agenti devono passare per /api/professionals/request-access che
+// li crea con pendingApproval=true (vedi flusso "richiesta accesso").
+const VALID_ROLES = new Set(["ARCHITECT_DESIGNER", "PRESS"]);
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +37,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Devi accettare la privacy policy" }, { status: 400 });
     }
     if (!VALID_ROLES.has(role)) {
-      return NextResponse.json({ success: false, error: "Ruolo non valido" }, { status: 400 });
+      // Per RESELLER/AGENT redirigiamo logicamente all'altro endpoint
+      return NextResponse.json({ success: false, error: "Per questo ruolo è richiesta l'approvazione manuale. Usa il form di richiesta accesso." }, { status: 400 });
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)) {
       return NextResponse.json({ success: false, error: "Email non valida" }, { status: 400 });

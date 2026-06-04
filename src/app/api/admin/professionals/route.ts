@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
   const q = (sp.get("q") || "").trim();
   const role = (sp.get("role") || "").trim();
   const activeParam = sp.get("active");
+  const statusParam = sp.get("status"); // "pending" | "approved" | (none)
 
   const where: Prisma.ProfessionalWhereInput = {};
   if (q) {
@@ -30,10 +31,13 @@ export async function GET(req: NextRequest) {
   }
   if (activeParam === "true") where.isActive = true;
   if (activeParam === "false") where.isActive = false;
+  if (statusParam === "pending") where.pendingApproval = true;
+  if (statusParam === "approved") where.pendingApproval = false;
 
   const items = await prisma.professional.findMany({
     where,
-    orderBy: { createdAt: "desc" },
+    // Le richieste pending vengono prima (più urgenti), poi per data desc
+    orderBy: [{ pendingApproval: "desc" }, { createdAt: "desc" }],
     select: {
       id: true,
       email: true,
@@ -45,6 +49,8 @@ export async function GET(req: NextRequest) {
       language: true,
       marketingOptIn: true,
       isActive: true,
+      pendingApproval: true,
+      approvedAt: true,
       createdAt: true,
       lastLoginAt: true,
     },

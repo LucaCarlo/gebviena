@@ -116,7 +116,14 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "pro.error.duplicateEmail", defaultValue: "Esiste già un account con questa email" },
       { key: "pro.error.credentials", defaultValue: "Email o password errati" },
       { key: "pro.error.disabled", defaultValue: "Account disattivato. Contatta Gebrüder Thonet Vienna." },
+      { key: "pro.error.pending", defaultValue: "La tua richiesta è in attesa di approvazione. Riceverai un'email quando sarà attiva." },
       { key: "pro.error.generic", defaultValue: "Errore. Riprova più tardi." },
+      // Variante "richiesta accesso" (Rivenditori/Agenti)
+      { key: "pro.request.info", defaultValue: "Per questo profilo, l'accesso è soggetto ad approvazione manuale. Inviaci la tua richiesta: ti contatteremo via email con le credenziali una volta verificata." },
+      { key: "pro.request.cta", defaultValue: "INVIA RICHIESTA" },
+      { key: "pro.request.sent.title", defaultValue: "Richiesta inviata" },
+      { key: "pro.request.sent.body", defaultValue: "Grazie. Abbiamo ricevuto la tua richiesta di accesso. Riceverai una mail con le credenziali non appena il tuo account sarà stato verificato e approvato." },
+      { key: "pro.request.sent.back", defaultValue: "Torna al sito" },
       // Pagina /area-professionisti placeholder
       { key: "pro.page.welcome", defaultValue: "Benvenuto," },
       { key: "pro.page.title", defaultValue: "Area Professionisti" },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Search, Check, AlertCircle, Trash2, Power } from "lucide-react";
+import { Loader2, Search, Check, AlertCircle, Trash2, Power, UserCheck } from "lucide-react";
 
 interface Professional {
   id: string;
@@ -14,6 +14,8 @@ interface Professional {
   language: string;
   marketingOptIn: boolean;
   isActive: boolean;
+  pendingApproval: boolean;
+  approvedAt: string | null;
   createdAt: string;
   lastLoginAt: string | null;
 }
@@ -45,6 +47,7 @@ export default function AdminProfessionalsPage() {
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
   const [active, setActive] = useState<"" | "true" | "false">("");
+  const [status, setStatus] = useState<"" | "pending" | "approved">("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
@@ -60,6 +63,7 @@ export default function AdminProfessionalsPage() {
       if (q.trim()) sp.set("q", q.trim());
       if (role) sp.set("role", role);
       if (active) sp.set("active", active);
+      if (status) sp.set("status", status);
       const res = await fetch(`/api/admin/professionals?${sp}`, { cache: "no-store" });
       const data = await res.json();
       if (data.success) setItems(data.data);
@@ -69,7 +73,7 @@ export default function AdminProfessionalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [q, role, active]);
+  }, [q, role, active, status]);
 
   // Debounce della query di ricerca
   useEffect(() => {
@@ -99,6 +103,30 @@ export default function AdminProfessionalsPage() {
     }
   };
 
+  const approve = async (p: Professional) => {
+    if (!confirm(`Approvare la richiesta di ${p.firstName} ${p.lastName} (${p.email})?\n\nVerrà generata una password temporanea e inviata via email al richiedente.`)) return;
+    setBusyId(p.id);
+    try {
+      const res = await fetch(`/api/admin/professionals/${p.id}/approve`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setItems((arr) => arr.map((x) => x.id === p.id ? { ...x, pendingApproval: false, isActive: true, approvedAt: new Date().toISOString() } : x));
+        if (data.data?.mailOk === false) {
+          // Email fallita: mostra la password in chiaro all'admin per gestione manuale
+          alert(`Account approvato MA invio email FALLITO.\n\nPassword temporanea da comunicare manualmente:\n${data.data.plaintextPassword}\n\nMotivo errore: ${data.data.mailError || "—"}`);
+        } else {
+          showToast(`${p.firstName} approvato. Email inviata.`, true);
+        }
+      } else {
+        showToast(data.error || "Errore approvazione", false);
+      }
+    } catch {
+      showToast("Errore di rete", false);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const remove = async (p: Professional) => {
     if (!confirm(`Eliminare definitivamente l'account di ${p.firstName} ${p.lastName} (${p.email})?\n\nL'operazione è irreversibile.`)) return;
     setBusyId(p.id);
@@ -120,8 +148,9 @@ export default function AdminProfessionalsPage() {
 
   const counts = useMemo(() => ({
     total: items.length,
-    active: items.filter((i) => i.isActive).length,
-    inactive: items.filter((i) => !i.isActive).length,
+    active: items.filter((i) => i.isActive && !i.pendingApproval).length,
+    inactive: items.filter((i) => !i.isActive && !i.pendingApproval).length,
+    pending: items.filter((i) => i.pendingApproval).length,
   }), [items]);
 
   return (
@@ -130,7 +159,7 @@ export default function AdminProfessionalsPage() {
         <h1 className="text-2xl font-semibold text-warm-900">Professionisti</h1>
         <p className="text-sm text-warm-500 mt-1">
           Account registrati all&apos;area riservata professionisti del sito.
-          {!loading && <> · <strong>{counts.total}</strong> totali · <strong className="text-emerald-700">{counts.active}</strong> attivi · <strong className="text-warm-500">{counts.inactive}</strong> disattivati</>}
+          {!loading && <> · <strong>{counts.total}</strong> totali · <strong className="text-amber-700">{counts.pending}</strong> in attesa · <strong className="text-emerald-700">{counts.active}</strong> attivi · <strong className="text-warm-500">{counts.inactive}</strong> disattivati</>}
         </p>
       </header>
 
@@ -152,6 +181,15 @@ export default function AdminProfessionalsPage() {
           className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
         >
           {ROLE_FILTERS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+        </select>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as "" | "pending" | "approved")}
+          className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
+        >
+          <option value="">Tutte le richieste</option>
+          <option value="pending">Solo in attesa</option>
+          <option value="approved">Solo approvati</option>
         </select>
         <select
           value={active}
@@ -190,10 +228,13 @@ export default function AdminProfessionalsPage() {
               {items.map((p) => {
                 const isBusy = busyId === p.id;
                 return (
-                  <tr key={p.id} className={p.isActive ? "" : "bg-warm-50/40 opacity-75"}>
+                  <tr key={p.id} className={p.pendingApproval ? "bg-amber-50/40" : (p.isActive ? "" : "bg-warm-50/40 opacity-75")}>
                     <td className="px-4 py-2.5 text-warm-800">
                       <div className="font-medium">{p.firstName} {p.lastName}</div>
-                      {!p.isActive && (
+                      {p.pendingApproval && (
+                        <span className="text-[10px] uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">in attesa di approvazione</span>
+                      )}
+                      {!p.pendingApproval && !p.isActive && (
                         <span className="text-[10px] uppercase tracking-wider bg-warm-200 text-warm-700 px-1.5 py-0.5 rounded">disattivato</span>
                       )}
                     </td>
@@ -212,20 +253,33 @@ export default function AdminProfessionalsPage() {
                     <td className="px-4 py-2.5 text-warm-600 text-[12px]">{formatDate(p.lastLoginAt)}</td>
                     <td className="px-2 py-1.5 text-center">
                       <div className="inline-flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => toggleActive(p)}
-                          disabled={isBusy}
-                          title={p.isActive ? "Disattiva: l'utente non potrà più accedere" : "Riattiva l'accesso"}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border transition-colors disabled:opacity-50 ${
-                            p.isActive
-                              ? "border-warm-300 text-warm-700 hover:bg-warm-50"
-                              : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                          }`}
-                        >
-                          {isBusy ? <Loader2 size={12} className="animate-spin" /> : <Power size={12} />}
-                          {p.isActive ? "Disattiva" : "Riattiva"}
-                        </button>
+                        {p.pendingApproval ? (
+                          <button
+                            type="button"
+                            onClick={() => approve(p)}
+                            disabled={isBusy}
+                            title="Approva: genera password e invia email con le credenziali"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-emerald-400 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-medium disabled:opacity-50"
+                          >
+                            {isBusy ? <Loader2 size={12} className="animate-spin" /> : <UserCheck size={12} />}
+                            Approva
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => toggleActive(p)}
+                            disabled={isBusy}
+                            title={p.isActive ? "Disattiva: l'utente non potrà più accedere" : "Riattiva l'accesso"}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border transition-colors disabled:opacity-50 ${
+                              p.isActive
+                                ? "border-warm-300 text-warm-700 hover:bg-warm-50"
+                                : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                            }`}
+                          >
+                            {isBusy ? <Loader2 size={12} className="animate-spin" /> : <Power size={12} />}
+                            {p.isActive ? "Disattiva" : "Riattiva"}
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => remove(p)}

@@ -27,15 +27,22 @@ export async function POST(req: NextRequest) {
     const email = normalizeEmail(rawEmail);
     const pro = await prisma.professional.findUnique({
       where: { email },
-      select: { id: true, email: true, passwordHash: true, role: true, isActive: true },
+      select: { id: true, email: true, passwordHash: true, role: true, isActive: true, pendingApproval: true },
     });
 
     // Errore generico per non rivelare se l'account esiste (anti-enumeration).
     if (!pro) {
       return NextResponse.json({ success: false, error: "Email o password errati" }, { status: 401 });
     }
+    if (pro.pendingApproval) {
+      return NextResponse.json({ success: false, error: "La tua richiesta è in attesa di approvazione. Riceverai un'email appena sarà approvata." }, { status: 403 });
+    }
     if (!pro.isActive) {
       return NextResponse.json({ success: false, error: "Account disattivato. Contatta GTV." }, { status: 403 });
+    }
+    if (!pro.passwordHash) {
+      // Edge case: account senza password (es. approvazione fallita a metà)
+      return NextResponse.json({ success: false, error: "Account non ancora attivo. Contatta GTV." }, { status: 403 });
     }
 
     const ok = await bcrypt.compare(password, pro.passwordHash);

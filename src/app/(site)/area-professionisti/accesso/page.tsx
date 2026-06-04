@@ -22,8 +22,10 @@ export default async function AccessoPage({ searchParams }: { searchParams: { mo
   }
   const initialMode = searchParams.mode === "register" ? "register" : "login";
   return (
-    <main className="min-h-screen bg-warm-50 pt-32 pb-24">
-      <AccessoForm initialMode={initialMode} />
+    <main className="min-h-screen bg-white pt-32 pb-24">
+      <div className="max-w-5xl mx-auto px-6 lg:px-10">
+        <AccessoForm initialMode={initialMode} />
+      </div>
     </main>
   );
 }

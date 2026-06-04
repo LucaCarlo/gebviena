@@ -1100,6 +1100,9 @@ enum ProfessionalRole {
 model Professional {
   id             String           @id @default(cuid())
   email          String           @unique
+  // Per Rivenditori/Agenti che fanno solo "richiesta accesso" senza
+  // impostare una password, passwordHash è "" finché l'admin non approva
+  // (a quel punto generiamo una password random e la inviamo via email).
   passwordHash   String           @db.Text
   firstName      String           @db.VarChar(128)
   lastName       String           @db.VarChar(128)
@@ -1109,14 +1112,19 @@ model Professional {
   language       String           @default("it") @db.VarChar(16)
   acceptsPrivacy Boolean          @default(true)
   marketingOptIn Boolean          @default(false)
+  // true = ha solo fatto richiesta, in attesa di approvazione admin.
+  // Durante il pending l'utente NON può fare login (vedi /api/professionals/login).
+  pendingApproval Boolean         @default(false)
   isActive       Boolean          @default(true)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   lastLoginAt    DateTime?
+  approvedAt     DateTime?
 
   @@index([role])
   @@index([createdAt])
   @@index([isActive])
+  @@index([pendingApproval])
 }
 
 // ─── Store: Geography ──────────────────────────────────────────────────
