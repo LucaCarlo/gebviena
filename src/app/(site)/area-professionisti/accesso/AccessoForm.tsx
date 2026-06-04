@@ -191,18 +191,18 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
     const prefix = lang === "it" ? "" : `/${lang}`;
     return (
       <div className="max-w-2xl">
-        <div className="text-[11px] uppercase tracking-[0.2em] text-neutral-500 mb-3">
+        <div className="text-[11px] uppercase tracking-[0.2em] text-warm-600 mb-3">
           {t("pro.header.link")}
         </div>
-        <h1 className="text-3xl md:text-5xl font-serif text-neutral-900 tracking-tight leading-tight">
+        <h1 className="text-3xl md:text-5xl font-serif text-warm-900 tracking-tight leading-tight">
           {t("pro.request.sent.title")}
         </h1>
-        <p className="text-base md:text-lg text-neutral-700 mt-6 leading-relaxed">
+        <p className="text-base md:text-lg text-warm-800 mt-6 leading-relaxed">
           {t("pro.request.sent.body")}
         </p>
         <a
           href={`${prefix}/`}
-          className="inline-block mt-10 text-[12px] tracking-[0.18em] uppercase text-neutral-900 border-b border-neutral-900 pb-1 hover:opacity-70"
+          className="inline-block mt-10 text-[12px] tracking-[0.18em] uppercase text-warm-900 border-b border-warm-900 pb-1 hover:opacity-70"
           style={{ textUnderlineOffset: "6px", textDecorationThickness: "0.5px" }}
         >
           ← {t("pro.request.sent.back")}
@@ -222,25 +222,25 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
     <div>
       {/* Header pagina */}
       <header className="mb-10">
-        <div className="text-[11px] uppercase tracking-[0.2em] text-neutral-500 mb-3">
+        <div className="text-[11px] uppercase tracking-[0.2em] text-warm-600 mb-3">
           {t("pro.header.link")}
         </div>
-        <h1 className="text-3xl md:text-5xl font-serif text-neutral-900 tracking-tight leading-tight">
+        <h1 className="text-3xl md:text-5xl font-serif text-warm-900 tracking-tight leading-tight">
           {t(mode === "login" ? "pro.drawer.title.login" : "pro.drawer.title.register")}
         </h1>
-        <p className="text-[15px] md:text-base text-neutral-700 mt-4 leading-relaxed max-w-2xl">
+        <p className="text-[15px] md:text-base text-warm-800 mt-4 leading-relaxed max-w-2xl">
           {t(mode === "login" ? "pro.drawer.subtitle.login" : "pro.drawer.subtitle.register")}
         </p>
 
         {/* Tabs */}
-        <div className="flex gap-8 mt-8 border-b border-neutral-200">
+        <div className="flex gap-8 mt-8 border-b border-warm-200">
           <button
             type="button"
             onClick={() => { setMode("login"); setError(""); }}
             className={`pb-3 text-[12px] tracking-[0.18em] uppercase transition-colors border-b-2 -mb-px ${
               mode === "login"
-                ? "text-neutral-900 border-neutral-900 font-semibold"
-                : "text-neutral-500 border-transparent hover:text-neutral-900"
+                ? "text-warm-900 border-warm-900 font-semibold"
+                : "text-warm-600 border-transparent hover:text-warm-900"
             }`}
           >
             {t("pro.drawer.tab.login")}
@@ -250,8 +250,8 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
             onClick={() => { setMode("register"); setError(""); }}
             className={`pb-3 text-[12px] tracking-[0.18em] uppercase transition-colors border-b-2 -mb-px ${
               mode === "register"
-                ? "text-neutral-900 border-neutral-900 font-semibold"
-                : "text-neutral-500 border-transparent hover:text-neutral-900"
+                ? "text-warm-900 border-warm-900 font-semibold"
+                : "text-warm-600 border-transparent hover:text-warm-900"
             }`}
           >
             {t("pro.drawer.tab.register")}
@@ -264,7 +264,7 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
           <>
             {/* Selezione ruolo: 4 card allineate alla griglia, 1 colonna su mobile, 2 da sm, 4 da lg */}
             <div>
-              <div className="text-[11px] uppercase tracking-[0.15em] text-neutral-500 mb-4">
+              <div className="text-[11px] uppercase tracking-[0.15em] text-warm-600 mb-4">
                 {t("pro.role.label")} <span className="text-red-500">*</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -277,17 +277,17 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
                       onClick={() => update("role", opt.value)}
                       className={`text-left p-4 border transition-colors h-full flex flex-col ${
                         active
-                          ? "border-neutral-900 bg-neutral-50"
-                          : "border-neutral-200 hover:border-neutral-400"
+                          ? "border-warm-900 bg-warm-100"
+                          : "border-warm-200 hover:border-warm-400"
                       }`}
                     >
                       <span className={`mb-3 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                        active ? "border-neutral-900" : "border-neutral-300"
+                        active ? "border-warm-900" : "border-warm-300"
                       }`}>
-                        {active && <span className="w-2 h-2 rounded-full bg-neutral-900" />}
+                        {active && <span className="w-2 h-2 rounded-full bg-warm-900" />}
                       </span>
-                      <div className="text-[14px] font-semibold text-neutral-900 leading-tight">{t(opt.titleKey)}</div>
-                      <div className="text-[12px] text-neutral-600 mt-2 leading-relaxed">{t(opt.descKey)}</div>
+                      <div className="text-[14px] font-semibold text-warm-900 leading-tight">{t(opt.titleKey)}</div>
+                      <div className="text-[12px] text-warm-700 mt-2 leading-relaxed">{t(opt.descKey)}</div>
                     </button>
                   );
                 })}
@@ -296,7 +296,7 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
 
             {/* Banner informativo per ruoli con approvazione manuale */}
             {isRequestOnly && (
-              <div className="border-l-2 border-neutral-900 bg-neutral-50 p-4 text-[13px] leading-relaxed text-neutral-700">
+              <div className="border-l-2 border-warm-900 bg-warm-100 p-4 text-[13px] leading-relaxed text-warm-800">
                 {t("pro.request.info")}
               </div>
             )}
@@ -334,8 +334,8 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
                   onToggleShow={() => setShowPassword((s) => !s)}
                   autoComplete="new-password"
                 />
-                <div className="text-[12px] text-neutral-600 -mt-4 pl-1">
-                  <div className="font-medium text-neutral-800 mb-1">{t("pro.password.rules.title")}</div>
+                <div className="text-[12px] text-warm-700 -mt-4 pl-1">
+                  <div className="font-medium text-warm-800 mb-1">{t("pro.password.rules.title")}</div>
                   <ul className="list-disc pl-5 space-y-0.5">
                     <li>{t("pro.password.rules.length")}</li>
                     <li>{t("pro.password.rules.upper")}</li>
@@ -390,7 +390,7 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center justify-center gap-2 bg-neutral-900 hover:bg-black text-white text-[12px] tracking-[0.18em] uppercase font-semibold px-10 py-4 transition-colors disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 bg-warm-900 hover:bg-black text-white text-[12px] tracking-[0.18em] uppercase font-semibold px-10 py-4 transition-colors disabled:opacity-60"
           >
             {submitting && <Loader2 size={14} className="animate-spin" />}
             {t(
@@ -404,7 +404,7 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
           <button
             type="button"
             onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
-            className="text-[13px] text-neutral-700 hover:text-neutral-900 transition-colors"
+            className="text-[13px] text-warm-800 hover:text-warm-900 transition-colors"
             style={{ textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}
           >
             <span className="hover:underline">{t(mode === "login" ? "pro.cta.toRegister" : "pro.cta.toLogin")}</span>
@@ -425,7 +425,7 @@ function Field({ label, type = "text", required, value, onChange, autoComplete }
 }) {
   return (
     <div>
-      <label className="block text-[11px] uppercase tracking-[0.12em] text-neutral-600 mb-2">
+      <label className="block text-[11px] uppercase tracking-[0.12em] text-warm-700 mb-2">
         {label}{required && <span className="text-red-500"> *</span>}
       </label>
       <input
@@ -434,7 +434,7 @@ function Field({ label, type = "text", required, value, onChange, autoComplete }
         onChange={(e) => onChange(e.target.value)}
         required={required}
         autoComplete={autoComplete}
-        className="w-full border border-neutral-300 focus:border-neutral-900 outline-none px-3 py-3 text-[15px] text-neutral-900 bg-white"
+        className="w-full border border-warm-300 focus:border-warm-900 outline-none px-3 py-3 text-[15px] text-warm-900 bg-white"
       />
     </div>
   );
@@ -450,7 +450,7 @@ function PasswordField({ label, value, onChange, show, onToggleShow, autoComplet
 }) {
   return (
     <div>
-      <label className="block text-[11px] uppercase tracking-[0.12em] text-neutral-600 mb-2">
+      <label className="block text-[11px] uppercase tracking-[0.12em] text-warm-700 mb-2">
         {label}<span className="text-red-500"> *</span>
       </label>
       <div className="relative">
@@ -460,13 +460,13 @@ function PasswordField({ label, value, onChange, show, onToggleShow, autoComplet
           onChange={(e) => onChange(e.target.value)}
           required
           autoComplete={autoComplete}
-          className="w-full border border-neutral-300 focus:border-neutral-900 outline-none px-3 py-3 pr-10 text-[15px] text-neutral-900 bg-white"
+          className="w-full border border-warm-300 focus:border-warm-900 outline-none px-3 py-3 pr-10 text-[15px] text-warm-900 bg-white"
         />
         <button
           type="button"
           onClick={onToggleShow}
           tabIndex={-1}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-neutral-500 hover:text-neutral-900"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-warm-600 hover:text-warm-900"
         >
           {show ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
@@ -477,12 +477,12 @@ function PasswordField({ label, value, onChange, show, onToggleShow, autoComplet
 
 function Checkbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex items-start gap-3 cursor-pointer text-[13px] text-neutral-700">
+    <label className="flex items-start gap-3 cursor-pointer text-[13px] text-warm-800">
       <button
         type="button"
         onClick={() => onChange(!checked)}
         className={`mt-0.5 w-4 h-4 border-2 shrink-0 flex items-center justify-center transition-colors ${
-          checked ? "border-neutral-900 bg-neutral-900" : "border-neutral-300 hover:border-neutral-500"
+          checked ? "border-warm-900 bg-warm-900" : "border-warm-300 hover:border-warm-500"
         }`}
         aria-pressed={checked}
       >
