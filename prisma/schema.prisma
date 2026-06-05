@@ -1061,6 +1061,25 @@ model EmailTemplate {
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   scheduledJobs ScheduledEmailJob[]
+  translations  EmailTemplateTranslation[]
+}
+
+// Traduzioni opzionali per i template email. Se per una lingua esiste una
+// traduzione (subject + blocks) viene usata al posto del template base IT.
+// Altrimenti il sistema cade sul template base. Retrocompat totale: i
+// template esistenti continuano a funzionare senza modifiche.
+model EmailTemplateTranslation {
+  id            String        @id @default(cuid())
+  templateId    String
+  template      EmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  languageCode  String        @db.VarChar(16)
+  subject       String        @db.Text
+  blocks        String        @db.MediumText
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([templateId, languageCode])
+  @@index([languageCode])
 }
 
 // Scheduled bulk-email job — picked up by /api/scheduled-emails/process

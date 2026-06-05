@@ -1,5 +1,7 @@
 import { sendMail } from "@/lib/mail";
 import { prisma } from "@/lib/prisma";
+import { loadTemplateForLang } from "@/lib/email-template-i18n";
+import { renderEmailTemplate, parseBlocks } from "@/lib/email-template-renderer";
 import crypto from "node:crypto";
 
 // ─── Multilingua testi email (compatti, ridondanza accettabile per leggibilità) ─
@@ -208,17 +210,77 @@ export async function notifyAdminNewRequest(pro: {
   await sendMail(to, subject, html);
 }
 
-/** Email all'utente appena approvato: contiene email + password generata + link login. */
+/** Email all'utente appena approvato: contiene email + password generata + link login.
+ *
+ *  STRATEGIA:
+ *  1. Cerca un EmailTemplate via setting `professional.approval_template_id`
+ *     (fallback per nome "Approvazione Area Professionisti") e ne carica la
+ *     traduzione nella lingua del professionista via `loadTemplateForLang`.
+ *  2. Renderizza i blocchi sostituendo le variabili {{firstName}}, {{lastName}},
+ *     {{email}}, {{password}}, {{loginUrl}}.
+ *  3. Se per qualsiasi motivo il template non è disponibile, **fallback** al
+ *     vecchio HTML hardcoded (sotto). Così non si rompe nulla.
+ */
 export async function sendApprovalCredentials(pro: {
   firstName: string;
   lastName: string;
   email: string;
   language: string;
 }, plaintextPassword: string): Promise<void> {
-  const t = TEXTS[pickLang(pro.language)];
   const base = getSiteBase();
   const langPrefix = pro.language === "it" ? "" : `/${pro.language}`;
   const loginUrl = `${base}${langPrefix}/area-professionisti/accesso`;
+
+  // Variabili disponibili nei blocchi del template
+  const variables = {
+    firstName: pro.firstName,
+    lastName: pro.lastName,
+    email: pro.email,
+    password: plaintextPassword,
+    loginUrl,
+  };
+
+  // 1. Risolvi l'id del template dal Setting (o fallback per nome)
+  let templateId: string | null = null;
+  try {
+    const idSetting = await prisma.setting.findUnique({
+      where: { key: "professional.approval_template_id" },
+      select: { value: true },
+    });
+    templateId = (idSetting?.value || "").trim() || null;
+    if (!templateId) {
+      const byName = await prisma.emailTemplate.findFirst({
+        where: { name: "Approvazione Area Professionisti" },
+        select: { id: true },
+      });
+      templateId = byName?.id || null;
+    }
+  } catch { /* fall through to fallback */ }
+
+  // 2. Carica template tradotto e renderizza
+  if (templateId) {
+    try {
+      const tpl = await loadTemplateForLang(templateId, pro.language);
+      if (tpl) {
+        const blocks = parseBlocks(tpl.blocks);
+        if (blocks.length > 0) {
+          const html = renderEmailTemplate(blocks, variables);
+          // Sostituisci variabili anche nel subject
+          let subject = tpl.subject;
+          for (const [k, v] of Object.entries(variables)) {
+            subject = subject.replace(new RegExp(`\\{\\{${k}\\}\\}`, "g"), v);
+          }
+          await sendMail(pro.email, subject, html);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("[sendApprovalCredentials] template render failed, fallback hardcoded:", e);
+    }
+  }
+
+  // 3. FALLBACK: HTML hardcoded multilingua (era l'implementazione precedente)
+  const t = TEXTS[pickLang(pro.language)];
   const greeting = t.userGreeting.replace("{name}", escape(pro.firstName));
   const html = `<!DOCTYPE html>
 <html><body style="margin:0;padding:0;background:#f5f4f2;font-family:Arial,Helvetica,sans-serif;color:#2d2b27;">
