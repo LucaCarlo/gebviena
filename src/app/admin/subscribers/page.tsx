@@ -163,7 +163,7 @@ export default function AdminSubscribersPage() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // Refetch on filter change — always reset to page 1
+  // Refetch on filter / sort / pageSize change — sempre reset a pagina 1
   useEffect(() => {
     if (isEventoDetail) return;
     fetchContacts({ pageOverride: 1 });
@@ -171,7 +171,7 @@ export default function AdminSubscribersPage() {
     setSelectAllMatching(false);
     setAllMatchingSubIds(new Map());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, search, invitedFilter, checkinFilter, langFilter]);
+  }, [activeTab, search, invitedFilter, checkinFilter, langFilter, sortBy, sortDir, pageSize]);
 
   // Load lingue disponibili per il filtro
   useEffect(() => {
@@ -897,14 +897,14 @@ export default function AdminSubscribersPage() {
                         <span
                           key={t.id}
                           title={t.name}
-                          className="text-[10px] font-medium px-2 py-0.5 rounded truncate"
+                          className="text-[10px] font-medium leading-[1.4] px-1.5 py-0 rounded truncate"
                           style={{ backgroundColor: `${t.color}22`, color: t.color }}
                         >
                           {t.name}
                         </span>
                       ))}
                       {c.tags.length > 4 && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-warm-100 text-warm-600">+{c.tags.length - 4} tag</span>
+                        <span className="text-[10px] font-medium leading-[1.4] px-1.5 py-0 rounded bg-warm-100 text-warm-600">+{c.tags.length - 4} tag</span>
                       )}
                     </div>
                   )}
@@ -975,9 +975,8 @@ export default function AdminSubscribersPage() {
                 <th className="text-left px-4 py-4 w-10"><input type="checkbox" checked={selectAllMatching || (selected.size === currentList.length && currentList.length > 0)} onChange={selectAll} className="accent-warm-800" /></th>
                 <SortableTh field="firstName" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Nome</SortableTh>
                 <SortableTh field="email" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Email</SortableTh>
-                <SortableTh field="city" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }} className="hidden md:table-cell">Città</SortableTh>
+                <SortableTh field="createdAt" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }} className="hidden md:table-cell">Data iscrizione</SortableTh>
                 <th className="text-left px-4 py-4 text-xs font-semibold text-warm-700 hidden md:table-cell">Tag</th>
-                <SortableTh field="source" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }} className="hidden lg:table-cell">Origine</SortableTh>
                 <th className="text-center px-4 py-4 text-xs font-semibold text-warm-700 w-52">Azioni</th>
               </tr></thead>
               <tbody className="divide-y divide-warm-100">
@@ -1012,14 +1011,14 @@ export default function AdminSubscribersPage() {
                             <span
                               key={t.id}
                               title={t.name}
-                              className="text-[10px] font-medium px-2 py-0.5 rounded truncate"
+                              className="text-[10px] font-medium leading-[1.4] px-1.5 py-0 rounded truncate"
                               style={{ backgroundColor: `${t.color}22`, color: t.color }}
                             >
                               {t.name}
                             </span>
                           ))}
                           {c.tags.length > 4 && (
-                            <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-warm-100 text-warm-600">
+                            <span className="text-[10px] font-medium leading-[1.4] px-1.5 py-0 rounded bg-warm-100 text-warm-600">
                               +{c.tags.length - 4} tag
                             </span>
                           )}
