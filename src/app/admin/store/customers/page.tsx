@@ -299,7 +299,7 @@ export default function StoreCustomersPage() {
                     <td className="px-4 py-3 text-xs text-warm-500">
                       {new Date(c.createdAt).toLocaleDateString("it-IT")}
                     </td>
-                    <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-2 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
                         onClick={(e) => handleDelete(e, c)}

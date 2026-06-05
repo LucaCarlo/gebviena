@@ -1017,7 +1017,7 @@ export default function AdminSubscribersPage() {
                           c.source === "evento" ? "Evento" : "Solo tag"}
                       </span>
                     </td>
-                    <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-2 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex items-center gap-1">
                         <button
                           type="button"

@@ -75,6 +75,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-warm-50">
+      {/* Nasconde il floating widget Iubenda dentro l'admin (in produzione resta
+          attivo solo nel sito pubblico). Selector ridondanti per coprire tutte
+          le varianti del banner/icon che lo script Iubenda crea. */}
+      <style>{`
+        .iubenda-tp-btn,
+        [id^="iubenda-cs-"],
+        #iubenda-cs-banner,
+        #iubenda-cs-tooltip,
+        .iubenda-cs-tooltip,
+        .iub-content-block,
+        [class*="iubenda-fab"],
+        [class*="iubenda-floating"] {
+          display: none !important;
+        }
+      `}</style>
       <AdminSidebar />
       <main className="lg:ml-64 flex-1 p-4 pt-18 lg:p-8 lg:pt-8 min-h-screen">{children}</main>
     </div>
