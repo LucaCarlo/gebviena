@@ -7,6 +7,7 @@ import { Loader2, Search, ShoppingCart, Trash2, Mail } from "lucide-react";
 import BulkEmailModal from "@/components/admin/BulkEmailModal";
 import ImportExportButtons from "@/components/admin/ImportExportButtons";
 import TablePagination from "@/components/admin/TablePagination";
+import SortableTh, { type SortDir } from "@/components/admin/SortableTh";
 
 interface CustomerListItem {
   id: string;
@@ -39,6 +40,8 @@ export default function StoreCustomersPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [totalCount, setTotalCount] = useState(0);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const selectAll = customers.length > 0 && selected.size === customers.length;
   const toggleSelectAll = () => {
@@ -60,13 +63,15 @@ export default function StoreCustomersPage() {
     if (hasOrders) params.set("hasOrders", hasOrders);
     params.set("page", String(page));
     params.set("pageSize", String(pageSize));
+    params.set("sortBy", sortBy);
+    params.set("sortDir", sortDir);
     const res = await fetch(`/api/store/customers?${params}`).then((r) => r.json());
     if (res.success) {
       setCustomers(res.data);
       setTotalCount(res.totalCount ?? res.data.length);
     }
     setLoading(false);
-  }, [q, hasOrders, page, pageSize]);
+  }, [q, hasOrders, page, pageSize, sortBy, sortDir]);
 
   // Reset pagina quando filtri cambiano
   useEffect(() => { setPage(1); }, [q, hasOrders, pageSize]);
@@ -236,18 +241,18 @@ export default function StoreCustomersPage() {
         {/* Desktop: tabella */}
         <div className="hidden md:block bg-white rounded-lg border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-warm-50 text-warm-500 text-xs">
+            <thead className="bg-warm-50 border-b border-warm-200">
               <tr>
-                <th className="px-4 py-3 text-left w-10" onClick={(e) => e.stopPropagation()}>
+                <th className="px-4 py-4 text-left w-10" onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} className="accent-warm-800" />
                 </th>
-                <th className="px-4 py-3 text-left">Cliente</th>
-                <th className="px-4 py-3 text-left">Contatti</th>
-                <th className="px-4 py-3 text-center">Ordini</th>
-                <th className="px-4 py-3 text-right">Speso totale</th>
-                <th className="px-4 py-3 text-left">Tipo</th>
-                <th className="px-4 py-3 text-left">Registrato</th>
-                <th className="px-4 py-3 text-center w-52">Azioni</th>
+                <SortableTh field="firstName" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Cliente</SortableTh>
+                <SortableTh field="email" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Contatti</SortableTh>
+                <th className="px-4 py-4 text-center text-xs font-semibold text-warm-700">Ordini</th>
+                <th className="px-4 py-4 text-right text-xs font-semibold text-warm-700">Speso totale</th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-warm-700">Tipo</th>
+                <SortableTh field="createdAt" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Registrato</SortableTh>
+                <th className="px-4 py-4 text-center text-xs font-semibold text-warm-700 w-52">Azioni</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">

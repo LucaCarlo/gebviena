@@ -236,8 +236,19 @@ export async function GET(req: Request) {
     }
   }
 
-  // ─── 5. Sort by createdAt desc ───
-  contacts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  // ─── 5. Sort: di default createdAt desc; opzionale via sortBy/sortDir ───
+  const sortByParam = (searchParams.get("sortBy") || "").trim();
+  const sortDirParam = searchParams.get("sortDir") === "asc" ? "asc" : "desc";
+  const ALLOWED_SORT = new Set(["createdAt", "email", "firstName", "lastName", "company", "city", "country", "languageCode", "source"]);
+  const sortBy = ALLOWED_SORT.has(sortByParam) ? sortByParam as keyof UnifiedContact : "createdAt" as keyof UnifiedContact;
+  contacts.sort((a, b) => {
+    const av = (a[sortBy] ?? "") as string | number;
+    const bv = (b[sortBy] ?? "") as string | number;
+    let cmp: number;
+    if (sortBy === "createdAt") cmp = new Date(av as string).getTime() - new Date(bv as string).getTime();
+    else cmp = String(av).toLowerCase().localeCompare(String(bv).toLowerCase(), "it");
+    return sortDirParam === "asc" ? cmp : -cmp;
+  });
   const totalCount = contacts.length;
 
   // ─── 6-0. format=ids → tutti gli email+subscriberId che matchano i filtri

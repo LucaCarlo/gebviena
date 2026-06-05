@@ -14,6 +14,10 @@ export async function GET(req: NextRequest) {
   const isCsv = format === "csv";
   const page = Math.max(parseInt(sp.get("page") || "1", 10) || 1, 1);
   const pageSize = Math.min(Math.max(parseInt(sp.get("pageSize") || "50", 10) || 50, 1), 200);
+  const ALLOWED_SORT = new Set(["createdAt", "email", "firstName", "lastName", "phone"]);
+  const sortByParam = sp.get("sortBy") || "createdAt";
+  const sortBy = ALLOWED_SORT.has(sortByParam) ? sortByParam : "createdAt";
+  const sortDir: "asc" | "desc" = sp.get("sortDir") === "asc" ? "asc" : "desc";
 
   const where: Prisma.CustomerWhereInput = {};
   if (q) {
@@ -35,7 +39,7 @@ export async function GET(req: NextRequest) {
       _count: { select: { orders: true, addresses: true } },
       orders: { select: { totalCents: true, currency: true, status: true } },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { [sortBy]: sortDir } as Prisma.CustomerOrderByWithRelationInput,
     // CSV: ritorna tutto (cap di sicurezza 10k). UI: paginazione skip/take.
     skip: isCsv ? 0 : (page - 1) * pageSize,
     take: isCsv ? 10000 : pageSize,

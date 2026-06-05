@@ -10,6 +10,7 @@ import {
 import BulkEmailModal from "@/components/admin/BulkEmailModal";
 import ImportExportButtons from "@/components/admin/ImportExportButtons";
 import TablePagination from "@/components/admin/TablePagination";
+import SortableTh, { type SortDir } from "@/components/admin/SortableTh";
 
 /* ───── Types ───── */
 
@@ -65,6 +66,8 @@ export default function AdminSubscribersPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [totalCount, setTotalCount] = useState(0);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [hasLandingPage, setHasLandingPage] = useState(false);
   const [invitedFilter, setInvitedFilter] = useState<InvitedFilter>("all");
   const [checkinFilter, setCheckinFilter] = useState<"all" | "true" | "false">("all");
@@ -124,7 +127,7 @@ export default function AdminSubscribersPage() {
     const targetPage = opts.pageOverride ?? (opts.append ? page + 1 : 1);
     if (opts.append) setLoadingMore(true); else setContactsLoading(true);
 
-    const params = new URLSearchParams({ page: String(targetPage), pageSize: String(pageSize) });
+    const params = new URLSearchParams({ page: String(targetPage), pageSize: String(pageSize), sortBy, sortDir });
     if (search) params.set("search", search);
     if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
     if (invitedFilter !== "all") params.set("invited", invitedFilter);
@@ -143,7 +146,7 @@ export default function AdminSubscribersPage() {
     } catch {}
 
     if (opts.append) setLoadingMore(false); else setContactsLoading(false);
-  }, [activeTab, search, invitedFilter, checkinFilter, langFilter, page, pageSize, isEventoDetail]);
+  }, [activeTab, search, invitedFilter, checkinFilter, langFilter, page, pageSize, sortBy, sortDir, isEventoDetail]);
 
   const fetchEventRegs = useCallback(async () => {
     setEventLoading(true);
@@ -770,28 +773,6 @@ export default function AdminSubscribersPage() {
           <option value="100">Per pagina: 100</option>
           <option value="200">Per pagina: 200</option>
         </select>
-        {!isEventoDetail && (
-          <button
-            onClick={() => {
-              const params = new URLSearchParams({ format: "csv" });
-              if (search) params.set("search", search);
-              if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
-              if (invitedFilter !== "all") params.set("invited", invitedFilter);
-              if (checkinFilter !== "all") params.set("checkedIn", checkinFilter);
-              if (langFilter !== "all") params.set("lang", langFilter);
-              window.open(`/api/contacts/unified?${params}`, "_blank");
-            }}
-            className="flex items-center gap-1.5 text-sm text-warm-600 hover:text-warm-800 border border-warm-300 rounded-lg px-3 py-2.5"
-            title="Esporta CSV con i filtri applicati"
-          >
-            <Download size={14} /> Esporta CSV
-          </button>
-        )}
-        {!isEventoDetail && (
-          <span className="text-xs text-warm-500 ml-auto">
-            {totalCount > 0 ? <>Mostro <strong>{contacts.length}</strong> di <strong>{totalCount}</strong></> : ""}
-          </span>
-        )}
         {isEventoDetail && (
           <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value as EventFilter)}
             className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white">
@@ -988,9 +969,13 @@ export default function AdminSubscribersPage() {
             )}
             <table className="w-full text-sm">
               <thead><tr className="border-b border-warm-200 bg-warm-50">
-                <th className="text-left px-4 py-3 w-10"><input type="checkbox" checked={selectAllMatching || (selected.size === currentList.length && currentList.length > 0)} onChange={selectAll} className="accent-warm-800" /></th>
-                <Th>Nome</Th><Th>Email</Th><Th className="hidden md:table-cell">Città</Th><Th className="hidden md:table-cell">Tag</Th><Th className="hidden lg:table-cell">Origine</Th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-warm-500 w-52">Azioni</th>
+                <th className="text-left px-4 py-4 w-10"><input type="checkbox" checked={selectAllMatching || (selected.size === currentList.length && currentList.length > 0)} onChange={selectAll} className="accent-warm-800" /></th>
+                <SortableTh field="firstName" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Nome</SortableTh>
+                <SortableTh field="email" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Email</SortableTh>
+                <SortableTh field="city" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }} className="hidden md:table-cell">Città</SortableTh>
+                <th className="text-left px-4 py-4 text-xs font-semibold text-warm-700 hidden md:table-cell">Tag</th>
+                <SortableTh field="source" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }} className="hidden lg:table-cell">Origine</SortableTh>
+                <th className="text-center px-4 py-4 text-xs font-semibold text-warm-700 w-52">Azioni</th>
               </tr></thead>
               <tbody className="divide-y divide-warm-100">
                 {filteredContacts.map((c) => {

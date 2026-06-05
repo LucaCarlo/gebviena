@@ -6,6 +6,7 @@ import { Loader2, Search, Check, AlertCircle, Trash2, Power, UserCheck, Mail } f
 import BulkEmailModal from "@/components/admin/BulkEmailModal";
 import ImportExportButtons from "@/components/admin/ImportExportButtons";
 import TablePagination from "@/components/admin/TablePagination";
+import SortableTh, { type SortDir } from "@/components/admin/SortableTh";
 
 interface Professional {
   id: string;
@@ -60,6 +61,8 @@ export default function AdminProfessionalsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [totalCount, setTotalCount] = useState(0);
+  const [sortBy, setSortBy] = useState("");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const selectAll = items.length > 0 && selected.size === items.length;
   const toggleSelectAll = () => {
@@ -89,6 +92,7 @@ export default function AdminProfessionalsPage() {
       if (status) sp.set("status", status);
       sp.set("page", String(page));
       sp.set("pageSize", String(pageSize));
+      if (sortBy) { sp.set("sortBy", sortBy); sp.set("sortDir", sortDir); }
       const res = await fetch(`/api/admin/professionals?${sp}`, { cache: "no-store" });
       const data = await res.json();
       if (data.success) {
@@ -100,7 +104,7 @@ export default function AdminProfessionalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [q, role, active, status, page, pageSize]);
+  }, [q, role, active, status, page, pageSize, sortBy, sortDir]);
 
   // Reset pagina su cambio filtri
   useEffect(() => { setPage(1); }, [q, role, active, status, pageSize]);
@@ -301,19 +305,19 @@ export default function AdminProfessionalsPage() {
           <div className="py-16 text-center text-warm-500 text-sm">Nessun professionista trovato.</div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-warm-50 text-warm-500 text-xs">
+            <thead className="bg-warm-50 border-b border-warm-200">
               <tr>
-                <th className="px-4 py-2.5 text-left w-10" onClick={(e) => e.stopPropagation()}>
+                <th className="px-4 py-4 text-left w-10" onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} className="accent-warm-800" />
                 </th>
-                <th className="px-4 py-2.5 text-left">Nome</th>
-                <th className="px-4 py-2.5 text-left">Email</th>
-                <th className="px-4 py-2.5 text-left">Azienda</th>
-                <th className="px-4 py-2.5 text-left">Ruolo</th>
-                <th className="px-4 py-2.5 text-left">Lingua</th>
-                <th className="px-4 py-2.5 text-left">Registrato</th>
-                <th className="px-4 py-2.5 text-left">Ultimo accesso</th>
-                <th className="px-4 py-2.5 text-center w-44">Azioni</th>
+                <SortableTh field="firstName" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Nome</SortableTh>
+                <SortableTh field="email" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Email</SortableTh>
+                <SortableTh field="company" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Azienda</SortableTh>
+                <SortableTh field="role" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Ruolo</SortableTh>
+                <SortableTh field="language" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Lingua</SortableTh>
+                <SortableTh field="createdAt" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Registrato</SortableTh>
+                <SortableTh field="lastLoginAt" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Ultimo accesso</SortableTh>
+                <th className="px-4 py-4 text-center text-xs font-semibold text-warm-700 w-44">Azioni</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">

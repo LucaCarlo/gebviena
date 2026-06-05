@@ -20,6 +20,10 @@ export async function GET(req: NextRequest) {
   const isCsv = format === "csv";
   const page = Math.max(parseInt(sp.get("page") || "1", 10) || 1, 1);
   const pageSize = Math.min(Math.max(parseInt(sp.get("pageSize") || "50", 10) || 50, 1), 200);
+  const ALLOWED_SORT = new Set(["createdAt", "email", "firstName", "lastName", "company", "role", "language", "lastLoginAt"]);
+  const sortByParam = sp.get("sortBy") || "";
+  const sortBy = ALLOWED_SORT.has(sortByParam) ? sortByParam : "";
+  const sortDir: "asc" | "desc" = sp.get("sortDir") === "asc" ? "asc" : "desc";
 
   const where: Prisma.ProfessionalWhereInput = {};
   if (q) {
@@ -42,7 +46,10 @@ export async function GET(req: NextRequest) {
 
   const items = await prisma.professional.findMany({
     where,
-    orderBy: [{ pendingApproval: "desc" }, { createdAt: "desc" }],
+    // Pending sempre in cima. Quando sortBy è specificato lo applichiamo come secondario.
+    orderBy: sortBy
+      ? [{ pendingApproval: "desc" }, { [sortBy]: sortDir } as Prisma.ProfessionalOrderByWithRelationInput]
+      : [{ pendingApproval: "desc" }, { createdAt: "desc" }],
     select: {
       id: true, email: true, firstName: true, lastName: true, phone: true,
       company: true, role: true, language: true, marketingOptIn: true,
