@@ -820,7 +820,7 @@ export default function AdminSubscribersPage() {
                       onChange={() => toggleSelect(c.email)}
                       className="accent-warm-800 mt-1 shrink-0"
                     />
-                    <div className="flex-1 min-w-0" onClick={() => setViewContact(c)}>
+                    <div className="flex-1 min-w-0" onClick={() => { if (c.subscriberId) window.location.href = `/admin/subscribers/${c.subscriberId}`; else setViewContact(c); }}>
                       <div className="font-medium text-warm-800 truncate">{contactName(c)}</div>
                       {c.company && <div className="text-[11px] text-warm-500 truncate">{c.company}</div>}
                       <div className="text-[11px] text-warm-600 font-mono truncate">{c.email}</div>
@@ -905,10 +905,20 @@ export default function AdminSubscribersPage() {
                   <tr key={c.email} className={`hover:bg-warm-50/50 transition-colors ${selected.has(c.email) ? "bg-warm-50" : ""}`}>
                     <td className="px-4 py-3"><input type="checkbox" checked={selected.has(c.email)} onChange={() => toggleSelect(c.email)} className="accent-warm-800" /></td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-warm-800">{contactName(c)}</div>
+                      {c.subscriberId ? (
+                        <a href={`/admin/subscribers/${c.subscriberId}`} className="font-medium text-warm-800 hover:text-warm-900 hover:underline">
+                          {contactName(c)}
+                        </a>
+                      ) : (
+                        <div className="font-medium text-warm-800">{contactName(c)}</div>
+                      )}
                       {c.company && <div className="text-[10px] text-warm-400">{c.company}</div>}
                     </td>
-                    <td className="px-4 py-3 text-warm-600 text-xs">{c.email}</td>
+                    <td className="px-4 py-3 text-warm-600 text-xs">
+                      {c.subscriberId ? (
+                        <a href={`/admin/subscribers/${c.subscriberId}`} className="hover:text-warm-900 hover:underline">{c.email}</a>
+                      ) : c.email}
+                    </td>
                     <td className="px-4 py-3 text-warm-600 text-xs hidden md:table-cell">
                       {[c.city, c.country].filter(Boolean).join(", ") || "—"}
                     </td>

@@ -133,10 +133,10 @@ export default function CustomerDetailPage() {
   const fullName = [customer.firstName, customer.lastName].filter(Boolean).join(" ") || customer.email;
 
   return (
-    <div className="max-w-5xl">
+    <div className="w-full">
       <div className="mb-4">
         <Link href="/admin/store/customers" className="inline-flex items-center gap-2 text-sm text-warm-500 hover:text-warm-900">
-          <ArrowLeft size={14} /> Torna alla lista
+          <ArrowLeft size={14} /> Torna alla lista clienti
         </Link>
       </div>
 
@@ -161,9 +161,9 @@ export default function CustomerDetailPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* LEFT: anagrafica + indirizzi */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="xl:col-span-2 space-y-6">
           <section className="bg-white rounded-lg border border-warm-200 p-6">
             <h2 className="font-medium text-warm-900 mb-4 flex items-center gap-2">
               <User size={16} /> Dati anagrafici
