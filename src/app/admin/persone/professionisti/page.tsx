@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { Loader2, Search, Check, AlertCircle, Trash2, Power, UserCheck, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, Search, Check, AlertCircle, Trash2, Power, UserCheck } from "lucide-react";
 
 interface Professional {
   id: string;
@@ -43,6 +43,7 @@ const formatDate = (iso: string | null) => {
 };
 
 export default function AdminProfessionalsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -229,20 +230,19 @@ export default function AdminProfessionalsPage() {
               {items.map((p) => {
                 const isBusy = busyId === p.id;
                 return (
-                  <tr key={p.id} className={`group hover:bg-warm-50/70 transition-colors ${p.pendingApproval ? "bg-amber-50/40" : (p.isActive ? "" : "bg-warm-50/40 opacity-75")}`}>
+                  <tr
+                    key={p.id}
+                    onClick={() => router.push(`/admin/persone/professionisti/${p.id}`)}
+                    className={`cursor-pointer hover:bg-warm-50/70 transition-colors ${p.pendingApproval ? "bg-amber-50/40" : (p.isActive ? "" : "bg-warm-50/40 opacity-75")}`}
+                  >
                     <td className="px-4 py-2.5 text-warm-800">
-                      <Link href={`/admin/persone/professionisti/${p.id}`} className="block hover:text-warm-900 group/link">
-                        <div className="font-medium inline-flex items-center gap-1">
-                          {p.firstName} {p.lastName}
-                          <ChevronRight size={12} className="text-warm-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                        {p.pendingApproval && (
-                          <span className="text-[10px] uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">in attesa di approvazione</span>
-                        )}
-                        {!p.pendingApproval && !p.isActive && (
-                          <span className="text-[10px] uppercase tracking-wider bg-warm-200 text-warm-700 px-1.5 py-0.5 rounded">disattivato</span>
-                        )}
-                      </Link>
+                      <div className="font-medium">{p.firstName} {p.lastName}</div>
+                      {p.pendingApproval && (
+                        <span className="text-[10px] uppercase tracking-wider bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">in attesa di approvazione</span>
+                      )}
+                      {!p.pendingApproval && !p.isActive && (
+                        <span className="text-[10px] uppercase tracking-wider bg-warm-200 text-warm-700 px-1.5 py-0.5 rounded">disattivato</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-warm-700">
                       <a href={`mailto:${p.email}`} className="hover:underline">{p.email}</a>
@@ -257,7 +257,7 @@ export default function AdminProfessionalsPage() {
                     <td className="px-4 py-2.5 text-warm-600 font-mono text-[12px]">{p.language.toUpperCase()}</td>
                     <td className="px-4 py-2.5 text-warm-600 text-[12px]">{formatDate(p.createdAt)}</td>
                     <td className="px-4 py-2.5 text-warm-600 text-[12px]">{formatDate(p.lastLoginAt)}</td>
-                    <td className="px-2 py-1.5 text-center">
+                    <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex items-center gap-1">
                         {p.pendingApproval ? (
                           <button

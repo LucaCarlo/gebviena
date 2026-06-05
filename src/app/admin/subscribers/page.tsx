@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Search, Download, Trash2, CheckCircle2, XCircle, Users, Send, X, Mail,
-  Tag, Plus, Loader2, Upload, FileText, Pencil, Eye, Building2,
+  Tag, Plus, Loader2, Upload, FileText, Pencil, Building2,
   MapPin, StickyNote, User, ChevronLeft, Clock,
 } from "lucide-react";
 
@@ -847,11 +847,21 @@ export default function AdminSubscribersPage() {
                         c.source === "newsletter" ? "Newsletter" :
                         c.source === "evento" ? "Evento" : "Solo tag"}
                     </span>
-                    <div className="flex items-center gap-0.5">
-                      <button onClick={() => setViewContact(c)} className="p-1.5 text-warm-400 hover:text-warm-800" title="Visualizza"><Eye size={14} /></button>
-                      <button onClick={() => openEditContact(c)} className="p-1.5 text-warm-400 hover:text-warm-800" title="Modifica"><Pencil size={14} /></button>
-                      <button onClick={() => { setSelected(new Set([c.email])); setShowEmailChoice(true); setSendResult(null); }} className="p-1.5 text-warm-400 hover:text-warm-600" title="Email"><Mail size={14} /></button>
-                      <button onClick={() => handleDeleteContact(c.email)} className="p-1.5 text-warm-400 hover:text-red-500" title="Elimina"><Trash2 size={14} /></button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => { setSelected(new Set([c.email])); setShowEmailChoice(true); setSendResult(null); }}
+                        title="Invia email"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded border border-warm-300 text-warm-700 hover:bg-warm-50"
+                      >
+                        <Mail size={11} /> Email
+                      </button>
+                      <button
+                        onClick={() => handleDeleteContact(c.email)}
+                        title="Elimina"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded border border-red-300 text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 size={11} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -898,27 +908,27 @@ export default function AdminSubscribersPage() {
             <table className="w-full text-sm">
               <thead><tr className="border-b border-warm-200 bg-warm-50">
                 <th className="text-left px-4 py-3 w-10"><input type="checkbox" checked={selectAllMatching || (selected.size === currentList.length && currentList.length > 0)} onChange={selectAll} className="accent-warm-800" /></th>
-                <Th>Nome</Th><Th>Email</Th><Th className="hidden md:table-cell">Città</Th><Th className="hidden md:table-cell">Tag</Th><Th className="hidden lg:table-cell">Origine</Th><Th className="w-36" />
+                <Th>Nome</Th><Th>Email</Th><Th className="hidden md:table-cell">Città</Th><Th className="hidden md:table-cell">Tag</Th><Th className="hidden lg:table-cell">Origine</Th>
+                <th className="text-center px-4 py-3 text-xs uppercase tracking-wider text-warm-500 w-52">Azioni</th>
               </tr></thead>
               <tbody className="divide-y divide-warm-100">
-                {filteredContacts.map((c) => (
-                  <tr key={c.email} className={`hover:bg-warm-50/50 transition-colors ${selected.has(c.email) ? "bg-warm-50" : ""}`}>
-                    <td className="px-4 py-3"><input type="checkbox" checked={selected.has(c.email)} onChange={() => toggleSelect(c.email)} className="accent-warm-800" /></td>
+                {filteredContacts.map((c) => {
+                  const canOpenDetail = !!c.subscriberId;
+                  const goDetail = () => { if (canOpenDetail) window.location.href = `/admin/subscribers/${c.subscriberId}`; else setViewContact(c); };
+                  return (
+                  <tr
+                    key={c.email}
+                    onClick={goDetail}
+                    className={`cursor-pointer hover:bg-warm-50/70 transition-colors ${selected.has(c.email) ? "bg-warm-50" : ""}`}
+                  >
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(c.email)} onChange={() => toggleSelect(c.email)} className="accent-warm-800" />
+                    </td>
                     <td className="px-4 py-3">
-                      {c.subscriberId ? (
-                        <a href={`/admin/subscribers/${c.subscriberId}`} className="font-medium text-warm-800 hover:text-warm-900 hover:underline">
-                          {contactName(c)}
-                        </a>
-                      ) : (
-                        <div className="font-medium text-warm-800">{contactName(c)}</div>
-                      )}
+                      <div className="font-medium text-warm-800">{contactName(c)}</div>
                       {c.company && <div className="text-[10px] text-warm-400">{c.company}</div>}
                     </td>
-                    <td className="px-4 py-3 text-warm-600 text-xs">
-                      {c.subscriberId ? (
-                        <a href={`/admin/subscribers/${c.subscriberId}`} className="hover:text-warm-900 hover:underline">{c.email}</a>
-                      ) : c.email}
-                    </td>
+                    <td className="px-4 py-3 text-warm-600 text-xs">{c.email}</td>
                     <td className="px-4 py-3 text-warm-600 text-xs hidden md:table-cell">
                       {[c.city, c.country].filter(Boolean).join(", ") || "—"}
                     </td>
@@ -941,16 +951,29 @@ export default function AdminSubscribersPage() {
                           c.source === "evento" ? "Evento" : "Solo tag"}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => setViewContact(c)} className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors" title="Visualizza profilo"><Eye size={15} /></button>
-                        <button onClick={() => openEditContact(c)} className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors" title="Modifica"><Pencil size={15} /></button>
-                        <button onClick={() => { setSelected(new Set([c.email])); setShowEmailChoice(true); setSendResult(null); }} className="p-1.5 text-warm-400 hover:text-warm-600 transition-colors" title="Email"><Mail size={15} /></button>
-                        <button onClick={() => handleDeleteContact(c.email)} className="p-1.5 text-warm-400 hover:text-red-500 transition-colors" title="Elimina"><Trash2 size={15} /></button>
+                    <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => { setSelected(new Set([c.email])); setShowEmailChoice(true); setSendResult(null); }}
+                          title="Invia email a questo contatto"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-warm-300 text-warm-700 hover:bg-warm-50 transition-colors"
+                        >
+                          <Mail size={12} /> Invia email
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteContact(c.email)}
+                          title="Elimina definitivamente il contatto"
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-300 text-red-700 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

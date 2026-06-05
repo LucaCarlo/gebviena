@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Search, Users, ShoppingCart } from "lucide-react";
+import { Loader2, Search, Users, ShoppingCart, Trash2 } from "lucide-react";
 
 interface CustomerListItem {
   id: string;
@@ -46,6 +46,26 @@ export default function StoreCustomersPage() {
     const t = setTimeout(() => fetchAll(), 250);
     return () => clearTimeout(t);
   }, [fetchAll]);
+
+  const handleDelete = async (e: React.MouseEvent, c: CustomerListItem) => {
+    e.stopPropagation();
+    const fullName = [c.firstName, c.lastName].filter(Boolean).join(" ") || c.email;
+    const msg = c.ordersCount > 0
+      ? `Eliminare il cliente "${fullName}" (${c.email})?\n\nHa ${c.ordersCount} ordini: la cronologia ordini resterà ma sarà "orfana" (senza cliente collegato). L'operazione è irreversibile.`
+      : `Eliminare il cliente "${fullName}" (${c.email})?\n\nL'operazione è irreversibile.`;
+    if (!confirm(msg)) return;
+    try {
+      const res = await fetch(`/api/store/customers/${c.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        setCustomers((arr) => arr.filter((x) => x.id !== c.id));
+      } else {
+        alert(data.error || "Errore eliminazione");
+      }
+    } catch {
+      alert("Errore di rete");
+    }
+  };
 
   return (
     <div>
@@ -143,6 +163,7 @@ export default function StoreCustomersPage() {
                 <th className="px-4 py-3 text-right">Speso totale</th>
                 <th className="px-4 py-3 text-left">Tipo</th>
                 <th className="px-4 py-3 text-left">Registrato</th>
+                <th className="px-4 py-3 text-center w-28">Azioni</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
@@ -185,6 +206,16 @@ export default function StoreCustomersPage() {
                     </td>
                     <td className="px-4 py-3 text-xs text-warm-500">
                       {new Date(c.createdAt).toLocaleDateString("it-IT")}
+                    </td>
+                    <td className="px-2 py-1.5 text-center" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDelete(e, c)}
+                        title="Elimina definitivamente il cliente"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-red-300 text-red-700 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     </td>
                   </tr>
                 );
