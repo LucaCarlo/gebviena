@@ -7,6 +7,7 @@ import {
   Tag, Loader2, Upload, FileText, Pencil, Building2,
   MapPin, StickyNote, User, ChevronLeft, Clock,
 } from "lucide-react";
+import BulkEmailModal from "@/components/admin/BulkEmailModal";
 
 /* ───── Types ───── */
 
@@ -84,6 +85,7 @@ export default function AdminSubscribersPage() {
   const [showSimpleEmail, setShowSimpleEmail] = useState(false);
   const [showTagAssign, setShowTagAssign] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [bulkEmailOpen, setBulkEmailOpen] = useState(false);
   const [showEmailChoice, setShowEmailChoice] = useState(false);
   const [showEditContact, setShowEditContact] = useState(false);
   const [viewContact, setViewContact] = useState<UnifiedContact | null>(null);
@@ -592,51 +594,77 @@ export default function AdminSubscribersPage() {
 
   /* ═══ LIST VIEW ═══ */
   return (
-    <div className="p-6 md:p-8">
+    <div>
       {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-warm-900">Utenti</h1>
+          <h1 className="text-2xl font-semibold text-warm-900">Utenti</h1>
+          <p className="text-sm text-warm-500 mt-1">
+            Iscritti newsletter, contatti tag-only e registrazioni a eventi/landing — vista unificata per email.
+          </p>
+          <p className="text-xs text-warm-500 mt-1.5">
+            <strong>{totalCount || filteredContacts.length}</strong> {(totalCount || filteredContacts.length) === 1 ? "contatto" : "contatti"}
+            {selected.size > 0 && <> · <strong>{selected.size}</strong> selezionati</>}
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {!isEventoDetail && selected.size > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {selected.size > 0 ? (
             <>
-              <button onClick={openTemplateModal} className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors">
-                <FileText size={14} /> Template email ({selected.size})
+              <button
+                onClick={() => setBulkEmailOpen(true)}
+                className="inline-flex items-center gap-2 bg-warm-900 hover:bg-warm-800 text-white px-4 py-2 rounded text-sm font-medium"
+              >
+                <Mail size={14} /> Invia email ({selected.size})
               </button>
-              <button onClick={() => { setShowSimpleEmail(true); setSendResult(null); setEmailSubject(""); setEmailBody(""); }}
-                className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors">
-                <Mail size={14} /> Email semplice
+              <button
+                onClick={() => setShowTagAssign(true)}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded border border-warm-300 text-warm-700 hover:bg-warm-50"
+                title="Assegna tag ai contatti selezionati"
+              >
+                <Tag size={14} /> Tag
               </button>
-              <button onClick={() => setShowTagAssign(true)} className="flex items-center gap-2 bg-warm-100 text-warm-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors" title="Assegna tag"><Tag size={14} /></button>
-              <button onClick={handleBulkDelete} className="flex items-center gap-2 bg-red-50 text-red-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors" title="Elimina"><Trash2 size={14} /></button>
+              <button
+                onClick={handleBulkDelete}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded border border-red-300 text-red-700 hover:bg-red-50"
+                title="Elimina i contatti selezionati"
+              >
+                <Trash2 size={14} />
+              </button>
+              <button onClick={() => setSelected(new Set())} className="text-sm text-warm-600 hover:text-warm-900 underline">
+                Annulla selezione
+              </button>
             </>
           ) : (
-            <div className="flex gap-2">
+            <>
               <button onClick={() => { setShowImport(true); setImportResult(null); }}
-                className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors">
+                className="inline-flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded text-sm font-medium hover:bg-warm-200">
                 <Upload size={14} /> Importa
               </button>
               {isEventoDetail && (
                 <button onClick={() => window.open("/api/event-registrations?format=csv", "_blank")}
-                  className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors">
+                  className="inline-flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded text-sm font-medium hover:bg-warm-200">
                   <Download size={16} /> Esporta CSV
                 </button>
               )}
-            </div>
+            </>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Search + sub-filters */}
-      <div className="mb-6 flex flex-wrap gap-3 items-center">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-          <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Cerca per nome, email, azienda, città..."
-            className="w-full sm:w-80 pl-10 pr-4 py-2.5 border border-warm-300 rounded-lg text-sm focus:border-warm-800 focus:outline-none" />
+      {/* Search + sub-filters — stile uniforme con Professionisti */}
+      <div className="bg-white border border-warm-200 rounded-lg p-4 mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[280px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Cerca per nome, email, azienda, città…"
+            className="w-full pl-9 pr-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none"
+          />
         </div>
 
-        {/* Filtro Tag: dropdown con tutti i tag disponibili + "Tutti" e "Crea nuovo tag" */}
+        {/* Filtro Tag */}
         <select
           value={activeTab}
           onChange={(e) => {
@@ -644,7 +672,7 @@ export default function AdminSubscribersPage() {
             if (v === "__new__") { setShowNewTag(true); return; }
             setActiveTab(v); clearSelection();
           }}
-          className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
+          className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
           title="Filtra per tag / origine"
         >
           {tabItems.map((tab) => (
@@ -654,11 +682,29 @@ export default function AdminSubscribersPage() {
           ))}
           <option value="__new__">＋ Crea nuovo tag…</option>
         </select>
+
+        {/* Lingua: sempre disponibile */}
+        {availableLangs.length > 0 && (
+          <select
+            value={langFilter}
+            onChange={(e) => setLangFilter(e.target.value)}
+            className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
+            title="Filtra per lingua dell'utente al momento dell'iscrizione"
+          >
+            <option value="all">Lingua: tutte</option>
+            {availableLangs.map((l) => (
+              <option key={l.code} value={l.code}>{l.flag ? `${l.flag} ` : ""}{l.name}</option>
+            ))}
+            <option value="unknown">Lingua: sconosciuta</option>
+          </select>
+        )}
+
+        {/* Invitato: solo se c'è una landing page collegata al tag corrente */}
         {!isEventoDetail && hasLandingPage && (
           <select
             value={invitedFilter}
             onChange={(e) => setInvitedFilter(e.target.value as InvitedFilter)}
-            className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
+            className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
             title="Filtra per stato invito a questa landing"
           >
             <option value="all">Tutti</option>
@@ -666,30 +712,19 @@ export default function AdminSubscribersPage() {
             <option value="false">Non invitati</option>
           </select>
         )}
-        {!isEventoDetail && (
+
+        {/* Check-in: ha senso solo quando vediamo gli iscritti agli eventi
+            (tag "evento") o "tutti", non quando filtriamo per un tag non-evento. */}
+        {(activeTab === "all" || isEventoDetail) && (
           <select
             value={checkinFilter}
             onChange={(e) => setCheckinFilter(e.target.value as "all" | "true" | "false")}
-            className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
+            className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
             title="Filtra per stato check-in evento"
           >
             <option value="all">Check-in: tutti</option>
-            <option value="true">Check-in: si</option>
+            <option value="true">Check-in: sì</option>
             <option value="false">Check-in: no</option>
-          </select>
-        )}
-        {!isEventoDetail && availableLangs.length > 0 && (
-          <select
-            value={langFilter}
-            onChange={(e) => setLangFilter(e.target.value)}
-            className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
-            title="Filtra per lingua del visitatore al momento dell'iscrizione"
-          >
-            <option value="all">Lingua: tutte</option>
-            {availableLangs.map((l) => (
-              <option key={l.code} value={l.code}>{l.flag ? `${l.flag} ` : ""}{l.name}</option>
-            ))}
-            <option value="unknown">Lingua: sconosciuta</option>
           </select>
         )}
         {!isEventoDetail && (
@@ -1003,6 +1038,18 @@ export default function AdminSubscribersPage() {
       {renderSimpleEmailModal()}
       {renderEmailChoiceModal()}
       {renderEditModal()}
+
+      {/* Bulk email modal — esperienza coerente con Clienti e Professionisti
+          (template oppure email semplice). Per scheduling e segmenti avanzati
+          restano i modal "renderTemplateModal" e "renderSimpleEmailModal" che
+          gestiscono ancora subscriberIds, ma non sono più triggerati dal
+          header — sono accessibili come fallback se servono. */}
+      <BulkEmailModal
+        open={bulkEmailOpen}
+        onClose={() => setBulkEmailOpen(false)}
+        emails={Array.from(selected)}
+        contextLabel="utenti"
+      />
 
       {/* ═══ Tag Assign ═══ */}
       {showTagAssign && (

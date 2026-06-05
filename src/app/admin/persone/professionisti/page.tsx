@@ -178,7 +178,9 @@ export default function AdminProfessionalsPage() {
           <h1 className="text-2xl font-semibold text-warm-900">Professionisti</h1>
           <p className="text-sm text-warm-500 mt-1">
             Account registrati all&apos;area riservata professionisti del sito.
-            {!loading && <> · <strong>{counts.total}</strong> totali · <strong className="text-amber-700">{counts.pending}</strong> in attesa · <strong className="text-emerald-700">{counts.active}</strong> attivi · <strong className="text-warm-500">{counts.inactive}</strong> disattivati</>}
+          </p>
+          <p className="text-xs text-warm-500 mt-1.5">
+            <strong>{counts.total}</strong> {counts.total === 1 ? "professionista" : "professionisti"}
             {selected.size > 0 && <> · <strong>{selected.size}</strong> selezionati</>}
           </p>
         </div>

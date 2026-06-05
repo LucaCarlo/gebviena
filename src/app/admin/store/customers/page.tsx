@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Search, Users, ShoppingCart, Trash2, Mail } from "lucide-react";
+import { Loader2, Search, ShoppingCart, Trash2, Mail } from "lucide-react";
 import BulkEmailModal from "@/components/admin/BulkEmailModal";
 
 interface CustomerListItem {
@@ -85,13 +85,14 @@ export default function StoreCustomersPage() {
 
   return (
     <div>
-      <header className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold text-warm-900 flex items-center gap-2">
-            <Users size={24} /> Clienti Shop
-          </h1>
+          <h1 className="text-2xl font-semibold text-warm-900">Clienti</h1>
           <p className="text-sm text-warm-500 mt-1">
-            {customers.length} {customers.length === 1 ? "cliente" : "clienti"}
+            Account registrati al checkout dello store, con storico ordini e indirizzi salvati.
+          </p>
+          <p className="text-xs text-warm-500 mt-1.5">
+            <strong>{customers.length}</strong> {customers.length === 1 ? "cliente" : "clienti"}
             {selected.size > 0 && <> · <strong>{selected.size}</strong> selezionati</>}
           </p>
         </div>

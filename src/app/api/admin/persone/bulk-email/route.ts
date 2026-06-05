@@ -28,7 +28,16 @@ export async function POST(req: Request) {
     const body = await req.json();
     const rawEmails: unknown = body.emails;
     const templateId = String(body.templateId || "").trim();
-    if (!templateId) return NextResponse.json({ success: false, error: "templateId mancante" }, { status: 400 });
+    // Modalità "email semplice": invia direttamente {subject, html} senza template.
+    const rawSubject = typeof body.subject === "string" ? body.subject.trim() : "";
+    const rawHtml = typeof body.html === "string" ? body.html : "";
+    const simpleMode = !templateId && (rawSubject || rawHtml);
+    if (!templateId && !simpleMode) {
+      return NextResponse.json({ success: false, error: "Specifica un template oppure subject+html" }, { status: 400 });
+    }
+    if (simpleMode && (!rawSubject || !rawHtml)) {
+      return NextResponse.json({ success: false, error: "Per email semplice serve sia oggetto che corpo" }, { status: 400 });
+    }
     if (!Array.isArray(rawEmails) || rawEmails.length === 0) {
       return NextResponse.json({ success: false, error: "Nessun destinatario" }, { status: 400 });
     }
@@ -101,22 +110,32 @@ export async function POST(req: Request) {
     // Invio sequenziale per non saturare SMTP. Per 100+ email considerare coda.
     for (const email of emails) {
       const meta = byEmail.get(email) || { firstName: "", lastName: "", language: "it" };
-      const tpl = await loadTpl(meta.language);
-      if (!tpl) {
-        failed++; errors.push({ email, error: "Template non trovato" });
-        continue;
-      }
+      const variables = {
+        firstName: meta.firstName,
+        lastName: meta.lastName,
+        email,
+      };
+
+      let html: string;
+      let subject: string;
       try {
-        const blocks = parseBlocks(tpl.blocks);
-        const variables = {
-          firstName: meta.firstName,
-          lastName: meta.lastName,
-          email,
-        };
-        const html = renderEmailTemplate(blocks, variables);
-        let subject = tpl.subject;
+        if (simpleMode) {
+          // Email semplice: sostituisce solo variabili nel subject+body grezzi.
+          subject = rawSubject;
+          html = rawHtml;
+        } else {
+          const tpl = await loadTpl(meta.language);
+          if (!tpl) {
+            failed++; errors.push({ email, error: "Template non trovato" });
+            continue;
+          }
+          const blocks = parseBlocks(tpl.blocks);
+          html = renderEmailTemplate(blocks, variables);
+          subject = tpl.subject;
+        }
         for (const [k, v] of Object.entries(variables)) {
           subject = subject.replace(new RegExp(`\\{\\{${k}\\}\\}`, "g"), v);
+          html    = html.replace(new RegExp(`\\{\\{${k}\\}\\}`, "g"), v);
         }
         const ok = await sendMail(email, subject, html);
         if (ok) sent++;
