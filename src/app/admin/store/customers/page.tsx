@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Search, Users, ShoppingCart, Trash2 } from "lucide-react";
+import { Loader2, Search, Users, ShoppingCart, Trash2, Mail } from "lucide-react";
+import BulkEmailModal from "@/components/admin/BulkEmailModal";
 
 interface CustomerListItem {
   id: string;
@@ -31,6 +32,21 @@ export default function StoreCustomersPage() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [hasOrders, setHasOrders] = useState<"" | "true" | "false">("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkEmailOpen, setBulkEmailOpen] = useState(false);
+
+  const selectAll = customers.length > 0 && selected.size === customers.length;
+  const toggleSelectAll = () => {
+    if (selectAll) setSelected(new Set());
+    else setSelected(new Set(customers.map((c) => c.email)));
+  };
+  const toggleSelect = (email: string) => {
+    setSelected((p) => {
+      const n = new Set(p);
+      if (n.has(email)) n.delete(email); else n.add(email);
+      return n;
+    });
+  };
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -69,15 +85,29 @@ export default function StoreCustomersPage() {
 
   return (
     <div>
-      <header className="flex items-center justify-between mb-6">
+      <header className="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold text-warm-900 flex items-center gap-2">
             <Users size={24} /> Clienti Shop
           </h1>
           <p className="text-sm text-warm-500 mt-1">
             {customers.length} {customers.length === 1 ? "cliente" : "clienti"}
+            {selected.size > 0 && <> · <strong>{selected.size}</strong> selezionati</>}
           </p>
         </div>
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setBulkEmailOpen(true)}
+              className="inline-flex items-center gap-2 bg-warm-900 hover:bg-warm-800 text-white px-4 py-2 rounded text-sm font-medium"
+            >
+              <Mail size={14} /> Invia email ({selected.size})
+            </button>
+            <button onClick={() => setSelected(new Set())} className="text-sm text-warm-600 hover:text-warm-900 underline">
+              Annulla selezione
+            </button>
+          </div>
+        )}
       </header>
 
       <div className="bg-white rounded-lg border border-warm-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
@@ -155,15 +185,18 @@ export default function StoreCustomersPage() {
         {/* Desktop: tabella */}
         <div className="hidden md:block bg-white rounded-lg border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-warm-50 text-warm-500 text-xs uppercase tracking-wider">
+            <thead className="bg-warm-50 text-warm-500 text-xs">
               <tr>
+                <th className="px-4 py-3 text-left w-10" onClick={(e) => e.stopPropagation()}>
+                  <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} className="accent-warm-800" />
+                </th>
                 <th className="px-4 py-3 text-left">Cliente</th>
                 <th className="px-4 py-3 text-left">Contatti</th>
                 <th className="px-4 py-3 text-center">Ordini</th>
                 <th className="px-4 py-3 text-right">Speso totale</th>
                 <th className="px-4 py-3 text-left">Tipo</th>
                 <th className="px-4 py-3 text-left">Registrato</th>
-                <th className="px-4 py-3 text-center w-28">Azioni</th>
+                <th className="px-4 py-3 text-center w-52">Azioni</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
@@ -173,8 +206,11 @@ export default function StoreCustomersPage() {
                   <tr
                     key={c.id}
                     onClick={() => router.push(`/admin/store/customers/${c.id}`)}
-                    className="hover:bg-warm-50/50 cursor-pointer"
+                    className={`hover:bg-warm-50/50 cursor-pointer ${selected.has(c.email) ? "bg-warm-50" : ""}`}
                   >
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(c.email)} onChange={() => toggleSelect(c.email)} className="accent-warm-800" />
+                    </td>
                     <td className="px-4 py-3">
                       <span className="font-medium text-warm-900">{fullName}</span>
                     </td>
@@ -225,6 +261,13 @@ export default function StoreCustomersPage() {
         </div>
         </>
       )}
+
+      <BulkEmailModal
+        open={bulkEmailOpen}
+        onClose={() => setBulkEmailOpen(false)}
+        emails={Array.from(selected)}
+        contextLabel="clienti"
+      />
     </div>
   );
 }

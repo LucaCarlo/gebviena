@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Search, Check, AlertCircle, Trash2, Power, UserCheck } from "lucide-react";
+import { Loader2, Search, Check, AlertCircle, Trash2, Power, UserCheck, Mail } from "lucide-react";
+import BulkEmailModal from "@/components/admin/BulkEmailModal";
 
 interface Professional {
   id: string;
@@ -52,6 +53,21 @@ export default function AdminProfessionalsPage() {
   const [status, setStatus] = useState<"" | "pending" | "approved">("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkEmailOpen, setBulkEmailOpen] = useState(false);
+
+  const selectAll = items.length > 0 && selected.size === items.length;
+  const toggleSelectAll = () => {
+    if (selectAll) setSelected(new Set());
+    else setSelected(new Set(items.map((p) => p.email)));
+  };
+  const toggleSelect = (email: string) => {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(email)) n.delete(email); else n.add(email);
+      return n;
+    });
+  };
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -157,12 +173,28 @@ export default function AdminProfessionalsPage() {
 
   return (
     <div>
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-warm-900">Professionisti</h1>
-        <p className="text-sm text-warm-500 mt-1">
-          Account registrati all&apos;area riservata professionisti del sito.
-          {!loading && <> · <strong>{counts.total}</strong> totali · <strong className="text-amber-700">{counts.pending}</strong> in attesa · <strong className="text-emerald-700">{counts.active}</strong> attivi · <strong className="text-warm-500">{counts.inactive}</strong> disattivati</>}
-        </p>
+      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-semibold text-warm-900">Professionisti</h1>
+          <p className="text-sm text-warm-500 mt-1">
+            Account registrati all&apos;area riservata professionisti del sito.
+            {!loading && <> · <strong>{counts.total}</strong> totali · <strong className="text-amber-700">{counts.pending}</strong> in attesa · <strong className="text-emerald-700">{counts.active}</strong> attivi · <strong className="text-warm-500">{counts.inactive}</strong> disattivati</>}
+            {selected.size > 0 && <> · <strong>{selected.size}</strong> selezionati</>}
+          </p>
+        </div>
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setBulkEmailOpen(true)}
+              className="inline-flex items-center gap-2 bg-warm-900 hover:bg-warm-800 text-white px-4 py-2 rounded text-sm font-medium"
+            >
+              <Mail size={14} /> Invia email ({selected.size})
+            </button>
+            <button onClick={() => setSelected(new Set())} className="text-sm text-warm-600 hover:text-warm-900 underline">
+              Annulla selezione
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Filtri */}
@@ -216,6 +248,9 @@ export default function AdminProfessionalsPage() {
           <table className="w-full text-sm">
             <thead className="bg-warm-50 text-warm-500 text-xs">
               <tr>
+                <th className="px-4 py-2.5 text-left w-10" onClick={(e) => e.stopPropagation()}>
+                  <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} className="accent-warm-800" />
+                </th>
                 <th className="px-4 py-2.5 text-left">Nome</th>
                 <th className="px-4 py-2.5 text-left">Email</th>
                 <th className="px-4 py-2.5 text-left">Azienda</th>
@@ -233,8 +268,11 @@ export default function AdminProfessionalsPage() {
                   <tr
                     key={p.id}
                     onClick={() => router.push(`/admin/persone/professionisti/${p.id}`)}
-                    className={`cursor-pointer hover:bg-warm-50/70 transition-colors ${p.pendingApproval ? "bg-amber-50/40" : (p.isActive ? "" : "bg-warm-50/40 opacity-75")}`}
+                    className={`cursor-pointer hover:bg-warm-50/70 transition-colors ${selected.has(p.email) ? "bg-warm-50" : (p.pendingApproval ? "bg-amber-50/40" : (p.isActive ? "" : "bg-warm-50/40 opacity-75"))}`}
                   >
+                    <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(p.email)} onChange={() => toggleSelect(p.email)} className="accent-warm-800" />
+                    </td>
                     <td className="px-4 py-2.5 text-warm-800">
                       <div className="font-medium">{p.firstName} {p.lastName}</div>
                       {p.pendingApproval && (
@@ -313,6 +351,13 @@ export default function AdminProfessionalsPage() {
           {toast.msg}
         </div>
       )}
+
+      <BulkEmailModal
+        open={bulkEmailOpen}
+        onClose={() => setBulkEmailOpen(false)}
+        emails={Array.from(selected)}
+        contextLabel="professionisti"
+      />
     </div>
   );
 }

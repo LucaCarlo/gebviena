@@ -628,22 +628,6 @@ export default function AdminSubscribersPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-warm-200 overflow-x-auto scrollbar-hidden">
-        {tabItems.map((tab) => (
-          <button key={tab.key} onClick={() => { setActiveTab(tab.key); clearSelection(); }}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0 ${activeTab === tab.key ? "border-current" : "border-transparent text-warm-400 hover:text-warm-600"}`}
-            style={activeTab === tab.key ? { borderColor: tab.color, color: tab.color } : undefined}>
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tab.color }} />
-            {tab.label}
-            {tab.key !== "all" && (
-              <span className="text-[10px] font-semibold bg-warm-100 text-warm-500 px-1.5 py-0.5 rounded-full">{tab.count}</span>
-            )}
-          </button>
-        ))}
-        <button onClick={() => setShowNewTag(true)} className="flex items-center px-3 py-3 text-warm-400 hover:text-warm-600 transition-colors border-b-2 border-transparent -mb-px shrink-0" title="Nuovo tag"><Plus size={14} /></button>
-      </div>
-
       {/* Search + sub-filters */}
       <div className="mb-6 flex flex-wrap gap-3 items-center">
         <div className="relative">
@@ -651,6 +635,25 @@ export default function AdminSubscribersPage() {
           <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Cerca per nome, email, azienda, città..."
             className="w-full sm:w-80 pl-10 pr-4 py-2.5 border border-warm-300 rounded-lg text-sm focus:border-warm-800 focus:outline-none" />
         </div>
+
+        {/* Filtro Tag: dropdown con tutti i tag disponibili + "Tutti" e "Crea nuovo tag" */}
+        <select
+          value={activeTab}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === "__new__") { setShowNewTag(true); return; }
+            setActiveTab(v); clearSelection();
+          }}
+          className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
+          title="Filtra per tag / origine"
+        >
+          {tabItems.map((tab) => (
+            <option key={tab.key} value={tab.key}>
+              {tab.label}{tab.key !== "all" ? ` (${tab.count})` : ""}
+            </option>
+          ))}
+          <option value="__new__">＋ Crea nuovo tag…</option>
+        </select>
         {!isEventoDetail && hasLandingPage && (
           <select
             value={invitedFilter}
@@ -909,7 +912,7 @@ export default function AdminSubscribersPage() {
               <thead><tr className="border-b border-warm-200 bg-warm-50">
                 <th className="text-left px-4 py-3 w-10"><input type="checkbox" checked={selectAllMatching || (selected.size === currentList.length && currentList.length > 0)} onChange={selectAll} className="accent-warm-800" /></th>
                 <Th>Nome</Th><Th>Email</Th><Th className="hidden md:table-cell">Città</Th><Th className="hidden md:table-cell">Tag</Th><Th className="hidden lg:table-cell">Origine</Th>
-                <th className="text-center px-4 py-3 text-xs uppercase tracking-wider text-warm-500 w-52">Azioni</th>
+                <th className="text-center px-4 py-3 text-xs font-medium text-warm-500 w-52">Azioni</th>
               </tr></thead>
               <tbody className="divide-y divide-warm-100">
                 {filteredContacts.map((c) => {
@@ -1237,7 +1240,7 @@ export default function AdminSubscribersPage() {
 /* ───── Helpers ───── */
 
 function Th({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
-  return <th className={`text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider ${className}`}>{children}</th>;
+  return <th className={`text-left px-4 py-3 font-medium text-warm-500 text-xs ${className}`}>{children}</th>;
 }
 
 function EmptyState({ text }: { text: string }) {
