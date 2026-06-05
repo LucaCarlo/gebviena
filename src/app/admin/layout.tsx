@@ -10,6 +10,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
 
+  // Rimuove il widget floating Iubenda dalle pagine admin. Lo script Iubenda
+  // inietta i suoi elementi dopo il primo paint con stili inline, quindi:
+  //  1. injettiamo un <style> con selettori prudenti (display:none !important)
+  //  2. un MutationObserver rimuove fisicamente i nodi appena compaiono.
+  useEffect(() => {
+    const isIubendaNode = (el: Element): boolean => {
+      const tag = el.tagName;
+      if (tag === "STYLE" || tag === "SCRIPT") return false;
+      const id = el.id || "";
+      const cls = (el as HTMLElement).className || "";
+      const c = typeof cls === "string" ? cls : "";
+      if (id.startsWith("iubenda-") || id.startsWith("iub") || id === "iubFooterBtn") return true;
+      if (/\biubenda[-_]?\w*/i.test(c)) return true;
+      if (/\biub[-_]?cs/i.test(c)) return true;
+      return false;
+    };
+    const removeAll = () => {
+      document.querySelectorAll('[id^="iubenda"], [id^="iub-"], [id="iubFooterBtn"], [class*="iubenda"], [class*="iub-cs"]')
+        .forEach((n) => { if (isIubendaNode(n)) n.remove(); });
+    };
+    removeAll();
+    const obs = new MutationObserver((mut) => {
+      for (const m of mut) {
+        m.addedNodes.forEach((n) => {
+          if (n.nodeType === 1 && isIubendaNode(n as Element)) (n as Element).remove();
+        });
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+    // Safety fallback: ripulisce ogni 2s nel caso lo script Iubenda ri-inietti
+    const ivl = setInterval(removeAll, 2000);
+    return () => { obs.disconnect(); clearInterval(ivl); };
+  }, []);
+
   useEffect(() => {
     if (pathname === "/admin/login") {
       setIsAuthed(true);
