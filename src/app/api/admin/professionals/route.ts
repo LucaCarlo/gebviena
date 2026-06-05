@@ -16,6 +16,10 @@ export async function GET(req: NextRequest) {
   const role = (sp.get("role") || "").trim();
   const activeParam = sp.get("active");
   const statusParam = sp.get("status"); // "pending" | "approved" | (none)
+  const format = (sp.get("format") || "").toLowerCase();
+  const isCsv = format === "csv";
+  const page = Math.max(parseInt(sp.get("page") || "1", 10) || 1, 1);
+  const pageSize = Math.min(Math.max(parseInt(sp.get("pageSize") || "50", 10) || 50, 1), 200);
 
   const where: Prisma.ProfessionalWhereInput = {};
   if (q) {
@@ -34,28 +38,49 @@ export async function GET(req: NextRequest) {
   if (statusParam === "pending") where.pendingApproval = true;
   if (statusParam === "approved") where.pendingApproval = false;
 
+  const totalCount = await prisma.professional.count({ where });
+
   const items = await prisma.professional.findMany({
     where,
-    // Le richieste pending vengono prima (più urgenti), poi per data desc
     orderBy: [{ pendingApproval: "desc" }, { createdAt: "desc" }],
     select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      phone: true,
-      company: true,
-      role: true,
-      language: true,
-      marketingOptIn: true,
-      isActive: true,
-      pendingApproval: true,
-      approvedAt: true,
-      createdAt: true,
-      lastLoginAt: true,
+      id: true, email: true, firstName: true, lastName: true, phone: true,
+      company: true, role: true, language: true, marketingOptIn: true,
+      isActive: true, pendingApproval: true, approvedAt: true,
+      createdAt: true, lastLoginAt: true,
     },
-    take: 500,
+    skip: isCsv ? 0 : (page - 1) * pageSize,
+    take: isCsv ? 10000 : pageSize,
   });
 
-  return NextResponse.json({ success: true, data: items });
+  if (isCsv) {
+    const ROLE_LABEL: Record<string, string> = {
+      ARCHITECT_DESIGNER: "Architetto/Designer", PRESS: "Stampa",
+      RESELLER: "Rivenditore", AGENT: "Agente",
+    };
+    const esc = (v: unknown) => {
+      const s = String(v ?? "");
+      return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const header = ["Email", "Nome", "Cognome", "Telefono", "Azienda", "Ruolo", "Lingua", "Stato", "Marketing", "Registrato"].join(",");
+    const lines = items.map((p) => {
+      const stato = p.pendingApproval ? "in attesa" : (p.isActive ? "attivo" : "disattivato");
+      return [
+        esc(p.email), esc(p.firstName), esc(p.lastName), esc(p.phone),
+        esc(p.company), esc(ROLE_LABEL[p.role] || p.role),
+        esc(p.language.toUpperCase()), esc(stato),
+        esc(p.marketingOptIn ? "si" : "no"),
+        esc(new Date(p.createdAt).toISOString()),
+      ].join(",");
+    });
+    const csv = "﻿" + [header, ...lines].join("\n");
+    return new NextResponse(csv, {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="professionisti-${new Date().toISOString().slice(0, 10)}.csv"`,
+      },
+    });
+  }
+
+  return NextResponse.json({ success: true, data: items, totalCount, page, pageSize });
 }

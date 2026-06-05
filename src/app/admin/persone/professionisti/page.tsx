@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Search, Check, AlertCircle, Trash2, Power, UserCheck, Mail } from "lucide-react";
 import BulkEmailModal from "@/components/admin/BulkEmailModal";
+import ImportExportButtons from "@/components/admin/ImportExportButtons";
+import TablePagination from "@/components/admin/TablePagination";
 
 interface Professional {
   id: string;
@@ -55,6 +57,9 @@ export default function AdminProfessionalsPage() {
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkEmailOpen, setBulkEmailOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [totalCount, setTotalCount] = useState(0);
 
   const selectAll = items.length > 0 && selected.size === items.length;
   const toggleSelectAll = () => {
@@ -82,22 +87,39 @@ export default function AdminProfessionalsPage() {
       if (role) sp.set("role", role);
       if (active) sp.set("active", active);
       if (status) sp.set("status", status);
+      sp.set("page", String(page));
+      sp.set("pageSize", String(pageSize));
       const res = await fetch(`/api/admin/professionals?${sp}`, { cache: "no-store" });
       const data = await res.json();
-      if (data.success) setItems(data.data);
-      else showToast(data.error || "Errore caricamento", false);
+      if (data.success) {
+        setItems(data.data);
+        setTotalCount(data.totalCount ?? data.data.length);
+      } else showToast(data.error || "Errore caricamento", false);
     } catch {
       showToast("Errore di rete", false);
     } finally {
       setLoading(false);
     }
-  }, [q, role, active, status]);
+  }, [q, role, active, status, page, pageSize]);
+
+  // Reset pagina su cambio filtri
+  useEffect(() => { setPage(1); }, [q, role, active, status, pageSize]);
 
   // Debounce della query di ricerca
   useEffect(() => {
     const t = setTimeout(fetchItems, q ? 350 : 0);
     return () => clearTimeout(t);
   }, [fetchItems, q]);
+
+  // URL per export CSV con filtri correnti
+  const exportUrl = (() => {
+    const sp = new URLSearchParams({ format: "csv" });
+    if (q.trim()) sp.set("q", q.trim());
+    if (role) sp.set("role", role);
+    if (active) sp.set("active", active);
+    if (status) sp.set("status", status);
+    return `/api/admin/professionals?${sp}`;
+  })();
 
   const toggleActive = async (p: Professional) => {
     setBusyId(p.id);
@@ -184,19 +206,39 @@ export default function AdminProfessionalsPage() {
             {selected.size > 0 && <> · <strong>{selected.size}</strong> selezionati</>}
           </p>
         </div>
-        {selected.size > 0 && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setBulkEmailOpen(true)}
-              className="inline-flex items-center gap-2 bg-warm-900 hover:bg-warm-800 text-white px-4 py-2 rounded text-sm font-medium"
-            >
-              <Mail size={14} /> Invia email ({selected.size})
-            </button>
-            <button onClick={() => setSelected(new Set())} className="text-sm text-warm-600 hover:text-warm-900 underline">
-              Annulla selezione
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {selected.size > 0 ? (
+            <>
+              <button
+                onClick={() => setBulkEmailOpen(true)}
+                className="inline-flex items-center gap-2 bg-warm-900 hover:bg-warm-800 text-white px-4 py-2 rounded text-sm font-medium"
+              >
+                <Mail size={14} /> Invia email ({selected.size})
+              </button>
+              <button onClick={() => setSelected(new Set())} className="text-sm text-warm-600 hover:text-warm-900 underline">
+                Annulla selezione
+              </button>
+            </>
+          ) : (
+            <ImportExportButtons
+              exportUrl={exportUrl}
+              exportLabel="Esporta professionisti CSV"
+              importUrl="/api/admin/professionals/import"
+              importColumns={{
+                email: ["email", "e-mail", "mail"],
+                firstName: ["firstname", "nome"],
+                lastName: ["lastname", "cognome"],
+                company: ["company", "azienda", "studio", "testata"],
+                phone: ["phone", "telefono"],
+                role: ["role", "ruolo"],
+                language: ["language", "lingua"],
+              }}
+              exampleCsv={"email,firstName,lastName,company,phone,role,language\nrossi@studio.it,Mario,Rossi,Studio Rossi,+39 333 1234567,ARCHITECT_DESIGNER,it\n"}
+              templateFilename="professionisti-template.csv"
+              onImported={fetchItems}
+            />
+          )}
+        </div>
       </header>
 
       {/* Filtri */}
@@ -235,6 +277,17 @@ export default function AdminProfessionalsPage() {
           <option value="">Tutti gli stati</option>
           <option value="true">Solo attivi</option>
           <option value="false">Solo disattivati</option>
+        </select>
+        <select
+          value={pageSize}
+          onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
+          className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white ml-auto"
+          title="Numero di professionisti per pagina"
+        >
+          <option value="20">Per pagina: 20</option>
+          <option value="50">Per pagina: 50</option>
+          <option value="100">Per pagina: 100</option>
+          <option value="200">Per pagina: 200</option>
         </select>
       </div>
 
@@ -353,6 +406,13 @@ export default function AdminProfessionalsPage() {
           {toast.msg}
         </div>
       )}
+
+      <TablePagination
+        page={page}
+        pageSize={pageSize}
+        totalCount={totalCount}
+        onPageChange={setPage}
+      />
 
       <BulkEmailModal
         open={bulkEmailOpen}

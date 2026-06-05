@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, Search, ShoppingCart, Trash2, Mail } from "lucide-react";
 import BulkEmailModal from "@/components/admin/BulkEmailModal";
+import ImportExportButtons from "@/components/admin/ImportExportButtons";
+import TablePagination from "@/components/admin/TablePagination";
 
 interface CustomerListItem {
   id: string;
@@ -34,6 +36,9 @@ export default function StoreCustomersPage() {
   const [hasOrders, setHasOrders] = useState<"" | "true" | "false">("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkEmailOpen, setBulkEmailOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [totalCount, setTotalCount] = useState(0);
 
   const selectAll = customers.length > 0 && selected.size === customers.length;
   const toggleSelectAll = () => {
@@ -53,15 +58,31 @@ export default function StoreCustomersPage() {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (hasOrders) params.set("hasOrders", hasOrders);
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
     const res = await fetch(`/api/store/customers?${params}`).then((r) => r.json());
-    if (res.success) setCustomers(res.data);
+    if (res.success) {
+      setCustomers(res.data);
+      setTotalCount(res.totalCount ?? res.data.length);
+    }
     setLoading(false);
-  }, [q, hasOrders]);
+  }, [q, hasOrders, page, pageSize]);
+
+  // Reset pagina quando filtri cambiano
+  useEffect(() => { setPage(1); }, [q, hasOrders, pageSize]);
 
   useEffect(() => {
     const t = setTimeout(() => fetchAll(), 250);
     return () => clearTimeout(t);
   }, [fetchAll]);
+
+  // URL per esportare con i filtri correnti applicati
+  const exportUrl = (() => {
+    const params = new URLSearchParams({ format: "csv" });
+    if (q) params.set("q", q);
+    if (hasOrders) params.set("hasOrders", hasOrders);
+    return `/api/store/customers?${params}`;
+  })();
 
   const handleDelete = async (e: React.MouseEvent, c: CustomerListItem) => {
     e.stopPropagation();
@@ -96,39 +117,68 @@ export default function StoreCustomersPage() {
             {selected.size > 0 && <> · <strong>{selected.size}</strong> selezionati</>}
           </p>
         </div>
-        {selected.size > 0 && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setBulkEmailOpen(true)}
-              className="inline-flex items-center gap-2 bg-warm-900 hover:bg-warm-800 text-white px-4 py-2 rounded text-sm font-medium"
-            >
-              <Mail size={14} /> Invia email ({selected.size})
-            </button>
-            <button onClick={() => setSelected(new Set())} className="text-sm text-warm-600 hover:text-warm-900 underline">
-              Annulla selezione
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {selected.size > 0 ? (
+            <>
+              <button
+                onClick={() => setBulkEmailOpen(true)}
+                className="inline-flex items-center gap-2 bg-warm-900 hover:bg-warm-800 text-white px-4 py-2 rounded text-sm font-medium"
+              >
+                <Mail size={14} /> Invia email ({selected.size})
+              </button>
+              <button onClick={() => setSelected(new Set())} className="text-sm text-warm-600 hover:text-warm-900 underline">
+                Annulla selezione
+              </button>
+            </>
+          ) : (
+            <ImportExportButtons
+              exportUrl={exportUrl}
+              exportLabel="Esporta clienti CSV"
+              importUrl="/api/store/customers/import"
+              importColumns={{
+                email: ["email", "e-mail", "mail"],
+                firstName: ["firstname", "nome"],
+                lastName: ["lastname", "cognome"],
+                phone: ["phone", "telefono", "cellulare"],
+                marketingOptIn: ["marketing", "marketingoptin", "newsletter"],
+              }}
+              exampleCsv={"email,firstName,lastName,phone,marketing\nmario.rossi@example.com,Mario,Rossi,+39 333 1234567,si\n"}
+              templateFilename="clienti-template.csv"
+              onImported={fetchAll}
+            />
+          )}
+        </div>
       </header>
 
-      <div className="bg-white rounded-lg border border-warm-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
-        <div className="flex-1 min-w-[240px] relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+      <div className="bg-white border border-warm-200 rounded-lg p-4 mb-4 flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-[280px] relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Cerca per email, nome, telefono…"
-            className="w-full pl-9 pr-3 py-2 border border-warm-200 rounded-lg text-sm"
+            className="w-full pl-9 pr-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none"
           />
         </div>
         <select
           value={hasOrders}
           onChange={(e) => setHasOrders(e.target.value as "" | "true" | "false")}
-          className="px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
+          className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
         >
           <option value="">Tutti</option>
           <option value="true">Solo con ordini</option>
           <option value="false">Senza ordini</option>
+        </select>
+        <select
+          value={pageSize}
+          onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
+          className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white ml-auto"
+          title="Numero di clienti per pagina"
+        >
+          <option value="20">Per pagina: 20</option>
+          <option value="50">Per pagina: 50</option>
+          <option value="100">Per pagina: 100</option>
+          <option value="200">Per pagina: 200</option>
         </select>
       </div>
 
@@ -262,6 +312,13 @@ export default function StoreCustomersPage() {
         </div>
         </>
       )}
+
+      <TablePagination
+        page={page}
+        pageSize={pageSize}
+        totalCount={totalCount}
+        onPageChange={setPage}
+      />
 
       <BulkEmailModal
         open={bulkEmailOpen}

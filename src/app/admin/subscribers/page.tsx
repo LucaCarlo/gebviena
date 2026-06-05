@@ -8,6 +8,8 @@ import {
   MapPin, StickyNote, User, ChevronLeft, Clock,
 } from "lucide-react";
 import BulkEmailModal from "@/components/admin/BulkEmailModal";
+import ImportExportButtons from "@/components/admin/ImportExportButtons";
+import TablePagination from "@/components/admin/TablePagination";
 
 /* ───── Types ───── */
 
@@ -43,7 +45,7 @@ const EMPTY_FORM = {
 /* ───── Component ───── */
 
 type InvitedFilter = "all" | "true" | "false";
-const PAGE_SIZE = 50;
+const DEFAULT_PAGE_SIZE = 50;
 
 export default function AdminSubscribersPage() {
   const searchParams = useSearchParams();
@@ -61,8 +63,8 @@ export default function AdminSubscribersPage() {
   const [contactsLoading, setContactsLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [totalCount, setTotalCount] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
   const [hasLandingPage, setHasLandingPage] = useState(false);
   const [invitedFilter, setInvitedFilter] = useState<InvitedFilter>("all");
   const [checkinFilter, setCheckinFilter] = useState<"all" | "true" | "false">("all");
@@ -122,7 +124,7 @@ export default function AdminSubscribersPage() {
     const targetPage = opts.pageOverride ?? (opts.append ? page + 1 : 1);
     if (opts.append) setLoadingMore(true); else setContactsLoading(true);
 
-    const params = new URLSearchParams({ page: String(targetPage), pageSize: String(PAGE_SIZE) });
+    const params = new URLSearchParams({ page: String(targetPage), pageSize: String(pageSize) });
     if (search) params.set("search", search);
     if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
     if (invitedFilter !== "all") params.set("invited", invitedFilter);
@@ -135,14 +137,13 @@ export default function AdminSubscribersPage() {
       if (d.success) {
         setContacts((prev) => (opts.append ? [...prev, ...(d.data || [])] : (d.data || [])));
         setTotalCount(d.totalCount || 0);
-        setHasMore(!!d.hasMore);
         setHasLandingPage(!!d.hasLandingPage);
         setPage(targetPage);
       }
     } catch {}
 
     if (opts.append) setLoadingMore(false); else setContactsLoading(false);
-  }, [activeTab, search, invitedFilter, checkinFilter, langFilter, page, isEventoDetail]);
+  }, [activeTab, search, invitedFilter, checkinFilter, langFilter, page, pageSize, isEventoDetail]);
 
   const fetchEventRegs = useCallback(async () => {
     setEventLoading(true);
@@ -636,15 +637,45 @@ export default function AdminSubscribersPage() {
             </>
           ) : (
             <>
-              <button onClick={() => { setShowImport(true); setImportResult(null); }}
-                className="inline-flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded text-sm font-medium hover:bg-warm-200">
-                <Upload size={14} /> Importa
-              </button>
-              {isEventoDetail && (
-                <button onClick={() => window.open("/api/event-registrations?format=csv", "_blank")}
-                  className="inline-flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded text-sm font-medium hover:bg-warm-200">
-                  <Download size={16} /> Esporta CSV
-                </button>
+              {isEventoDetail ? (
+                <>
+                  <button onClick={() => { setShowImport(true); setImportResult(null); }}
+                    className="inline-flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded text-sm font-medium hover:bg-warm-200">
+                    <Upload size={14} /> Importa
+                  </button>
+                  <button onClick={() => window.open("/api/event-registrations?format=csv", "_blank")}
+                    className="inline-flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded text-sm font-medium hover:bg-warm-200">
+                    <Download size={14} /> Esporta
+                  </button>
+                </>
+              ) : (
+                <ImportExportButtons
+                  exportUrl={(() => {
+                    const params = new URLSearchParams({ format: "csv" });
+                    if (search) params.set("search", search);
+                    if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
+                    if (invitedFilter !== "all") params.set("invited", invitedFilter);
+                    if (checkinFilter !== "all") params.set("checkedIn", checkinFilter);
+                    if (langFilter !== "all") params.set("lang", langFilter);
+                    return `/api/contacts/unified?${params}`;
+                  })()}
+                  exportLabel="Esporta utenti CSV (con filtri attivi)"
+                  importUrl="/api/newsletter/import"
+                  importColumns={{
+                    email: ["email", "e-mail", "mail"],
+                    firstName: ["firstname", "nome"],
+                    lastName: ["lastname", "cognome"],
+                    company: ["company", "azienda"],
+                    phone: ["phone", "telefono"],
+                    city: ["city", "città", "citta"],
+                    country: ["country", "paese", "nazione"],
+                    profile: ["profile", "profilo"],
+                    notes: ["notes", "note"],
+                  }}
+                  exampleCsv={"email,firstName,lastName,company,phone,city,country\nmario.rossi@example.com,Mario,Rossi,Studio Rossi,+39 333 1234567,Milano,IT\n"}
+                  templateFilename="utenti-template.csv"
+                  onImported={() => fetchContacts({ pageOverride: 1 })}
+                />
               )}
             </>
           )}
@@ -727,6 +758,18 @@ export default function AdminSubscribersPage() {
             <option value="false">Check-in: no</option>
           </select>
         )}
+
+        <select
+          value={pageSize}
+          onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
+          className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white ml-auto"
+          title="Numero di contatti per pagina"
+        >
+          <option value="20">Per pagina: 20</option>
+          <option value="50">Per pagina: 50</option>
+          <option value="100">Per pagina: 100</option>
+          <option value="200">Per pagina: 200</option>
+        </select>
         {!isEventoDetail && (
           <button
             onClick={() => {
@@ -1019,19 +1062,16 @@ export default function AdminSubscribersPage() {
         )
       )}
 
-      {/* "Carica altri" — only on the unified-contacts view, when more pages exist */}
-      {!isEventoDetail && hasMore && (
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={() => fetchContacts({ append: true })}
-            disabled={loadingMore}
-            className="flex items-center gap-2 bg-warm-100 text-warm-700 px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors disabled:opacity-50"
-          >
-            {loadingMore ? <Loader2 size={14} className="animate-spin" /> : null}
-            {loadingMore ? "Caricamento..." : `Carica altri ${Math.min(PAGE_SIZE, totalCount - contacts.length)}`}
-          </button>
-        </div>
+      {/* Paginazione numerica (sostituisce il vecchio "Carica altri") */}
+      {!isEventoDetail && (
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={(p) => fetchContacts({ pageOverride: p })}
+        />
       )}
+      {loadingMore && <div className="flex justify-center mt-3"><Loader2 size={14} className="animate-spin text-warm-400" /></div>}
 
       {/* ═══ Modals ═══ */}
       {renderTemplateModal()}
