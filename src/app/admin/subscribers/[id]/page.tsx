@@ -307,6 +307,26 @@ export default function SubscriberDetailPage() {
             <div className="text-[10px] text-warm-400 mt-3">
               I tag si assegnano dalla lista utenti con selezione multipla.
             </div>
+
+            {/* Origine (badge sotto i tag) — derivato a partire da
+                eventRegistrations + tag slug, perché su detail il subscriber
+                è già implicito (siamo arrivati dal suo id). */}
+            {(() => {
+              const isSvendita = sub.tags.some((t) => t.slug?.includes("svendita") || t.slug?.includes("vendita-speciale"));
+              const isEvent = sub.eventRegistrations.length > 0;
+              const label = isSvendita ? "Vendita Speciale"
+                : isEvent ? "Newsletter + Evento"
+                : "Newsletter";
+              const cls = isSvendita ? "bg-rose-100 text-rose-700"
+                : isEvent ? "bg-purple-100 text-purple-600"
+                : "bg-blue-100 text-blue-600";
+              return (
+                <div className="mt-4 pt-3 border-t border-warm-100">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-warm-500 mb-1.5">Origine</div>
+                  <span className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded ${cls}`}>{label}</span>
+                </div>
+              );
+            })()}
           </section>
 
           {(sub.geoCity || sub.geoCountry || sub.ipAddress) && (

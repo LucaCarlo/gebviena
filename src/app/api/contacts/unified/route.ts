@@ -98,6 +98,9 @@ export async function GET(req: Request) {
       if (!existing.country && e.country) existing.country = e.country;
       if (!existing.city && e.city) existing.city = e.city;
       if (!existing.languageCode && e.languageCode) existing.languageCode = e.languageCode;
+      // Data prima iscrizione: la più antica fra subscriber e event registration
+      const eIso = e.createdAt.toISOString();
+      if (eIso < existing.createdAt) existing.createdAt = eIso;
     } else {
       contactMap.set(key, {
         email: e.email,
@@ -123,10 +126,17 @@ export async function GET(req: Request) {
     }
   }
 
-  // Tag-only contacts (CSV-imported emails without subscriber/event row)
+  // Tag-only contacts (CSV-imported emails without subscriber/event row).
+  // Aggiorniamo anche per i contatti già presenti: se un tag è più vecchio,
+  // arretra la data "prima iscrizione".
   for (const t of taggedEmails) {
     const key = t.email.toLowerCase().trim();
-    if (contactMap.has(key)) continue;
+    const existingTag = contactMap.get(key);
+    if (existingTag) {
+      const tIso = t.createdAt.toISOString();
+      if (tIso < existingTag.createdAt) existingTag.createdAt = tIso;
+      continue;
+    }
     contactMap.set(key, {
       email: t.email,
       firstName: null,

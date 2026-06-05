@@ -892,22 +892,25 @@ export default function AdminSubscribersPage() {
                     </div>
                   </div>
                   {c.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2 ml-6">
-                      {c.tags.map((t) => <span key={t.id} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: t.color }}>{t.name}</span>)}
+                    <div className="grid grid-cols-2 gap-1 mt-2 ml-6 max-w-[220px]">
+                      {c.tags.slice(0, 4).map((t) => (
+                        <span
+                          key={t.id}
+                          title={t.name}
+                          className="text-[10px] font-medium px-2 py-0.5 rounded truncate"
+                          style={{ backgroundColor: `${t.color}22`, color: t.color }}
+                        >
+                          {t.name}
+                        </span>
+                      ))}
+                      {c.tags.length > 4 && (
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-warm-100 text-warm-600">+{c.tags.length - 4} tag</span>
+                      )}
                     </div>
                   )}
                   <div className="flex items-center justify-between gap-2 mt-2 ml-6">
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                      c.source === "entrambi" ? "bg-purple-100 text-purple-600" :
-                      c.source === "landing_svendita" ? "bg-rose-100 text-rose-700" :
-                      c.source === "newsletter" ? "bg-blue-100 text-blue-600" :
-                      c.source === "evento" ? "bg-amber-100 text-amber-600" :
-                      "bg-warm-100 text-warm-600"
-                    }`}>
-                      {c.source === "entrambi" ? "Newsletter + Evento" :
-                        c.source === "landing_svendita" ? "Vendita Speciale" :
-                        c.source === "newsletter" ? "Newsletter" :
-                        c.source === "evento" ? "Evento" : "Solo tag"}
+                    <span className="text-[10px] text-warm-500">
+                      {c.createdAt ? new Date(c.createdAt).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" }) : ""}
                     </span>
                     <div className="flex items-center gap-1">
                       <button
@@ -995,27 +998,33 @@ export default function AdminSubscribersPage() {
                       {c.company && <div className="text-[10px] text-warm-400">{c.company}</div>}
                     </td>
                     <td className="px-4 py-3 text-warm-600 text-xs">{c.email}</td>
-                    <td className="px-4 py-3 text-warm-600 text-xs hidden md:table-cell">
-                      {[c.city, c.country].filter(Boolean).join(", ") || "—"}
+                    <td className="px-4 py-3 text-warm-600 text-xs hidden md:table-cell whitespace-nowrap">
+                      {c.createdAt
+                        ? new Date(c.createdAt).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" })
+                        : "—"}
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {c.tags.map((t) => <span key={t.id} className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: t.color }}>{t.name}</span>)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${
-                        c.source === "entrambi" ? "bg-purple-100 text-purple-600" :
-                        c.source === "landing_svendita" ? "bg-rose-100 text-rose-700" :
-                        c.source === "newsletter" ? "bg-blue-100 text-blue-600" :
-                        c.source === "evento" ? "bg-amber-100 text-amber-600" :
-                        "bg-warm-100 text-warm-600"
-                      }`}>
-                        {c.source === "entrambi" ? "Newsletter + Evento" :
-                          c.source === "landing_svendita" ? "Vendita Speciale" :
-                          c.source === "newsletter" ? "Newsletter" :
-                          c.source === "evento" ? "Evento" : "Solo tag"}
-                      </span>
+                      {/* Tag in griglia 2x2: max 4 visibili, "+N" se altri.
+                          Stile pillola "Origine": text-[10px] font-medium px-2 py-0.5 rounded. */}
+                      {c.tags.length === 0 ? <span className="text-[10px] text-warm-400">—</span> : (
+                        <div className="grid grid-cols-2 gap-1 max-w-[200px]">
+                          {c.tags.slice(0, 4).map((t) => (
+                            <span
+                              key={t.id}
+                              title={t.name}
+                              className="text-[10px] font-medium px-2 py-0.5 rounded truncate"
+                              style={{ backgroundColor: `${t.color}22`, color: t.color }}
+                            >
+                              {t.name}
+                            </span>
+                          ))}
+                          {c.tags.length > 4 && (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-warm-100 text-warm-600">
+                              +{c.tags.length - 4} tag
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="px-2 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <div className="inline-flex items-center gap-1">
