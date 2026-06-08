@@ -102,11 +102,17 @@ const euro = (cents: number, currency: string) =>
 type PeriodKey = "today" | "7d" | "month" | "year" | "all" | "custom";
 
 interface RevenueStats {
+  // Per periodo
+  totalSalesCents: number;
+  totalSalesCount: number;
+  cancelledRefundedCents: number;
+  cancelledRefundedCount: number;
+  // Retro-compat (non più usati dalla UI ma restano per il payload)
   revenueCents: number;
   grossCents: number;
   refundsCents: number;
   count: number;
-  // Globali (non filtrati per data)
+  // Globali (stato corrente)
   pendingBonificoCount: number;
   pendingBonificoCents: number;
   daEvadereCount: number;
@@ -227,37 +233,62 @@ export default function StoreOrdersPage() {
         </div>
       </header>
 
-      {/* Riepilogo compatto: 4 card stato (sempre live, non filtrate per data)
-          + 1 card fatturato del periodo selezionato. Tutte stesse dimensioni. */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mb-6">
-        <div className={`rounded-lg border px-3 py-2 bg-amber-50 text-amber-800 border-amber-200 ${stats && stats.pendingBonificoCount === 0 ? "opacity-50" : ""}`}>
-          <div className="text-[10px] font-medium uppercase tracking-wider">In attesa bonifico</div>
-          <div className="text-lg font-semibold mt-0.5 leading-tight">{stats?.pendingBonificoCount ?? "—"}</div>
-          {stats && stats.pendingBonificoCents > 0 && (
-            <div className="text-[10px] text-amber-700 leading-tight tabular-nums">{eurFmt(stats.pendingBonificoCents)}</div>
-          )}
+      {/* Riepilogo: a SINISTRA 3 box piccoli con numeri operativi (stati live);
+          a DESTRA 3 box grandi con gli importi (performance economica del periodo).
+          Su mobile si impilano tutti in colonna. */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 mb-6">
+        {/* ── SINISTRA: stati operativi (numero scarno) ── */}
+        <div className="lg:col-span-5 grid grid-cols-3 gap-2">
+          <div className={`rounded-lg border px-3 py-2 bg-blue-50 text-blue-800 border-blue-200 ${stats && stats.daEvadereCount === 0 ? "opacity-60" : ""}`}>
+            <div className="text-[10px] font-medium uppercase tracking-wider">Da evadere</div>
+            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.daEvadereCount ?? "—"}</div>
+            <div className="text-[10px] text-blue-700 leading-tight">pagati, da spedire</div>
+          </div>
+          <div className={`rounded-lg border px-3 py-2 bg-purple-50 text-purple-800 border-purple-200 ${stats && stats.shippedCount === 0 ? "opacity-60" : ""}`}>
+            <div className="text-[10px] font-medium uppercase tracking-wider">Spediti</div>
+            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.shippedCount ?? "—"}</div>
+            <div className="text-[10px] text-purple-700 leading-tight">in transito</div>
+          </div>
+          <div className={`rounded-lg border px-3 py-2 bg-emerald-50 text-emerald-800 border-emerald-200 ${stats && stats.consegnatiCount === 0 ? "opacity-60" : ""}`}>
+            <div className="text-[10px] font-medium uppercase tracking-wider">Consegnati</div>
+            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.consegnatiCount ?? "—"}</div>
+            <div className="text-[10px] text-emerald-700 leading-tight">o ritirati in showroom</div>
+          </div>
         </div>
-        <div className={`rounded-lg border px-3 py-2 bg-blue-50 text-blue-800 border-blue-200 ${stats && stats.daEvadereCount === 0 ? "opacity-50" : ""}`}>
-          <div className="text-[10px] font-medium uppercase tracking-wider">Da evadere</div>
-          <div className="text-lg font-semibold mt-0.5 leading-tight">{stats?.daEvadereCount ?? "—"}</div>
-          <div className="text-[10px] text-blue-700 leading-tight">pagati, da spedire</div>
-        </div>
-        <div className={`rounded-lg border px-3 py-2 bg-purple-50 text-purple-800 border-purple-200 ${stats && stats.shippedCount === 0 ? "opacity-50" : ""}`}>
-          <div className="text-[10px] font-medium uppercase tracking-wider">Spediti</div>
-          <div className="text-lg font-semibold mt-0.5 leading-tight">{stats?.shippedCount ?? "—"}</div>
-          <div className="text-[10px] text-purple-700 leading-tight">in transito</div>
-        </div>
-        <div className={`rounded-lg border px-3 py-2 bg-emerald-50 text-emerald-800 border-emerald-200 ${stats && stats.consegnatiCount === 0 ? "opacity-50" : ""}`}>
-          <div className="text-[10px] font-medium uppercase tracking-wider">Consegnati</div>
-          <div className="text-lg font-semibold mt-0.5 leading-tight">{stats?.consegnatiCount ?? "—"}</div>
-          <div className="text-[10px] text-emerald-700 leading-tight">o ritirati in showroom</div>
-        </div>
-        <div className="rounded-lg border px-3 py-2 bg-emerald-100/60 text-emerald-900 border-emerald-300">
-          <div className="text-[10px] font-medium uppercase tracking-wider">Fatturato {PERIOD_LABELS[period].toLowerCase()}</div>
-          <div className="text-lg font-semibold mt-0.5 leading-tight tabular-nums">{stats ? eurFmt(stats.revenueCents) : "—"}</div>
-          <div className="text-[10px] text-emerald-700 leading-tight">
-            {stats?.count ?? 0} {stats?.count === 1 ? "ordine" : "ordini"}
-            {stats && stats.refundsCents > 0 && ` · -${eurFmt(stats.refundsCents)}`}
+
+        {/* ── DESTRA: 3 box grandi con importi ── */}
+        <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Totale Vendite (periodo) */}
+          <div className="rounded-lg border px-4 py-3 bg-emerald-100/60 text-emerald-900 border-emerald-300">
+            <div className="text-[11px] font-medium uppercase tracking-wider">Totale vendite {PERIOD_LABELS[period].toLowerCase()}</div>
+            <div className="text-2xl md:text-[26px] font-semibold mt-1 leading-tight tabular-nums">
+              {stats ? eurFmt(stats.totalSalesCents) : "—"}
+            </div>
+            <div className="text-[11px] text-emerald-700 leading-tight mt-0.5">
+              {stats?.totalSalesCount ?? 0} {stats?.totalSalesCount === 1 ? "ordine" : "ordini"}
+            </div>
+          </div>
+
+          {/* In attesa di bonifico */}
+          <div className={`rounded-lg border px-4 py-3 bg-amber-50 text-amber-900 border-amber-200 ${stats && stats.pendingBonificoCount === 0 ? "opacity-60" : ""}`}>
+            <div className="text-[11px] font-medium uppercase tracking-wider">In attesa di bonifico</div>
+            <div className="text-2xl md:text-[26px] font-semibold mt-1 leading-tight tabular-nums">
+              {stats ? eurFmt(stats.pendingBonificoCents) : "—"}
+            </div>
+            <div className="text-[11px] text-amber-700 leading-tight mt-0.5">
+              {stats?.pendingBonificoCount ?? 0} {stats?.pendingBonificoCount === 1 ? "ordine" : "ordini"}
+            </div>
+          </div>
+
+          {/* Annullati / Rimborsati */}
+          <div className={`rounded-lg border px-4 py-3 bg-red-50 text-red-900 border-red-200 ${stats && stats.cancelledRefundedCount === 0 ? "opacity-60" : ""}`}>
+            <div className="text-[11px] font-medium uppercase tracking-wider">Annullati / Rimborsati</div>
+            <div className="text-2xl md:text-[26px] font-semibold mt-1 leading-tight tabular-nums">
+              {stats ? eurFmt(stats.cancelledRefundedCents) : "—"}
+            </div>
+            <div className="text-[11px] text-red-700 leading-tight mt-0.5">
+              {stats?.cancelledRefundedCount ?? 0} {stats?.cancelledRefundedCount === 1 ? "ordine" : "ordini"} (cliente o GTV)
+            </div>
           </div>
         </div>
       </div>

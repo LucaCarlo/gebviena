@@ -10,13 +10,21 @@ export const dynamic = "force-dynamic";
  *
  * Query: ?from=YYYY-MM-DD&to=YYYY-MM-DD
  *
- * Restituisce:
- * - revenueCents: fatturato netto del periodo
- *     = somma(totalCents) ordini incassati nel periodo
- *     - somma(refundAmountCents) sui rimborsati/parzialmente rimborsati nel periodo
- * - count: numero ordini "incassati" (PAID/PROCESSING/SHIPPED/DELIVERED/PICKED_UP/RETURNED/REFUNDED/PARTIALLY_REFUNDED)
- * - pendingBonificoCents: totale ordini PENDING+bonifico (in attesa di accredito, non ancora fatturato)
- * - pendingBonificoCount: numero ordini bonifico in attesa
+ * Restituisce per il periodo:
+ * - totalSalesCents: somma totalCents di TUTTI gli ordini (incluso PENDING/bonifico
+ *     non ancora incassato) MENO rimborsi (refundAmountCents). Esclude CANCELLED,
+ *     ABANDONED_CHECKOUT, PAYMENT_FAILED. È il numero "vero" della performance.
+ * - totalSalesCount: numero ordini considerati nel totale vendite.
+ * - cancelledRefundedCents/Count: somma annullati (totalCents di CANCELLED) +
+ *     importo rimborsi (refundAmountCents di REFUNDED/PARTIALLY_REFUNDED).
+ *
+ * Globali (stato corrente, non filtrati per data):
+ * - pendingBonifico (count + cents): ordini PENDING in attesa accredito bonifico.
+ * - daEvadere/shipped/consegnati: stato operativo corrente.
+ *
+ * Retro-compat:
+ * - revenueCents/grossCents/refundsCents/count: vecchi alias mantenuti per non
+ *     rompere consumatori esterni; UI nuova li ignora.
  */
 export async function GET(req: NextRequest) {
   const result = await requirePermission("store_orders", "view");
@@ -33,23 +41,34 @@ export async function GET(req: NextRequest) {
     if (to) (dateFilter.createdAt as { lte?: Date }).lte = new Date(to);
   }
 
-  // Fatturato lordo: ordini incassati nel periodo
-  const incassati = await prisma.order.aggregate({
+  // Tutte le "vendite" del periodo: include PENDING (ordine fatto ma non ancora
+  // pagato es. bonifico), pagati, in evasione, completati, e anche i rimborsati
+  // (l'importo lordo entra, poi sottraggo il refundAmountCents sotto). Esclude
+  // ordini che non sono mai diventati vendita (CANCELLED/ABANDONED/FAILED).
+  const vendute = await prisma.order.aggregate({
     where: {
       ...dateFilter,
-      status: { in: ["PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED"] },
+      status: { in: ["PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED"] },
     },
     _sum: { totalCents: true },
     _count: { _all: true },
   });
 
-  // Rimborsi sul periodo: solo per ordini REFUNDED / PARTIALLY_REFUNDED
+  // Rimborsi: importo effettivamente rimborsato nel periodo.
   const rimborsati = await prisma.order.aggregate({
     where: {
       ...dateFilter,
       status: { in: ["REFUNDED", "PARTIALLY_REFUNDED"] },
     },
     _sum: { refundAmountCents: true },
+    _count: { _all: true },
+  });
+
+  // Annullati: ordini in CANCELLED nel periodo.
+  const annullati = await prisma.order.aggregate({
+    where: { ...dateFilter, status: "CANCELLED" },
+    _sum: { totalCents: true },
+    _count: { _all: true },
   });
 
   // Conteggi globali per stato — NON filtrati per data: rappresentano lo stato
@@ -79,19 +98,32 @@ export async function GET(req: NextRequest) {
     _sum: { totalCents: true },
   });
 
-  const grossCents = incassati._sum.totalCents || 0;
-  const refundsCents = rimborsati._sum.refundAmountCents || 0;
-  const revenueCents = grossCents - refundsCents;
+  const grossSalesCents = vendute._sum.totalCents || 0;
+  const refundsAmountCents = rimborsati._sum.refundAmountCents || 0;
+  const cancelledCents = annullati._sum.totalCents || 0;
+
+  // Totale Vendite (netto): lordo - rimborsi
+  const totalSalesCents = grossSalesCents - refundsAmountCents;
+  const totalSalesCount = vendute._count._all;
+
+  // Annullati + Rimborsati: importi e count aggregati per il box dedicato.
+  const cancelledRefundedCents = cancelledCents + refundsAmountCents;
+  const cancelledRefundedCount = annullati._count._all + rimborsati._count._all;
 
   return NextResponse.json({
     success: true,
     data: {
-      // Per periodo
-      revenueCents,
-      grossCents,
-      refundsCents,
-      count: incassati._count._all,
-      // Globali (stato corrente, indipendenti dal periodo)
+      // ── Nuovi: per periodo ──
+      totalSalesCents,
+      totalSalesCount,
+      cancelledRefundedCents,
+      cancelledRefundedCount,
+      // ── Retro-compat (UI nuova non li usa) ──
+      revenueCents: totalSalesCents,
+      grossCents: grossSalesCents,
+      refundsCents: refundsAmountCents,
+      count: totalSalesCount,
+      // ── Globali (stato corrente) ──
       pendingBonificoCount: bonificoPending,
       pendingBonificoCents: bonifico._sum.totalCents || 0,
       daEvadereCount: daEvadere,

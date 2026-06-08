@@ -142,33 +142,34 @@ export default function ProductCard({ p, favorited, onFavoriteChange }: {
         {p.category && (
           <div className="text-[9px] sm:text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.15em] text-warm-500 truncate">{p.category.name}</div>
         )}
-        {/* Mobile (2 colonne): nome e prezzo SEMPRE su righe diverse — niente
-            flex-wrap che farebbe inestetismi quando il nome è lungo. Da sm in
-            su: stessa riga con wrap di sicurezza per nomi lunghi. */}
-        <div className="block sm:flex sm:items-baseline sm:justify-between sm:gap-x-3 sm:gap-y-1 sm:flex-wrap">
-          <div className="text-[12px] sm:text-sm font-medium text-warm-900 leading-snug">{p.name}</div>
-          <div className="text-[12px] sm:text-sm font-mono text-warm-900 sm:shrink-0 mt-0.5 sm:mt-0">
-            {p.priceFromCents > 0 ? (
-              p.salePriceFromCents != null && p.salePriceFromCents > 0 && p.salePriceFromCents < p.priceFromCents ? (() => {
-                const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);
-                return (
-                  <span className="inline-flex items-baseline gap-1 sm:gap-1.5 flex-wrap sm:justify-end">
-                    <span className="text-warm-500 line-through text-[10px] sm:text-[12px]">{eur(p.priceFromCents)}</span>
-                    <span className="text-warm-900 font-semibold">{p.variantsCount > 1 ? t("da ", "à partir de ") : ""}{eur(p.salePriceFromCents)}</span>
-                    {pct >= 1 && (
-                      <span className="hidden sm:inline text-[10px] uppercase tracking-wider bg-warm-100 text-warm-900 px-1.5 py-0.5 rounded-sm font-sans font-semibold">
-                        -{pct}%
-                      </span>
-                    )}
-                  </span>
-                );
-              })() : (
-                <>{p.variantsCount > 1 ? t("da ", "à partir de ") : ""}{eur(p.priceFromCents)}</>
-              )
-            ) : (
-              <span className="text-warm-500 italic font-sans text-[11px] sm:text-[12px]">{t("Su richiesta", "Sur demande")}</span>
-            )}
-          </div>
+        {/* Titolo: SEMPRE sopra al prezzo, max 2 righe (line-clamp). min-h fissa
+            così tutte le card hanno la stessa altezza anche se i titoli sono
+            di lunghezza diversa. */}
+        <h3 className="text-[12px] sm:text-sm font-medium text-warm-900 leading-snug line-clamp-2 min-h-[2.6em]">
+          {p.name}
+        </h3>
+        {/* Prezzo: sotto al titolo, allineato sempre a sinistra */}
+        <div className="text-[12px] sm:text-sm font-mono text-warm-900">
+          {p.priceFromCents > 0 ? (
+            p.salePriceFromCents != null && p.salePriceFromCents > 0 && p.salePriceFromCents < p.priceFromCents ? (() => {
+              const pct = Math.round((1 - p.salePriceFromCents / p.priceFromCents) * 100);
+              return (
+                <span className="inline-flex items-baseline gap-1 sm:gap-1.5 flex-wrap">
+                  <span className="text-warm-500 line-through text-[10px] sm:text-[12px]">{eur(p.priceFromCents)}</span>
+                  <span className="text-warm-900 font-semibold">{p.variantsCount > 1 ? t("da ", "à partir de ") : ""}{eur(p.salePriceFromCents)}</span>
+                  {pct >= 1 && (
+                    <span className="hidden sm:inline text-[10px] uppercase tracking-wider bg-warm-100 text-warm-900 px-1.5 py-0.5 rounded-sm font-sans font-semibold">
+                      -{pct}%
+                    </span>
+                  )}
+                </span>
+              );
+            })() : (
+              <>{p.variantsCount > 1 ? t("da ", "à partir de ") : ""}{eur(p.priceFromCents)}</>
+            )
+          ) : (
+            <span className="text-warm-500 italic font-sans text-[11px] sm:text-[12px]">{t("Su richiesta", "Sur demande")}</span>
+          )}
         </div>
 
         {/* Color swatches — leggermente più piccoli su mobile */}
