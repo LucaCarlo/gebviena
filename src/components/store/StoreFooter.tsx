@@ -3,20 +3,19 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useT, useLang } from "@/contexts/I18nContext";
-import AssistanceContactModal from "./AssistanceContactModal";
+import AssistanceContactForm from "./AssistanceContactForm";
 
 /**
  * Footer dedicato allo store: snello, senza i link alle pagine del sito
- * principale. Solo contatti per assistenza + orari, bilingue IT/FR.
- * Il bottom bar (copyright + disclaimer marchio + "Built by") è identico
- * a quello del sito principale.
+ * principale. Sezione "Assistenza" centrata con form contatti inline +
+ * telefono + orari. Il bottom bar (copyright + disclaimer marchio + "Built by")
+ * è identico a quello del sito principale.
  */
 export default function StoreFooter() {
   const t = useT();
   const isFr = useLang() === "fr";
   const [builtByLogo, setBuiltByLogo] = useState<string>("");
   const [builtByLink, setBuiltByLink] = useState<string>("");
-  const [contactOpen, setContactOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/page-images?page=footer")
@@ -33,44 +32,23 @@ export default function StoreFooter() {
   return (
     <footer className="border-t border-warm-200 bg-white">
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8">
-          <div>
-            <div className="text-sm font-medium tracking-[0.18em] uppercase text-warm-900">
-              Gebrüder Thonet Vienna
-            </div>
-            <p className="text-[12px] text-warm-500 mt-2 max-w-xs leading-relaxed">
-              {isFr
-                ? "Boutique en ligne — vente spéciale. Design viennois livré chez vous."
-                : "Shop online — vendita speciale. Design viennese, ordinabile a casa tua."}
-            </p>
+        <div className="text-[13px] text-warm-700 leading-relaxed text-center">
+          <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-3">
+            {isFr ? "Assistance" : "Assistenza"}
           </div>
 
-          <div className="text-[13px] text-warm-700 leading-relaxed">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-2">
-              {isFr ? "Assistance" : "Assistenza"}
-            </div>
-            <div>
-              <button
-                type="button"
-                onClick={() => setContactOpen(true)}
-                className="underline underline-offset-2 hover:text-warm-900 transition-colors"
-              >
-                {isFr ? "Écrivez-nous" : "Scrivici"}
-              </button>
-            </div>
-            <div>
-              <a href="tel:+390110133330" className="hover:text-warm-900 transition-colors">
-                +39 011 0133330
-              </a>
-            </div>
-            <div className="text-warm-500 mt-1">
-              {isFr ? "Lundi–Samedi 9h00–18h00" : "Lunedì–Sabato 9:00–18:00"}
-            </div>
+          <AssistanceContactForm />
+
+          <div className="mt-5">
+            <a href="tel:+390110133330" className="hover:text-warm-900 transition-colors">
+              +39 011 0133330
+            </a>
+          </div>
+          <div className="text-warm-500 mt-1">
+            {isFr ? "Lundi–Samedi 9h00–18h00" : "Lunedì–Sabato 9:00–18:00"}
           </div>
         </div>
       </div>
-
-      <AssistanceContactModal open={contactOpen} onClose={() => setContactOpen(false)} />
 
       {/* Bottom bar — identico al sito principale */}
       <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-12 pt-8 md:pt-10">
