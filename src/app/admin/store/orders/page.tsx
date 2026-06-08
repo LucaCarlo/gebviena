@@ -2,9 +2,21 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Search, ShoppingCart, Package, Truck, Check, XCircle, RotateCcw, Clock } from "lucide-react";
+import { Loader2, Search, ShoppingCart, Package, Truck, Check, XCircle, RotateCcw, Clock, AlertTriangle, Ban, Store, Undo2 } from "lucide-react";
 
-type OrderStatus = "PENDING" | "PAID" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "REFUNDED" | "PARTIALLY_REFUNDED";
+type OrderStatus =
+  | "PENDING"
+  | "ABANDONED_CHECKOUT"
+  | "PAYMENT_FAILED"
+  | "CANCELLED"
+  | "PAID"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "PICKED_UP"
+  | "RETURNED"
+  | "REFUNDED"
+  | "PARTIALLY_REFUNDED";
 
 interface OrderListItem {
   id: string;
@@ -24,15 +36,23 @@ interface OrderListItem {
 }
 
 const STATUS_META: Record<OrderStatus, { label: string; cls: string; Icon: typeof Clock }> = {
-  PENDING: { label: "In attesa", cls: "bg-amber-50 text-amber-700 border-amber-200", Icon: Clock },
-  PAID: { label: "Pagato", cls: "bg-blue-50 text-blue-700 border-blue-200", Icon: Check },
-  PROCESSING: { label: "In lavorazione", cls: "bg-indigo-50 text-indigo-700 border-indigo-200", Icon: Package },
-  SHIPPED: { label: "Spedito", cls: "bg-purple-50 text-purple-700 border-purple-200", Icon: Truck },
-  DELIVERED: { label: "Consegnato", cls: "bg-emerald-50 text-emerald-700 border-emerald-200", Icon: Check },
-  CANCELLED: { label: "Annullato", cls: "bg-warm-100 text-warm-600 border-warm-200", Icon: XCircle },
-  REFUNDED: { label: "Rimborsato", cls: "bg-red-50 text-red-700 border-red-200", Icon: RotateCcw },
-  PARTIALLY_REFUNDED: { label: "Rimb. parziale", cls: "bg-orange-50 text-orange-700 border-orange-200", Icon: RotateCcw },
+  PENDING:            { label: "In attesa di accredito bonifico", cls: "bg-amber-50 text-amber-800 border-amber-200", Icon: Clock },
+  ABANDONED_CHECKOUT: { label: "Checkout abbandonato",   cls: "bg-orange-50 text-orange-800 border-orange-200",      Icon: Ban },
+  PAYMENT_FAILED:     { label: "Errore pagamento",       cls: "bg-red-50 text-red-800 border-red-200",               Icon: AlertTriangle },
+  CANCELLED:          { label: "Annullato dal cliente",  cls: "bg-blue-50 text-blue-800 border-blue-200",            Icon: XCircle },
+  PAID:               { label: "Pagato",                 cls: "bg-emerald-50 text-emerald-800 border-emerald-200",   Icon: Check },
+  PROCESSING:         { label: "In preparazione",        cls: "bg-indigo-50 text-indigo-800 border-indigo-200",      Icon: Package },
+  SHIPPED:            { label: "Spedito",                cls: "bg-purple-50 text-purple-800 border-purple-200",      Icon: Truck },
+  DELIVERED:          { label: "Consegnato",             cls: "bg-emerald-50 text-emerald-800 border-emerald-200",   Icon: Check },
+  PICKED_UP:          { label: "Ritirato in showroom",   cls: "bg-emerald-50 text-emerald-800 border-emerald-200",   Icon: Store },
+  RETURNED:           { label: "Reso",                   cls: "bg-blue-50 text-blue-800 border-blue-200",            Icon: Undo2 },
+  REFUNDED:           { label: "Rimborsato",             cls: "bg-blue-50 text-blue-800 border-blue-200",            Icon: RotateCcw },
+  PARTIALLY_REFUNDED: { label: "Rimb. parziale",         cls: "bg-blue-50 text-blue-800 border-blue-200",            Icon: RotateCcw },
 };
+
+// Difensivo: se per qualunque motivo arriva uno stato sconosciuto, mostro un
+// fallback neutro invece di crashare la pagina.
+const FALLBACK_META = { label: "Stato sconosciuto", cls: "bg-warm-100 text-warm-700 border-warm-200", Icon: Clock };
 
 const euro = (cents: number, currency: string) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
@@ -260,7 +280,7 @@ export default function StoreOrdersPage() {
             </thead>
             <tbody className="divide-y divide-warm-100">
               {orders.map((o) => {
-                const meta = STATUS_META[o.status];
+                const meta = STATUS_META[o.status] || FALLBACK_META;
                 const Icon = meta.Icon;
                 const totalItems = o.items.reduce((s, it) => s + it.quantity, 0);
                 return (
