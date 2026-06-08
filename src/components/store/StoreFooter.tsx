@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useT, useLang } from "@/contexts/I18nContext";
+import AssistanceContactModal from "./AssistanceContactModal";
 
 /**
  * Footer dedicato allo store: snello, senza i link alle pagine del sito
@@ -15,6 +16,7 @@ export default function StoreFooter() {
   const isFr = useLang() === "fr";
   const [builtByLogo, setBuiltByLogo] = useState<string>("");
   const [builtByLink, setBuiltByLink] = useState<string>("");
+  const [contactOpen, setContactOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/page-images?page=footer")
@@ -48,9 +50,13 @@ export default function StoreFooter() {
               {isFr ? "Assistance" : "Assistenza"}
             </div>
             <div>
-              <a href="mailto:info@gebruederthonetvienna.com" className="hover:text-warm-900 transition-colors">
-                info@gebruederthonetvienna.com
-              </a>
+              <button
+                type="button"
+                onClick={() => setContactOpen(true)}
+                className="underline underline-offset-2 hover:text-warm-900 transition-colors"
+              >
+                {isFr ? "Écrivez-nous" : "Scrivici"}
+              </button>
             </div>
             <div>
               <a href="tel:+390110133330" className="hover:text-warm-900 transition-colors">
@@ -63,6 +69,8 @@ export default function StoreFooter() {
           </div>
         </div>
       </div>
+
+      <AssistanceContactModal open={contactOpen} onClose={() => setContactOpen(false)} />
 
       {/* Bottom bar — identico al sito principale */}
       <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 pb-12 pt-8 md:pt-10">

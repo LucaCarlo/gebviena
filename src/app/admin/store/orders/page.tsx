@@ -37,11 +37,63 @@ const STATUS_META: Record<OrderStatus, { label: string; cls: string; Icon: typeo
 const euro = (cents: number, currency: string) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
 
+type PeriodKey = "today" | "7d" | "month" | "year" | "all" | "custom";
+
+const PERIOD_LABELS: Record<PeriodKey, string> = {
+  today: "Oggi",
+  "7d": "Ultimi 7 giorni",
+  month: "Questo mese",
+  year: "Anno in corso",
+  all: "Tutto",
+  custom: "Personalizzato",
+};
+
+interface RevenueStats {
+  totalSalesCents: number;
+  totalSalesCount: number;
+  cancelledRefundedCents: number;
+  cancelledRefundedCount: number;
+  pendingBonificoCount: number;
+  pendingBonificoCents: number;
+  daEvadereCount: number;
+  shippedCount: number;
+  consegnatiCount: number;
+}
+
+function rangeForPeriod(p: PeriodKey, customFrom?: string, customTo?: string): { from: string | null; to: string | null } {
+  if (p === "all") return { from: null, to: null };
+  if (p === "custom") return { from: customFrom || null, to: customTo || null };
+  const now = new Date();
+  if (p === "today") {
+    const start = new Date(now); start.setHours(0, 0, 0, 0);
+    return { from: start.toISOString(), to: null };
+  }
+  if (p === "7d") {
+    const start = new Date(now); start.setDate(start.getDate() - 6); start.setHours(0, 0, 0, 0);
+    return { from: start.toISOString(), to: null };
+  }
+  if (p === "month") {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    return { from: start.toISOString(), to: null };
+  }
+  if (p === "year") {
+    const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+    return { from: start.toISOString(), to: null };
+  }
+  return { from: null, to: null };
+}
+
 export default function StoreOrdersPage() {
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<OrderStatus | "">("");
   const [q, setQ] = useState("");
+  const [period, setPeriod] = useState<PeriodKey>("all");
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
+  const [stats, setStats] = useState<RevenueStats | null>(null);
+
+  const { from, to } = rangeForPeriod(period, customFrom, customTo);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -58,22 +110,109 @@ export default function StoreOrdersPage() {
     return () => clearTimeout(t);
   }, [fetchAll]);
 
-  const totalBy = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
+  // Stats aggregate (filtro periodo) — gli stati operativi (Da evadere/Spediti/
+  // Consegnati) sono globali, gli importi a destra sono filtrati per periodo.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    fetch(`/api/store/orders/stats?${params}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setStats(d.data); })
+      .catch(() => { /* silent */ });
+  }, [from, to]);
+
+  const eurFmt = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
 
   return (
     <div>
-      <header className="flex items-center justify-between mb-6">
+      <header className="flex items-start justify-between mb-4 gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold text-warm-900 flex items-center gap-2">
             <ShoppingCart size={24} /> Ordini
           </h1>
-          <p className="text-sm text-warm-500 mt-1">
-            {orders.length} ordini visibili
-            {totalBy("PENDING") > 0 && <span className="ml-3 text-amber-700">· {totalBy("PENDING")} in attesa</span>}
-            {totalBy("PAID") > 0 && <span className="ml-3 text-blue-700">· {totalBy("PAID")} da evadere</span>}
-          </p>
+          <p className="text-sm text-warm-500 mt-1">{orders.length} ordini visibili</p>
+        </div>
+
+        {/* Selettore periodo: filtra solo i 3 box importi a destra (Totale
+            vendite, In attesa bonifico, Annullati/Rimborsati). I 3 box stato a
+            sinistra (Da evadere/Spediti/Consegnati) restano sempre live. */}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value as PeriodKey)}
+            className="px-3 py-1.5 border border-warm-200 rounded-lg text-sm bg-white"
+          >
+            {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((k) => (
+              <option key={k} value={k}>{PERIOD_LABELS[k]}</option>
+            ))}
+          </select>
+          {period === "custom" && (
+            <>
+              <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="px-2 py-1.5 border border-warm-200 rounded-lg text-sm bg-white" />
+              <span className="text-xs text-warm-500">→</span>
+              <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="px-2 py-1.5 border border-warm-200 rounded-lg text-sm bg-white" />
+            </>
+          )}
         </div>
       </header>
+
+      {/* Riepilogo: SINISTRA 3 box piccoli con conteggi operativi (stato live);
+          DESTRA 3 box grandi con importi (performance del periodo). Su mobile
+          si impilano in colonna. */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 mb-6">
+        {/* ── SINISTRA: stati operativi ── */}
+        <div className="lg:col-span-5 grid grid-cols-3 gap-2">
+          <div className={`rounded-lg border px-3 py-2 bg-blue-50 text-blue-800 border-blue-200 ${stats && stats.daEvadereCount === 0 ? "opacity-60" : ""}`}>
+            <div className="text-[10px] font-medium uppercase tracking-wider">Da evadere</div>
+            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.daEvadereCount ?? "—"}</div>
+            <div className="text-[10px] text-blue-700 leading-tight">pagati, da spedire</div>
+          </div>
+          <div className={`rounded-lg border px-3 py-2 bg-purple-50 text-purple-800 border-purple-200 ${stats && stats.shippedCount === 0 ? "opacity-60" : ""}`}>
+            <div className="text-[10px] font-medium uppercase tracking-wider">Spediti</div>
+            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.shippedCount ?? "—"}</div>
+            <div className="text-[10px] text-purple-700 leading-tight">in transito</div>
+          </div>
+          <div className={`rounded-lg border px-3 py-2 bg-emerald-50 text-emerald-800 border-emerald-200 ${stats && stats.consegnatiCount === 0 ? "opacity-60" : ""}`}>
+            <div className="text-[10px] font-medium uppercase tracking-wider">Consegnati</div>
+            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.consegnatiCount ?? "—"}</div>
+            <div className="text-[10px] text-emerald-700 leading-tight">consegnati al cliente</div>
+          </div>
+        </div>
+
+        {/* ── DESTRA: importi grandi del periodo ── */}
+        <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-lg border px-4 py-3 bg-emerald-100/60 text-emerald-900 border-emerald-300">
+            <div className="text-[11px] font-medium uppercase tracking-wider">Totale vendite {PERIOD_LABELS[period].toLowerCase()}</div>
+            <div className="text-2xl md:text-[26px] font-semibold mt-1 leading-tight tabular-nums">
+              {stats ? eurFmt(stats.totalSalesCents) : "—"}
+            </div>
+            <div className="text-[11px] text-emerald-700 leading-tight mt-0.5">
+              {stats?.totalSalesCount ?? 0} {stats?.totalSalesCount === 1 ? "ordine" : "ordini"}
+            </div>
+          </div>
+
+          <div className={`rounded-lg border px-4 py-3 bg-amber-50 text-amber-900 border-amber-200 ${stats && stats.pendingBonificoCount === 0 ? "opacity-60" : ""}`}>
+            <div className="text-[11px] font-medium uppercase tracking-wider">In attesa di bonifico</div>
+            <div className="text-2xl md:text-[26px] font-semibold mt-1 leading-tight tabular-nums">
+              {stats ? eurFmt(stats.pendingBonificoCents) : "—"}
+            </div>
+            <div className="text-[11px] text-amber-700 leading-tight mt-0.5">
+              {stats?.pendingBonificoCount ?? 0} {stats?.pendingBonificoCount === 1 ? "ordine" : "ordini"}
+            </div>
+          </div>
+
+          <div className={`rounded-lg border px-4 py-3 bg-red-50 text-red-900 border-red-200 ${stats && stats.cancelledRefundedCount === 0 ? "opacity-60" : ""}`}>
+            <div className="text-[11px] font-medium uppercase tracking-wider">Annullati / Rimborsati</div>
+            <div className="text-2xl md:text-[26px] font-semibold mt-1 leading-tight tabular-nums">
+              {stats ? eurFmt(stats.cancelledRefundedCents) : "—"}
+            </div>
+            <div className="text-[11px] text-red-700 leading-tight mt-0.5">
+              {stats?.cancelledRefundedCount ?? 0} {stats?.cancelledRefundedCount === 1 ? "ordine" : "ordini"} (cliente o GTV)
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="bg-white rounded-lg border border-warm-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
