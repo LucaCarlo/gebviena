@@ -54,6 +54,15 @@ const STATUS_META: Record<OrderStatus, { label: string; cls: string; Icon: typeo
 // fallback neutro invece di crashare la pagina.
 const FALLBACK_META = { label: "Stato sconosciuto", cls: "bg-warm-100 text-warm-700 border-warm-200", Icon: Clock };
 
+// Stati visibili in questa pagina (ordini "veri"). I checkout abbandonati e
+// gli ordini annullati vivono in pagine dedicate (Carrelli abbandonati) e
+// non devono comparire qui.
+const VISIBLE_STATUSES: OrderStatus[] = [
+  "PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED",
+  "PICKED_UP", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED", "PAYMENT_FAILED",
+];
+const VISIBLE_SET = new Set<OrderStatus>(VISIBLE_STATUSES);
+
 const euro = (cents: number, currency: string) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
 
@@ -121,7 +130,11 @@ export default function StoreOrdersPage() {
     if (status) params.set("status", status);
     if (q) params.set("q", q);
     const res = await fetch(`/api/store/orders?${params}`).then((r) => r.json());
-    if (res.success) setOrders(res.data);
+    if (res.success) {
+      // Escludi i checkout abbandonati e gli annullati: hanno pagine dedicate.
+      const filtered: OrderListItem[] = (res.data as OrderListItem[]).filter((o) => VISIBLE_SET.has(o.status));
+      setOrders(filtered);
+    }
     setLoading(false);
   }, [status, q]);
 
@@ -203,7 +216,9 @@ export default function StoreOrdersPage() {
         {/* ── DESTRA: importi grandi del periodo ── */}
         <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-lg border px-4 py-3 bg-emerald-100/60 text-emerald-900 border-emerald-300">
-            <div className="text-[11px] font-medium uppercase tracking-wider">Totale vendite {PERIOD_LABELS[period].toLowerCase()}</div>
+            <div className="text-[11px] font-medium uppercase tracking-wider">
+              Totale vendite{period !== "all" && ` · ${PERIOD_LABELS[period].toLowerCase()}`}
+            </div>
             <div className="text-2xl md:text-[26px] font-semibold mt-1 leading-tight tabular-nums">
               {stats ? eurFmt(stats.totalSalesCents) : "—"}
             </div>
@@ -251,7 +266,7 @@ export default function StoreOrdersPage() {
           className="px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white"
         >
           <option value="">Tutti gli stati</option>
-          {(Object.keys(STATUS_META) as OrderStatus[]).map((s) => (
+          {VISIBLE_STATUSES.map((s) => (
             <option key={s} value={s}>{STATUS_META[s].label}</option>
           ))}
         </select>
