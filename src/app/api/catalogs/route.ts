@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
+import { getAuthUser } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const section = searchParams.get("section");
-  const all = searchParams.get("all"); // include inactive for admin
+  const requestedAdmin = searchParams.get("admin") === "true" || searchParams.get("all") !== null;
+  const isAdmin = requestedAdmin && (await getAuthUser()) !== null;
 
   const where: Record<string, unknown> = {};
-  if (!all) where.isActive = true;
+  if (!isAdmin) where.isActive = true;
   if (section) where.section = section;
 
   const data = await prisma.catalog.findMany({

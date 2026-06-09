@@ -36,6 +36,7 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
     linkText: "",
     sortOrder: 0,
     isActive: true,
+    scheduledPublishAt: "",
   });
 
   const loadCatalog = useCallback(async () => {
@@ -56,6 +57,7 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
         linkText: c.linkText || "",
         sortOrder: c.sortOrder || 0,
         isActive: c.isActive,
+        scheduledPublishAt: c.scheduledPublishAt ? new Date(c.scheduledPublishAt).toISOString().slice(0, 16) : "",
       });
     }
   }, [catalogId]);
@@ -127,7 +129,10 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          scheduledPublishAt: form.scheduledPublishAt ? new Date(form.scheduledPublishAt).toISOString() : null,
+        }),
       });
       const data = await res.json();
 
@@ -148,7 +153,7 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">
           {error}
@@ -285,22 +290,34 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
           <TInput fieldKey="linkText" defaultValue={form.linkText} onDefaultChange={(v) => updateField("linkText", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="es. Scarica il catalogo 2025" />
         </div>
 
-        {/* Active toggle */}
-        <div className="flex items-center gap-3">
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(e) => updateField("isActive", e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-9 h-5 bg-warm-200 peer-focus:outline-none rounded-full peer peer-checked:bg-warm-800 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-warm-700 uppercase tracking-wider">Pubblicazione & Programmazione</h3>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.isActive}
+            onChange={(e) => updateField("isActive", e.target.checked)}
+            className="w-4 h-4 rounded border-warm-300 text-warm-800 focus:ring-warm-800"
+          />
+          <span className="text-sm text-warm-700">Pubblicato (visibile sul sito)</span>
+        </label>
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+            Pubblica automaticamente il
           </label>
-          <span className="text-sm text-warm-600">Attivo</span>
+          <input
+            type="datetime-local"
+            value={form.scheduledPublishAt}
+            onChange={(e) => setForm((prev) => ({ ...prev, scheduledPublishAt: e.target.value }))}
+            className="w-full md:w-72 border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          />
+          <p className="text-xs text-warm-400 mt-1">Lascia vuoto per non programmare. Se è impostata una data futura, il catalogo verrà pubblicato automaticamente in quel momento.</p>
         </div>
       </div>
 
-      <div className="flex gap-3">
+      <div className="sticky bottom-0 -mx-4 lg:-mx-8 px-4 lg:px-8 py-3 bg-warm-50 border-t border-warm-200 flex gap-3 z-10">
         <button
           type="submit"
           disabled={loading}

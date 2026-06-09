@@ -816,6 +816,7 @@ model Catalog {
   pdfUrl       String               @default("") @db.Text
   linkText     String?              @db.Text
   isActive     Boolean              @default(true)
+  scheduledPublishAt DateTime?
   sortOrder    Int                  @default(0)
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
