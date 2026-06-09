@@ -81,6 +81,7 @@ model Designer {
   imageUrl       String?               @db.Text
   website        String?               @db.Text
   isActive       Boolean               @default(true)
+  scheduledPublishAt   DateTime?
   isFeatured     Boolean               @default(false)
   sortOrder      Int                   @default(0)
   seoTitle       String?               @db.Text
@@ -117,6 +118,8 @@ model Product {
   techSheetUrl        String?              @db.Text
   model2dUrl          String?              @db.Text
   model3dUrl          String?              @db.Text
+  instructionsUrl     String?              @db.Text
+  careUrl             String?              @db.Text
   pconUrl             String?              @db.Text
   pconMoc             String?              @db.VarChar(32)
   pconBan             String?              @db.VarChar(64)
@@ -127,6 +130,7 @@ model Product {
   isFeatured          Boolean              @default(false)
   isNew               Boolean              @default(false)
   isActive            Boolean              @default(true)
+  scheduledPublishAt   DateTime?
   // true = prodotto-copia generato per lo store / artefatto: escluso da
   // catalogo, ricerca e tech-sheets del sito principale (resta usabile dallo store).
   excludeFromCatalog  Boolean              @default(false)
@@ -180,6 +184,7 @@ model Project {
   sideImage        String?              @db.Text
   galleryUrls      String?              @db.Text
   isActive         Boolean              @default(true)
+  scheduledPublishAt   DateTime?
   sortOrder        Int                  @default(0)
   seoTitle         String?              @db.Text
   seoDescription   String?              @db.Text
@@ -217,6 +222,7 @@ model Campaign {
   blocks         String?               @db.Text
   year           Int?
   isActive       Boolean               @default(true)
+  scheduledPublishAt   DateTime?
   sortOrder      Int                   @default(0)
   seoTitle       String?               @db.Text
   seoDescription String?               @db.Text
@@ -269,6 +275,7 @@ model Award {
   imageUrl        String?            @db.Text
   url             String?            @db.Text
   isActive        Boolean            @default(true)
+  scheduledPublishAt   DateTime?
   seoTitle        String?            @db.Text
   seoDescription  String?            @db.Text
   seoKeywords     String?            @db.Text
@@ -835,6 +842,7 @@ model Catalog {
   pdfUrl       String               @default("") @db.Text
   linkText     String?              @db.Text
   isActive     Boolean              @default(true)
+  scheduledPublishAt DateTime?
   sortOrder    Int                  @default(0)
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
@@ -852,6 +860,8 @@ model PageImage {
   imageUrl  String
   altText   String?
   linkUrl   String?  @db.Text
+  // Link per-lingua (JSON {"fr":"...","en":"..."}); linkUrl resta il default/IT
+  linkUrlI18n String? @db.Text
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1059,6 +1069,25 @@ model EmailTemplate {
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   scheduledJobs ScheduledEmailJob[]
+  translations  EmailTemplateTranslation[]
+}
+
+// Traduzioni opzionali per i template email. Se per una lingua esiste una
+// traduzione (subject + blocks) viene usata al posto del template base IT.
+// Altrimenti il sistema cade sul template base. Retrocompat totale: i
+// template esistenti continuano a funzionare senza modifiche.
+model EmailTemplateTranslation {
+  id            String        @id @default(cuid())
+  templateId    String
+  template      EmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  languageCode  String        @db.VarChar(16)
+  subject       String        @db.Text
+  blocks        String        @db.MediumText
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([templateId, languageCode])
+  @@index([languageCode])
 }
 
 // Scheduled bulk-email job — picked up by /api/scheduled-emails/process
@@ -1086,41 +1115,89 @@ model ScheduledEmailJob {
   @@index([status])
 }
 
+// ─── Area Professionisti ────────────────────────────────────────────────
+
+enum ProfessionalRole {
+  ARCHITECT_DESIGNER
+  PRESS
+  RESELLER
+  AGENT
+}
+
+model Professional {
+  id             String           @id @default(cuid())
+  email          String           @unique
+  // Per Rivenditori/Agenti che fanno solo "richiesta accesso" senza
+  // impostare una password, passwordHash è "" finché l'admin non approva
+  // (a quel punto generiamo una password random e la inviamo via email).
+  passwordHash   String           @db.Text
+  firstName      String           @db.VarChar(128)
+  lastName       String           @db.VarChar(128)
+  phone          String?          @db.VarChar(32)
+  company        String           @db.VarChar(255)
+  role           ProfessionalRole
+  language       String           @default("it") @db.VarChar(16)
+  acceptsPrivacy Boolean          @default(true)
+  marketingOptIn Boolean          @default(false)
+  // true = ha solo fatto richiesta, in attesa di approvazione admin.
+  // Durante il pending l'utente NON può fare login (vedi /api/professionals/login).
+  pendingApproval Boolean         @default(false)
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  lastLoginAt    DateTime?
+  approvedAt     DateTime?
+
+  @@index([role])
+  @@index([createdAt])
+  @@index([isActive])
+  @@index([pendingApproval])
+}
+
 // ─── Store: Geography ──────────────────────────────────────────────────
 
 model Region {
-  code      String           @id @db.VarChar(8)
-  name      String           @db.VarChar(64)
-  sortOrder Int              @default(0)
-  provinces Province[]
-  tariffs   ShippingTariff[]
+  code        String           @id @db.VarChar(8)
+  name        String           @db.VarChar(64)
+  countryCode String           @default("IT") @db.VarChar(2)
+  sortOrder   Int              @default(0)
+  provinces   Province[]
+  tariffs     ShippingTariff[]
 
   @@index([sortOrder])
+  @@index([countryCode])
 }
 
 model Province {
-  code       String           @id @db.VarChar(8)
-  name       String           @db.VarChar(64)
-  regionCode String           @db.VarChar(8)
-  sortOrder  Int              @default(0)
-  region     Region           @relation(fields: [regionCode], references: [code], onDelete: Restrict)
-  cities     City[]
-  tariffs    ShippingTariff[]
+  code        String           @id @db.VarChar(8)
+  name        String           @db.VarChar(64)
+  regionCode  String           @db.VarChar(8)
+  countryCode String           @default("IT") @db.VarChar(2)
+  sortOrder   Int              @default(0)
+  region      Region           @relation(fields: [regionCode], references: [code], onDelete: Restrict)
+  cities      City[]
+  tariffs     ShippingTariff[]
 
   @@index([regionCode])
   @@index([sortOrder])
+  @@index([countryCode])
 }
 
 model City {
   code         String           @id @default(cuid())
   name         String           @db.VarChar(128)
   provinceCode String           @db.VarChar(8)
+  countryCode  String           @default("IT") @db.VarChar(2)
+  // CAPs come JSON array (es. ["20121","20122",...]). Per la maggior parte dei
+  // comuni è un solo CAP; città grandi hanno decine di CAP.
+  caps         String?          @db.Text
   createdAt    DateTime         @default(now())
   province     Province         @relation(fields: [provinceCode], references: [code], onDelete: Restrict)
   tariffs      ShippingTariff[]
 
   @@unique([provinceCode, name])
   @@index([provinceCode])
+  @@index([countryCode])
 }
 
 // ─── Store: Shipping ───────────────────────────────────────────────────
@@ -1136,6 +1213,26 @@ enum ShippingClass {
   FRAGILE
   OVERSIZED
   QUOTE_ONLY
+}
+
+// Tariffe spedizione regionali IT (modificabili dall'admin). I valori globali
+// (soglia free shipping, tariffe FR, consegna al piano, disimballo, fallback)
+// stanno nel Setting con group='shipping'. Vedi src/lib/shipping-rates.ts.
+model ShippingRegionRate {
+  id          String   @id @default(cuid())
+  code        String   @db.VarChar(64)
+  countryCode String   @default("IT") @db.VarChar(2)
+  label       String   @db.VarChar(128)
+  // null = nessun override, ricade sul default del paese (es. FR 186€/m³).
+  rateCents   Int?
+  // Override testo libero del tempo di consegna per questa regione
+  // (es. "4 settimane"). null = usa il fallback paese.
+  leadTime    String?  @db.VarChar(64)
+  sortOrder   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([countryCode, code])
+  @@index([countryCode])
 }
 
 model ShippingTariff {
@@ -1275,7 +1372,10 @@ model StoreProduct {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  product       Product                   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // Restrict: l'eliminazione del Product padre è BLOCCATA se esiste uno StoreProduct
+  // collegato. Evita di perdere uno StoreProduct (con variants/ordini) per sbaglio
+  // cancellando il Product nel catalogo del sito.
+  product       Product                   @relation(fields: [productId], references: [id], onDelete: Restrict)
   storeCategory StoreCategory?            @relation(fields: [storeCategoryId], references: [id], onDelete: SetNull)
   translations  StoreProductTranslation[]
   variants      StoreProductVariant[]
@@ -1629,4 +1729,34 @@ model Cart {
   @@index([converted])
   @@index([email])
   @@index([customerId])
+}
+
+// Snapshot precalcolato dei dati Analisi Traffico: il cron notturno genera
+// un JSON completo per ogni combinazione (host, range) cosi' la pagina admin
+// li legge istantaneamente. Per i range che includono oggi, il frontend
+// integra al volo i dati del giorno corrente.
+model AnalyticsSnapshot {
+  id          String   @id @default(cuid())
+  cacheKey    String   @unique @db.VarChar(64)   // es. "ALL|all", "STORE|30d", "SITO|7d"
+  data        String   @db.LongText               // JSON output completo dell'API analytics
+  generatedAt DateTime @default(now())
+
+  @@index([generatedAt])
+}
+
+// ─── Materiale aziendale: loghi, company profile, brand guidelines ecc.
+// Caricabile da pannello admin, mostrato nell'area Professionisti.
+model CompanyAsset {
+  id          String   @id @default(cuid())
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  fileUrl     String   @db.Text
+  fileType    String?  @db.VarChar(32)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@index([isActive])
 }

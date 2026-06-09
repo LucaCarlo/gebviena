@@ -264,35 +264,44 @@ export default function AdminFabricFinishesPage() {
         <div className="text-warm-400">Caricamento...</div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
+          {categories.length > 0 && (
+            <div className="hidden md:grid grid-cols-[40px_2fr_1.5fr_1fr_0.5fr_180px] gap-4 items-center px-6 py-3 bg-warm-50 border-b border-warm-200 text-xs font-semibold text-warm-600 uppercase tracking-wider">
+              <div></div>
+              <div>Nome</div>
+              <div>Slug</div>
+              <div>File</div>
+              <div>Ordine</div>
+              <div className="text-right">Azioni</div>
+            </div>
+          )}
           {categories.length === 0 ? (
             <div className="py-16 text-center text-warm-400 text-sm">Nessuna categoria. Creane una per iniziare.</div>
           ) : (
-            categories.map((c) => {
+            <div className="divide-y divide-warm-100">
+            {categories.map((c) => {
               const isOpen = expanded.has(c.id);
               return (
-                <div key={c.id} className="border-b border-warm-100 last:border-b-0">
-                  <div className="flex items-center justify-between px-4 py-3 hover:bg-warm-50">
-                    <button onClick={() => toggleExpand(c.id)} className="flex items-center gap-3 flex-1 text-left">
+                <div key={c.id}>
+                  <div className="grid grid-cols-[40px_2fr_1.5fr_1fr_0.5fr_180px] gap-4 items-center px-6 py-3 hover:bg-warm-50 transition-colors">
+                    <button onClick={() => toggleExpand(c.id)} className="text-warm-500 hover:text-warm-800 transition-colors" title={isOpen ? "Chiudi" : "Espandi"}>
                       {isOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                      <div>
-                        <div className="font-medium text-warm-800">{c.name}</div>
-                        <div className="text-xs text-warm-500">
-                          slug: <code>{c.slug}</code> • {c.files.length} file • sort {c.sortOrder}
-                        </div>
-                      </div>
                     </button>
-                    <div className="flex items-center gap-1">
+                    <button onClick={() => toggleExpand(c.id)} className="text-left font-medium text-warm-800 truncate">{c.name}</button>
+                    <div className="text-warm-500 text-xs font-mono truncate">{c.slug}</div>
+                    <div className="text-warm-600 text-sm">{c.files.length}</div>
+                    <div className="text-warm-600 text-sm">{c.sortOrder}</div>
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => openEditCat(c)} className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors" title="Modifica">
+                        <Pencil size={16} />
+                      </button>
                       <button
                         onClick={() => togglePublishCat(c)}
-                        className={`p-2 rounded transition-colors ${c.isPublished ? "text-emerald-600 hover:bg-emerald-50" : "text-warm-400 hover:bg-warm-100"}`}
-                        title={c.isPublished ? "Pubblicato — clicca per nascondere" : "Nascosto — clicca per pubblicare"}
+                        className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors"
+                        title={c.isPublished ? "Metti in bozza" : "Pubblica"}
                       >
                         {c.isPublished ? <Eye size={16} /> : <EyeOff size={16} />}
                       </button>
-                      <button onClick={() => openEditCat(c)} className="p-2 text-warm-600 hover:bg-warm-100 rounded" title="Modifica">
-                        <Pencil size={16} />
-                      </button>
-                      <button onClick={() => deleteCat(c)} className="p-2 text-red-600 hover:bg-red-50 rounded" title="Elimina">
+                      <button onClick={() => deleteCat(c)} className="p-1.5 text-warm-400 hover:text-red-600 transition-colors" title="Elimina">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -365,11 +374,11 @@ export default function AdminFabricFinishesPage() {
                                   </div>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <button onClick={() => editFileName(c.id, f)} className="p-1.5 text-warm-600 hover:bg-warm-100 rounded" title="Rinomina filename interno">
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => editFileName(c.id, f)} className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors" title="Rinomina filename interno">
                                   <Pencil size={14} />
                                 </button>
-                                <button onClick={() => deleteFile(c.id, f.id, f.title || f.name)} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Elimina">
+                                <button onClick={() => deleteFile(c.id, f.id, f.title || f.name)} className="p-1.5 text-warm-400 hover:text-red-600 transition-colors" title="Elimina">
                                   <Trash2 size={14} />
                                 </button>
                               </div>
@@ -381,7 +390,8 @@ export default function AdminFabricFinishesPage() {
                   )}
                 </div>
               );
-            })
+            })}
+            </div>
           )}
         </div>
       )}
