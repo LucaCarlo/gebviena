@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
+import { getAuthUser } from "@/lib/auth";
 import { DEFAULT_LANG } from "@/lib/i18n";
 import { mergeFirstTranslation, resolveLangFromRequest, TRANSLATABLE_FIELDS } from "@/lib/translate-payload";
 
@@ -12,7 +13,10 @@ export async function GET(req: NextRequest) {
   const lang = resolveLangFromRequest(req, DEFAULT_LANG);
   const includeTranslations = lang !== DEFAULT_LANG;
 
-  const where: Record<string, unknown> = { isActive: true };
+  const requestedAdmin = searchParams.get("admin") === "true";
+  const isAdmin = requestedAdmin && (await getAuthUser()) !== null;
+
+  const where: Record<string, unknown> = isAdmin ? {} : { isActive: true };
   if (category && category !== "TUTTI") where.type = category;
 
   const [rawData, total] = await Promise.all([

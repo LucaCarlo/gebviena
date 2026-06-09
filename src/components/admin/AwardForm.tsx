@@ -39,6 +39,7 @@ export default function AwardForm({ awardId }: AwardFormProps) {
     seoDescription: "",
     seoKeywords: "[]",
     isActive: true,
+    scheduledPublishAt: "",
   });
 
   const [allProducts, setAllProducts] = useState<ProductPickerItem[]>([]);
@@ -94,6 +95,7 @@ export default function AwardForm({ awardId }: AwardFormProps) {
         seoDescription: a.seoDescription || "",
         seoKeywords: a.seoKeywords || "[]",
         isActive: a.isActive ?? true,
+        scheduledPublishAt: a.scheduledPublishAt ? new Date(a.scheduledPublishAt).toISOString().slice(0, 16) : "",
       });
       if (Array.isArray(a.products)) {
         setSelectedProductIds(a.products.map((pp: { productId: string }) => pp.productId));
@@ -139,7 +141,11 @@ export default function AwardForm({ awardId }: AwardFormProps) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, productIds: selectedProductIds }),
+        body: JSON.stringify({
+          ...form,
+          scheduledPublishAt: form.scheduledPublishAt ? new Date(form.scheduledPublishAt).toISOString() : null,
+          productIds: selectedProductIds,
+        }),
       });
       const data = await res.json();
 
@@ -160,7 +166,7 @@ export default function AwardForm({ awardId }: AwardFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">
           {error}
@@ -360,22 +366,32 @@ export default function AwardForm({ awardId }: AwardFormProps) {
         }}
       />
 
-      <div className="bg-white border border-warm-200 rounded-lg p-4">
-        <label className="flex items-center gap-3 cursor-pointer select-none">
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-warm-700 uppercase tracking-wider">Pubblicazione & Programmazione</h3>
+        <label className="flex items-center gap-3 cursor-pointer">
           <input
             type="checkbox"
             checked={form.isActive}
             onChange={(e) => updateField("isActive", e.target.checked)}
-            className="w-4 h-4 accent-warm-800"
+            className="w-4 h-4 rounded border-warm-300 text-warm-800 focus:ring-warm-800"
           />
-          <span className="text-sm text-warm-800 font-medium">Visibile sul sito</span>
-          <span className="text-xs text-warm-500">
-            (se disattivato, il premio non comparirà nella pagina &ldquo;Designer e Premi&rdquo;)
-          </span>
+          <span className="text-sm text-warm-700">Pubblicato (visibile sul sito)</span>
         </label>
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+            Pubblica automaticamente il
+          </label>
+          <input
+            type="datetime-local"
+            value={form.scheduledPublishAt}
+            onChange={(e) => setForm((prev) => ({ ...prev, scheduledPublishAt: e.target.value }))}
+            className="w-full md:w-72 border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          />
+          <p className="text-xs text-warm-400 mt-1">Lascia vuoto per non programmare. Se è impostata una data futura, il premio verrà pubblicato automaticamente in quel momento.</p>
+        </div>
       </div>
 
-      <div className="flex gap-3">
+      <div className="sticky bottom-0 -mx-4 lg:-mx-8 px-4 lg:px-8 py-3 bg-warm-50 border-t border-warm-200 flex gap-3 z-10">
         <button
           type="submit"
           disabled={loading}
