@@ -26,6 +26,8 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
     bio: "",
     imageUrl: "",
     website: "",
+    isActive: true,
+    scheduledPublishAt: "",
     seoTitle: "",
     seoDescription: "",
     seoKeywords: "[]",
@@ -44,6 +46,8 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
         bio: d.bio || "",
         imageUrl: d.imageUrl || "",
         website: d.website || "",
+        isActive: d.isActive !== false,
+        scheduledPublishAt: d.scheduledPublishAt ? new Date(d.scheduledPublishAt).toISOString().slice(0, 16) : "",
         seoTitle: d.seoTitle || "",
         seoDescription: d.seoDescription || "",
         seoKeywords: d.seoKeywords || "[]",
@@ -108,7 +112,10 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          scheduledPublishAt: form.scheduledPublishAt ? new Date(form.scheduledPublishAt).toISOString() : null,
+        }),
       });
       const data = await res.json();
 
@@ -129,7 +136,7 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">
           {error}
@@ -228,6 +235,31 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
 
       </div>
 
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-warm-700 uppercase tracking-wider">Pubblicazione & Programmazione</h3>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.isActive}
+            onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
+            className="w-4 h-4 rounded border-warm-300 text-warm-800 focus:ring-warm-800"
+          />
+          <span className="text-sm text-warm-700">Pubblicato (visibile sul sito)</span>
+        </label>
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+            Pubblica automaticamente il
+          </label>
+          <input
+            type="datetime-local"
+            value={form.scheduledPublishAt}
+            onChange={(e) => setForm((prev) => ({ ...prev, scheduledPublishAt: e.target.value }))}
+            className="w-full md:w-72 border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          />
+          <p className="text-xs text-warm-400 mt-1">Lascia vuoto per non programmare. Se è impostata una data futura, il designer verrà pubblicato automaticamente in quel momento.</p>
+        </div>
+      </div>
+
       <SeoPanel
         seoTitle={form.seoTitle}
         seoDescription={form.seoDescription}
@@ -243,7 +275,7 @@ export default function DesignerForm({ designerId }: DesignerFormProps) {
         }}
       />
 
-      <div className="flex gap-3">
+      <div className="sticky bottom-0 -mx-4 lg:-mx-8 px-4 lg:px-8 py-3 bg-warm-50 border-t border-warm-200 flex gap-3 z-10">
         <button
           type="submit"
           disabled={loading}

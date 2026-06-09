@@ -1,9 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
+import { getAuthUser } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const requestedAdmin = searchParams.get("admin") === "true";
+  const isAdmin = requestedAdmin && (await getAuthUser()) !== null;
+
   const data = await prisma.award.findMany({
+    where: isAdmin ? {} : { isActive: true },
     orderBy: { year: "desc" },
     include: { _count: { select: { products: true } } },
   });
