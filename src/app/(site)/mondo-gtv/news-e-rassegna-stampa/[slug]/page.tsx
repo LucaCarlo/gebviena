@@ -15,6 +15,10 @@ import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
 import { localizePath } from "@/lib/path-segments";
 
+function isVideoFile(url: string | undefined | null): boolean {
+  return !!url && /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url);
+}
+
 interface ArticleWithRelated extends NewsArticle {
   related?: NewsArticle[];
 }
@@ -47,6 +51,7 @@ function ProductBlock({ productId }: { productId: string }) {
 
 function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
   const video = d.videoUrl?.trim();
+  const imageIsVideo = isVideoFile(d.imageUrl);
   if (!d.imageUrl && !d.body && !video) return null;
   const yt = video?.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
   const vimeo = video?.match(/vimeo\.com\/(\d+)/);
@@ -69,6 +74,10 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
                   <source src={video} />
                 </video>
               )
+            ) : imageIsVideo ? (
+              <video controls playsInline className="w-full h-auto bg-warm-100">
+                <source src={d.imageUrl} />
+              </video>
             ) : (
               <Image src={d.imageUrl} alt="" width={400} height={400} className="w-full h-auto" sizes="140px" />
             )}
@@ -87,9 +96,14 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
 
 function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
   if (!d.imageUrl) return null;
+  const isVid = isVideoFile(d.imageUrl);
   return (
     <section className="relative w-full" style={{ height: "85vh" }}>
-      <Image src={d.imageUrl} alt={d.title || ""} fill className="object-cover brightness-[0.6]" sizes="100vw" />
+      {isVid ? (
+        <video src={d.imageUrl} className="absolute inset-0 w-full h-full object-cover brightness-[0.6]" autoPlay muted loop playsInline />
+      ) : (
+        <Image src={d.imageUrl} alt={d.title || ""} fill className="object-cover brightness-[0.6]" sizes="100vw" />
+      )}
       <div className="absolute top-14 md:top-18 lg:top-22 left-0 right-0 px-7 md:px-12 lg:px-16 text-left">
         {d.title && (
           <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug max-w-3xl">
@@ -116,9 +130,14 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
 
 function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title: string }) {
   const imgLeft = d.imagePosition === "left";
+  const imageIsVideo = isVideoFile(d.imageUrl);
   const imageEl = (
     <div className="relative bg-warm-200 overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
-      {d.imageUrl && <Image src={d.imageUrl} alt={d.title || articleTitle} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />}
+      {d.imageUrl && (imageIsVideo ? (
+        <video src={d.imageUrl} className="absolute inset-0 w-full h-full object-cover" autoPlay muted loop playsInline />
+      ) : (
+        <Image src={d.imageUrl} alt={d.title || articleTitle} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+      ))}
     </div>
   );
   const textEl = (
@@ -159,14 +178,21 @@ function ThreeImages({ d }: { d: NewsThreeImagesData }) {
   return (
     <section className="px-2 md:px-3 lg:px-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-3 md:gap-x-4 gap-y-8">
-        {imgs.map((img, i) => (
-          <div key={i}>
-            <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
-              <Image src={img.url} alt={img.caption || ""} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+        {imgs.map((img, i) => {
+          const isVid = isVideoFile(img.url);
+          return (
+            <div key={i}>
+              <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
+                {isVid ? (
+                  <video src={img.url} className="absolute inset-0 w-full h-full object-cover" autoPlay muted loop playsInline />
+                ) : (
+                  <Image src={img.url} alt={img.caption || ""} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                )}
+              </div>
+              {img.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>}
             </div>
-            {img.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -175,6 +201,7 @@ function ThreeImages({ d }: { d: NewsThreeImagesData }) {
 function SingleImage({ d }: { d: NewsSingleImageData }) {
   if (!d.imageUrl && !d.videoUrl) return null;
   const video = d.videoUrl?.trim();
+  const imageIsVideo = isVideoFile(d.imageUrl);
   const yt = video?.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
   const vimeo = video?.match(/vimeo\.com\/(\d+)/);
   return (
@@ -194,6 +221,10 @@ function SingleImage({ d }: { d: NewsSingleImageData }) {
               <source src={video} />
             </video>
           )
+        ) : imageIsVideo ? (
+          <video controls playsInline className="w-full h-auto bg-warm-100">
+            <source src={d.imageUrl} />
+          </video>
         ) : (
           <Image src={d.imageUrl} alt={d.caption || ""} width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 940px) 100vw, 940px" />
         )}
