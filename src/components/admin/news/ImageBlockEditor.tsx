@@ -52,25 +52,28 @@ export default function ImageBlockEditor({ data, onChange }: ImageBlockEditorPro
         </div>
       </div>
 
-      {/* First image */}
+      {/* First image or video */}
       <ImageUploadField
-        label="Immagine"
+        label="Immagine o video"
         value={data.images[0] || ""}
         onChange={(url) => updateImage(0, url)}
         onRemove={() => removeImage(0)}
         folder="news"
         purpose="news"
+        acceptVideo
+        helpText="Puoi caricare un'immagine o un video (MP4, WebM)."
       />
 
       {/* Second image (only for side-by-side) */}
       {data.layout === "side-by-side" && (
         <ImageUploadField
-          label="Seconda immagine"
+          label="Secondo media (immagine o video)"
           value={data.images[1] || ""}
           onChange={(url) => updateImage(1, url)}
           onRemove={() => removeImage(1)}
           folder="news"
           purpose="news"
+          acceptVideo
         />
       )}
 

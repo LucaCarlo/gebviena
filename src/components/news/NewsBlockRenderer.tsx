@@ -16,6 +16,28 @@ import type {
 } from "@/types";
 import CarouselProgressBar from "@/components/site/CarouselProgressBar";
 
+/* ── Media helpers ──────────────────────────────────────── */
+function isVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url);
+}
+
+function MediaFill({ src, alt = "", sizes }: { src: string; alt?: string; sizes?: string }) {
+  if (isVideoUrl(src)) {
+    return (
+      <video
+        src={src}
+        className="absolute inset-0 w-full h-full object-cover"
+        autoPlay
+        muted
+        loop
+        playsInline
+        controls={false}
+      />
+    );
+  }
+  return <Image src={src} alt={alt} fill className="object-cover" sizes={sizes} />;
+}
+
 /* ── Fade-in animation wrapper ─────────────────────────── */
 function FadeIn({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
@@ -63,7 +85,7 @@ function ImageBlock({ data }: { data: ImageBlockData }) {
           <div className="grid grid-cols-2 gap-3 md:gap-4">
             {data.images.slice(0, 2).map((img, i) => (
               <div key={i} className="relative aspect-[16/10] bg-warm-100 overflow-hidden">
-                <Image src={img} alt="" fill className="object-cover" sizes="50vw" />
+                <MediaFill src={img} sizes="50vw" />
               </div>
             ))}
           </div>
@@ -81,7 +103,7 @@ function ImageBlock({ data }: { data: ImageBlockData }) {
     <section className="py-10 md:py-16">
       <FadeIn className={containerClass}>
         <div className="relative aspect-[16/9] bg-warm-100 overflow-hidden">
-          <Image src={data.images[0]} alt="" fill className="object-cover" sizes="100vw" />
+          <MediaFill src={data.images[0]} sizes="100vw" />
         </div>
         {data.caption && (
           <p className="text-xs text-warm-400 mt-3 text-center">{data.caption}</p>
@@ -98,13 +120,7 @@ function ImageTextBlock({ data }: { data: ImageTextBlockData }) {
   const imageEl = (
     <div className="relative bg-warm-200 min-h-[400px]">
       {data.images?.[0] && (
-        <Image
-          src={data.images[0]}
-          alt=""
-          fill
-          className="object-cover"
-          sizes="(max-width: 1024px) 100vw, 50vw"
-        />
+        <MediaFill src={data.images[0]} sizes="(max-width: 1024px) 100vw, 50vw" />
       )}
     </div>
   );
