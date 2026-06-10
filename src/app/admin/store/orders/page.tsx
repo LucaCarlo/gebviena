@@ -55,12 +55,14 @@ const STATUS_META: Record<OrderStatus, { label: string; cls: string; Icon: typeo
 // fallback neutro invece di crashare la pagina.
 const FALLBACK_META = { label: "Stato sconosciuto", cls: "bg-warm-100 text-warm-700 border-warm-200", Icon: Clock };
 
-// Stati visibili in questa pagina (ordini "veri"). I checkout abbandonati e
-// gli ordini annullati vivono in pagine dedicate (Carrelli abbandonati) e
-// non devono comparire qui.
+// Stati visibili in questa pagina (ordini "veri"): in attesa di bonifico,
+// pagati / in evasione / spediti / consegnati, e rimborsati. Gli errori di
+// pagamento e i checkout abbandonati stanno in /admin/store/abandoned-carts.
+// CANCELLED (annullato dal cliente) resta visibile come ordine "annullato"
+// post-creazione.
 const VISIBLE_STATUSES: OrderStatus[] = [
   "PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED",
-  "PICKED_UP", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED", "PAYMENT_FAILED",
+  "PICKED_UP", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED", "CANCELLED",
 ];
 const VISIBLE_SET = new Set<OrderStatus>(VISIBLE_STATUSES);
 
@@ -81,8 +83,8 @@ const PERIOD_LABELS: Record<PeriodKey, string> = {
 interface RevenueStats {
   totalSalesCents: number;
   totalSalesCount: number;
-  cancelledRefundedCents: number;
-  cancelledRefundedCount: number;
+  refundedCents: number;
+  refundedCount: number;
   pendingBonificoCount: number;
   pendingBonificoCents: number;
   daEvadereCount: number;
@@ -238,13 +240,13 @@ export default function StoreOrdersPage() {
             </div>
           </div>
 
-          <div className={`rounded-lg border px-4 py-3 bg-red-50 text-red-900 border-red-200 ${stats && stats.cancelledRefundedCount === 0 ? "opacity-60" : ""}`}>
-            <div className="text-[11px] font-medium uppercase tracking-wider">Annullati / Rimborsati</div>
+          <div className={`rounded-lg border px-4 py-3 bg-blue-50 text-blue-900 border-blue-200 ${stats && stats.refundedCount === 0 ? "opacity-60" : ""}`}>
+            <div className="text-[11px] font-medium uppercase tracking-wider">Rimborsati</div>
             <div className="text-2xl md:text-[26px] font-semibold mt-1 leading-tight tabular-nums">
-              {stats ? eurFmt(stats.cancelledRefundedCents) : "—"}
+              {stats ? eurFmt(stats.refundedCents) : "—"}
             </div>
-            <div className="text-[11px] text-red-700 leading-tight mt-0.5">
-              {formatNumber(stats?.cancelledRefundedCount ?? 0)} {stats?.cancelledRefundedCount === 1 ? "ordine" : "ordini"} (cliente o GTV)
+            <div className="text-[11px] text-blue-700 leading-tight mt-0.5">
+              {formatNumber(stats?.refundedCount ?? 0)} {stats?.refundedCount === 1 ? "ordine rimborsato" : "ordini rimborsati"}
             </div>
           </div>
         </div>

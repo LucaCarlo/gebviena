@@ -16,8 +16,8 @@ export const dynamic = "force-dynamic";
  *     (refundAmountCents). Esclude CANCELLED. È il numero "vero" della
  *     performance economica.
  * - totalSalesCount: numero ordini considerati nel totale vendite.
- * - cancelledRefundedCents/Count: importo annullati (totalCents CANCELLED) +
- *     rimborsi (refundAmountCents REFUNDED/PARTIALLY_REFUNDED).
+ * - refundedCents/Count: importo rimborsato (refundAmountCents) e numero
+ *     ordini in stato REFUNDED / PARTIALLY_REFUNDED.
  *
  * Globali (stato corrente, non filtrati per data):
  * - pendingBonifico (count + cents): ordini PENDING in attesa bonifico.
@@ -61,13 +61,6 @@ export async function GET(req: NextRequest) {
     _count: { _all: true },
   });
 
-  // Annullati: ordini CANCELLED nel periodo.
-  const annullati = await prisma.order.aggregate({
-    where: { ...dateFilter, status: "CANCELLED" },
-    _sum: { totalCents: true },
-    _count: { _all: true },
-  });
-
   // Conteggi globali per stato — NON filtrati per data: rappresentano lo
   // stato corrente del sistema (es. "Da evadere: 12" = 12 ordini ancora da
   // spedire indipendentemente da quando sono stati creati).
@@ -95,13 +88,9 @@ export async function GET(req: NextRequest) {
 
   const grossSalesCents = vendute._sum.totalCents || 0;
   const refundsAmountCents = rimborsati._sum.refundAmountCents || 0;
-  const cancelledCents = annullati._sum.totalCents || 0;
 
   const totalSalesCents = grossSalesCents - refundsAmountCents;
   const totalSalesCount = vendute._count._all;
-
-  const cancelledRefundedCents = cancelledCents + refundsAmountCents;
-  const cancelledRefundedCount = annullati._count._all + rimborsati._count._all;
 
   return NextResponse.json({
     success: true,
@@ -109,8 +98,8 @@ export async function GET(req: NextRequest) {
       // Per periodo
       totalSalesCents,
       totalSalesCount,
-      cancelledRefundedCents,
-      cancelledRefundedCount,
+      refundedCents: refundsAmountCents,
+      refundedCount: rimborsati._count._all,
       // Globali (stato corrente)
       pendingBonificoCount: bonificoPending,
       pendingBonificoCents: bonifico._sum.totalCents || 0,
