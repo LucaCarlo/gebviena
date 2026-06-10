@@ -15,7 +15,7 @@ import { sendMail } from "@/lib/mail";
 import { getStoreGeneralConfig } from "@/lib/stripe-config";
 
 const eur = (cents: number) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 
 const COMPANY = {
   name: "Gebrüder Thonet Vienna",
@@ -653,6 +653,7 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
     replyTo: COMPANY.email,
     bcc: COMPANY.email,
     attachments: [pdfAttachment],
+    context: "store",
   });
 
   if (ok) {
@@ -727,6 +728,7 @@ export async function sendOrderConfirmationEmail(orderId: string): Promise<boole
       fromName: `${COMPANY.name} — Ordini`,
       replyTo: order.email,
       attachments: [pdfAttachment],
+      context: "store",
     },
   ).then((aok) => {
     console.log("[order-email] admin notify", order.orderNumber, aok ? "sent" : "FAILED");

@@ -11,8 +11,6 @@ export function formatNumber(
   fallback = "—",
 ): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return fallback;
-  return n.toLocaleString("it-IT", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
+  return n.toLocaleString("it-IT", { useGrouping: "always", minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals, });
 }

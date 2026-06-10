@@ -28,7 +28,7 @@ interface CustomerListItem {
 }
 
 const euro = (cents: number, currency: string) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency }).format(cents / 100);
 
 export default function StoreCustomersPage() {
   const router = useRouter();

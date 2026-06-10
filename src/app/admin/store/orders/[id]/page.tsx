@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import {
   Loader2, ArrowLeft, Check, X, AlertCircle, RotateCcw, Truck, Copy,
 } from "lucide-react";
+import { humanizeStripeError } from "@/lib/stripe-error-labels";
 
 type OrderStatus =
   | "PENDING"
@@ -105,7 +106,7 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 };
 
 const euro = (cents: number, currency: string) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency }).format(cents / 100);
 
 function parseAddress(json: string): Record<string, string> {
   try { return JSON.parse(json); } catch { return {}; }
@@ -121,6 +122,7 @@ export default function OrderDetailPage() {
   const [refundOpen, setRefundOpen] = useState(false);
   const [refundAmount, setRefundAmount] = useState("");
   const [refundReason, setRefundReason] = useState("");
+  const [refunding, setRefunding] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const showToast = (msg: string, ok: boolean) => {
@@ -183,19 +185,35 @@ export default function OrderDetailPage() {
   };
 
   const doRefund = async () => {
+    if (refunding || !order) return;
     const cents = refundAmount ? Math.round(Number(refundAmount) * 100) : undefined;
-    const res = await fetch(`/api/store/orders/${params.id}/refund`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amountCents: cents, reason: refundReason }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setOrder(data.data);
-      setRefundOpen(false);
-      showToast(data.note || "Refund registrato", true);
-    } else {
-      showToast(data.error || "Errore", false);
+    const amountForMsg = cents ?? (order.totalCents - (order.refundAmountCents ?? 0));
+    const viaStripe = !!order.stripePaymentIntentId;
+    const confirmMsg = viaStripe
+      ? `Rimborsare ${euro(amountForMsg, order.currency)} al cliente su Stripe?\n\nL'importo tornerà sul metodo di pagamento del cliente (es. carta). L'azione NON è reversibile.`
+      : `Registrare un rimborso di ${euro(amountForMsg, order.currency)}?\n\nIl pagamento non è su Stripe: dovrai eseguire il rimborso manualmente al cliente.`;
+    if (!confirm(confirmMsg)) return;
+    setRefunding(true);
+    try {
+      const res = await fetch(`/api/store/orders/${params.id}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amountCents: cents, reason: refundReason }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrder(data.data);
+        setRefundOpen(false);
+        setRefundAmount("");
+        setRefundReason("");
+        showToast(data.note || "Rimborso eseguito", true);
+      } else {
+        showToast(data.error || "Errore", false);
+      }
+    } catch {
+      showToast("Errore durante il rimborso", false);
+    } finally {
+      setRefunding(false);
     }
   };
 
@@ -218,9 +236,16 @@ export default function OrderDetailPage() {
   const shipAddr = parseAddress(order.shippingAddress);
   const billAddr = parseAddress(order.billingAddress);
 
-  // Il back link punta alla lista da cui presumibilmente arrivi: gli ordini non
-  // finalizzati stanno in "Carrelli abbandonati", quelli pagati in "Ordini".
-  const isAbandoned = ["ABANDONED_CHECKOUT", "PENDING", "PAYMENT_FAILED", "CANCELLED"].includes(order.status);
+  const remainingRefundableCents = order.totalCents - (order.refundAmountCents ?? 0);
+  const refundViaStripe = !!order.stripePaymentIntentId;
+
+  // Il back link punta alla lista da cui presumibilmente arrivi.
+  // Carrelli abbandonati: ABANDONED_CHECKOUT, PAYMENT_FAILED, PENDING+stripe.
+  // Tutto il resto (CANCELLED incluso, perché presuppone un ordine creato) va in Ordini.
+  const isPendingStripe = order.status === "PENDING" && order.paymentProvider !== "bonifico";
+  const isAbandoned = order.status === "ABANDONED_CHECKOUT"
+    || order.status === "PAYMENT_FAILED"
+    || isPendingStripe;
   const backHref = isAbandoned ? "/admin/store/abandoned-carts" : "/admin/store/orders";
   const backLabel = isAbandoned ? "Torna a Carrelli abbandonati" : "Torna agli ordini";
 
@@ -232,25 +257,23 @@ export default function OrderDetailPage() {
         </Link>
       </div>
 
-      <header className="flex items-start justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-warm-900 font-mono">{order.orderNumber}</h1>
-          <div className="flex items-center gap-3 mt-1 text-sm">
-            <span className="text-warm-500">
-              {new Date(order.createdAt).toLocaleString("it-IT", { dateStyle: "medium", timeStyle: "short" })}
-            </span>
-            <span className="text-warm-300">·</span>
-            <span className="text-warm-700">{order.firstName} {order.lastName}</span>
-            <span className="text-warm-300">·</span>
-            <span className="text-warm-700 font-mono text-xs">{order.email}</span>
-            {order.customerTaxId && (
-              <>
-                <span className="text-warm-300">·</span>
-                <span className="text-warm-700 font-mono text-xs" title="P.IVA / Codice Fiscale">{order.customerTaxId}</span>
-              </>
-            )}
-            {!order.customer && <span className="text-xs text-warm-400 italic">(guest)</span>}
-          </div>
+      <header className="mb-6">
+        <h1 className="text-xl md:text-2xl font-semibold text-warm-900 font-mono break-all">{order.orderNumber}</h1>
+        <div className="mt-1 text-sm flex flex-col md:flex-row md:flex-wrap md:items-center md:gap-3">
+          <span className="text-warm-500">
+            {new Date(order.createdAt).toLocaleString("it-IT", { dateStyle: "medium", timeStyle: "short" })}
+          </span>
+          <span className="hidden md:inline text-warm-300">·</span>
+          <span className="text-warm-700">{order.firstName} {order.lastName}</span>
+          <span className="hidden md:inline text-warm-300">·</span>
+          <span className="text-warm-700 font-mono text-xs break-all">{order.email}</span>
+          {order.customerTaxId && (
+            <>
+              <span className="hidden md:inline text-warm-300">·</span>
+              <span className="text-warm-700 font-mono text-xs break-all" title="P.IVA / Codice Fiscale">{order.customerTaxId}</span>
+            </>
+          )}
+          {!order.customer && <span className="text-xs text-warm-400 italic">(guest)</span>}
         </div>
       </header>
 
@@ -289,7 +312,59 @@ export default function OrderDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           <section className="bg-white rounded-lg border border-warm-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-warm-200 font-medium text-warm-900">Articoli</div>
-            <table className="w-full text-sm">
+
+            {/* Mobile: card per articolo */}
+            <div className="md:hidden divide-y divide-warm-100">
+              {order.items.map((it) => {
+                const attrs = it.attributesSnapshot ? (() => { try { return JSON.parse(it.attributesSnapshot!) as Record<string, string>; } catch { return {}; } })() : {};
+                return (
+                  <div key={it.id} className="p-3">
+                    <div className="font-medium text-warm-900 break-words">{it.productName}</div>
+                    {it.variantName && <div className="text-xs text-warm-500">{it.variantName}</div>}
+                    {Object.keys(attrs).length > 0 && (
+                      <div className="text-xs text-warm-500 mt-0.5 flex flex-wrap gap-x-2">
+                        {Object.entries(attrs).map(([k, v]) => <span key={k}>{k}: <strong>{v}</strong></span>)}
+                      </div>
+                    )}
+                    <div className="mt-2 flex items-center justify-between text-xs">
+                      <span className="font-mono text-warm-500">SKU {it.sku}</span>
+                      <span className="text-warm-600">
+                        <span className="font-mono">{it.quantity}</span> × <span className="font-mono">{euro(it.unitPriceCents, order.currency)}</span>
+                      </span>
+                      <span className="font-mono font-semibold text-warm-900">{euro(it.totalCents, order.currency)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {/* Totali mobile */}
+              <div className="bg-warm-50 px-4 py-3 text-sm space-y-1">
+                <div className="flex justify-between text-warm-600">
+                  <span>Subtotale</span>
+                  <span className="font-mono">{euro(order.subtotalCents, order.currency)}</span>
+                </div>
+                <div className="flex justify-between text-warm-600">
+                  <span>Spedizione {order.shippingZoneLabel && <span className="text-xs text-warm-400">({order.shippingZoneLabel})</span>}</span>
+                  <span className="font-mono">{euro(order.shippingCents, order.currency)}</span>
+                </div>
+                <div className="flex justify-between text-warm-600">
+                  <span>IVA ({(order.taxRateBp / 100).toFixed(1)}%)</span>
+                  <span className="font-mono">{euro(order.taxCents, order.currency)}</span>
+                </div>
+                <div className="flex justify-between pt-2 mt-1 border-t border-warm-200 font-semibold text-warm-900">
+                  <span>Totale</span>
+                  <span className="font-mono">{euro(order.totalCents, order.currency)}</span>
+                </div>
+                {order.refundAmountCents !== null && order.refundAmountCents > 0 && (
+                  <div className="flex justify-between text-red-700">
+                    <span>Rimborsato</span>
+                    <span className="font-mono">−{euro(order.refundAmountCents, order.currency)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Desktop: tabella */}
+            <table className="hidden md:table w-full text-sm">
               <thead className="bg-warm-50 text-warm-500 text-xs">
                 <tr>
                   <th className="px-4 py-2 text-left">Prodotto</th>
@@ -452,19 +527,27 @@ export default function OrderDetailPage() {
                 </div>
               )}
             </dl>
-            {order.paymentErrorMessage && (
-              <div className="mt-3 px-3 py-2 rounded bg-red-50 border border-red-200 text-[12px] text-red-800">
-                <div className="font-medium mb-0.5">Motivo errore pagamento</div>
-                <div className="text-red-700">{order.paymentErrorMessage}</div>
-              </div>
-            )}
+            {order.paymentErrorMessage && (() => {
+              const h = humanizeStripeError(order.paymentErrorMessage);
+              return (
+                <div className="mt-3 px-3 py-2 rounded bg-red-50 border border-red-200 text-[12px] text-red-800">
+                  <div className="font-medium mb-1">{h.shortLabel}</div>
+                  <div className="text-red-700 mb-1.5">{h.description}</div>
+                  <div className="text-warm-700 italic">Cosa suggerire al cliente: {h.customerSuggestion}</div>
+                  <details className="mt-1.5">
+                    <summary className="text-warm-500 cursor-pointer text-[10px] uppercase tracking-wider">Messaggio originale Stripe</summary>
+                    <div className="text-warm-600 text-[11px] mt-1 font-mono break-all">{order.paymentErrorMessage}</div>
+                  </details>
+                </div>
+              );
+            })()}
 
-            {(order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED" || order.status === "DELIVERED" || order.status === "PARTIALLY_REFUNDED") && (
+            {(order.status === "PAID" || order.status === "PROCESSING" || order.status === "SHIPPED" || order.status === "DELIVERED" || order.status === "PICKED_UP" || order.status === "PARTIALLY_REFUNDED") && remainingRefundableCents > 0 && (
               <button
                 onClick={() => setRefundOpen(true)}
                 className="mt-3 w-full px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded text-sm hover:bg-red-100 inline-flex items-center justify-center gap-2"
               >
-                <RotateCcw size={13} /> Emetti refund
+                <RotateCcw size={13} /> {refundViaStripe ? "Rimborsa cliente (Stripe)" : "Rimborsa cliente"}
               </button>
             )}
           </section>
@@ -475,23 +558,34 @@ export default function OrderDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-xl max-w-md w-full shadow-xl">
             <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
-              <h2 className="font-semibold text-warm-900">Emetti refund</h2>
+              <h2 className="font-semibold text-warm-900">Rimborsa il cliente</h2>
               <button onClick={() => setRefundOpen(false)} className="text-warm-400 hover:text-warm-900"><X size={18} /></button>
             </div>
             <div className="p-6 space-y-3">
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                Il refund viene registrato localmente. L&apos;integrazione Stripe per il refund automatico verrà attivata in fase successiva.
-              </p>
+              {refundViaStripe ? (
+                <p className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded p-2">
+                  Pagamento tramite Stripe: il rimborso viene eseguito <strong>automaticamente</strong> e l&apos;importo torna sul metodo di pagamento del cliente (es. carta). Operazione non reversibile.
+                </p>
+              ) : (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                  Pagamento non tramite Stripe (es. bonifico): il rimborso viene solo <strong>registrato</strong> qui. Devi eseguirlo manualmente al cliente.
+                </p>
+              )}
+              {order.refundAmountCents !== null && order.refundAmountCents > 0 && (
+                <p className="text-xs text-warm-600">
+                  Già rimborsato: <strong>{euro(order.refundAmountCents, order.currency)}</strong> · Residuo rimborsabile: <strong>{euro(remainingRefundableCents, order.currency)}</strong>
+                </p>
+              )}
               <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1">Importo (€, vuoto = totale)</label>
+                <label className="block text-xs font-medium text-warm-600 mb-1">Importo (€, vuoto = rimborso totale residuo)</label>
                 <input
                   type="number"
                   step="0.01"
                   min={0}
-                  max={order.totalCents / 100}
+                  max={remainingRefundableCents / 100}
                   value={refundAmount}
                   onChange={(e) => setRefundAmount(e.target.value)}
-                  placeholder={`${(order.totalCents / 100).toFixed(2)}`}
+                  placeholder={`${(remainingRefundableCents / 100).toFixed(2)}`}
                   className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
                 />
               </div>
@@ -506,8 +600,11 @@ export default function OrderDetailPage() {
               </div>
             </div>
             <div className="px-6 py-4 border-t border-warm-200 flex justify-end gap-2">
-              <button onClick={() => setRefundOpen(false)} className="px-4 py-2 text-sm text-warm-600">Annulla</button>
-              <button onClick={doRefund} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Conferma refund</button>
+              <button onClick={() => setRefundOpen(false)} disabled={refunding} className="px-4 py-2 text-sm text-warm-600 disabled:opacity-50">Annulla</button>
+              <button onClick={doRefund} disabled={refunding} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50 inline-flex items-center gap-2">
+                {refunding && <Loader2 size={14} className="animate-spin" />}
+                {refundViaStripe ? "Conferma rimborso su Stripe" : "Registra rimborso"}
+              </button>
             </div>
           </div>
         </div>

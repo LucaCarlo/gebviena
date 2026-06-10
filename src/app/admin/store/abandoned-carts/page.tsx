@@ -97,7 +97,7 @@ function statusLabel(o: { status: OrderStatus; paymentProvider: string | null })
 }
 
 const euro = (cents: number, currency: string) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency }).format(cents / 100);
 
 export default function AbandonedCartsPage() {
   const router = useRouter();
@@ -145,7 +145,7 @@ export default function AbandonedCartsPage() {
   const totalBy = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
   const pendingStripe = orders.filter((o) => o.status === "PENDING" && o.paymentProvider !== "bonifico").length;
   const totalValueCents = orders.reduce((s, o) => s + (o.totalCents || 0), 0);
-  const eurFmt = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+  const eurFmt = (cents: number) => new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 
   return (
     <div>

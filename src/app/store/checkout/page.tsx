@@ -12,9 +12,10 @@ import { useCart } from "@/contexts/CartContext";
 import { useLang } from "@/contexts/I18nContext";
 import { useStoreT } from "@/lib/use-store-t";
 import { fbTrack } from "@/lib/fbpixel";
+import AddressGeoFields from "@/components/store/checkout/AddressGeoFields";
 
 const eur = (cents: number) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 
 interface IntentResponse {
   clientSecret: string;
@@ -41,6 +42,7 @@ interface LiveQuote {
   totalShippingCents: number;
   totalCents: number;
   freeShippingApplied: boolean;
+  freeShippingThresholdCents?: number;
   resolvedRegion: string | null;
   storePickup?: boolean;
   billableVolumeM3?: number;
@@ -50,8 +52,9 @@ interface LiveQuote {
   lines?: Array<{ variantId: string; unitPriceCents: number; quantity: number; lineCents: number }>;
 }
 
-const FREE_SHIPPING_THRESHOLD_CENTS = 95000; // 950 EUR
-const SHIPPING_REMINDER_RANGE_CENTS = 20000; // mostra reminder se manca <= 200 EUR
+// Soglia spedizione gratuita di fallback se il quote non è ancora caricato.
+// Il valore reale arriva da `quote.freeShippingThresholdCents` (= setting admin).
+const FREE_SHIPPING_FALLBACK_CENTS = 95000;
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -103,14 +106,36 @@ export default function CheckoutPage() {
   }, []);
 
   // Meta Pixel: InitiateCheckout una sola volta al mount se ci sono items.
+  // eventID = cartSessionId del carrello (univoco per sessione) → il CAPI
+  // server-side usa lo stesso id per la deduplicazione lato Meta.
   useEffect(() => {
     if (count > 0) {
+      const cartSessionId = typeof window !== "undefined" ? (localStorage.getItem("gtv_cart_session_v1") || "") : "";
+      const eventID = cartSessionId ? `ic-${cartSessionId}` : undefined;
+      const variantIds = items.map((i) => i.variantId);
+      const value = subtotalCents / 100;
       fbTrack("InitiateCheckout", {
-        content_ids: items.map((i) => i.variantId),
+        content_ids: variantIds,
         num_items: count,
-        value: subtotalCents / 100,
+        value,
         currency: "EUR",
-      });
+      }, eventID);
+      // CAPI server gemello: fire-and-forget, mai bloccare il render.
+      if (eventID) {
+        fetch("/api/store/public/track/initiate-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            eventID,
+            content_ids: variantIds,
+            num_items: count,
+            value,
+            currency: "EUR",
+            eventSourceUrl: typeof window !== "undefined" ? window.location.href : undefined,
+          }),
+          keepalive: true,
+        }).catch(() => { /* silent */ });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -163,6 +188,53 @@ export default function CheckoutPage() {
   // Fingerprint del carrello (variantId × quantity) per evitare loop di refetch
   // dovuti al fatto che `items` è una nuova reference ad ogni render.
   const itemsFingerprint = items.map((i) => `${i.variantId}:${i.quantity}`).join("|");
+
+  // Track "Checkout abbandonato": appena l'utente compila email + almeno uno
+  // tra nome/cognome/telefono, dopo 3s di pausa nella digitazione, creiamo o
+  // aggiorniamo silenziosamente un Order ABANDONED_CHECKOUT in DB. Se poi
+  // l'utente clicca "Procedi al pagamento" l'endpoint create-payment-intent /
+  // create-bonifico-order lo promuove a PENDING. Se chiude la tab senza pagare,
+  // l'ordine rimane ABANDONED_CHECKOUT e finisce in "Carrelli abbandonati" admin.
+  const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
+  const hasIdentity = !!(form.firstName.trim() || form.lastName.trim() || form.phone.trim());
+  useEffect(() => {
+    if (phase !== "address") return;
+    if (!hasValidEmail || !hasIdentity) return;
+    if (items.length === 0) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      const cartSessionId = typeof window !== "undefined" ? (localStorage.getItem("gtv_cart_session_v1") || "") : "";
+      if (!cartSessionId) return;
+      fetch("/api/store/public/checkout/track-abandoned", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          phone: form.phone,
+          taxId: form.taxId,
+          items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+          shippingAddress: form.storePickup ? null : {
+            street: form.street,
+            city: form.city,
+            province: form.province,
+            postalCode: form.postalCode,
+            country: form.country,
+          },
+          shippingFloor: Number(form.shippingFloor) || 0,
+          withUnboxingService: form.withUnboxingService === true,
+          storePickup: form.storePickup === true,
+          customerNotes: form.customerNotes,
+          lang,
+          cartSessionId,
+        }),
+        signal: ctrl.signal,
+      }).catch(() => { /* network/abort silent */ });
+    }, 3000);
+    return () => { clearTimeout(t); ctrl.abort(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, hasValidEmail, hasIdentity, itemsFingerprint, form.email, form.firstName, form.lastName, form.phone, form.taxId, form.country, form.postalCode, form.province, form.city, form.street, form.shippingFloor, form.withUnboxingService, form.storePickup]);
 
   // Quote spedizione live: ricalcola appena cambiano country/CAP/provincia/
   // piano/disimballo o il contenuto del carrello. Debounced 350ms per non
@@ -269,6 +341,16 @@ export default function CheckoutPage() {
         setSubmitting(false);
         return;
       }
+      // Meta Pixel: AddPaymentInfo — l'utente ha scelto il metodo di pagamento
+      // e ha completato gli step pre-pagamento. Non firato per ricarichi (è dentro l'handler submit).
+      // eventID condiviso col CAPI server-side (`${orderNumber}:api`) per deduplica.
+      fbTrack("AddPaymentInfo", {
+        content_ids: items.map((i) => i.variantId),
+        num_items: count,
+        value: subtotalCents / 100,
+        currency: "EUR",
+        payment_method: paymentMethod,
+      }, data?.data?.orderNumber ? `${data.data.orderNumber}:api` : undefined);
       if (paymentMethod === "bonifico") {
         // Bonifico: ordine creato senza Stripe, email già inviata. Vai diretto alla success page.
         window.location.href = `/store/checkout/success?order=${encodeURIComponent(data.data.orderId)}`;
@@ -333,20 +415,18 @@ export default function CheckoutPage() {
                 <>
                   <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-4 border-t border-warm-200">{t("Indirizzo di spedizione", "Adresse de livraison")}</div>
                   <Field label={t("Via e numero civico *", "Rue et numéro *")} value={form.street} onChange={(v) => updateField("street", v)} />
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="col-span-2"><Field label={t("Città *", "Ville *")} value={form.city} onChange={(v) => updateField("city", v)} /></div>
-                    <Field label={t("Provincia", "Province")} value={form.province} onChange={(v) => updateField("province", v.toUpperCase())} />
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <Field label={t("CAP *", "Code postal *")} value={form.postalCode} onChange={(v) => updateField("postalCode", v)} />
-                    <div className="col-span-2">
-                      <label className="block text-[13px] text-warm-700 mb-1.5">{t("Paese *", "Pays *")}</label>
-                      <select value={form.country} onChange={(e) => updateField("country", e.target.value)} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none">
-                        <option value="IT">{t("Italia", "Italie")}</option>
-                        <option value="FR">{t("Francia", "France")}</option>
-                      </select>
-                    </div>
-                  </div>
+                  <AddressGeoFields
+                    country={form.country}
+                    cityName={form.city}
+                    province={form.province}
+                    postalCode={form.postalCode}
+                    onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+                    t={t}
+                    countryOptions={[
+                      { code: "IT", label: t("Italia", "Italie") },
+                      { code: "FR", label: t("Francia", "France") },
+                    ]}
+                  />
                 </>
               )}
 
@@ -372,20 +452,24 @@ export default function CheckoutPage() {
                   <div className="text-xs uppercase tracking-[0.2em] text-warm-500 pt-2">{t("Indirizzo di fatturazione", "Adresse de facturation")}</div>
                   <Field label={t("Ragione sociale / Intestatario (opzionale)", "Raison sociale / Titulaire (facultatif)")} value={form.billingCompany} onChange={(v) => updateField("billingCompany", v)} />
                   <Field label={t("Via e numero civico *", "Rue et numéro *")} value={form.billingStreet} onChange={(v) => updateField("billingStreet", v)} />
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="col-span-2"><Field label={t("Città *", "Ville *")} value={form.billingCity} onChange={(v) => updateField("billingCity", v)} /></div>
-                    <Field label={t("Provincia", "Province")} value={form.billingProvince} onChange={(v) => updateField("billingProvince", v.toUpperCase())} />
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <Field label={t("CAP *", "Code postal *")} value={form.billingPostalCode} onChange={(v) => updateField("billingPostalCode", v)} />
-                    <div className="col-span-2">
-                      <label className="block text-[13px] text-warm-700 mb-1.5">{t("Paese *", "Pays *")}</label>
-                      <select value={form.billingCountry} onChange={(e) => updateField("billingCountry", e.target.value)} className="w-full border border-warm-300 rounded px-3 py-2.5 text-sm bg-white focus:border-warm-700 outline-none">
-                        <option value="IT">{t("Italia", "Italie")}</option>
-                        <option value="FR">{t("Francia", "France")}</option>
-                      </select>
-                    </div>
-                  </div>
+                  <AddressGeoFields
+                    country={form.billingCountry}
+                    cityName={form.billingCity}
+                    province={form.billingProvince}
+                    postalCode={form.billingPostalCode}
+                    onChange={(patch) => setForm((f) => ({
+                      ...f,
+                      ...(patch.country !== undefined ? { billingCountry: patch.country } : {}),
+                      ...(patch.city !== undefined ? { billingCity: patch.city } : {}),
+                      ...(patch.province !== undefined ? { billingProvince: patch.province } : {}),
+                      ...(patch.postalCode !== undefined ? { billingPostalCode: patch.postalCode } : {}),
+                    }))}
+                    t={t}
+                    countryOptions={[
+                      { code: "IT", label: t("Italia", "Italie") },
+                      { code: "FR", label: t("Francia", "France") },
+                    ]}
+                  />
                 </>
               )}
 
@@ -461,27 +545,6 @@ export default function CheckoutPage() {
               </div>
               </>
               )}
-
-              {/* Reminder spedizione gratuita (solo se mancano <= 200€ alla soglia) */}
-              {(() => {
-                const sub = subtotalCents;
-                const missing = FREE_SHIPPING_THRESHOLD_CENTS - sub;
-                if (sub >= FREE_SHIPPING_THRESHOLD_CENTS) {
-                  return (
-                    <div className="text-[13px] bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-800">
-                      🎉 {t("Hai diritto alla", "Vous bénéficiez de la")} <strong>{t("spedizione gratuita", "livraison gratuite")}</strong> !
-                    </div>
-                  );
-                }
-                if (missing > 0 && missing <= SHIPPING_REMINDER_RANGE_CENTS) {
-                  return (
-                    <div className="text-[13px] bg-amber-50 border border-amber-200 rounded p-3 text-amber-800">
-                      {t("Aggiungi ancora", "Ajoutez encore")} <strong>{eur(missing)}</strong> {t(`per la spedizione gratuita (soglia ${eur(FREE_SHIPPING_THRESHOLD_CENTS)}).`, `pour bénéficier de la livraison gratuite (seuil ${eur(FREE_SHIPPING_THRESHOLD_CENTS)}).`)}
-                    </div>
-                  );
-                }
-                return null;
-              })()}
 
               <div className="pt-4 border-t border-warm-200">
                 <label className="block text-[13px] text-warm-700 mb-1.5">{t("Note (opzionale)", "Remarques (facultatif)")}</label>
@@ -565,6 +628,33 @@ export default function CheckoutPage() {
               );
             })}
           </div>
+          {/* Box "spedizione gratuita": quanto manca alla soglia o conferma se raggiunta.
+              Nascosto in caso di ritiro al negozio (è già gratis). Soglia dinamica dall'admin. */}
+          {!form.storePickup && (() => {
+            const sub = intent?.subtotalCents ?? quote?.subtotalCents ?? subtotalCents;
+            const threshold = quote?.freeShippingThresholdCents ?? FREE_SHIPPING_FALLBACK_CENTS;
+            if (threshold <= 0) return null;
+            const missing = threshold - sub;
+            if (sub >= threshold) {
+              return (
+                <div className="text-[13px] bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-800">
+                  🎉 {t("Hai raggiunto la soglia! La spedizione standard è", "Vous avez atteint le seuil ! La livraison standard est")} <strong>{t("gratuita", "offerte")}</strong>.
+                </div>
+              );
+            }
+            const pct = Math.max(2, Math.min(100, Math.round((sub / threshold) * 100)));
+            return (
+              <div className="bg-amber-50 border border-amber-200 rounded p-3 space-y-2">
+                <div className="text-[13px] text-amber-800">
+                  {t("Aggiungi", "Ajoutez")} <strong>{eur(missing)}</strong> {t("e la spedizione standard è gratuita", "et la livraison standard est offerte")} <span className="text-amber-600">({t("soglia", "seuil")} {eur(threshold)})</span>.
+                </div>
+                <div className="h-2 bg-amber-100 rounded overflow-hidden">
+                  <div className="h-2 bg-amber-500 rounded transition-all" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="border-t border-warm-200 pt-3 space-y-1.5 text-sm">
             <Row label={t("Subtotale", "Sous-total")} value={eur(intent?.subtotalCents ?? quote?.subtotalCents ?? subtotalCents)} />
             {form.storePickup ? (
