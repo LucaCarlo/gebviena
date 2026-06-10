@@ -20,17 +20,29 @@ function isVideoFile(url: string | undefined | null): boolean {
   return !!url && /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url);
 }
 
-/* Video player per news: controls del browser visibili al passaggio del
-   cursore (styling in globals.css → .news-video). Click sui controls per
-   fullscreen / play / pausa / volume. Niente autoplay-loop. */
-function NewsVideoFill({ src }: { src: string }) {
+/* Video player per news. Per default mostra i controls (l'utente clicca
+   play). Se autoplay=true viene riprodotto in loop muto come background
+   senza controls — utile per banner / image-text. */
+function NewsVideoFill({ src, autoplay = false, className = "" }: { src: string; autoplay?: boolean; className?: string }) {
+  if (autoplay) {
+    return (
+      <video
+        src={src}
+        autoPlay
+        muted
+        loop
+        playsInline
+        className={`absolute inset-0 w-full h-full object-cover bg-black ${className}`}
+      />
+    );
+  }
   return (
     <video
       src={src}
       controls
       playsInline
       preload="metadata"
-      className="news-video absolute inset-0 w-full h-full object-cover bg-black"
+      className={`news-video absolute inset-0 w-full h-full object-cover bg-black ${className}`}
     />
   );
 }
@@ -85,15 +97,21 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
                 <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
                   <iframe src={`https://player.vimeo.com/video/${vimeo[1]}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
                 </div>
+              ) : d.videoAutoplay ? (
+                <video src={video} autoPlay muted loop playsInline className="w-full h-auto bg-warm-100" />
               ) : (
                 <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
                   <source src={video} />
                 </video>
               )
             ) : imageIsVideo ? (
-              <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
-                <source src={d.imageUrl} />
-              </video>
+              d.videoAutoplay ? (
+                <video src={d.imageUrl} autoPlay muted loop playsInline className="w-full h-auto bg-warm-100" />
+              ) : (
+                <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
+                  <source src={d.imageUrl} />
+                </video>
+              )
             ) : (
               <Image src={d.imageUrl} alt="" width={400} height={400} className="w-full h-auto" sizes="140px" />
             )}
@@ -116,13 +134,21 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
   return (
     <section className="relative w-full" style={{ height: "85vh" }}>
       {isVid ? (
-        <video
-          src={d.imageUrl}
-          controls
-          playsInline
-          preload="metadata"
-          className="news-video absolute inset-0 w-full h-full object-cover brightness-[0.85] bg-black"
-        />
+        d.videoAutoplay ? (
+          <video
+            src={d.imageUrl}
+            autoPlay muted loop playsInline
+            className="absolute inset-0 w-full h-full object-cover brightness-[0.6] bg-black"
+          />
+        ) : (
+          <video
+            src={d.imageUrl}
+            controls
+            playsInline
+            preload="metadata"
+            className="news-video absolute inset-0 w-full h-full object-cover brightness-[0.85] bg-black"
+          />
+        )
       ) : (
         <Image src={d.imageUrl} alt={d.title || ""} fill className="object-cover brightness-[0.6]" sizes="100vw" />
       )}
@@ -156,7 +182,7 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
   const imageEl = (
     <div className="relative bg-warm-200 overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
       {d.imageUrl && (imageIsVideo ? (
-        <NewsVideoFill src={d.imageUrl} />
+        <NewsVideoFill src={d.imageUrl} autoplay={!!d.videoAutoplay} />
       ) : (
         <Image src={d.imageUrl} alt={d.title || articleTitle} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
       ))}
@@ -279,27 +305,34 @@ function SingleImage({ d }: { d: NewsSingleImageData }) {
   const imageIsVideo = isVideoFile(d.imageUrl);
   const yt = video?.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
   const vimeo = video?.match(/vimeo\.com\/(\d+)/);
+  const autoplay = !!d.videoAutoplay;
   return (
     <section className="gtv-container">
       <div className="mx-auto max-w-[940px]">
         {video ? (
           yt ? (
             <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
-              <iframe src={`https://www.youtube.com/embed/${yt[1]}?rel=0`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+              <iframe src={`https://www.youtube.com/embed/${yt[1]}${autoplay ? `?autoplay=1&mute=1&loop=1&playlist=${yt[1]}` : "?rel=0"}`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
             </div>
           ) : vimeo ? (
             <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
-              <iframe src={`https://player.vimeo.com/video/${vimeo[1]}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+              <iframe src={`https://player.vimeo.com/video/${vimeo[1]}${autoplay ? "?autoplay=1&muted=1&loop=1" : ""}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
             </div>
+          ) : autoplay ? (
+            <video src={video} autoPlay muted loop playsInline className="w-full h-auto bg-warm-100" />
           ) : (
             <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
               <source src={video} />
             </video>
           )
         ) : imageIsVideo ? (
-          <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
-            <source src={d.imageUrl} />
-          </video>
+          autoplay ? (
+            <video src={d.imageUrl} autoPlay muted loop playsInline className="w-full h-auto bg-warm-100" />
+          ) : (
+            <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
+              <source src={d.imageUrl} />
+            </video>
+          )
         ) : (
           <Image src={d.imageUrl} alt={d.caption || ""} width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 940px) 100vw, 940px" />
         )}

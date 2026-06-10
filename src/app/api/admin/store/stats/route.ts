@@ -5,47 +5,23 @@ import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Statistiche store per periodo + confronto col periodo precedente.
- *
- * Query string:
- *   ?from=YYYY-MM-DD&to=YYYY-MM-DD
- *   &compareFrom=YYYY-MM-DD&compareTo=YYYY-MM-DD   (opzionale, default: stessa
- *      durata immediatamente prima del periodo principale)
- *   &compare=0   per disattivare il confronto
- *
- * Risposta { current: PeriodStats, compare: PeriodStats | null, totals: TotalSinceStart }.
- */
-
 // Stati "vendita vera" (rientrano in fatturato + numero ordini).
 const SALES_STATUSES = [
   "PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP",
   "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
 ] as const;
-
-// Stati "carrello abbandonato".
 const ABANDONED_STATUSES = ["ABANDONED_CHECKOUT", "PAYMENT_FAILED", "CANCELLED"] as const;
 
 interface PeriodInput { from: Date; to: Date }
-
 interface ProductRow { name: string; slug: string | null; quantity: number; revenueCents: number }
 interface ChannelRow { name: string; count: number }
-
 interface PeriodStats {
-  from: string;
-  to: string;
-  periodDays: number;
-  revenueCents: number;
-  orderCount: number;
-  aovCents: number;
-  uniqueVisitors: number;
-  conversionRate: number; // percentuale 0..100
+  from: string; to: string; periodDays: number;
+  revenueCents: number; orderCount: number; aovCents: number;
+  uniqueVisitors: number; conversionRate: number;
   abandonedCount: number;
-  newCustomers: number;
-  recurringCustomers: number;
-  topProducts: ProductRow[];
-  bottomProducts: ProductRow[];
-  channels: ChannelRow[];
+  newCustomers: number; recurringCustomers: number;
+  topProducts: ProductRow[]; bottomProducts: ProductRow[]; channels: ChannelRow[];
 }
 
 function parseDate(s: string | null, fallback: Date): Date {
@@ -53,17 +29,13 @@ function parseDate(s: string | null, fallback: Date): Date {
   const d = new Date(s);
   return Number.isFinite(d.getTime()) ? d : fallback;
 }
-
 function defaultCompare(from: Date, to: Date): { from: Date; to: Date } {
   const ms = to.getTime() - from.getTime();
   return { from: new Date(from.getTime() - ms - 86400000), to: new Date(from.getTime() - 86400000) };
 }
-
 function diffDays(from: Date, to: Date): number {
   return Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000) + 1);
 }
-
-// Estrae il "canale" dal referrer raw (rimuove http://, www., path).
 function channelFromReferrer(ref: string | null | undefined): string {
   if (!ref) return "Diretto";
   try {
@@ -79,39 +51,40 @@ function channelFromReferrer(ref: string | null | undefined): string {
     if (host.includes("pinterest")) return "Pinterest";
     if (host.endsWith("gebruederthonetvienna.com")) return "Sito principale";
     return host;
-  } catch {
-    return "Diretto";
-  }
+  } catch { return "Diretto"; }
 }
 
-async function computePeriod({ from, to }: PeriodInput): Promise<PeriodStats> {
-  const periodDays = diffDays(from, to);
+/**
+ * Calcola le statistiche del periodo. `kind`:
+ *   - "core":  KPI numerici (veloce, query con indici)
+ *   - "heavy": top/bottom prodotti + canali (più lento)
+ *   - "all":   entrambi (default per backward-compat)
+ *
+ * L'UI può chiamare separatamente core+heavy per mostrare prima i KPI.
+ */
+async function prismaSalesAggregate({ from, to }: PeriodInput) {
+  return prisma.order.aggregate({
+    where: { createdAt: { gte: from, lte: to }, status: { in: [...SALES_STATUSES] } },
+    _sum: { totalCents: true }, _count: { _all: true },
+  });
+}
 
-  // Tutte le query del periodo girano IN PARALLELO (Promise.all): le query
-  // più lente sono quelle su PageView (COUNT DISTINCT) e le aggregazioni
-  // OrderItem; in serie il tempo si somma, in parallelo viene capped sulla
-  // più lenta. NB: anche bottom-products è ora una singola query SQL con
-  // LEFT JOIN per evitare due round-trip + N-merge JS lato Node.
-  const [
-    sales,
-    refunds,
-    abandoned,
-    visitorsRow,
-    topRows,
-    distinctEmails,
-    channelRows,
-    bottomRows,
-  ] = await Promise.all([
-    prisma.order.aggregate({
-      where: { createdAt: { gte: from, lte: to }, status: { in: [...SALES_STATUSES] } },
-      _sum: { totalCents: true },
-      _count: { _all: true },
-    }),
-    prisma.order.aggregate({
+async function computePeriod({ from, to }: PeriodInput, kind: "core" | "heavy" | "all" = "all"): Promise<PeriodStats> {
+  const periodDays = diffDays(from, to);
+  const wantCore = kind !== "heavy";
+  const wantHeavy = kind !== "core";
+
+  // Le query CORE girano se richieste, altrimenti rispondiamo null/[] subito.
+  // Niente tuple-typing: TS sa l'inferenza in destructuring di Promise.all.
+  const sales = wantCore ? await prismaSalesAggregate({ from, to }) : null;
+  // Lancia in parallelo solo le altre — sales serve subito per orderCount,
+  // ma le restanti non hanno dipendenze tra loro.
+  const [refunds, abandoned, visitorsRow, distinctEmails, topRows, channelRows, bottomRows] = await Promise.all([
+    wantCore ? prisma.order.aggregate({
       where: { createdAt: { gte: from, lte: to }, status: { in: ["REFUNDED", "PARTIALLY_REFUNDED"] } },
       _sum: { refundAmountCents: true },
-    }),
-    prisma.order.count({
+    }) : Promise.resolve(null),
+    wantCore ? prisma.order.count({
       where: {
         createdAt: { gte: from, lte: to },
         OR: [
@@ -119,38 +92,31 @@ async function computePeriod({ from, to }: PeriodInput): Promise<PeriodStats> {
           { status: "PENDING", NOT: { paymentProvider: "bonifico" } },
         ],
       },
-    }),
-    prisma.$queryRaw<{ n: bigint }[]>(Prisma.sql`
+    }) : Promise.resolve(0),
+    wantCore ? prisma.$queryRaw<{ n: bigint }[]>(Prisma.sql`
       SELECT COUNT(DISTINCT IFNULL(ipHash, id)) AS n
       FROM PageView
       WHERE host = 'STORE' AND createdAt >= ${from} AND createdAt <= ${to}
-    `),
-    prisma.$queryRaw<{ name: string; sku: string; qty: bigint; rev: bigint }[]>(Prisma.sql`
+    `) : Promise.resolve([] as { n: bigint }[]),
+    wantCore ? prisma.order.findMany({
+      where: { createdAt: { gte: from, lte: to }, status: { in: [...SALES_STATUSES] } },
+      select: { email: true }, distinct: ["email"],
+    }) : Promise.resolve([] as { email: string }[]),
+    wantHeavy ? prisma.$queryRaw<{ name: string; sku: string; qty: bigint; rev: bigint }[]>(Prisma.sql`
       SELECT oi.productName AS name, oi.sku AS sku,
-             SUM(oi.quantity) AS qty,
-             SUM(oi.totalCents) AS rev
+             SUM(oi.quantity) AS qty, SUM(oi.totalCents) AS rev
       FROM OrderItem oi
       JOIN \`Order\` o ON o.id = oi.orderId
       WHERE o.status IN (${Prisma.join([...SALES_STATUSES])})
         AND o.createdAt >= ${from} AND o.createdAt <= ${to}
-      GROUP BY oi.productName, oi.sku
-      ORDER BY rev DESC
-      LIMIT 10
-    `),
-    prisma.order.findMany({
-      where: { createdAt: { gte: from, lte: to }, status: { in: [...SALES_STATUSES] } },
-      select: { email: true },
-      distinct: ["email"],
-    }),
-    prisma.$queryRaw<{ referrer: string | null; n: bigint }[]>(Prisma.sql`
-      SELECT referrer, COUNT(*) AS n
-      FROM PageView
+      GROUP BY oi.productName, oi.sku ORDER BY rev DESC LIMIT 10
+    `) : Promise.resolve([] as { name: string; sku: string; qty: bigint; rev: bigint }[]),
+    wantHeavy ? prisma.$queryRaw<{ referrer: string | null; n: bigint }[]>(Prisma.sql`
+      SELECT referrer, COUNT(*) AS n FROM PageView
       WHERE host = 'STORE' AND createdAt >= ${from} AND createdAt <= ${to}
-      GROUP BY referrer
-      ORDER BY n DESC
-      LIMIT 200
-    `),
-    prisma.$queryRaw<{ name: string; slug: string; qty: bigint; rev: bigint }[]>(Prisma.sql`
+      GROUP BY referrer ORDER BY n DESC LIMIT 200
+    `) : Promise.resolve([] as { referrer: string | null; n: bigint }[]),
+    wantHeavy ? prisma.$queryRaw<{ name: string; slug: string; qty: bigint; rev: bigint }[]>(Prisma.sql`
       SELECT p.name AS name, p.slug AS slug,
              COALESCE(SUM(oi.quantity), 0) AS qty,
              COALESCE(SUM(oi.totalCents), 0) AS rev
@@ -163,45 +129,24 @@ async function computePeriod({ from, to }: PeriodInput): Promise<PeriodStats> {
         AND o.createdAt >= ${from} AND o.createdAt <= ${to}
       WHERE sp.isPublished = 1
       GROUP BY sp.id, p.name, p.slug
-      ORDER BY qty ASC, rev ASC
-      LIMIT 10
-    `),
+      ORDER BY qty ASC, rev ASC LIMIT 10
+    `) : Promise.resolve([] as { name: string; slug: string; qty: bigint; rev: bigint }[]),
   ]);
 
-  // 1. Fatturato
-  const grossCents = sales._sum.totalCents || 0;
-  const refundCents = refunds._sum.refundAmountCents || 0;
+  // CORE
+  const grossCents = sales?._sum.totalCents || 0;
+  const refundCents = refunds?._sum.refundAmountCents || 0;
   const revenueCents = grossCents - refundCents;
-  const orderCount = sales._count._all;
+  const orderCount = sales?._count._all || 0;
   const aovCents = orderCount > 0 ? Math.round(revenueCents / orderCount) : 0;
-
-  // 2. Visitatori unici + conversion
-  const uniqueVisitors = Number(visitorsRow[0]?.n || 0);
+  const uniqueVisitors = Number(visitorsRow?.[0]?.n || 0);
   const conversionRate = uniqueVisitors > 0 ? (orderCount / uniqueVisitors) * 100 : 0;
+  const abandonedCount = abandoned || 0;
 
-  // 3. Top prodotti
-  const topProducts: ProductRow[] = topRows.map((r) => ({
-    name: r.name,
-    slug: r.sku,
-    quantity: Number(r.qty),
-    revenueCents: Number(r.rev),
-  }));
-
-  // 4. Bottom prodotti — singola query SQL con LEFT JOIN: ogni StoreProduct
-  // pubblicato è sempre presente nel risultato; le sue vendite nel periodo
-  // (eventualmente 0) entrano nei SUM, ordinati ascendenti.
-  const bottomProducts: ProductRow[] = bottomRows.map((r) => ({
-    name: r.name || "—",
-    slug: r.slug || null,
-    quantity: Number(r.qty),
-    revenueCents: Number(r.rev),
-  }));
-
-  // 5. Clienti nuovi vs ricorrenti
+  // New vs Recurring
   const emails = distinctEmails.map((o) => o.email);
-  let newCustomers = 0;
-  let recurringCustomers = 0;
-  if (emails.length > 0) {
+  let newCustomers = 0, recurringCustomers = 0;
+  if (wantCore && emails.length > 0) {
     const firstOrders = await prisma.order.groupBy({
       by: ["email"],
       where: { email: { in: emails }, status: { in: [...SALES_STATUSES] } },
@@ -214,7 +159,13 @@ async function computePeriod({ from, to }: PeriodInput): Promise<PeriodStats> {
     }
   }
 
-  // 6. Canali (referrer breakdown)
+  // HEAVY
+  const topProducts: ProductRow[] = topRows.map((r) => ({
+    name: r.name, slug: r.sku, quantity: Number(r.qty), revenueCents: Number(r.rev),
+  }));
+  const bottomProducts: ProductRow[] = bottomRows.map((r) => ({
+    name: r.name || "—", slug: r.slug || null, quantity: Number(r.qty), revenueCents: Number(r.rev),
+  }));
   const channelMap = new Map<string, number>();
   for (const r of channelRows) {
     const ch = channelFromReferrer(r.referrer);
@@ -226,20 +177,12 @@ async function computePeriod({ from, to }: PeriodInput): Promise<PeriodStats> {
     .slice(0, 8);
 
   return {
-    from: from.toISOString(),
-    to: to.toISOString(),
-    periodDays,
-    revenueCents,
-    orderCount,
-    aovCents,
-    uniqueVisitors,
-    conversionRate,
-    abandonedCount: abandoned,
-    newCustomers,
-    recurringCustomers,
-    topProducts,
-    bottomProducts,
-    channels,
+    from: from.toISOString(), to: to.toISOString(), periodDays,
+    revenueCents, orderCount, aovCents,
+    uniqueVisitors, conversionRate,
+    abandonedCount,
+    newCustomers, recurringCustomers,
+    topProducts, bottomProducts, channels,
   };
 }
 
@@ -249,47 +192,46 @@ export async function GET(req: NextRequest) {
 
   const sp = req.nextUrl.searchParams;
   const now = new Date();
-  const defaultFrom = new Date(now.getTime() - 30 * 86400000); // ultimi 30 gg
+  const defaultFrom = new Date(now.getTime() - 30 * 86400000);
   const from = parseDate(sp.get("from"), defaultFrom);
   const to = parseDate(sp.get("to"), now);
   const wantCompare = sp.get("compare") !== "0";
+  const kindParam = sp.get("kind");
+  const kind: "core" | "heavy" | "all" =
+    kindParam === "core" ? "core" : kindParam === "heavy" ? "heavy" : "all";
 
-  // Current + (eventuale) Compare + totali storici: tutti in parallelo.
   const cmpRange = wantCompare
     ? { from: parseDate(sp.get("compareFrom"), defaultCompare(from, to).from),
         to: parseDate(sp.get("compareTo"), defaultCompare(from, to).to) }
     : null;
 
   const [current, compare, totalsRow, totalsRefund] = await Promise.all([
-    computePeriod({ from, to }),
-    cmpRange ? computePeriod(cmpRange) : Promise.resolve(null),
-    prisma.order.aggregate({
+    computePeriod({ from, to }, kind),
+    cmpRange ? computePeriod(cmpRange, kind) : Promise.resolve(null),
+    // I totali storici hanno senso solo sul primo fetch (kind=core o all): salto su heavy.
+    kind === "heavy" ? Promise.resolve(null) : prisma.order.aggregate({
       where: { status: { in: [...SALES_STATUSES] } },
-      _sum: { totalCents: true },
-      _count: { _all: true },
+      _sum: { totalCents: true }, _count: { _all: true },
     }),
-    prisma.order.aggregate({
+    kind === "heavy" ? Promise.resolve(null) : prisma.order.aggregate({
       where: { status: { in: ["REFUNDED", "PARTIALLY_REFUNDED"] } },
       _sum: { refundAmountCents: true },
     }),
   ]);
 
-  const res = NextResponse.json({
-    success: true,
-    data: {
-      current,
-      compare,
-      totals: {
-        revenueCents: (totalsRow._sum.totalCents || 0) - (totalsRefund._sum.refundAmountCents || 0),
-        orderCount: totalsRow._count._all,
-      },
-    },
-  });
-  // Cache lato browser/CDN per 60s con stale-while-revalidate 120s.
-  // Il browser invalida automaticamente quando cambia from/to/compare nella
-  // querystring (URL diversa = cache key diverso), quindi il selettore
-  // periodo rimane reattivo, ma click rapidi tra periodi già visti sono
-  // istantanei.
+  const data: {
+    current: PeriodStats;
+    compare: PeriodStats | null;
+    totals?: { revenueCents: number; orderCount: number };
+  } = { current, compare };
+  if (totalsRow && totalsRefund) {
+    data.totals = {
+      revenueCents: (totalsRow._sum.totalCents || 0) - (totalsRefund._sum.refundAmountCents || 0),
+      orderCount: totalsRow._count._all,
+    };
+  }
+
+  const res = NextResponse.json({ success: true, data });
   res.headers.set("Cache-Control", "private, max-age=60, stale-while-revalidate=120");
   return res;
 }

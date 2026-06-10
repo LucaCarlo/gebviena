@@ -259,6 +259,9 @@ export interface NewsImageTextBgData {
   imagePosition: "left" | "right";
   ctaLabel?: string;
   ctaHref?: string;
+  // Solo se imageUrl è un file video: true = autoplay muted loop (background),
+  // false/undefined = controls visibili, l'utente clicca play.
+  videoAutoplay?: boolean;
 }
 
 export interface NewsThreeImagesData {
@@ -269,6 +272,7 @@ export interface NewsSingleImageData {
   imageUrl: string;
   caption?: string;
   videoUrl?: string;
+  videoAutoplay?: boolean;
 }
 
 export interface NewsImageWithParagraphData {
@@ -276,6 +280,7 @@ export interface NewsImageWithParagraphData {
   videoUrl?: string;
   title?: string;
   body: string;
+  videoAutoplay?: boolean;
 }
 
 export interface NewsFullwidthBannerData {
@@ -283,6 +288,7 @@ export interface NewsFullwidthBannerData {
   title: string;
   ctaLabel?: string;
   ctaHref?: string;
+  videoAutoplay?: boolean;
 }
 
 // Titolo grande in Libre Caslon Text — sezione editoriale per stacchi di
