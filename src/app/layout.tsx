@@ -1,12 +1,24 @@
 import type { Metadata } from "next";
-import { Work_Sans } from "next/font/google";
+import { Work_Sans, Libre_Caslon_Text } from "next/font/google";
 import Script from "next/script";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import "./globals.css";
 
+// Pesi 300..700 servono all'editor delle news per scegliere il peso del testo.
 const workSans = Work_Sans({
   subsets: ["latin"],
   variable: "--font-work-sans",
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
+
+// Libre Caslon Text: pesi disponibili 400 e 700, con varianti italic.
+const caslon = Libre_Caslon_Text({
+  subsets: ["latin"],
+  variable: "--font-caslon",
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -33,20 +45,54 @@ async function loadIubendaConfig() {
   }
 }
 
+async function loadGtmId(): Promise<string> {
+  try {
+    const host = (headers().get("host") || "").toLowerCase();
+    const isStore = host.startsWith("store.");
+    const rows = await prisma.setting.findMany({ where: { group: "analytics" } });
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+    return ((isStore ? map.get("gtm_store_id") : map.get("gtm_site_id")) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+async function loadFbPixelId(): Promise<string> {
+  try {
+    const row = await prisma.setting.findUnique({ where: { key: "store.fb_pixel_id" } });
+    const v = (row?.value || "").trim();
+    // Se non configurato, mantiene il pixel storico (nessuna regressione di tracciamento).
+    return v || META_PIXEL_ID;
+  } catch {
+    return META_PIXEL_ID;
+  }
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const iub = await loadIubendaConfig();
+  const gtmId = await loadGtmId();
+  const fbPixelId = await loadFbPixelId();
   return (
     <html lang="it">
       <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap"
-          rel="stylesheet"
-        />
-        <Script id="meta-pixel" strategy="afterInteractive">{`
+        {gtmId && (
+          <Script id="gtm-loader" strategy="afterInteractive">{`
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer','${gtmId}');
+          `}</Script>
+        )}
+        {fbPixelId && (
+          // beforeInteractive: lo stub window.fbq deve esistere prima che i componenti
+          // client (es. ProductDetail) eseguano i loro useEffect e chiamino fbTrack().
+          // Con afterInteractive ViewContent / AddToCart / AddToWishlist si perdevano.
+          <Script id="meta-pixel" strategy="beforeInteractive">{`
             !function(f,b,e,v,n,t,s)
             {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
             n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -55,20 +101,32 @@ export default async function RootLayout({
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${META_PIXEL_ID}');
+            fbq('init', '${fbPixelId}');
             fbq('track', 'PageView');
           `}</Script>
-        <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: "none" }}
-            src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
-            alt=""
-          />
-        </noscript>
+        )}
+        {fbPixelId && (
+          <noscript>
+            <img
+              height="1"
+              width="1"
+              style={{ display: "none" }}
+              src={`https://www.facebook.com/tr?id=${fbPixelId}&ev=PageView&noscript=1`}
+              alt=""
+            />
+          </noscript>
+        )}
       </head>
-      <body className={`${workSans.variable} antialiased bg-white`}>
+      <body className={`${workSans.variable} ${caslon.variable} antialiased bg-white`}>
+        {gtmId && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+              height="0" width="0" style={{ display: "none", visibility: "hidden" }}
+              title="gtm"
+            />
+          </noscript>
+        )}
         {children}
         <Script id="iubenda-config" strategy="afterInteractive">{`
             var _iub = _iub || [];

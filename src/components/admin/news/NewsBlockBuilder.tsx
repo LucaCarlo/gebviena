@@ -2,26 +2,30 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
-  GripVertical, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Plus,
+  GripVertical, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Plus, Copy,
   Type, LayoutTemplate, Grid3x3, Image as ImageIcon, Share2, Package, AlignCenter, Maximize2,
 } from "lucide-react";
 import type {
   NewsBlockV2, NewsBlockV2Type,
   NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
+  NewsCaslonTitleData, NewsTwoImagesInlineData,
 } from "@/types";
 import {
   ParagraphEditor, ImageTextBgEditor, ThreeImagesEditor, SingleImageEditor,
   ImageWithParagraphEditor, FullwidthBannerEditor, ProductEditor, ShareInfo, RelatedInfo,
+  CaslonTitleEditor, TwoImagesInlineEditor,
 } from "./NewsBlockEditors";
 
 const MENU: { type: NewsBlockV2Type; icon: React.ElementType; label: string }[] = [
+  { type: "caslon_title", icon: Type, label: "Titolo (Caslon)" },
+  { type: "paragraph", icon: Type, label: "Paragrafo" },
   { type: "image_text_bg", icon: LayoutTemplate, label: "Immagine + Testo (sfondo)" },
   { type: "three_images", icon: Grid3x3, label: "Tre immagini" },
+  { type: "two_images_inline", icon: Grid3x3, label: "Due foto affiancate" },
   { type: "single_image", icon: ImageIcon, label: "Immagine singola" },
   { type: "image_with_paragraph", icon: AlignCenter, label: "Immagine + paragrafo centrato" },
   { type: "fullwidth_banner", icon: Maximize2, label: "Banner full-width con testo" },
-  { type: "paragraph", icon: Type, label: "Paragrafo" },
   { type: "product", icon: Package, label: "Prodotto correlato" },
   { type: "share", icon: Share2, label: "Condividi" },
 ];
@@ -38,6 +42,8 @@ function defaultData(t: NewsBlockV2Type): NewsBlockV2["data"] {
     case "single_image": return { imageUrl: "", caption: "" } satisfies NewsSingleImageData;
     case "image_with_paragraph": return { imageUrl: "", title: "", body: "" } satisfies NewsImageWithParagraphData;
     case "fullwidth_banner": return { imageUrl: "", title: "", ctaLabel: "", ctaHref: "" } satisfies NewsFullwidthBannerData;
+    case "caslon_title": return { text: "", align: "center" } satisfies NewsCaslonTitleData;
+    case "two_images_inline": return { images: [{ url: "" }, { url: "" }], align: "center", caption: "" } satisfies NewsTwoImagesInlineData;
     case "product": return { productId: "" } satisfies NewsProductData;
     case "share": return {};
     case "related": return {};
@@ -89,6 +95,20 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
   const add = (t: NewsBlockV2Type) => { commit([...blocks, { id: crypto.randomUUID(), type: t, data: defaultData(t) }]); setMenuOpen(false); };
   const upd = (id: string, d: NewsBlockV2["data"]) => commit(blocks.map((b) => b.id === id ? { ...b, data: d } : b));
   const del = (id: string) => commit(blocks.filter((b) => b.id !== id));
+  const duplicate = (i: number) => {
+    const src = blocks[i];
+    if (!src) return;
+    // Deep-copy della data: usiamo JSON parse/stringify perché tutti i payload
+    // dei block sono dati semplici (no Date/Map/funzioni).
+    const copy: NewsBlockV2 = {
+      id: crypto.randomUUID(),
+      type: src.type,
+      data: JSON.parse(JSON.stringify(src.data)),
+    };
+    const next = [...blocks];
+    next.splice(i + 1, 0, copy);
+    commit(next);
+  };
   const move = (i: number, dir: "up" | "down") => {
     const t = dir === "up" ? i - 1 : i + 1;
     if (t < 0 || t >= blocks.length) return;
@@ -107,6 +127,8 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
       case "single_image": return <SingleImageEditor data={b.data as NewsSingleImageData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsSingleImageData> | undefined} />;
       case "image_with_paragraph": return <ImageWithParagraphEditor data={b.data as NewsImageWithParagraphData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsImageWithParagraphData> | undefined} />;
       case "fullwidth_banner": return <FullwidthBannerEditor data={b.data as NewsFullwidthBannerData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsFullwidthBannerData> | undefined} />;
+      case "caslon_title": return <CaslonTitleEditor data={b.data as NewsCaslonTitleData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsCaslonTitleData> | undefined} />;
+      case "two_images_inline": return <TwoImagesInlineEditor data={b.data as NewsTwoImagesInlineData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsTwoImagesInlineData> | undefined} />;
       case "product": return <ProductEditor data={b.data as NewsProductData} onChange={(d) => upd(b.id, d)} />;
       case "share": return <ShareInfo />;
       case "related": return <RelatedInfo />;
@@ -128,10 +150,11 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
                 {LABELS[b.type]}
               </span>
               <div className="flex-1" />
-              <button type="button" onClick={() => move(i, "up")} disabled={i === 0} className="p-1.5 rounded text-warm-400 hover:text-warm-700 hover:bg-warm-100 disabled:opacity-30"><ArrowUp size={14} /></button>
-              <button type="button" onClick={() => move(i, "down")} disabled={i === blocks.length - 1} className="p-1.5 rounded text-warm-400 hover:text-warm-700 hover:bg-warm-100 disabled:opacity-30"><ArrowDown size={14} /></button>
-              <button type="button" onClick={() => toggle(b.id)} className="p-1.5 rounded text-warm-400 hover:text-warm-700 hover:bg-warm-100">{isC ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</button>
-              <button type="button" onClick={() => del(b.id)} className="p-1.5 rounded text-warm-400 hover:text-red-600 hover:bg-red-50"><Trash2 size={14} /></button>
+              <button type="button" onClick={() => move(i, "up")} disabled={i === 0} className="p-1.5 rounded text-warm-400 hover:text-warm-700 hover:bg-warm-100 disabled:opacity-30" title="Sposta su"><ArrowUp size={14} /></button>
+              <button type="button" onClick={() => move(i, "down")} disabled={i === blocks.length - 1} className="p-1.5 rounded text-warm-400 hover:text-warm-700 hover:bg-warm-100 disabled:opacity-30" title="Sposta giù"><ArrowDown size={14} /></button>
+              <button type="button" onClick={() => duplicate(i)} className="p-1.5 rounded text-warm-400 hover:text-warm-700 hover:bg-warm-100" title="Duplica sezione"><Copy size={14} /></button>
+              <button type="button" onClick={() => toggle(b.id)} className="p-1.5 rounded text-warm-400 hover:text-warm-700 hover:bg-warm-100" title={isC ? "Espandi" : "Comprimi"}>{isC ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</button>
+              <button type="button" onClick={() => del(b.id)} className="p-1.5 rounded text-warm-400 hover:text-red-600 hover:bg-red-50" title="Elimina sezione"><Trash2 size={14} /></button>
             </div>
             {!isC && <div className="px-4 py-4">{render(b)}</div>}
           </div>
