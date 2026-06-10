@@ -88,20 +88,10 @@ async function computePeriod({ from, to }: PeriodInput): Promise<PeriodStats> {
   const periodDays = diffDays(from, to);
 
   // Tutte le query del periodo girano IN PARALLELO (Promise.all): le query
-  // più lente sono quelle su PageView (COUNT DISTINCT) e l'aggregazione
+  // più lente sono quelle su PageView (COUNT DISTINCT) e le aggregazioni
   // OrderItem; in serie il tempo si somma, in parallelo viene capped sulla
-  // più lenta. Nessuna dipende dal risultato di un'altra (la lista dei
-  // variantId per la query "salesByVariant" la prendiamo dal subset di
-  // tutti gli StoreProduct: serve un piccolo trick con chaining).
-  const allProductsPromise = prisma.storeProduct.findMany({
-    where: { isPublished: true },
-    select: {
-      id: true,
-      product: { select: { name: true, slug: true } },
-      variants: { select: { id: true } },
-    },
-  });
-
+  // più lenta. NB: anche bottom-products è ora una singola query SQL con
+  // LEFT JOIN per evitare due round-trip + N-merge JS lato Node.
   const [
     sales,
     refunds,
@@ -110,7 +100,7 @@ async function computePeriod({ from, to }: PeriodInput): Promise<PeriodStats> {
     topRows,
     distinctEmails,
     channelRows,
-    allProducts,
+    bottomRows,
   ] = await Promise.all([
     prisma.order.aggregate({
       where: { createdAt: { gte: from, lte: to }, status: { in: [...SALES_STATUSES] } },
@@ -160,7 +150,22 @@ async function computePeriod({ from, to }: PeriodInput): Promise<PeriodStats> {
       ORDER BY n DESC
       LIMIT 200
     `),
-    allProductsPromise,
+    prisma.$queryRaw<{ name: string; slug: string; qty: bigint; rev: bigint }[]>(Prisma.sql`
+      SELECT p.name AS name, p.slug AS slug,
+             COALESCE(SUM(oi.quantity), 0) AS qty,
+             COALESCE(SUM(oi.totalCents), 0) AS rev
+      FROM StoreProduct sp
+      JOIN Product p ON p.id = sp.productId
+      LEFT JOIN StoreProductVariant spv ON spv.storeProductId = sp.id
+      LEFT JOIN OrderItem oi ON oi.variantId = spv.id
+      LEFT JOIN \`Order\` o ON o.id = oi.orderId
+        AND o.status IN (${Prisma.join([...SALES_STATUSES])})
+        AND o.createdAt >= ${from} AND o.createdAt <= ${to}
+      WHERE sp.isPublished = 1
+      GROUP BY sp.id, p.name, p.slug
+      ORDER BY qty ASC, rev ASC
+      LIMIT 10
+    `),
   ]);
 
   // 1. Fatturato
@@ -182,35 +187,15 @@ async function computePeriod({ from, to }: PeriodInput): Promise<PeriodStats> {
     revenueCents: Number(r.rev),
   }));
 
-  // 4. Bottom prodotti: per ognuno calcolo le vendite del periodo sulle sue
-  // varianti. Una query aggiuntiva sole sulle varianti del catalogo (con
-  // IN-clause limitata): la lanciamo solo se ci sono prodotti.
-  const variantIdsByProduct = new Map<string, string[]>();
-  for (const p of allProducts) variantIdsByProduct.set(p.id, p.variants.map((v) => v.id));
-  const allVariantIds = allProducts.flatMap((p) => p.variants.map((v) => v.id));
-  let salesByVariant: Map<string, { qty: number; rev: number }> = new Map();
-  if (allVariantIds.length > 0) {
-    const rows = await prisma.$queryRaw<{ variantId: string; qty: bigint; rev: bigint }[]>(Prisma.sql`
-      SELECT oi.variantId AS variantId, SUM(oi.quantity) AS qty, SUM(oi.totalCents) AS rev
-      FROM OrderItem oi
-      JOIN \`Order\` o ON o.id = oi.orderId
-      WHERE o.status IN (${Prisma.join([...SALES_STATUSES])})
-        AND o.createdAt >= ${from} AND o.createdAt <= ${to}
-        AND oi.variantId IN (${Prisma.join(allVariantIds)})
-      GROUP BY oi.variantId
-    `);
-    salesByVariant = new Map(rows.map((r) => [r.variantId, { qty: Number(r.qty), rev: Number(r.rev) }]));
-  }
-  const productSales: ProductRow[] = allProducts.map((p) => {
-    let qty = 0, rev = 0;
-    for (const vid of variantIdsByProduct.get(p.id) || []) {
-      const s = salesByVariant.get(vid);
-      if (s) { qty += s.qty; rev += s.rev; }
-    }
-    return { name: p.product?.name || "—", slug: p.product?.slug || null, quantity: qty, revenueCents: rev };
-  });
-  productSales.sort((a, b) => a.quantity - b.quantity || a.revenueCents - b.revenueCents);
-  const bottomProducts = productSales.slice(0, 10);
+  // 4. Bottom prodotti — singola query SQL con LEFT JOIN: ogni StoreProduct
+  // pubblicato è sempre presente nel risultato; le sue vendite nel periodo
+  // (eventualmente 0) entrano nei SUM, ordinati ascendenti.
+  const bottomProducts: ProductRow[] = bottomRows.map((r) => ({
+    name: r.name || "—",
+    slug: r.slug || null,
+    quantity: Number(r.qty),
+    revenueCents: Number(r.rev),
+  }));
 
   // 5. Clienti nuovi vs ricorrenti
   const emails = distinctEmails.map((o) => o.email);
@@ -289,7 +274,7 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  return NextResponse.json({
+  const res = NextResponse.json({
     success: true,
     data: {
       current,
@@ -300,4 +285,11 @@ export async function GET(req: NextRequest) {
       },
     },
   });
+  // Cache lato browser/CDN per 60s con stale-while-revalidate 120s.
+  // Il browser invalida automaticamente quando cambia from/to/compare nella
+  // querystring (URL diversa = cache key diverso), quindi il selettore
+  // periodo rimane reattivo, ma click rapidi tra periodi già visti sono
+  // istantanei.
+  res.headers.set("Cache-Control", "private, max-age=60, stale-while-revalidate=120");
+  return res;
 }

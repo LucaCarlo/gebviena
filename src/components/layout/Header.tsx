@@ -7,15 +7,32 @@ import Link from "next/link";
 import MobileMenu from "./MobileMenu";
 import SearchPanel from "./SearchPanel";
 import HeaderLanguageSwitcher from "./HeaderLanguageSwitcher";
+import { useT, useLang } from "@/contexts/I18nContext";
 
 export default function Header() {
   const pathname = usePathname();
   const canonicalPath = pathname.replace(/^\/(en|de|fr)(?=\/|$)/, "") || "/";
   const isHomepage = canonicalPath === "/";
+  const t = useT();
+  const lang = useLang();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [proUnread, setProUnread] = useState(0);
+  const proHref = lang === "it" ? "/area-professionisti/accesso" : `/${lang}/area-professionisti/accesso`;
   const heroEndRef = useRef(0);
+
+  // Conteggio notifiche non lette per il professionista loggato.
+  // L'endpoint risponde { unread: N } se loggato, { unread: 0 } se no — quindi
+  // sicuro da chiamare anche su navigazione anonima (nessun 401 in console).
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/area-professionisti/notifications/unread-count", { cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((j) => { if (!cancelled && j?.success) setProUnread(Number(j.unread) || 0); })
+      .catch(() => { /* silent */ });
+    return () => { cancelled = true; };
+  }, [pathname]);
 
   useEffect(() => {
     if (!isHomepage) {
@@ -99,8 +116,26 @@ export default function Header() {
               </Link>
             </div>
 
-            {/* Right — language + search */}
+            {/* Right — area professionisti + language + search */}
             <div className="flex items-center gap-4 md:gap-6">
+              <Link
+                href={proHref}
+                className={`hidden md:inline-flex items-center gap-1.5 relative uppercase text-[14px] tracking-[0.03em] font-medium transition-colors hover:underline ${
+                  isScrolled ? "!text-black" : "text-white"
+                }`}
+                style={{ textUnderlineOffset: "6px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+                aria-label={t("pro.header.link")}
+              >
+                {t("pro.header.link")}
+                {proUnread > 0 && (
+                  <span
+                    className="inline-block w-2 h-2 rounded-full bg-red-500"
+                    style={{ boxShadow: "0 0 0 2px rgba(255,255,255,0.85)" }}
+                    aria-label={`${proUnread} novità non lette`}
+                    title={`${proUnread} ${proUnread === 1 ? "novità non letta" : "novità non lette"} in bacheca`}
+                  />
+                )}
+              </Link>
               <HeaderLanguageSwitcher isScrolled={isScrolled} />
               <button
                 onClick={() => setIsSearchOpen(true)}

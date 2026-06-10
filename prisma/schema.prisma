@@ -1148,10 +1148,50 @@ model Professional {
   lastLoginAt    DateTime?
   approvedAt     DateTime?
 
+  notificationReads ProfessionalNotificationRead[]
+
   @@index([role])
   @@index([createdAt])
   @@index([isActive])
   @@index([pendingApproval])
+}
+
+// Bacheca novità per l'area professionisti. Ogni record è una "novità"
+// visibile a un sottoinsieme di ruoli (audience) o a tutti (audience NULL).
+// Per ciascun professionista, lo stato letto/non-letto è tracciato in
+// ProfessionalNotificationRead.
+model ProfessionalNotification {
+  id        String   @id @default(cuid())
+  // Tipo libero ma controllato dall'UI: "catalog", "price_list", "media",
+  // "credentials", "info", "update".
+  type      String   @default("update") @db.VarChar(32)
+  title     String   @db.VarChar(255)
+  body      String?  @db.Text
+  // Link interno (es. /area-professionisti/cataloghi) o esterno.
+  link      String?  @db.VarChar(500)
+  // Audience: NULL = tutti i ruoli; altrimenti uno tra ARCHITECT_DESIGNER /
+  // PRESS / RESELLER / AGENT — il prof vede solo le notifiche dove
+  // audience IS NULL OR audience = role.
+  audience  String?  @db.VarChar(32)
+  createdAt DateTime @default(now())
+
+  reads ProfessionalNotificationRead[]
+
+  @@index([createdAt])
+  @@index([audience])
+}
+
+model ProfessionalNotificationRead {
+  id             String   @id @default(cuid())
+  professionalId String
+  notificationId String
+  readAt         DateTime @default(now())
+
+  professional Professional             @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  notification ProfessionalNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([professionalId, notificationId])
+  @@index([professionalId])
 }
 
 // ─── Store: Geography ──────────────────────────────────────────────────
