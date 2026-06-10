@@ -18,7 +18,7 @@ interface OrderSummary {
 }
 
 const eur = (cents: number, currency = "EUR") =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency }).format(cents / 100);
 
 export default function SuccessPage() {
   return (

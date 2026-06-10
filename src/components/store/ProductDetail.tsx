@@ -109,7 +109,7 @@ function parseList(s: string | null): string[] {
 }
 
 const eur = (cents: number) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 
 function renderMarkdown(md: string): string {
   const lines = md.split(/\r?\n/);

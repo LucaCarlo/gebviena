@@ -47,7 +47,7 @@ interface OrderFull {
 }
 
 function eur(cents: number) {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+  return new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 }
 function fmtDate(d: string | null) {
   if (!d) return "-";

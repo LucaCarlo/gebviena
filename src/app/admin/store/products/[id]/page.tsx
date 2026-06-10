@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-  Loader2, Check, X, ArrowLeft, Plus, Pencil, Trash2, Star, Image as ImageIcon, Calculator, Package, Truck, AlertCircle, Eye, EyeOff,
+  Loader2, Check, X, ArrowLeft, Plus, Pencil, Trash2, Star, Image as ImageIcon, Calculator, Package, Truck, AlertCircle, Eye, EyeOff, Copy,
 } from "lucide-react";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 import GalleryUploadField from "@/components/admin/GalleryUploadField";
@@ -620,8 +620,24 @@ function VariantsTab({
   showToast: (msg: string, ok: boolean) => void;
 }) {
   const [editing, setEditing] = useState<Variant | null>(null);
-  const [creating, setCreating] = useState(false);
+  // `creating` ora può essere null oppure una Variant precompilata: serve per
+  // gestire sia la "Nuova variante" (initial=emptyVariant) sia la duplicazione
+  // di una variante esistente (initial=clone con sku modificato).
+  const [creating, setCreating] = useState<Variant | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const handleDuplicate = (v: Variant) => {
+    setCreating({
+      ...v,
+      id: "",
+      sku: `${v.sku} COPY`,
+      isDefault: false,
+      sortOrder: sp.variants.length,
+      // duplica anche le translations (con un new objects per evitare ref share)
+      translations: (v.translations || []).map((t) => ({ ...t })),
+      attributes: (v.attributes || []).map((a) => ({ ...a })),
+    });
+  };
 
   const handleSaveVariant = async (variant: Variant, isNew: boolean) => {
     setSaving(true);
@@ -660,7 +676,7 @@ function VariantsTab({
       if (data.success) {
         showToast(isNew ? "Variante creata" : "Variante aggiornata", true);
         setEditing(null);
-        setCreating(false);
+        setCreating(null);
         onRefresh();
       } else {
         showToast(data.error || "Errore", false);
@@ -714,7 +730,7 @@ function VariantsTab({
           {sp.variants.length} variant{sp.variants.length === 1 ? "e" : "i"}. Ogni variante rappresenta una combinazione di materiale/finitura/colore con SKU, prezzo, stock e volume propri.
         </div>
         <button
-          onClick={() => setCreating(true)}
+          onClick={() => setCreating(emptyVariant)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-warm-900 text-white rounded-lg hover:bg-warm-800 text-sm"
         >
           <Plus size={14} /> Nuova variante
@@ -732,6 +748,7 @@ function VariantsTab({
               key={v.id}
               variant={v}
               onEdit={() => setEditing({ ...v })}
+              onDuplicate={() => handleDuplicate(v)}
               onDelete={() => handleDelete(v.id)}
             />
           ))}
@@ -740,12 +757,12 @@ function VariantsTab({
 
       {creating && (
         <VariantModal
-          title="Nuova variante"
-          initial={emptyVariant}
+          title={creating.sku ? "Duplica variante" : "Nuova variante"}
+          initial={creating}
           attributes={attributes}
           dimensionBlocks={dimensionBlocks}
           onSave={(v) => handleSaveVariant(v, true)}
-          onCancel={() => setCreating(false)}
+          onCancel={() => setCreating(null)}
           saving={saving}
         />
       )}
@@ -765,8 +782,8 @@ function VariantsTab({
   );
 }
 
-function VariantCard({ variant: v, onEdit, onDelete }: { variant: Variant; onEdit: () => void; onDelete: () => void }) {
-  const priceFmt = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(v.priceCents / 100);
+function VariantCard({ variant: v, onEdit, onDuplicate, onDelete }: { variant: Variant; onEdit: () => void; onDuplicate: () => void; onDelete: () => void }) {
+  const priceFmt = new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(v.priceCents / 100);
   return (
     <div className="bg-white rounded-lg border border-warm-200 p-4 flex gap-4 items-start">
       {v.coverImage ? (
@@ -818,10 +835,13 @@ function VariantCard({ variant: v, onEdit, onDelete }: { variant: Variant; onEdi
         </div>
       </div>
       <div className="flex gap-1">
-        <button onClick={onEdit} className="p-2 text-warm-500 hover:text-warm-900 hover:bg-warm-100 rounded">
+        <button onClick={onEdit} title="Modifica" className="p-2 text-warm-500 hover:text-warm-900 hover:bg-warm-100 rounded">
           <Pencil size={14} />
         </button>
-        <button onClick={onDelete} className="p-2 text-red-500 hover:bg-red-50 rounded">
+        <button onClick={onDuplicate} title="Duplica" className="p-2 text-warm-500 hover:text-warm-900 hover:bg-warm-100 rounded">
+          <Copy size={14} />
+        </button>
+        <button onClick={onDelete} title="Elimina" className="p-2 text-red-500 hover:bg-red-50 rounded">
           <Trash2 size={14} />
         </button>
       </div>

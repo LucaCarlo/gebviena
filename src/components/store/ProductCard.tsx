@@ -23,7 +23,7 @@ export interface ProductCardData {
 }
 
 const eur = (cents: number) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 
 export default function ProductCard({ p, favorited, onFavoriteChange }: {
   p: ProductCardData;

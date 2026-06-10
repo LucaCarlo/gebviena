@@ -25,7 +25,7 @@ interface OrderRow {
 
 
 function eur(cents: number) {
-  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+  return new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 }
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" });

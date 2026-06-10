@@ -7,7 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useStoreT } from "@/lib/use-store-t";
 
 const eur = (cents: number) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 
 export default function CartPage() {
   const { items, subtotalCents, count, updateQuantity, removeItem } = useCart();

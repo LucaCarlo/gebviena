@@ -15,7 +15,7 @@ import { sendMail } from "@/lib/mail";
 import { getStoreGeneralConfig } from "@/lib/stripe-config";
 
 const eur = (cents: number) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 
 const COMPANY = {
   name: "Gebrüder Thonet Vienna",

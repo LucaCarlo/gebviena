@@ -65,7 +65,7 @@ const VISIBLE_STATUSES: OrderStatus[] = [
 const VISIBLE_SET = new Set<OrderStatus>(VISIBLE_STATUSES);
 
 const euro = (cents: number, currency: string) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency }).format(cents / 100);
 
 type PeriodKey = "today" | "7d" | "month" | "year" | "all" | "custom";
 
@@ -156,7 +156,7 @@ export default function StoreOrdersPage() {
       .catch(() => { /* silent */ });
   }, [from, to]);
 
-  const eurFmt = (cents: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(cents / 100);
+  const eurFmt = (cents: number) => new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 
   return (
     <div>

@@ -83,7 +83,7 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 };
 
 const euro = (cents: number, currency: string) =>
-  new Intl.NumberFormat("it-IT", { style: "currency", currency }).format(cents / 100);
+  new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency }).format(cents / 100);
 
 function parseAddress(json: string): Record<string, string> {
   try { return JSON.parse(json); } catch { return {}; }
