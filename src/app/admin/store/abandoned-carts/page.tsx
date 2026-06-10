@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2, Search, ShoppingBag, Clock, AlertTriangle, Ban, XCircle, Trash2 } from "lucide-react";
+import { Loader2, Search, ShoppingBag, Clock, AlertTriangle, Ban, XCircle, Trash2, CheckCircle2 } from "lucide-react";
 import { humanizeStripeError } from "@/lib/stripe-error-labels";
 import { formatNumber } from "@/lib/format";
 
@@ -40,6 +40,7 @@ interface OrderListItem {
   storePickup: boolean;
   customer: { id: string; email: string; firstName: string | null; lastName: string | null } | null;
   items: { id: string; quantity: number }[];
+  duplicatePaid?: { id: string; orderNumber: string; status: OrderStatus; createdAt: string } | null;
 }
 
 // Stati che vanno qui (gestiti via API scope=pending):
@@ -144,6 +145,7 @@ export default function AbandonedCartsPage() {
 
   const totalBy = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
   const pendingStripe = orders.filter((o) => o.status === "PENDING" && o.paymentProvider !== "bonifico").length;
+  const failedWithDuplicate = orders.filter((o) => o.status === "PAYMENT_FAILED" && o.duplicatePaid).length;
   const totalValueCents = orders.reduce((s, o) => s + (o.totalCents || 0), 0);
   const eurFmt = (cents: number) => new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 
@@ -173,7 +175,12 @@ export default function AbandonedCartsPage() {
         <div className={`rounded-lg border px-3 py-2 bg-red-50 text-red-800 border-red-200 ${totalBy("PAYMENT_FAILED") === 0 ? "opacity-50" : ""}`}>
           <div className="text-[10px] font-medium uppercase tracking-wider">Errore pagamento</div>
           <div className="text-lg font-semibold mt-0.5 leading-tight">{formatNumber(totalBy("PAYMENT_FAILED"))}</div>
-          <div className="text-[10px] text-red-700 leading-tight">carta rifiutata</div>
+          <div className="text-[10px] text-red-700 leading-tight">
+            carta rifiutata
+            {failedWithDuplicate > 0 && (
+              <> · <span className="text-emerald-700 font-medium">{formatNumber(failedWithDuplicate)} duplicat{failedWithDuplicate === 1 ? "o" : "i"} pagat{failedWithDuplicate === 1 ? "o" : "i"}</span></>
+            )}
+          </div>
         </div>
         <div className="rounded-lg border px-3 py-2 bg-warm-100 text-warm-900 border-warm-300">
           <div className="text-[10px] font-medium uppercase tracking-wider">Valore totale</div>
@@ -248,6 +255,16 @@ export default function AbandonedCartsPage() {
                     const isBonifico = o.paymentProvider === "bonifico";
                     return <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded ${isBonifico ? "bg-amber-50 text-amber-800" : "bg-warm-100 text-warm-700"}`}>{lbl}</span>;
                   })()}
+                  {o.duplicatePaid && (
+                    <Link
+                      href={`/admin/store/orders/${o.duplicatePaid.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                      title="Esiste un ordine pagato con stessa email e stesso totale — il cliente ha riprovato e pagato"
+                    >
+                      <CheckCircle2 size={10} /> Pagato come #{o.duplicatePaid.orderNumber}
+                    </Link>
+                  )}
                   <button
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteCart(o.id); }}
                     disabled={deletingId === o.id}
@@ -316,6 +333,18 @@ export default function AbandonedCartsPage() {
                         <Icon size={11} />
                         {statusLabel(o)}
                       </span>
+                      {o.duplicatePaid && (
+                        <div className="mt-1">
+                          <Link
+                            href={`/admin/store/orders/${o.duplicatePaid.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                            title="Esiste un ordine pagato con stessa email e stesso totale — il cliente ha riprovato e pagato"
+                          >
+                            <CheckCircle2 size={11} /> Pagato come #{o.duplicatePaid.orderNumber}
+                          </Link>
+                        </div>
+                      )}
                       {o.status === "PAYMENT_FAILED" && o.paymentErrorMessage && (() => {
                         const h = humanizeStripeError(o.paymentErrorMessage);
                         return (
