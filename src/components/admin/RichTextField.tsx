@@ -54,9 +54,14 @@ function sanitize(html: string): string {
     }
     if (tag === "div" || tag === "p") {
       const styles = pickStyles(el);
-      // Se il blocco ha solo text-align lo manteniamo come <div style="...">,
-      // altrimenti usiamo il vecchio comportamento (flatten in <br>).
+      // Se il blocco ha text-align (inline style) lo manteniamo come <div style="...">.
       if (styles.includes("text-align")) return `<div${styles}>${inner || "<br>"}</div>`;
+      // Fallback: alcuni browser (Firefox storico) usano l'attributo align="...".
+      const alignAttr = (el.getAttribute("align") || "").toLowerCase();
+      if (alignAttr === "left" || alignAttr === "center" || alignAttr === "right") {
+        return `<div style="text-align: ${alignAttr}">${inner || "<br>"}</div>`;
+      }
+      // Altrimenti, flatten standard: il contenuto + un break a fine blocco.
       return inner ? inner + "<br>" : "";
     }
     return inner;
@@ -77,25 +82,28 @@ function getSelectionAnchor(root: HTMLElement): HTMLAnchorElement | null {
   return null;
 }
 
-// Wrappa la selezione corrente in <span style="..."> applicando le proprietà
-// passate. Se la selezione è collassata non fa nulla.
-function wrapSelectionWithStyle(root: HTMLElement, styles: Record<string, string>) {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
-  const range = sel.getRangeAt(0);
-  if (!root.contains(range.commonAncestorContainer)) return;
+// Wrappa un range specifico in <span style="..."> applicando le proprietà.
+// Il range va passato esplicitamente perché aprire un dropdown nel toolbar
+// fa perdere la selection del contenteditable; il chiamante deve salvarla
+// in anticipo (saveRange) e passarla qui.
+function wrapRangeWithStyle(root: HTMLElement, range: Range, styles: Record<string, string>): boolean {
+  if (range.collapsed) return false;
+  if (!root.contains(range.commonAncestorContainer)) return false;
   const span = document.createElement("span");
   for (const [k, v] of Object.entries(styles)) span.style.setProperty(k, v);
   try {
     span.appendChild(range.extractContents());
     range.insertNode(span);
-    // Rimetti la selezione sul contenuto inserito
-    const r2 = document.createRange();
-    r2.selectNodeContents(span);
-    sel.removeAllRanges();
-    sel.addRange(r2);
+    const sel = window.getSelection();
+    if (sel) {
+      const r2 = document.createRange();
+      r2.selectNodeContents(span);
+      sel.removeAllRanges();
+      sel.addRange(r2);
+    }
+    return true;
   } catch {
-    /* range manipulation may fail across complex DOM; silently ignore */
+    return false;
   }
 }
 
@@ -117,12 +125,49 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
   const [linkActive, setLinkActive] = useState(false);
   const [fontMenuOpen, setFontMenuOpen] = useState(false);
   const [weightMenuOpen, setWeightMenuOpen] = useState(false);
+  // Snapshot del range della selezione: i dropdown Font/Peso tolgono il
+  // focus al contenteditable → senza questo, il wrap si applicherebbe a
+  // un range collassato (cursore senza selezione) e creerebbe uno span vuoto.
+  const savedRangeRef = useRef<Range | null>(null);
+
+  const saveRange = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const r = sel.getRangeAt(0);
+    if (ref.current && ref.current.contains(r.commonAncestorContainer)) {
+      savedRangeRef.current = r.cloneRange();
+    }
+  };
+  const restoreRange = (): Range | null => {
+    const r = savedRangeRef.current;
+    if (!r) return null;
+    const sel = window.getSelection();
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+    return r;
+  };
 
   useEffect(() => {
     if (ref.current && ref.current.innerHTML !== value) {
       ref.current.innerHTML = value || "";
     }
   }, [value]);
+
+  // Chiusura dei dropdown Font/Peso quando si clicca fuori
+  useEffect(() => {
+    if (!fontMenuOpen && !weightMenuOpen) return;
+    const h = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      if (!t.closest("[data-rtf-menu]")) {
+        setFontMenuOpen(false);
+        setWeightMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [fontMenuOpen, weightMenuOpen]);
 
   const emit = () => {
     if (ref.current) onChange(sanitize(ref.current.innerHTML));
@@ -144,16 +189,24 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
 
   const applyFont = (family: string) => {
     if (!ref.current) return;
-    ref.current.focus();
-    wrapSelectionWithStyle(ref.current, { "font-family": family });
+    const range = restoreRange();
+    if (!range || range.collapsed) {
+      setFontMenuOpen(false);
+      return; // nessuna selezione → niente da fare (evita span vuoti)
+    }
+    wrapRangeWithStyle(ref.current, range, { "font-family": family });
     emit();
     setFontMenuOpen(false);
   };
 
   const applyWeight = (weight: string) => {
     if (!ref.current) return;
-    ref.current.focus();
-    wrapSelectionWithStyle(ref.current, { "font-weight": weight });
+    const range = restoreRange();
+    if (!range || range.collapsed) {
+      setWeightMenuOpen(false);
+      return;
+    }
+    wrapRangeWithStyle(ref.current, range, { "font-weight": weight });
     emit();
     setWeightMenuOpen(false);
   };
@@ -223,10 +276,10 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
         <div className="w-px h-4 bg-warm-200 mx-1" />
 
         {/* Font picker */}
-        <div className="relative">
-          <button type="button" onMouseDown={(e) => { e.preventDefault(); setFontMenuOpen((v) => !v); setWeightMenuOpen(false); }}
+        <div className="relative" data-rtf-menu>
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); saveRange(); setFontMenuOpen((v) => !v); setWeightMenuOpen(false); }}
             className="inline-flex items-center gap-1 px-2 py-1 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors text-[11px]"
-            title="Font">
+            title="Font (seleziona prima del testo)">
             <Type size={12} /> Font
           </button>
           {fontMenuOpen && (
@@ -244,10 +297,10 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
         </div>
 
         {/* Weight picker */}
-        <div className="relative">
-          <button type="button" onMouseDown={(e) => { e.preventDefault(); setWeightMenuOpen((v) => !v); setFontMenuOpen(false); }}
+        <div className="relative" data-rtf-menu>
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); saveRange(); setWeightMenuOpen((v) => !v); setFontMenuOpen(false); }}
             className="inline-flex items-center gap-1 px-2 py-1 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors text-[11px]"
-            title="Peso del font">
+            title="Peso (seleziona prima del testo)">
             Peso
           </button>
           {weightMenuOpen && (

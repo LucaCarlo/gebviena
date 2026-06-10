@@ -233,14 +233,15 @@ export function CaslonTitleEditor({ data, onChange, sourceData }: { data: NewsCa
     <div className="space-y-3">
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo</label>
-        <BlockTextInput
+        <BlockRichText
           value={data.text}
           onChange={(v) => onChange({ ...data, text: v })}
           sourceText={sourceData?.text || ""}
-          className="w-full border border-warm-300 rounded px-4 py-2.5 text-lg font-serif italic focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
           placeholder="Sezione, sottosezione, frase ad effetto…"
         />
-        <p className="text-[10px] text-warm-400 mt-1">Renderizzato in Libre Caslon Text 56px sulla pagina pubblica.</p>
+        <p className="text-[10px] text-warm-400 mt-1">
+          Font di default <strong>Libre Caslon Text 56px</strong>. Puoi cambiare font / peso / corsivo per singole parole dalla toolbar qui sopra.
+        </p>
       </div>
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Allineamento</label>
