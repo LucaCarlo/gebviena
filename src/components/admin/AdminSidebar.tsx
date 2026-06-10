@@ -36,6 +36,8 @@ import {
   ShoppingCart,
   Truck,
   CreditCard,
+  Briefcase,
+  UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -117,6 +119,13 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    label: "Rete Vendita",
+    items: [
+      { href: "/admin/stores", label: "Punti vendita", icon: Store, permission: "stores.view" },
+      { href: "/admin/agents", label: "Agenti", icon: Users, permission: "agents.view" },
+    ],
+  },
+  {
     label: "Store Online",
     items: [
       {
@@ -131,22 +140,23 @@ const navSections: NavSection[] = [
         ],
       },
       { href: "/admin/store/orders", label: "Ordini", icon: ShoppingCart, permission: "store_orders.view" },
-      { href: "/admin/store/customers", label: "Clienti", icon: Users, permission: "store_customers.view" },
+      { href: "/admin/store/abandoned-carts", label: "Carrelli abbandonati", icon: ShoppingBag, permission: "store_orders.view" },
+      { href: "/admin/store/stats", label: "Statistiche store", icon: BarChart3, permission: "store_orders.view" },
       { href: "/admin/store/shipping", label: "Spedizioni", icon: Truck, permission: "store_shipping.view" },
       { href: "/admin/store/settings", label: "Impostazioni Store", icon: CreditCard, permission: "store_settings.view" },
     ],
   },
   {
-    label: "Rete Vendita",
+    label: "Persone",
     items: [
-      { href: "/admin/stores", label: "Punti vendita", icon: Store, permission: "stores.view" },
-      { href: "/admin/agents", label: "Agenti", icon: Users, permission: "agents.view" },
+      { href: "/admin/store/customers", label: "Clienti", icon: UserRound, permission: "store_customers.view" },
+      { href: "/admin/subscribers", label: "Utenti", icon: Users, permission: "newsletter.view" },
+      { href: "/admin/persone/professionisti", label: "Professionisti", icon: Briefcase, permission: "newsletter.view" },
     ],
   },
   {
-    label: "Clienti",
+    label: "Marketing",
     items: [
-      { href: "/admin/subscribers", label: "Utenti", icon: Users, permission: "newsletter.view" },
       { href: "/admin/email-templates", label: "Email", icon: FileText, permission: "email_templates.view" },
       { href: "/admin/email-analytics", label: "Analitiche Evento", icon: BarChart3, permission: "newsletter.view" },
       { href: "/admin/landing-page", label: "Landing Page", icon: QrCode, permission: "landing_page.view" },
@@ -184,6 +194,7 @@ export default function AdminSidebar() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [roleLabel, setRoleLabel] = useState("Admin");
   const [roleName, setRoleName] = useState("");
+  const [userName, setUserName] = useState("");
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -194,6 +205,7 @@ export default function AdminSidebar() {
         if (data.success && data.data) {
           setRoleLabel(data.data.roleLabel || data.data.role);
           setRoleName(data.data.role);
+          setUserName(data.data.name || "");
           if (data.data.permissions) setPermissions(data.data.permissions);
         }
       })
@@ -238,9 +250,14 @@ export default function AdminSidebar() {
   /* ---- Shared pieces ---- */
   const logoBlock = (
     <div className="shrink-0 p-6 border-b border-warm-700/50 flex items-center justify-between">
-      <Link href="/admin" className="flex items-center gap-3">
-        <Image src="/logo.webp" alt="GTV" width={40} height={33} className="invert" />
-        <span className="text-sm font-semibold tracking-wider uppercase">{roleLabel}</span>
+      <Link href="/admin" className="flex items-center gap-3 min-w-0">
+        <Image src="/logo.webp" alt="GTV" width={40} height={33} className="invert shrink-0" />
+        <span className="flex flex-col min-w-0">
+          <span className="text-sm font-semibold tracking-wider uppercase truncate">{roleLabel}</span>
+          {userName && (
+            <span className="text-[11px] text-warm-400 font-normal tracking-normal normal-case truncate">{userName}</span>
+          )}
+        </span>
       </Link>
       <button
         onClick={() => setMobileOpen(false)}
@@ -375,9 +392,14 @@ export default function AdminSidebar() {
         >
           <Menu size={24} />
         </button>
-        <Link href="/admin" className="flex items-center gap-2">
-          <Image src="/logo.webp" alt="GTV" width={32} height={26} className="invert" />
-          <span className="text-xs font-semibold tracking-wider uppercase">{roleLabel}</span>
+        <Link href="/admin" className="flex items-center gap-2 min-w-0">
+          <Image src="/logo.webp" alt="GTV" width={32} height={26} className="invert shrink-0" />
+          <span className="flex flex-col min-w-0">
+            <span className="text-xs font-semibold tracking-wider uppercase truncate">{roleLabel}</span>
+            {userName && (
+              <span className="text-[10px] text-warm-400 font-normal tracking-normal normal-case truncate">{userName}</span>
+            )}
+          </span>
         </Link>
         <div className="w-10" />
       </div>
