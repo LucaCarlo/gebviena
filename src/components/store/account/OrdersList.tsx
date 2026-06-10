@@ -87,7 +87,7 @@ export default function OrdersList() {
                 </div>
               </div>
               <div className="text-xs text-warm-500">
-                {t(`${o.items.length} articol${o.items.length === 1 ? "o" : "i"}`, `${o.items.length} article${o.items.length === 1 ? "" : "s"}`)}
+                {t(`${formatNumber(o.items.length)} articol${o.items.length === 1 ? "o" : "i"}`, `${formatNumber(o.items.length)} article${o.items.length === 1 ? "" : "s"}`)}
               </div>
             </Link>
           ))}
