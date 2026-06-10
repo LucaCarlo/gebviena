@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { QrCode, Keyboard, CheckCircle2, AlertCircle, X, Camera, LogOut } from "lucide-react";
+import { formatNumber } from "@/lib/format";
 
 interface ScanResult {
   type: "success" | "already" | "error";
@@ -227,7 +228,7 @@ export default function ScannerPage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <div className="text-white text-sm font-bold">{stats.checkedIn}/{stats.total}</div>
+            <div className="text-white text-sm font-bold">{formatNumber(stats.checkedIn)}/{formatNumber(stats.total)}</div>
             <div className="text-white/40 text-[10px]">check-in</div>
           </div>
           <button onClick={handleLogout} className="p-2 text-white/40 hover:text-white" title="Logout">

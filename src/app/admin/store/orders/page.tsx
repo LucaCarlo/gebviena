@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Search, ShoppingCart, Package, Truck, Check, XCircle, RotateCcw, Clock, AlertTriangle, Ban, Store, Undo2 } from "lucide-react";
+import { formatNumber } from "@/lib/format";
 
 type OrderStatus =
   | "PENDING"
@@ -198,17 +199,17 @@ export default function StoreOrdersPage() {
         <div className="lg:col-span-5 grid grid-cols-3 gap-2">
           <div className={`rounded-lg border px-3 py-2 bg-blue-50 text-blue-800 border-blue-200 ${stats && stats.daEvadereCount === 0 ? "opacity-60" : ""}`}>
             <div className="text-[10px] font-medium uppercase tracking-wider">Da evadere</div>
-            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.daEvadereCount ?? "—"}</div>
+            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.daEvadereCount != null ? formatNumber(stats.daEvadereCount) : "—"}</div>
             <div className="text-[10px] text-blue-700 leading-tight">pagati, da spedire</div>
           </div>
           <div className={`rounded-lg border px-3 py-2 bg-purple-50 text-purple-800 border-purple-200 ${stats && stats.shippedCount === 0 ? "opacity-60" : ""}`}>
             <div className="text-[10px] font-medium uppercase tracking-wider">Spediti</div>
-            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.shippedCount ?? "—"}</div>
+            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.shippedCount != null ? formatNumber(stats.shippedCount) : "—"}</div>
             <div className="text-[10px] text-purple-700 leading-tight">in transito</div>
           </div>
           <div className={`rounded-lg border px-3 py-2 bg-emerald-50 text-emerald-800 border-emerald-200 ${stats && stats.consegnatiCount === 0 ? "opacity-60" : ""}`}>
             <div className="text-[10px] font-medium uppercase tracking-wider">Consegnati</div>
-            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.consegnatiCount ?? "—"}</div>
+            <div className="text-xl font-semibold mt-0.5 leading-tight">{stats?.consegnatiCount != null ? formatNumber(stats.consegnatiCount) : "—"}</div>
             <div className="text-[10px] text-emerald-700 leading-tight">consegnati al cliente</div>
           </div>
         </div>
@@ -223,7 +224,7 @@ export default function StoreOrdersPage() {
               {stats ? eurFmt(stats.totalSalesCents) : "—"}
             </div>
             <div className="text-[11px] text-emerald-700 leading-tight mt-0.5">
-              {stats?.totalSalesCount ?? 0} {stats?.totalSalesCount === 1 ? "ordine" : "ordini"}
+              {formatNumber(stats?.totalSalesCount ?? 0)} {stats?.totalSalesCount === 1 ? "ordine" : "ordini"}
             </div>
           </div>
 
@@ -233,7 +234,7 @@ export default function StoreOrdersPage() {
               {stats ? eurFmt(stats.pendingBonificoCents) : "—"}
             </div>
             <div className="text-[11px] text-amber-700 leading-tight mt-0.5">
-              {stats?.pendingBonificoCount ?? 0} {stats?.pendingBonificoCount === 1 ? "ordine" : "ordini"}
+              {formatNumber(stats?.pendingBonificoCount ?? 0)} {stats?.pendingBonificoCount === 1 ? "ordine" : "ordini"}
             </div>
           </div>
 
@@ -243,7 +244,7 @@ export default function StoreOrdersPage() {
               {stats ? eurFmt(stats.cancelledRefundedCents) : "—"}
             </div>
             <div className="text-[11px] text-red-700 leading-tight mt-0.5">
-              {stats?.cancelledRefundedCount ?? 0} {stats?.cancelledRefundedCount === 1 ? "ordine" : "ordini"} (cliente o GTV)
+              {formatNumber(stats?.cancelledRefundedCount ?? 0)} {stats?.cancelledRefundedCount === 1 ? "ordine" : "ordini"} (cliente o GTV)
             </div>
           </div>
         </div>
@@ -313,7 +314,7 @@ export default function StoreOrdersPage() {
                       <div className="text-xs text-warm-500">{o.email}</div>
                       {!o.customer && <span className="text-[10px] text-warm-400 italic">guest</span>}
                     </td>
-                    <td className="px-4 py-3 text-warm-600">{totalItems}</td>
+                    <td className="px-4 py-3 text-warm-600">{formatNumber(totalItems)}</td>
                     <td className="px-4 py-3 text-right font-mono text-warm-900">{euro(o.totalCents, o.currency)}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border ${meta.cls}`}>

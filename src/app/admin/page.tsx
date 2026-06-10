@@ -9,6 +9,7 @@ import {
   ArrowUpRight, Clock, Cloud, CloudOff, HardDrive,
   TrendingUp, Plus,
 } from "lucide-react";
+import { formatNumber } from "@/lib/format";
 
 interface ViewsChartItem {
   label: string;
@@ -148,7 +149,7 @@ export default function AdminDashboard() {
         >
           <Mail size={18} className="text-red-500" />
           <span className="text-sm font-medium text-red-700">
-            {stats.unreadContacts} {stats.unreadContacts === 1 ? "messaggio non letto" : "messaggi non letti"}
+            {formatNumber(stats.unreadContacts)} {stats.unreadContacts === 1 ? "messaggio non letto" : "messaggi non letti"}
           </span>
           <ArrowUpRight size={14} className="text-red-400 ml-auto" />
         </Link>
@@ -171,7 +172,7 @@ export default function AdminDashboard() {
             <span className="text-xs text-warm-500 uppercase tracking-wider font-semibold">Storage Media</span>
           </div>
           <p className="text-3xl font-bold text-warm-800">{formatBytes(stats.totalStorage)}</p>
-          <p className="text-xs text-warm-400 mt-1">{stats.mediaFiles} file totali</p>
+          <p className="text-xs text-warm-400 mt-1">{formatNumber(stats.mediaFiles)} file totali</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5">
@@ -179,11 +180,11 @@ export default function AdminDashboard() {
             <div className="bg-emerald-500 p-2 rounded-lg"><Cloud size={16} className="text-white" /></div>
             <span className="text-xs text-warm-500 uppercase tracking-wider font-semibold">Sync Wasabi</span>
           </div>
-          <p className="text-3xl font-bold text-warm-800">{stats.mediaSynced}</p>
+          <p className="text-3xl font-bold text-warm-800">{formatNumber(stats.mediaSynced)}</p>
           <div className="flex items-center gap-2 mt-1">
             {stats.mediaUnsynced > 0 ? (
               <span className="text-xs text-amber-600 flex items-center gap-1">
-                <CloudOff size={10} /> {stats.mediaUnsynced} non sincronizzati
+                <CloudOff size={10} /> {formatNumber(stats.mediaUnsynced)} non sincronizzati
               </span>
             ) : (
               <span className="text-xs text-emerald-600">Tutto sincronizzato</span>
@@ -215,7 +216,7 @@ export default function AdminDashboard() {
           <div className="flex items-end gap-2 h-32">
             {stats.viewsChart.map((day, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-[10px] text-warm-500 font-medium">{day.views}</span>
+                <span className="text-[10px] text-warm-500 font-medium">{formatNumber(day.views)}</span>
                 <div
                   className="w-full bg-warm-800 rounded-t-md transition-all min-h-[4px]"
                   style={{ height: `${Math.max((day.views / maxViews) * 100, 4)}%` }}
@@ -244,7 +245,7 @@ export default function AdminDashboard() {
               </div>
               <ArrowUpRight size={14} className="text-warm-300 group-hover:text-warm-500 transition-colors" />
             </div>
-            <p className="text-2xl font-bold text-warm-800">{card.count}</p>
+            <p className="text-2xl font-bold text-warm-800">{formatNumber(card.count)}</p>
             <p className="text-xs text-warm-500 mt-0.5">{card.label}</p>
           </Link>
         ))}
@@ -264,7 +265,7 @@ export default function AdminDashboard() {
                 </div>
                 {"href" in card && card.href && <ArrowUpRight size={14} className="text-warm-300 group-hover:text-warm-500 transition-colors" />}
               </div>
-              <p className="text-2xl font-bold text-warm-800">{card.count}</p>
+              <p className="text-2xl font-bold text-warm-800">{formatNumber(card.count)}</p>
               <p className="text-xs text-warm-500 mt-0.5">{card.label}</p>
             </>
           );
@@ -376,11 +377,11 @@ export default function AdminDashboard() {
           <div className="mt-4 pt-4 border-t border-warm-100">
             <div className="flex items-center justify-between text-[10px] text-warm-400">
               <span>Utenti admin</span>
-              <span className="font-medium text-warm-600">{stats.users}</span>
+              <span className="font-medium text-warm-600">{formatNumber(stats.users)}</span>
             </div>
             <div className="flex items-center justify-between text-[10px] text-warm-400 mt-1">
               <span>Lingue attive</span>
-              <span className="font-medium text-warm-600">{stats.languages}</span>
+              <span className="font-medium text-warm-600">{formatNumber(stats.languages)}</span>
             </div>
           </div>
         </div>

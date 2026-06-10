@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Package, ChevronLeft } from "lucide-react";
 import { useCustomerAuth } from "@/contexts/CustomerAuthContext";
 import { useStoreT } from "@/lib/use-store-t";
+import { formatNumber } from "@/lib/format";
 import AuthForms from "./AuthForms";
 
 interface OrderRow {
