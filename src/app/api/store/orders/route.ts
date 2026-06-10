@@ -9,19 +9,19 @@ const VALID_STATUSES: OrderStatus[] = [
   "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
 ];
 
-// Ordini "finalizzati" = pagati / spediti / completati / post-vendita / annullati
-// (CANCELLED presuppone un ordine creato che il cliente o l'admin ha annullato)
+// Ordini "finalizzati" = pagati / spediti / completati / post-vendita.
 // PIÙ gli ordini PENDING via bonifico (sono finalizzati, aspettano solo l'accredito).
 const PAID_SCOPE_STATUSES: OrderStatus[] = [
   "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP",
-  "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED", "CANCELLED",
+  "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
 ];
-// Carrelli abbandonati = solo le situazioni "pre-pagamento":
+// Carrelli abbandonati / non-andati-a-buon-fine:
 // - ABANDONED_CHECKOUT (compilato form ma uscito prima di cliccare paga)
 // - PAYMENT_FAILED (Stripe ha rifiutato la carta)
+// - CANCELLED (ordine annullato dal cliente o dall'admin)
 // - PENDING via Stripe (cliente NON ha completato il pagamento sulla pagina Stripe)
 const PENDING_SCOPE_STATUSES: OrderStatus[] = [
-  "ABANDONED_CHECKOUT", "PAYMENT_FAILED",
+  "ABANDONED_CHECKOUT", "PAYMENT_FAILED", "CANCELLED",
 ];
 
 export async function GET(req: NextRequest) {
@@ -92,16 +92,17 @@ export async function GET(req: NextRequest) {
   });
 
   // Quando l'admin guarda i carrelli abbandonati (scope=pending), per ogni
-  // ordine PAYMENT_FAILED cerchiamo eventuali ordini "pagati" con stessa email
-  // e stesso totalCents: se esistono, significa che il cliente ha riprovato e
-  // pagato — l'ordine fallito è duplicato e si può eliminare in sicurezza.
+  // ordine PAYMENT_FAILED o CANCELLED cerchiamo eventuali ordini "pagati"
+  // con stessa email e stesso totalCents: se esistono, il cliente ha
+  // riprovato e pagato → l'ordine fallito/annullato è duplicato e si può
+  // eliminare in sicurezza.
   type OrderWithDup = (typeof orders)[number] & {
     duplicatePaid?: { id: string; orderNumber: string; status: OrderStatus; createdAt: Date } | null;
   };
   let enriched: OrderWithDup[] = orders;
   if (scope === "pending") {
-    const failed = orders.filter((o) => o.status === "PAYMENT_FAILED");
-    if (failed.length > 0) {
+    const candidates = orders.filter((o) => o.status === "PAYMENT_FAILED" || o.status === "CANCELLED");
+    if (candidates.length > 0) {
       const PAID_FOR_MATCH: OrderStatus[] = [
         "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "PICKED_UP",
         "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
@@ -109,7 +110,7 @@ export async function GET(req: NextRequest) {
       const matches = await prisma.order.findMany({
         where: {
           status: { in: PAID_FOR_MATCH },
-          OR: failed.map((f) => ({ email: f.email, totalCents: f.totalCents })),
+          OR: candidates.map((c) => ({ email: c.email, totalCents: c.totalCents })),
         },
         select: { id: true, orderNumber: true, email: true, totalCents: true, status: true, createdAt: true },
         orderBy: { createdAt: "asc" },
@@ -121,7 +122,7 @@ export async function GET(req: NextRequest) {
         if (!matchMap.has(key)) matchMap.set(key, m);
       }
       enriched = orders.map((o) => {
-        if (o.status !== "PAYMENT_FAILED") return o;
+        if (o.status !== "PAYMENT_FAILED" && o.status !== "CANCELLED") return o;
         const m = matchMap.get(`${o.email}|${o.totalCents}`);
         return {
           ...o,

@@ -146,6 +146,7 @@ export default function AbandonedCartsPage() {
   const totalBy = (s: OrderStatus) => orders.filter((o) => o.status === s).length;
   const pendingStripe = orders.filter((o) => o.status === "PENDING" && o.paymentProvider !== "bonifico").length;
   const failedWithDuplicate = orders.filter((o) => o.status === "PAYMENT_FAILED" && o.duplicatePaid).length;
+  const cancelledWithDuplicate = orders.filter((o) => o.status === "CANCELLED" && o.duplicatePaid).length;
   const totalValueCents = orders.reduce((s, o) => s + (o.totalCents || 0), 0);
   const eurFmt = (cents: number) => new Intl.NumberFormat("it-IT", { useGrouping: "always", style: "currency", currency: "EUR" }).format(cents / 100);
 
@@ -161,7 +162,7 @@ export default function AbandonedCartsPage() {
       </header>
 
       {/* Riepilogo conteggi compatti */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
         <div className={`rounded-lg border px-3 py-2 bg-orange-50 text-orange-800 border-orange-200 ${totalBy("ABANDONED_CHECKOUT") === 0 ? "opacity-50" : ""}`}>
           <div className="text-[10px] font-medium uppercase tracking-wider">Checkout abbandonati</div>
           <div className="text-lg font-semibold mt-0.5 leading-tight">{formatNumber(totalBy("ABANDONED_CHECKOUT"))}</div>
@@ -179,6 +180,16 @@ export default function AbandonedCartsPage() {
             carta rifiutata
             {failedWithDuplicate > 0 && (
               <> · <span className="text-emerald-700 font-medium">{formatNumber(failedWithDuplicate)} duplicat{failedWithDuplicate === 1 ? "o" : "i"} pagat{failedWithDuplicate === 1 ? "o" : "i"}</span></>
+            )}
+          </div>
+        </div>
+        <div className={`rounded-lg border px-3 py-2 bg-blue-50 text-blue-800 border-blue-200 ${totalBy("CANCELLED") === 0 ? "opacity-50" : ""}`}>
+          <div className="text-[10px] font-medium uppercase tracking-wider">Annullati dal cliente</div>
+          <div className="text-lg font-semibold mt-0.5 leading-tight">{formatNumber(totalBy("CANCELLED"))}</div>
+          <div className="text-[10px] text-blue-700 leading-tight">
+            ordine cancellato
+            {cancelledWithDuplicate > 0 && (
+              <> · <span className="text-emerald-700 font-medium">{formatNumber(cancelledWithDuplicate)} duplicat{cancelledWithDuplicate === 1 ? "o" : "i"} pagat{cancelledWithDuplicate === 1 ? "o" : "i"}</span></>
             )}
           </div>
         </div>
@@ -209,6 +220,7 @@ export default function AbandonedCartsPage() {
           <option value="ABANDONED_CHECKOUT">Checkout abbandonato</option>
           <option value="PENDING">Pagamento non effettuato</option>
           <option value="PAYMENT_FAILED">Errore pagamento</option>
+          <option value="CANCELLED">Annullato dal cliente</option>
         </select>
       </div>
 

@@ -57,12 +57,12 @@ const FALLBACK_META = { label: "Stato sconosciuto", cls: "bg-warm-100 text-warm-
 
 // Stati visibili in questa pagina (ordini "veri"): in attesa di bonifico,
 // pagati / in evasione / spediti / consegnati, e rimborsati. Gli errori di
-// pagamento e i checkout abbandonati stanno in /admin/store/abandoned-carts.
-// CANCELLED (annullato dal cliente) resta visibile come ordine "annullato"
-// post-creazione.
+// pagamento, i checkout abbandonati e gli ordini annullati dal cliente
+// stanno tutti in /admin/store/abandoned-carts (sono di fatto carrelli
+// non andati a buon fine).
 const VISIBLE_STATUSES: OrderStatus[] = [
   "PENDING", "PAID", "PROCESSING", "SHIPPED", "DELIVERED",
-  "PICKED_UP", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED", "CANCELLED",
+  "PICKED_UP", "RETURNED", "REFUNDED", "PARTIALLY_REFUNDED",
 ];
 const VISIBLE_SET = new Set<OrderStatus>(VISIBLE_STATUSES);
 
