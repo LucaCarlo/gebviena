@@ -10,6 +10,7 @@ import type {
   NewsArticle, NewsBlockV2,
   NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
+  NewsCaslonTitleData, NewsTwoImagesInlineData,
 } from "@/types";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
@@ -17,6 +18,21 @@ import { localizePath } from "@/lib/path-segments";
 
 function isVideoFile(url: string | undefined | null): boolean {
   return !!url && /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url);
+}
+
+/* Video player per news: controls del browser visibili al passaggio del
+   cursore (styling in globals.css → .news-video). Click sui controls per
+   fullscreen / play / pausa / volume. Niente autoplay-loop. */
+function NewsVideoFill({ src }: { src: string }) {
+  return (
+    <video
+      src={src}
+      controls
+      playsInline
+      preload="metadata"
+      className="news-video absolute inset-0 w-full h-full object-cover bg-black"
+    />
+  );
 }
 
 interface ArticleWithRelated extends NewsArticle {
@@ -70,12 +86,12 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
                   <iframe src={`https://player.vimeo.com/video/${vimeo[1]}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
                 </div>
               ) : (
-                <video controls playsInline className="w-full h-auto bg-warm-100">
+                <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
                   <source src={video} />
                 </video>
               )
             ) : imageIsVideo ? (
-              <video controls playsInline className="w-full h-auto bg-warm-100">
+              <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
                 <source src={d.imageUrl} />
               </video>
             ) : (
@@ -100,7 +116,13 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
   return (
     <section className="relative w-full" style={{ height: "85vh" }}>
       {isVid ? (
-        <video src={d.imageUrl} className="absolute inset-0 w-full h-full object-cover brightness-[0.6]" autoPlay muted loop playsInline />
+        <video
+          src={d.imageUrl}
+          controls
+          playsInline
+          preload="metadata"
+          className="news-video absolute inset-0 w-full h-full object-cover brightness-[0.85] bg-black"
+        />
       ) : (
         <Image src={d.imageUrl} alt={d.title || ""} fill className="object-cover brightness-[0.6]" sizes="100vw" />
       )}
@@ -134,7 +156,7 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
   const imageEl = (
     <div className="relative bg-warm-200 overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
       {d.imageUrl && (imageIsVideo ? (
-        <video src={d.imageUrl} className="absolute inset-0 w-full h-full object-cover" autoPlay muted loop playsInline />
+        <NewsVideoFill src={d.imageUrl} />
       ) : (
         <Image src={d.imageUrl} alt={d.title || articleTitle} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
       ))}
@@ -184,7 +206,7 @@ function ThreeImages({ d }: { d: NewsThreeImagesData }) {
             <div key={i}>
               <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
                 {isVid ? (
-                  <video src={img.url} className="absolute inset-0 w-full h-full object-cover" autoPlay muted loop playsInline />
+                  <NewsVideoFill src={img.url} />
                 ) : (
                   <Image src={img.url} alt={img.caption || ""} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
                 )}
@@ -194,6 +216,59 @@ function ThreeImages({ d }: { d: NewsThreeImagesData }) {
           );
         })}
       </div>
+    </section>
+  );
+}
+
+function CaslonTitle({ d }: { d: NewsCaslonTitleData }) {
+  if (!d.text || !d.text.trim()) return null;
+  const align = d.align || "center";
+  const textAlign = align === "left" ? "text-left" : align === "right" ? "text-right" : "text-center";
+  return (
+    <section className="gtv-container">
+      <div className={`mx-auto max-w-[940px] px-6 md:px-12 ${textAlign}`}>
+        <h2
+          className="font-serif text-[36px] md:text-[56px] text-black leading-[1.15] font-normal tracking-tight"
+          dangerouslySetInnerHTML={{ __html: d.text }}
+        />
+      </div>
+    </section>
+  );
+}
+
+function TwoImagesInline({ d }: { d: NewsTwoImagesInlineData }) {
+  const imgs = (d.images || []).filter((i) => i.url);
+  if (imgs.length === 0) return null;
+  const align = d.align || "center";
+  const justify = align === "left" ? "justify-start" : align === "right" ? "justify-end" : "justify-center";
+  return (
+    <section className="gtv-container">
+      <div className={`mx-auto max-w-[1240px] px-4 md:px-6 flex ${justify}`}>
+        <div className="grid grid-cols-2 gap-3 md:gap-4 w-full max-w-[820px]">
+          {imgs.slice(0, 2).map((img, i) => {
+            const isVid = isVideoFile(img.url);
+            return (
+              <div key={i}>
+                <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
+                  {isVid ? (
+                    <NewsVideoFill src={img.url} />
+                  ) : (
+                    <Image src={img.url} alt={img.caption || ""} fill className="object-cover" sizes="(max-width: 768px) 50vw, 410px" />
+                  )}
+                </div>
+                {img.caption && <p className="text-[13px] text-black mt-2 font-light text-center">{img.caption}</p>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {d.caption && (
+        <div className={`mx-auto max-w-[1240px] px-4 md:px-6 mt-3 flex ${justify}`}>
+          <div className="max-w-[820px] w-full">
+            <p className="text-[13px] text-warm-500 text-center font-light">{d.caption}</p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -217,12 +292,12 @@ function SingleImage({ d }: { d: NewsSingleImageData }) {
               <iframe src={`https://player.vimeo.com/video/${vimeo[1]}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
             </div>
           ) : (
-            <video controls playsInline className="w-full h-auto bg-warm-100">
+            <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
               <source src={video} />
             </video>
           )
         ) : imageIsVideo ? (
-          <video controls playsInline className="w-full h-auto bg-warm-100">
+          <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
             <source src={d.imageUrl} />
           </video>
         ) : (
@@ -382,6 +457,8 @@ export default function NewsDetailPage() {
                   case "single_image": node = <SingleImage d={b.data as NewsSingleImageData} />; break;
                   case "image_with_paragraph": node = <ImageWithParagraph d={b.data as NewsImageWithParagraphData} />; break;
                   case "fullwidth_banner": node = <FullwidthBanner d={b.data as NewsFullwidthBannerData} />; break;
+                  case "caslon_title": node = <CaslonTitle d={b.data as NewsCaslonTitleData} />; break;
+                  case "two_images_inline": node = <TwoImagesInline d={b.data as NewsTwoImagesInlineData} />; break;
                   case "product": node = <ProductBlock productId={(b.data as NewsProductData).productId} />; break;
                   case "share": node = <ShareBlock title={article.title} />; break;
                   default: node = null;

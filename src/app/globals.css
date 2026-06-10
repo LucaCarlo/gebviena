@@ -37,6 +37,22 @@
   display: none;
 }
 
+/* News article video player: controls visibili solo al passaggio del cursore.
+   Tasto fullscreen incluso nei controls nativi del browser. Doppio click sul
+   video → fullscreen su Chrome/Firefox di default.
+   Funziona su Chromium/Safari/Edge; Firefox lascia il comportamento nativo. */
+.news-video::-webkit-media-controls {
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+}
+.news-video:hover::-webkit-media-controls,
+.news-video:focus::-webkit-media-controls {
+  opacity: 1;
+}
+.news-video {
+  cursor: pointer;
+}
+
 @layer components {
   /* GTV container — matches original max-widths */
   .gtv-container {

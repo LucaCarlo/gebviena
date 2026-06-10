@@ -241,6 +241,8 @@ export type NewsBlockV2Type =
   | "single_image"
   | "image_with_paragraph"
   | "fullwidth_banner"
+  | "caslon_title"
+  | "two_images_inline"
   | "product"
   | "share"
   | "related";
@@ -283,6 +285,21 @@ export interface NewsFullwidthBannerData {
   ctaHref?: string;
 }
 
+// Titolo grande in Libre Caslon Text — sezione editoriale per stacchi di
+// capitolo. Allineamento configurabile a sinistra / centro / destra.
+export interface NewsCaslonTitleData {
+  text: string;
+  align?: "left" | "center" | "right";
+}
+
+// Due foto affiancate, con allineamento a sinistra / centro / destra del
+// gruppo (sbandiera). Larghezza fissa, due colonne uguali.
+export interface NewsTwoImagesInlineData {
+  images: { url: string; caption?: string }[];
+  align?: "left" | "center" | "right";
+  caption?: string;
+}
+
 export type NewsShareData = Record<string, never>;
 export type NewsRelatedData = Record<string, never>;
 
@@ -300,6 +317,8 @@ export interface NewsBlockV2 {
     | NewsSingleImageData
     | NewsImageWithParagraphData
     | NewsFullwidthBannerData
+    | NewsCaslonTitleData
+    | NewsTwoImagesInlineData
     | NewsProductData
     | NewsShareData
     | NewsRelatedData;
@@ -485,6 +504,7 @@ export interface PageImage {
   imageUrl: string;
   altText: string | null;
   linkUrl: string | null;
+  linkUrlI18n: string | null;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;

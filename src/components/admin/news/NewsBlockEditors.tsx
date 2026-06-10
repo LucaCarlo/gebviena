@@ -11,6 +11,8 @@ import type {
   NewsSingleImageData,
   NewsImageWithParagraphData,
   NewsFullwidthBannerData,
+  NewsCaslonTitleData,
+  NewsTwoImagesInlineData,
   NewsProductData,
 } from "@/types";
 
@@ -221,6 +223,96 @@ export function ProductEditor({ data, onChange }: { data: NewsProductData; onCha
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+export function CaslonTitleEditor({ data, onChange, sourceData }: { data: NewsCaslonTitleData; onChange: (d: NewsCaslonTitleData) => void; sourceData?: Partial<NewsCaslonTitleData> }) {
+  const align = data.align || "center";
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo</label>
+        <BlockTextInput
+          value={data.text}
+          onChange={(v) => onChange({ ...data, text: v })}
+          sourceText={sourceData?.text || ""}
+          className="w-full border border-warm-300 rounded px-4 py-2.5 text-lg font-serif italic focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          placeholder="Sezione, sottosezione, frase ad effetto…"
+        />
+        <p className="text-[10px] text-warm-400 mt-1">Renderizzato in Libre Caslon Text 56px sulla pagina pubblica.</p>
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Allineamento</label>
+        <div className="flex gap-2">
+          {(["left", "center", "right"] as const).map((a) => (
+            <button
+              key={a}
+              type="button"
+              onClick={() => onChange({ ...data, align: a })}
+              className={`px-3 py-1.5 text-xs rounded border transition-colors ${
+                align === a ? "bg-warm-800 text-white border-warm-800" : "bg-white text-warm-600 border-warm-300 hover:bg-warm-50"
+              }`}
+            >
+              {a === "left" ? "Sinistra" : a === "center" ? "Centro" : "Destra"}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function TwoImagesInlineEditor({ data, onChange, sourceData }: { data: NewsTwoImagesInlineData; onChange: (d: NewsTwoImagesInlineData) => void; sourceData?: Partial<NewsTwoImagesInlineData> }) {
+  const imgs = data.images && data.images.length >= 2 ? data.images : [{ url: "" }, { url: "" }];
+  const align = data.align || "center";
+  const updateImg = (i: number, patch: Partial<{ url: string; caption?: string }>) => {
+    const next = imgs.map((im, idx) => (idx === i ? { ...im, ...patch } : im));
+    onChange({ ...data, images: next });
+  };
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Allineamento del gruppo</label>
+        <div className="flex gap-2">
+          {(["left", "center", "right"] as const).map((a) => (
+            <button
+              key={a}
+              type="button"
+              onClick={() => onChange({ ...data, align: a })}
+              className={`px-3 py-1.5 text-xs rounded border transition-colors ${
+                align === a ? "bg-warm-800 text-white border-warm-800" : "bg-white text-warm-600 border-warm-300 hover:bg-warm-50"
+              }`}
+            >
+              {a === "left" ? "Sbandiera sx" : a === "center" ? "Centrato" : "Sbandiera dx"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[0, 1].map((i) => (
+          <ImageUploadField
+            key={i}
+            label={`Media ${i + 1} (immagine o video)`}
+            value={imgs[i]?.url || ""}
+            onChange={(url) => updateImg(i, { url })}
+            onRemove={() => updateImg(i, { url: "" })}
+            purpose="general"
+            folder="news"
+            acceptVideo
+          />
+        ))}
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Didascalia (opzionale)</label>
+        <BlockTextInput
+          value={data.caption || ""}
+          onChange={(v) => onChange({ ...data, caption: v })}
+          sourceText={sourceData?.caption || ""}
+          className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          placeholder="Didascalia comune alle due immagini…"
+        />
+      </div>
     </div>
   );
 }

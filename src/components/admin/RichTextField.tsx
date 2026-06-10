@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bold, Underline as UnderlineIcon, Link as LinkIcon, Unlink } from "lucide-react";
+import { Bold, Italic, Underline as UnderlineIcon, Link as LinkIcon, Unlink, AlignLeft, AlignCenter, AlignRight, Type } from "lucide-react";
 
 interface Props {
   value: string;
@@ -9,6 +9,19 @@ interface Props {
   placeholder?: string;
   multiline?: boolean;
   minHeight?: number;
+}
+
+// Stili inline whitelisted per text-align / font-family / font-weight.
+// Tutto il resto viene strippato dal sanitize.
+const ALLOWED_STYLE_KEYS = ["text-align", "font-family", "font-weight"] as const;
+
+function pickStyles(el: HTMLElement): string {
+  const out: string[] = [];
+  for (const k of ALLOWED_STYLE_KEYS) {
+    const v = el.style.getPropertyValue(k);
+    if (v && v.trim()) out.push(`${k}: ${v.trim()}`);
+  }
+  return out.length ? ` style="${out.join("; ")}"` : "";
 }
 
 function sanitize(html: string): string {
@@ -23,6 +36,7 @@ function sanitize(html: string): string {
     const tag = el.tagName.toLowerCase();
     const inner = Array.from(el.childNodes).map(walk).join("");
     if (tag === "strong" || tag === "b") return `<strong>${inner}</strong>`;
+    if (tag === "em" || tag === "i") return `<em>${inner}</em>`;
     if (tag === "u") return `<u>${inner}</u>`;
     if (tag === "br") return "<br>";
     if (tag === "a") {
@@ -30,12 +44,21 @@ function sanitize(html: string): string {
       const safe = /^(https?:|mailto:|tel:|\/|#)/i.test(href) ? href : "";
       if (!safe || !inner) return inner;
       const isExternal = /^https?:/i.test(safe);
-      const attrs = isExternal
-        ? ` target="_blank" rel="noopener noreferrer"`
-        : "";
+      const attrs = isExternal ? ` target="_blank" rel="noopener noreferrer"` : "";
       return `<a href="${safe.replace(/"/g, "&quot;")}"${attrs}>${inner}</a>`;
     }
-    if (tag === "div" || tag === "p") return (inner ? inner + "<br>" : "");
+    if (tag === "span") {
+      const styles = pickStyles(el);
+      if (!styles) return inner;
+      return `<span${styles}>${inner}</span>`;
+    }
+    if (tag === "div" || tag === "p") {
+      const styles = pickStyles(el);
+      // Se il blocco ha solo text-align lo manteniamo come <div style="...">,
+      // altrimenti usiamo il vecchio comportamento (flatten in <br>).
+      if (styles.includes("text-align")) return `<div${styles}>${inner || "<br>"}</div>`;
+      return inner ? inner + "<br>" : "";
+    }
     return inner;
   };
   return Array.from(root.childNodes).map(walk).join("").replace(/(<br>)+$/, "");
@@ -54,9 +77,46 @@ function getSelectionAnchor(root: HTMLElement): HTMLAnchorElement | null {
   return null;
 }
 
+// Wrappa la selezione corrente in <span style="..."> applicando le proprietà
+// passate. Se la selezione è collassata non fa nulla.
+function wrapSelectionWithStyle(root: HTMLElement, styles: Record<string, string>) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  if (!root.contains(range.commonAncestorContainer)) return;
+  const span = document.createElement("span");
+  for (const [k, v] of Object.entries(styles)) span.style.setProperty(k, v);
+  try {
+    span.appendChild(range.extractContents());
+    range.insertNode(span);
+    // Rimetti la selezione sul contenuto inserito
+    const r2 = document.createRange();
+    r2.selectNodeContents(span);
+    sel.removeAllRanges();
+    sel.addRange(r2);
+  } catch {
+    /* range manipulation may fail across complex DOM; silently ignore */
+  }
+}
+
+const FONT_OPTIONS: { label: string; family: string }[] = [
+  { label: "Work Sans (sans-serif)", family: "var(--font-work-sans), 'Work Sans', sans-serif" },
+  { label: "Libre Caslon Text (serif)", family: "var(--font-caslon), 'Libre Caslon Text', serif" },
+];
+
+const WEIGHT_OPTIONS: { label: string; weight: string }[] = [
+  { label: "Light · 300", weight: "300" },
+  { label: "Regular · 400", weight: "400" },
+  { label: "Medium · 500", weight: "500" },
+  { label: "SemiBold · 600", weight: "600" },
+  { label: "Bold · 700", weight: "700" },
+];
+
 export default function RichTextField({ value, onChange, placeholder, multiline = false, minHeight = 40 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [linkActive, setLinkActive] = useState(false);
+  const [fontMenuOpen, setFontMenuOpen] = useState(false);
+  const [weightMenuOpen, setWeightMenuOpen] = useState(false);
 
   useEffect(() => {
     if (ref.current && ref.current.innerHTML !== value) {
@@ -64,10 +124,38 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
     }
   }, [value]);
 
-  const apply = (cmd: "bold" | "underline") => {
+  const emit = () => {
+    if (ref.current) onChange(sanitize(ref.current.innerHTML));
+  };
+
+  const apply = (cmd: "bold" | "italic" | "underline") => {
     ref.current?.focus();
     document.execCommand(cmd);
-    if (ref.current) onChange(sanitize(ref.current.innerHTML));
+    emit();
+  };
+
+  const applyAlign = (align: "left" | "center" | "right") => {
+    ref.current?.focus();
+    document.execCommand(
+      align === "left" ? "justifyLeft" : align === "center" ? "justifyCenter" : "justifyRight",
+    );
+    emit();
+  };
+
+  const applyFont = (family: string) => {
+    if (!ref.current) return;
+    ref.current.focus();
+    wrapSelectionWithStyle(ref.current, { "font-family": family });
+    emit();
+    setFontMenuOpen(false);
+  };
+
+  const applyWeight = (weight: string) => {
+    if (!ref.current) return;
+    ref.current.focus();
+    wrapSelectionWithStyle(ref.current, { "font-weight": weight });
+    emit();
+    setWeightMenuOpen(false);
   };
 
   const refreshLinkState = () => {
@@ -88,13 +176,12 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
     } else {
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed) {
-        // Nessun testo selezionato: inserisci il link con l'URL come testo
         document.execCommand("insertHTML", false, `<a href="${trimmed}">${trimmed}</a>`);
       } else {
         document.execCommand("createLink", false, trimmed);
       }
     }
-    onChange(sanitize(ref.current.innerHTML));
+    emit();
     refreshLinkState();
   };
 
@@ -102,51 +189,93 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
     if (!ref.current) return;
     ref.current.focus();
     document.execCommand("unlink");
-    onChange(sanitize(ref.current.innerHTML));
+    emit();
     refreshLinkState();
   };
 
   return (
     <div className="border border-warm-300 rounded focus-within:border-warm-800 focus-within:ring-1 focus-within:ring-warm-800">
-      <div className="flex items-center gap-1 px-2 py-1 border-b border-warm-200 bg-warm-50/60">
-        <button
-          type="button"
-          onMouseDown={(e) => { e.preventDefault(); apply("bold"); }}
+      <div className="flex items-center gap-1 px-2 py-1 border-b border-warm-200 bg-warm-50/60 flex-wrap">
+        {/* Bold / Italic / Underline */}
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); apply("bold"); }}
           className="p-1.5 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors"
-          title="Grassetto (Ctrl+B)"
-        >
-          <Bold size={14} />
-        </button>
-        <button
-          type="button"
-          onMouseDown={(e) => { e.preventDefault(); apply("underline"); }}
+          title="Grassetto (Ctrl+B)"><Bold size={14} /></button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); apply("italic"); }}
           className="p-1.5 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors"
-          title="Sottolineato (Ctrl+U)"
-        >
-          <UnderlineIcon size={14} />
-        </button>
+          title="Corsivo (Ctrl+I)"><Italic size={14} /></button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); apply("underline"); }}
+          className="p-1.5 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors"
+          title="Sottolineato (Ctrl+U)"><UnderlineIcon size={14} /></button>
+
         <div className="w-px h-4 bg-warm-200 mx-1" />
-        <button
-          type="button"
-          onMouseDown={(e) => { e.preventDefault(); insertLink(); }}
-          className={`p-1.5 rounded transition-colors ${
-            linkActive
-              ? "bg-warm-800 text-white"
-              : "text-warm-600 hover:bg-warm-200 hover:text-warm-900"
-          }`}
-          title="Inserisci/modifica link"
-        >
-          <LinkIcon size={14} />
-        </button>
-        {linkActive && (
-          <button
-            type="button"
-            onMouseDown={(e) => { e.preventDefault(); removeLink(); }}
-            className="p-1.5 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors"
-            title="Rimuovi link"
-          >
-            <Unlink size={14} />
+
+        {/* Allineamento */}
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); applyAlign("left"); }}
+          className="p-1.5 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors"
+          title="Allinea a sinistra"><AlignLeft size={14} /></button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); applyAlign("center"); }}
+          className="p-1.5 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors"
+          title="Allinea al centro"><AlignCenter size={14} /></button>
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); applyAlign("right"); }}
+          className="p-1.5 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors"
+          title="Allinea a destra"><AlignRight size={14} /></button>
+
+        <div className="w-px h-4 bg-warm-200 mx-1" />
+
+        {/* Font picker */}
+        <div className="relative">
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); setFontMenuOpen((v) => !v); setWeightMenuOpen(false); }}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors text-[11px]"
+            title="Font">
+            <Type size={12} /> Font
           </button>
+          {fontMenuOpen && (
+            <div className="absolute left-0 top-full mt-1 z-30 bg-white border border-warm-300 rounded shadow-md min-w-[210px]">
+              {FONT_OPTIONS.map((f) => (
+                <button key={f.label} type="button" onMouseDown={(e) => { e.preventDefault(); applyFont(f.family); }}
+                  className="block w-full text-left px-3 py-1.5 text-xs hover:bg-warm-100"
+                  style={{ fontFamily: f.family }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Weight picker */}
+        <div className="relative">
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); setWeightMenuOpen((v) => !v); setFontMenuOpen(false); }}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors text-[11px]"
+            title="Peso del font">
+            Peso
+          </button>
+          {weightMenuOpen && (
+            <div className="absolute left-0 top-full mt-1 z-30 bg-white border border-warm-300 rounded shadow-md min-w-[160px]">
+              {WEIGHT_OPTIONS.map((w) => (
+                <button key={w.weight} type="button" onMouseDown={(e) => { e.preventDefault(); applyWeight(w.weight); }}
+                  className="block w-full text-left px-3 py-1.5 text-xs hover:bg-warm-100"
+                  style={{ fontWeight: w.weight }}
+                >
+                  {w.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="w-px h-4 bg-warm-200 mx-1" />
+
+        {/* Link */}
+        <button type="button" onMouseDown={(e) => { e.preventDefault(); insertLink(); }}
+          className={`p-1.5 rounded transition-colors ${
+            linkActive ? "bg-warm-800 text-white" : "text-warm-600 hover:bg-warm-200 hover:text-warm-900"
+          }`}
+          title="Inserisci/modifica link"><LinkIcon size={14} /></button>
+        {linkActive && (
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); removeLink(); }}
+            className="p-1.5 rounded text-warm-600 hover:bg-warm-200 hover:text-warm-900 transition-colors"
+            title="Rimuovi link"><Unlink size={14} /></button>
         )}
       </div>
       <div
@@ -157,28 +286,17 @@ export default function RichTextField({ value, onChange, placeholder, multiline 
         data-placeholder={placeholder || ""}
         className="rich-text-editor px-4 py-2.5 text-sm outline-none whitespace-pre-wrap break-words"
         style={{ minHeight }}
-        onInput={() => {
-          if (ref.current) onChange(sanitize(ref.current.innerHTML));
-          refreshLinkState();
-        }}
+        onInput={() => { emit(); refreshLinkState(); }}
         onKeyUp={refreshLinkState}
         onMouseUp={refreshLinkState}
         onFocus={refreshLinkState}
         onBlur={() => setLinkActive(false)}
         onKeyDown={(e) => {
           if (!multiline && e.key === "Enter") e.preventDefault();
-          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
-            e.preventDefault();
-            apply("bold");
-          }
-          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "u") {
-            e.preventDefault();
-            apply("underline");
-          }
-          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-            e.preventDefault();
-            insertLink();
-          }
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") { e.preventDefault(); apply("bold"); }
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "i") { e.preventDefault(); apply("italic"); }
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "u") { e.preventDefault(); apply("underline"); }
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); insertLink(); }
         }}
         onPaste={(e) => {
           e.preventDefault();

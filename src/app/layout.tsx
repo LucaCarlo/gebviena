@@ -1,13 +1,24 @@
 import type { Metadata } from "next";
-import { Work_Sans } from "next/font/google";
+import { Work_Sans, Libre_Caslon_Text } from "next/font/google";
 import Script from "next/script";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import "./globals.css";
 
+// Pesi 300..700 servono all'editor delle news per scegliere il peso del testo.
 const workSans = Work_Sans({
   subsets: ["latin"],
   variable: "--font-work-sans",
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
+
+// Libre Caslon Text: pesi disponibili 400 e 700, con varianti italic.
+const caslon = Libre_Caslon_Text({
+  subsets: ["latin"],
+  variable: "--font-caslon",
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -77,10 +88,6 @@ export default async function RootLayout({
             })(window,document,'script','dataLayer','${gtmId}');
           `}</Script>
         )}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap"
-          rel="stylesheet"
-        />
         {fbPixelId && (
           // beforeInteractive: lo stub window.fbq deve esistere prima che i componenti
           // client (es. ProductDetail) eseguano i loro useEffect e chiamino fbTrack().
@@ -110,7 +117,7 @@ export default async function RootLayout({
           </noscript>
         )}
       </head>
-      <body className={`${workSans.variable} antialiased bg-white`}>
+      <body className={`${workSans.variable} ${caslon.variable} antialiased bg-white`}>
         {gtmId && (
           <noscript>
             <iframe

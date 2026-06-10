@@ -47,8 +47,11 @@ const config: Config = {
         },
       },
       fontFamily: {
-        serif: ['"Libre Caslon Text"', "Georgia", "Times New Roman", "serif"],
+        serif: ["var(--font-caslon)", '"Libre Caslon Text"', "Georgia", "Times New Roman", "serif"],
         sans: ["var(--font-work-sans)", "Work Sans", "Helvetica Neue", "Arial", "sans-serif"],
+        // Alias espliciti usati dall'editor per assegnare un font a livello di blocco
+        caslon: ["var(--font-caslon)", '"Libre Caslon Text"', "Georgia", "serif"],
+        "work-sans": ["var(--font-work-sans)", "Work Sans", "Helvetica Neue", "Arial", "sans-serif"],
       },
       fontSize: {
         "h1": ["3.625rem", { lineHeight: "1.1" }],
