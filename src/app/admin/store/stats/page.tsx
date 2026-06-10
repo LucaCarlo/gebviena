@@ -86,6 +86,38 @@ function rangeForPeriod(p: PeriodKey, customFrom?: string, customTo?: string): {
   return null;
 }
 
+// Unisce due response (core/heavy) nello stesso ApiData. La core ha i KPI
+// numerici (revenue, count, conversion, ecc.) ma topProducts/bottomProducts/
+// channels vuoti. La heavy contiene solo le tabelle. mergeStats applica il
+// nuovo slice al precedente preservando i campi non sovrascritti.
+function mergeStats(prev: ApiData | null, next: ApiData, kind: "core" | "heavy"): ApiData {
+  if (!prev) return next;
+  const mergePeriod = (p: PeriodStats | null, n: PeriodStats | null): PeriodStats | null => {
+    if (!n) return p;
+    if (!p) return n;
+    if (kind === "core") {
+      return {
+        ...n,
+        topProducts: p.topProducts,
+        bottomProducts: p.bottomProducts,
+        channels: p.channels,
+      };
+    }
+    // heavy
+    return {
+      ...p,
+      topProducts: n.topProducts,
+      bottomProducts: n.bottomProducts,
+      channels: n.channels,
+    };
+  };
+  return {
+    current: mergePeriod(prev.current, next.current) as PeriodStats,
+    compare: mergePeriod(prev.compare, next.compare),
+    totals: next.totals || prev.totals,
+  };
+}
+
 function deltaPct(current: number, previous: number): number | null {
   if (previous === 0) {
     if (current === 0) return 0;
@@ -146,45 +178,62 @@ export default function StoreStatsPage() {
   const [compareFrom, setCompareFrom] = useState<string>("");
   const [compareTo, setCompareTo] = useState<string>("");
   const [data, setData] = useState<ApiData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingCore, setLoadingCore] = useState(false);
+  const [loadingHeavy, setLoadingHeavy] = useState(false);
+  const loading = loadingCore || loadingHeavy;
 
   const range = useMemo(() => rangeForPeriod(period, customFrom, customTo), [period, customFrom, customTo]);
-
-  // Riferimento alla AbortController della richiesta corrente, così cambiando
-  // periodo annulliamo la fetch precedente: se l'utente clicca rapidamente su
-  // più periodi, l'UI mostra SEMPRE i dati dell'ultimo selezionato, mai una
-  // risposta lenta arrivata dopo un click successivo.
   const abortRef = useRef<AbortController | null>(null);
 
+  // Carica i KPI in 2 step IN PARALLELO:
+  //   1) ?kind=core  → KPI numerici (fatturato, ordini, AOV, conversion,
+  //      abbandonati, new/recurring, totali storici). Veloce.
+  //   2) ?kind=heavy → top/bottom prodotti + canali. Più lento.
+  // I due risultati vengono fusi nello stesso state. L'utente vede i numeri
+  // subito; le tabelle si popolano poco dopo.
   const load = useCallback(async () => {
     if (!range) return;
-    // Annulla la richiesta precedente se ancora in volo.
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
-    setLoading(true);
-    const p = new URLSearchParams();
-    p.set("from", range.from.toISOString());
-    p.set("to", range.to.toISOString());
-    if (!compareEnabled) {
-      p.set("compare", "0");
-    } else if (customCompare && compareFrom && compareTo) {
-      p.set("compareFrom", new Date(compareFrom + "T00:00:00").toISOString());
-      p.set("compareTo", new Date(compareTo + "T23:59:59").toISOString());
+    setLoadingCore(true);
+    setLoadingHeavy(true);
+
+    const baseParams = new URLSearchParams();
+    baseParams.set("from", range.from.toISOString());
+    baseParams.set("to", range.to.toISOString());
+    if (!compareEnabled) baseParams.set("compare", "0");
+    else if (customCompare && compareFrom && compareTo) {
+      baseParams.set("compareFrom", new Date(compareFrom + "T00:00:00").toISOString());
+      baseParams.set("compareTo", new Date(compareTo + "T23:59:59").toISOString());
     }
-    try {
+
+    const fetchSlice = async (kind: "core" | "heavy") => {
+      const p = new URLSearchParams(baseParams);
+      p.set("kind", kind);
       const r = await fetch(`/api/admin/store/stats?${p.toString()}`, { cache: "no-store", signal: ctrl.signal });
       const j = await r.json();
-      if (!ctrl.signal.aborted && j.success) setData(j.data);
-    } catch (e) {
-      // Abortita: non sovrascrivere lo stato. Per qualsiasi altro errore,
-      // resta il dato precedente (l'utente vede "Errore di caricamento" non
-      // necessario qui).
-      if ((e as { name?: string })?.name !== "AbortError") {
-        // Non rilancio: l'UI rimane sul dato precedente.
-      }
-    } finally {
-      if (!ctrl.signal.aborted) setLoading(false);
+      return j.success ? (j.data as ApiData) : null;
+    };
+
+    try {
+      // Lancia in parallelo. Il primo che torna (probabilmente core) aggiorna
+      // i KPI; quando torna l'altro, completa le tabelle.
+      const corePromise = fetchSlice("core").then((d) => {
+        if (!ctrl.signal.aborted && d) {
+          setData((prev) => mergeStats(prev, d, "core"));
+        }
+      }).finally(() => { if (!ctrl.signal.aborted) setLoadingCore(false); });
+
+      const heavyPromise = fetchSlice("heavy").then((d) => {
+        if (!ctrl.signal.aborted && d) {
+          setData((prev) => mergeStats(prev, d, "heavy"));
+        }
+      }).finally(() => { if (!ctrl.signal.aborted) setLoadingHeavy(false); });
+
+      await Promise.all([corePromise, heavyPromise]);
+    } catch {
+      /* abort o network — UI resta sul dato precedente */
     }
   }, [range, compareEnabled, customCompare, compareFrom, compareTo]);
 
@@ -225,6 +274,17 @@ export default function StoreStatsPage() {
       <p className="text-sm text-warm-500 mb-5">
         Vendite, conversione, prodotti e clienti per periodo · confronto col periodo precedente.
       </p>
+
+      {/* Banner caricamento: mostra esattamente cosa è ancora in carico,
+          così l'utente non pensa che la pagina sia bloccata. */}
+      {loading && (
+        <div className="mb-4 inline-flex items-center gap-2 text-xs text-warm-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded">
+          <Loader2 size={12} className="animate-spin text-amber-700" />
+          {loadingCore && loadingHeavy && "Caricamento dati… (KPI e tabelle in corso)"}
+          {loadingCore && !loadingHeavy && "Caricamento KPI…"}
+          {!loadingCore && loadingHeavy && "Caricamento tabelle (prodotti, canali)…"}
+        </div>
+      )}
 
       {/* Selettore periodo */}
       <div className="bg-white border border-warm-200 rounded-lg p-4 mb-6 space-y-3">

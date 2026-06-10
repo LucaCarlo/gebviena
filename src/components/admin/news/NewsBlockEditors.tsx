@@ -16,6 +16,33 @@ import type {
   NewsProductData,
 } from "@/types";
 
+// Helper: l'URL punta a un file video (mp4/webm/...) tra quelli caricabili dal
+// MediaUploadField? In quel caso mostriamo la checkbox autoplay.
+function isUploadedVideo(url: string | undefined | null): boolean {
+  return !!url && /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url);
+}
+
+function VideoPlaybackToggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-start gap-2 cursor-pointer p-3 border border-warm-200 rounded bg-warm-50/50">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 w-4 h-4 accent-warm-800"
+      />
+      <div>
+        <div className="text-sm font-medium text-warm-800">Riproduci il video automaticamente</div>
+        <div className="text-[11px] text-warm-500 mt-0.5">
+          Se attivato: il video parte automaticamente in loop, senza audio e senza
+          controls (effetto background). Se disattivato (default): il visitatore vede
+          i controls e clicca play, con audio.
+        </div>
+      </div>
+    </label>
+  );
+}
+
 function CtaFields({ label, href, sourceLabel, onLabel, onHref }: { label: string; href: string; sourceLabel?: string; onLabel: (v: string) => void; onHref: (v: string) => void }) {
   const [uploading, setUploading] = useState(false);
   const uploadPdf = async (file: File) => {
@@ -105,6 +132,9 @@ export function ImageTextBgEditor({ data, onChange, sourceData }: { data: NewsIm
         </div>
       </div>
       <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo />
+      {isUploadedVideo(data.imageUrl) && (
+        <VideoPlaybackToggle checked={!!data.videoAutoplay} onChange={(v) => onChange({ ...data, videoAutoplay: v })} />
+      )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (opzionale)</label>
         <BlockRichText value={data.title || ""} onChange={(html) => onChange({ ...data, title: html })} sourceText={sourceData?.title || ""} placeholder="Titolo sezione" />
@@ -143,6 +173,9 @@ export function SingleImageEditor({ data, onChange, sourceData }: { data: NewsSi
   return (
     <div className="space-y-4">
       <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Puoi caricare un'immagine o un video (MP4, WebM)." />
+      {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
+        <VideoPlaybackToggle checked={!!data.videoAutoplay} onChange={(v) => onChange({ ...data, videoAutoplay: v })} />
+      )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">…oppure URL video esterno (YouTube, Vimeo)</label>
         <input type="text" value={data.videoUrl || ""} onChange={(e) => onChange({ ...data, videoUrl: e.target.value })} placeholder="https://www.youtube.com/watch?v=... oppure /uploads/video.mp4" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
@@ -160,6 +193,9 @@ export function ImageWithParagraphEditor({ data, onChange, sourceData }: { data:
   return (
     <div className="space-y-4">
       <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Puoi caricare un'immagine o un video (MP4, WebM)." />
+      {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
+        <VideoPlaybackToggle checked={!!data.videoAutoplay} onChange={(v) => onChange({ ...data, videoAutoplay: v })} />
+      )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">…oppure URL video esterno (YouTube, Vimeo)</label>
         <input type="text" value={data.videoUrl || ""} onChange={(e) => onChange({ ...data, videoUrl: e.target.value })} placeholder="https://www.youtube.com/watch?v=... oppure /uploads/video.mp4" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
@@ -181,6 +217,9 @@ export function FullwidthBannerEditor({ data, onChange, sourceData }: { data: Ne
   return (
     <div className="space-y-4">
       <ImageUploadField label="Immagine o video (full-width, scuro)" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="hero" folder="news" aspectRatio={1600 / 900} acceptVideo />
+      {isUploadedVideo(data.imageUrl) && (
+        <VideoPlaybackToggle checked={!!data.videoAutoplay} onChange={(v) => onChange({ ...data, videoAutoplay: v })} />
+      )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (sovraimpresso)</label>
         <BlockTextInput value={data.title || ""} onChange={(v) => onChange({ ...data, title: v })} sourceText={sourceData?.title || ""} placeholder="Sedute che invitano a restare, momenti che prendono forma" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
