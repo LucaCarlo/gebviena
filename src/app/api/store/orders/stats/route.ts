@@ -74,15 +74,17 @@ export async function GET(req: NextRequest) {
   let consegnati = 0;
   for (const g of globalGroups) {
     const n = g._count._all;
-    if (g.status === "PENDING" && g.paymentProvider === "bonifico") bonificoPending += n;
+    if (g.status === "PENDING") bonificoPending += n;
     else if (g.status === "PAID" || g.status === "PROCESSING") daEvadere += n;
     else if (g.status === "SHIPPED") spediti += n;
     else if (g.status === "DELIVERED") consegnati += n;
   }
 
-  // Totale € in attesa di bonifico (globale).
+  // Totale € in attesa di pagamento (TUTTI i PENDING, qualunque provider:
+  // bonifico, stripe in processing, ecc.). Quello che è "ordine confermato
+  // ma non ancora incassato".
   const bonifico = await prisma.order.aggregate({
-    where: { status: "PENDING", paymentProvider: "bonifico" },
+    where: { status: "PENDING" },
     _sum: { totalCents: true },
   });
 
