@@ -152,6 +152,7 @@ const navSections: NavSection[] = [
       { href: "/admin/store/customers", label: "Clienti", icon: UserRound, permission: "store_customers.view" },
       { href: "/admin/subscribers", label: "Utenti", icon: Users, permission: "newsletter.view" },
       { href: "/admin/persone/professionisti", label: "Professionisti", icon: Briefcase, permission: "newsletter.view" },
+      { href: "/admin/professionals/manage", label: "Gestione professionisti", icon: Shield, permission: "newsletter.view" },
     ],
   },
   {
