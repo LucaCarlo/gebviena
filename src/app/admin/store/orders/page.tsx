@@ -37,7 +37,7 @@ interface OrderListItem {
 }
 
 const STATUS_META: Record<OrderStatus, { label: string; cls: string; Icon: typeof Clock }> = {
-  PENDING:            { label: "In attesa di accredito bonifico", cls: "bg-amber-50 text-amber-800 border-amber-200", Icon: Clock },
+  PENDING:            { label: "In attesa di pagamento",  cls: "bg-amber-50 text-amber-800 border-amber-200", Icon: Clock },
   ABANDONED_CHECKOUT: { label: "Checkout abbandonato",   cls: "bg-orange-50 text-orange-800 border-orange-200",      Icon: Ban },
   PAYMENT_FAILED:     { label: "Errore pagamento",       cls: "bg-red-50 text-red-800 border-red-200",               Icon: AlertTriangle },
   CANCELLED:          { label: "Annullato dal cliente",  cls: "bg-blue-50 text-blue-800 border-blue-200",            Icon: XCircle },
@@ -231,7 +231,7 @@ export default function StoreOrdersPage() {
           </div>
 
           <div className={`rounded-lg border px-4 py-3 bg-amber-50 text-amber-900 border-amber-200 ${stats && stats.pendingBonificoCount === 0 ? "opacity-60" : ""}`}>
-            <div className="text-[11px] font-medium uppercase tracking-wider">In attesa di bonifico</div>
+            <div className="text-[11px] font-medium uppercase tracking-wider">In attesa di pagamento</div>
             <div className="text-2xl md:text-[26px] font-semibold mt-1 leading-tight tabular-nums">
               {stats ? eurFmt(stats.pendingBonificoCents) : "—"}
             </div>
