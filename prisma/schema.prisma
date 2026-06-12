@@ -1814,3 +1814,15 @@ model CatalogCategory {
 
   @@index([isActive])
 }
+
+model StoreStatsDaySnapshot {
+  day             DateTime @id @db.Date
+  revenueCents    BigInt   @default(0)
+  refundCents     BigInt   @default(0)
+  orderCount      Int      @default(0)
+  abandonedCount  Int      @default(0)
+  uniqueVisitors  Int      @default(0)
+  topProductsJson String?  @db.Text
+  channelsJson    String?  @db.Text
+  computedAt      DateTime @default(now())
+}
