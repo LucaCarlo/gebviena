@@ -156,28 +156,29 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    label: "Persone",
+    label: "Tutti gli utenti",
     items: [
-      { href: "/admin/store/customers", label: "Clienti", icon: UserRound, permission: "store_customers.view" },
+      { href: "/admin/store/customers", label: "Clienti dello store", icon: UserRound, permission: "store_customers.view" },
       { href: "/admin/subscribers", label: "Utenti", icon: Users, permission: "newsletter.view" },
       { href: "/admin/persone/professionisti", label: "Professionisti", icon: Briefcase, permission: "newsletter.view" },
-      { href: "/admin/professionals/manage", label: "Gestione professionisti", icon: Shield, permission: "newsletter.view" },
     ],
   },
   {
     label: "Marketing",
     items: [
+      { href: "/admin/analytics", label: "Analisi traffico", icon: BarChart3, permission: "analytics.view" },
+      { href: "/admin/email-analytics", label: "Analitiche inviti", icon: BarChart3, permission: "newsletter.view" },
       { href: "/admin/email-templates", label: "Email", icon: FileText, permission: "email_templates.view" },
-      { href: "/admin/email-analytics", label: "Analitiche Evento", icon: BarChart3, permission: "newsletter.view" },
-      { href: "/admin/landing-page", label: "Landing Page", icon: QrCode, permission: "landing_page.view" },
       { href: "/admin/forms", label: "Forms", icon: Settings, permission: "forms.view" },
       { href: "/admin/contacts", label: "Messaggi", icon: Mail, permission: "contacts.view" },
+      { href: "/admin/landing-page", label: "Landing Page", icon: QrCode, permission: "landing_page.view" },
     ],
   },
   {
     label: "Configurazione",
     items: [
       { href: "/admin/gestione-contenuti", label: "Gestione Contenuti", icon: Images, permission: "hero.view" },
+      { href: "/admin/professionals/manage", label: "Gestione professionisti", icon: Shield, permission: "newsletter.view" },
       { href: "/admin/media", label: "Media", icon: ImageIcon, permission: "media.view" },
       { href: "/admin/translations", label: "Traduzioni del sito", icon: Languages, permission: "settings.view" },
       { href: "/admin/redirects", label: "Redirect URL", icon: ArrowRightLeft, permission: "settings.view" },
@@ -188,7 +189,6 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/users", label: "Admin", icon: UserCog, permission: "users.view" },
       { href: "/admin/roles", label: "Ruoli", icon: Shield, permission: "roles.view" },
-      { href: "/admin/analytics", label: "Analisi Traffico", icon: BarChart3, permission: "analytics.view" },
     ],
   },
   {
