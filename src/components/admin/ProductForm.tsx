@@ -7,6 +7,7 @@ import { slugify } from "@/lib/utils";
 import { Plus, X, Upload, FileText, Trash2, ImageIcon } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
 import GalleryUploadField from "./GalleryUploadField";
+import ImageAltField from "./ImageAltField";
 import MediaPickerModal from "./MediaPickerModal";
 import SeoPanel from "./SeoPanel";
 import PconConfigurator from "./PconConfigurator";
@@ -75,14 +76,19 @@ export default function ProductForm({ productId }: ProductFormProps) {
     techSheetUrl: "",
     model2dUrl: "",
     model3dUrl: "",
+    instructionsUrl: "",
+    careUrl: "",
     pconUrl: "",
     pconMoc: "",
     pconBan: "",
     pconSid: "",
     pconOvc: "",
     year: "",
+    isActive: true,
+    scheduledPublishAt: "",
     isFeatured: false,
     isNew: false,
+    excludeFromCatalog: false,
     seoTitle: "",
     seoDescription: "",
     seoKeywords: "[]",
@@ -130,14 +136,19 @@ export default function ProductForm({ productId }: ProductFormProps) {
         techSheetUrl: p.techSheetUrl || "",
         model2dUrl: p.model2dUrl || "",
         model3dUrl: p.model3dUrl || "",
+        instructionsUrl: p.instructionsUrl || "",
+        careUrl: p.careUrl || "",
         pconUrl: p.pconUrl || "",
         pconMoc: p.pconMoc || "",
         pconBan: p.pconBan || "",
         pconSid: p.pconSid || "",
         pconOvc: p.pconOvc || "",
         year: p.year != null ? String(p.year) : "",
+        isActive: p.isActive !== false,
+        scheduledPublishAt: p.scheduledPublishAt ? new Date(p.scheduledPublishAt).toISOString().slice(0, 16) : "",
         isFeatured: p.isFeatured,
         isNew: p.isNew || false,
+        excludeFromCatalog: p.excludeFromCatalog || false,
         seoTitle: p.seoTitle || "",
         seoDescription: p.seoDescription || "",
         seoKeywords: p.seoKeywords || "[]",
@@ -156,11 +167,22 @@ export default function ProductForm({ productId }: ProductFormProps) {
 
   useEffect(() => { loadProduct(); }, [loadProduct]);
 
-  // Track previous subcategory to detect changes
-  const prevSubcategoryRef = useRef(form.subcategory);
+  // Track previous subcategory to detect changes (user-driven only)
+  const prevSubcategoryRef = useRef<string | null>(null);
+  const isInitialLoadRef = useRef(true);
 
-  // Auto-assign typologies ONLY when category changes (not on load)
+  // Auto-assign typologies SOLO quando l'utente cambia subcategory dall'UI,
+  // MAI al caricamento iniziale (altrimenti sovrascrive le tipologie reali
+  // del prodotto con quelle pre-associate alla category, falsando il form).
   useEffect(() => {
+    // Primo render dopo loadProduct: sincronizza ref e basta
+    if (isInitialLoadRef.current) {
+      if (form.subcategory) {
+        prevSubcategoryRef.current = form.subcategory;
+        isInitialLoadRef.current = false;
+      }
+      return;
+    }
     if (form.subcategory && form.subcategory !== prevSubcategoryRef.current) {
       const cat = allCategories.find((c) => c.value === form.subcategory);
       if (cat && cat.typologies.length > 0) {
@@ -263,6 +285,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
         pconSid: form.pconSid || null,
         pconOvc: form.pconOvc || null,
         techSheetUrl: form.techSheetUrl || null,
+        instructionsUrl: form.instructionsUrl || null,
+        careUrl: form.careUrl || null,
+        isActive: form.isActive,
+        scheduledPublishAt: form.scheduledPublishAt ? new Date(form.scheduledPublishAt).toISOString() : null,
         extraDimensions: extraDimensions.map((d) => {
           const cleanedValues = d.values ? filterValuesToBlock(d.values, d.blockId) : "";
           return {
@@ -345,7 +371,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex gap-6 items-start">
       {/* Left: main form */}
-      <div className="flex-1 min-w-0 max-w-4xl space-y-6">
+      <div className="flex-1 min-w-0 space-y-6">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">{error}</div>
       )}
@@ -467,7 +493,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
           />
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -488,6 +514,18 @@ export default function ProductForm({ productId }: ProductFormProps) {
             />
             <label htmlFor="isNew" className="text-sm text-warm-600">Nuovo</label>
           </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="excludeFromCatalog"
+              checked={form.excludeFromCatalog}
+              onChange={(e) => updateField("excludeFromCatalog", e.target.checked)}
+              className="rounded border-warm-300"
+            />
+            <label htmlFor="excludeFromCatalog" className="text-sm text-warm-600" title="Spunta se questo prodotto deve apparire SOLO nello store online e NON nel catalogo del sito principale">
+              Solo store (escludi dal catalogo sito)
+            </label>
+          </div>
         </div>
       </div>
 
@@ -501,41 +539,50 @@ export default function ProductForm({ productId }: ProductFormProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ImageUploadField
-            label="Immagine Cover"
-            value={form.coverImage}
-            onChange={(url) => updateField("coverImage", url)}
-            onRemove={() => updateField("coverImage", "")}
-            purpose="cover"
-            folder="products"
-            helpText="Mostrata nella griglia prodotti dello shop"
-            recommendedSize="960 x 960 px (quadrata 1:1)"
-            aspectRatio={1}
-          />
+          <div>
+            <ImageUploadField
+              label="Immagine Cover"
+              value={form.coverImage}
+              onChange={(url) => updateField("coverImage", url)}
+              onRemove={() => updateField("coverImage", "")}
+              purpose="cover"
+              folder="products"
+              helpText="Mostrata nella griglia prodotti dello shop"
+              recommendedSize="960 x 960 px (quadrata 1:1)"
+              aspectRatio={1}
+            />
+            <ImageAltField url={form.coverImage} label="Alt text immagine cover" />
+          </div>
 
-          <ImageUploadField
-            label="Immagine Hero"
-            value={form.heroImage}
-            onChange={(url) => updateField("heroImage", url)}
-            onRemove={() => updateField("heroImage", "")}
-            purpose="hero"
-            folder="products"
-            helpText="Banner a tutta larghezza nella pagina prodotto"
-            recommendedSize="1600 x 1000 px (orizzontale 8:5)"
-            aspectRatio={1600 / 1000}
-          />
+          <div>
+            <ImageUploadField
+              label="Immagine Hero"
+              value={form.heroImage}
+              onChange={(url) => updateField("heroImage", url)}
+              onRemove={() => updateField("heroImage", "")}
+              purpose="hero"
+              folder="products"
+              helpText="Banner a tutta larghezza nella pagina prodotto"
+              recommendedSize="1600 x 1000 px (orizzontale 8:5)"
+              aspectRatio={1600 / 1000}
+            />
+            <ImageAltField url={form.heroImage} label="Alt text immagine hero" />
+          </div>
 
-          <ImageUploadField
-            label="Immagine Laterale"
-            value={form.sideImage}
-            onChange={(url) => updateField("sideImage", url)}
-            onRemove={() => updateField("sideImage", "")}
-            purpose="side"
-            folder="products"
-            helpText="Sezione descrizione, affiancata al testo"
-            recommendedSize="1440 x 1920 px (verticale 3:4)"
-            aspectRatio={1440 / 1920}
-          />
+          <div>
+            <ImageUploadField
+              label="Immagine Laterale"
+              value={form.sideImage}
+              onChange={(url) => updateField("sideImage", url)}
+              onRemove={() => updateField("sideImage", "")}
+              purpose="side"
+              folder="products"
+              helpText="Sezione descrizione, affiancata al testo"
+              recommendedSize="1440 x 1920 px (verticale 3:4)"
+              aspectRatio={1440 / 1920}
+            />
+            <ImageAltField url={form.sideImage} label="Alt text immagine laterale" />
+          </div>
         </div>
 
         <GalleryUploadField
@@ -578,6 +625,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
                         </button>
                       ))}
                     </div>
+                    <ImageAltField url={url} label="Alt text" />
                   </div>
                 );
               })}
@@ -830,9 +878,41 @@ export default function ProductForm({ productId }: ProductFormProps) {
               pconBan: next.ban || "",
               pconSid: next.sid || "",
               pconOvc: next.ovc || "",
+              // Svuota pconUrl (link completo): se l'admin sta usando il configuratore
+              // dei 4 campi, il render della pagina prodotto deve usare quelli e non
+              // un eventuale URL completo legacy che farebbe da override silenzioso.
+              pconUrl: "",
             }));
           }}
         />
+      </div>
+
+      {/* PUBBLICAZIONE & PROGRAMMAZIONE */}
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Pubblicazione</h3>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.isActive}
+            onChange={(e) => updateField("isActive", e.target.checked)}
+            className="accent-warm-800"
+          />
+          <span className="text-sm text-warm-800">Pubblicato (visibile sul sito)</span>
+        </label>
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+            Pubblicazione programmata <span className="text-warm-400 normal-case">(opzionale)</span>
+          </label>
+          <input
+            type="datetime-local"
+            value={form.scheduledPublishAt}
+            onChange={(e) => updateField("scheduledPublishAt", e.target.value)}
+            className="border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none"
+          />
+          <p className="text-[10px] text-warm-500 mt-1">
+            Se imposti una data futura, il prodotto verrà pubblicato automaticamente in quel momento (controllo ogni 5 min).
+          </p>
+        </div>
       </div>
 
       {/* DOCUMENTAZIONE PDF */}
@@ -860,9 +940,21 @@ export default function ProductForm({ productId }: ProductFormProps) {
           accept=".zip,.rar,.dwg,.dxf,.step,.stp,.iges,.igs,.stl,.obj,.3ds,.fbx,.skp,.gltf,.glb,.dae,.ply,application/zip,application/x-zip-compressed,application/vnd.rar,application/x-rar-compressed"
           fileLabel="file"
         />
+        <PdfUploadField
+          label="Istruzioni di montaggio"
+          value={form.instructionsUrl}
+          onChange={(url) => updateField("instructionsUrl", url)}
+          folder="instructions"
+        />
+        <PdfUploadField
+          label="Cura e manutenzione"
+          value={form.careUrl}
+          onChange={(url) => updateField("careUrl", url)}
+          folder="care"
+        />
       </div>
 
-      <div className="flex gap-3">
+      <div className="sticky bottom-0 -mx-4 lg:-mx-8 px-4 lg:px-8 py-3 bg-warm-50 border-t border-warm-200 flex gap-3 z-10">
         <button
           type="submit"
           disabled={loading}
