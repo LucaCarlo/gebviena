@@ -13,6 +13,25 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// Cache in memoria per le risposte assemblate. TTL breve perché oggi cambia
+// continuamente. Chiave = tutti i parametri di query rilevanti.
+type CacheEntry = { expires: number; payload: unknown };
+const RESPONSE_CACHE = new Map<string, CacheEntry>();
+const RESPONSE_CACHE_TTL_MS = 30_000;
+function cacheGet(key: string): unknown | null {
+  const v = RESPONSE_CACHE.get(key);
+  if (!v) return null;
+  if (Date.now() > v.expires) { RESPONSE_CACHE.delete(key); return null; }
+  return v.payload;
+}
+function cachePut(key: string, payload: unknown): void {
+  if (RESPONSE_CACHE.size > 200) {
+    const oldestKey = RESPONSE_CACHE.keys().next().value;
+    if (oldestKey) RESPONSE_CACHE.delete(oldestKey);
+  }
+  RESPONSE_CACHE.set(key, { expires: Date.now() + RESPONSE_CACHE_TTL_MS, payload });
+}
+
 interface PeriodInput { from: Date; to: Date }
 interface ProductRow { name: string; slug: string | null; quantity: number; revenueCents: number }
 interface ChannelRow { name: string; count: number }
@@ -143,10 +162,24 @@ async function computePeriod({ from, to }: PeriodInput, kind: "core" | "heavy" |
 }
 
 export async function GET(req: NextRequest) {
+  const t0 = Date.now();
   const auth = await requirePermission("store_orders", "view");
+  const tAuth = Date.now();
   if (isErrorResponse(auth)) return auth;
 
   const sp = req.nextUrl.searchParams;
+  // Chiave cache: tutti i parametri rilevanti (ordinati)
+  const cacheKey = ["from","to","compare","kind","compareFrom","compareTo"].map((k) => `${k}=${sp.get(k) || ""}`).join("&");
+  const cached = cacheGet(cacheKey);
+  if (cached) {
+    const t = Date.now() - t0;
+    // eslint-disable-next-line no-console
+    console.log(`[stats] CACHE HIT ${cacheKey.slice(0,120)} total=${t}ms`);
+    const res = NextResponse.json(cached);
+    res.headers.set("Cache-Control", "private, max-age=60, stale-while-revalidate=120");
+    res.headers.set("X-Backend-Time", `${t}ms (cache)`);
+    return res;
+  }
   const now = new Date();
   const defaultFrom = new Date(now.getTime() - 30 * 86400000);
   const from = parseDate(sp.get("from"), defaultFrom);
@@ -173,6 +206,7 @@ export async function GET(req: NextRequest) {
       _sum: { refundAmountCents: true },
     }),
   ]);
+  const tCompute = Date.now();
 
   const data: {
     current: PeriodStats;
@@ -186,7 +220,14 @@ export async function GET(req: NextRequest) {
     };
   }
 
-  const res = NextResponse.json({ success: true, data });
+  const total = Date.now() - t0;
+  // eslint-disable-next-line no-console
+  console.log(`[stats] kind=${kind} compare=${wantCompare ? "1" : "0"} from=${from.toISOString().slice(0,10)} to=${to.toISOString().slice(0,10)} auth=${tAuth-t0}ms compute=${tCompute-tAuth}ms total=${total}ms`);
+
+  const payload = { success: true, data };
+  cachePut(cacheKey, payload);
+  const res = NextResponse.json(payload);
   res.headers.set("Cache-Control", "private, max-age=60, stale-while-revalidate=120");
+  res.headers.set("X-Backend-Time", `${total}ms`);
   return res;
 }
