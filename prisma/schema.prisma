@@ -1800,3 +1800,17 @@ model CompanyAsset {
   @@index([sortOrder])
   @@index([isActive])
 }
+
+model CatalogCategory {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  label        String
+  labelI18n    String?  @db.Text
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  showInPublic Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive])
+}

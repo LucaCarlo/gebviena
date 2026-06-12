@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Download } from "lucide-react";
 
@@ -15,58 +15,96 @@ interface Catalog {
   isActive: boolean;
 }
 
+interface Category {
+  slug: string;
+  label: string;
+  sortOrder: number;
+}
+
 interface I18n {
   loading: string;
   empty: string;
   previewUnavailable: string;
   pdfUnavailable: string;
   downloadPdf: string;
-  sectionCataloghi: string;
-  sectionSlowLiving: string;
-  sectionPoster: string;
+  allLabel: string;
 }
 
 export default function CataloghiClient({ lang, i18n }: { lang?: string; i18n: I18n }) {
-  void lang; // mantenuto per coerenza, eventuale uso futuro lato client
+  void lang;
   const [catalogs, setCatalogs] = useState<Catalog[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>("__all__");
 
   useEffect(() => {
-    fetch("/api/catalogs")
-      .then((r) => r.json())
-      .then((d) => setCatalogs((d.data || []).filter((c: Catalog) => c.isActive)))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch("/api/catalogs").then((r) => r.json()).catch(() => ({ data: [] })),
+      fetch("/api/catalog-categories").then((r) => r.json()).catch(() => ({ data: [] })),
+    ]).then(([catRes, catgRes]) => {
+      setCatalogs(((catRes.data || []) as Catalog[]).filter((c) => c.isActive));
+      setCategories((catgRes.data || []) as Category[]);
+    }).finally(() => setLoading(false));
   }, []);
+
+  const visibleCategories = useMemo(() => {
+    const usedSlugs = new Set(catalogs.map((c) => c.section));
+    return categories.filter((c) => usedSlugs.has(c.slug));
+  }, [catalogs, categories]);
+
+  const sectionLabel = (sec: string) => categories.find((c) => c.slug === sec)?.label || sec;
 
   if (loading) return <div className="py-20 text-center text-warm-400 text-sm">{i18n.loading}</div>;
   if (catalogs.length === 0) return <div className="py-20 text-center text-warm-400 text-sm">{i18n.empty}</div>;
 
-  const sectionLabel = (sec: string) => {
-    if (sec === "cataloghi") return i18n.sectionCataloghi;
-    if (sec === "slow-living") return i18n.sectionSlowLiving;
-    if (sec === "poster") return i18n.sectionPoster;
-    return sec;
-  };
-
-  const sections = Array.from(new Set(catalogs.map((c) => c.section))).sort();
+  const sectionsToRender = filter === "__all__"
+    ? visibleCategories.map((c) => c.slug)
+    : [filter];
 
   return (
-    <div className="space-y-12">
-      {sections.map((sec) => {
-        const items = catalogs.filter((c) => c.section === sec);
-        return (
-          <section key={sec}>
-            <h2 className="text-[12px] uppercase tracking-[0.2em] text-warm-500 mb-4">{sectionLabel(sec)}</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {items.map((c) => (
-                <CatalogCard key={c.id} c={c} i18n={i18n} />
-              ))}
-            </div>
-          </section>
-        );
-      })}
+    <div className="space-y-10">
+      {/* Filtri pill */}
+      {visibleCategories.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          <FilterPill active={filter === "__all__"} onClick={() => setFilter("__all__")}>{i18n.allLabel}</FilterPill>
+          {visibleCategories.map((c) => (
+            <FilterPill key={c.slug} active={filter === c.slug} onClick={() => setFilter(c.slug)}>{c.label}</FilterPill>
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-12">
+        {sectionsToRender.map((sec) => {
+          const items = catalogs.filter((c) => c.section === sec);
+          if (items.length === 0) return null;
+          return (
+            <section key={sec}>
+              <h2 className="text-[12px] uppercase tracking-[0.2em] text-warm-500 mb-4">{sectionLabel(sec)}</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {items.map((c) => (
+                  <CatalogCard key={c.id} c={c} i18n={i18n} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
     </div>
+  );
+}
+
+function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3.5 py-1.5 text-[11px] uppercase tracking-[0.14em] rounded-full transition-colors ${
+        active
+          ? "bg-warm-900 text-white"
+          : "bg-white text-warm-700 border border-warm-300 hover:bg-warm-100"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, FileText, Copy, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, FileText, Copy, Eye, EyeOff, Settings } from "lucide-react";
 import type { Catalog } from "@/types";
 
 export default function AdminCatalogsPage() {
@@ -55,12 +55,20 @@ export default function AdminCatalogsPage() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold text-warm-800">Cataloghi</h1>
-        <Link
-          href="/admin/catalogs/new"
-          className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
-        >
-          <Plus size={16} /> Nuovo catalogo
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/catalogs/categories"
+            className="flex items-center gap-2 border border-warm-300 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-100 transition-colors"
+          >
+            <Settings size={14} /> Categorie
+          </Link>
+          <Link
+            href="/admin/catalogs/new"
+            className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors"
+          >
+            <Plus size={16} /> Nuovo catalogo
+          </Link>
+        </div>
       </div>
 
       {loading ? (
@@ -117,7 +125,7 @@ export default function AdminCatalogsPage() {
               <tr>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Immagine</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Nome</th>
-                <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Sezione</th>
+                <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Categoria</th>
                 <th className="text-left px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">PDF</th>
                 <th className="text-right px-6 py-3 text-xs font-semibold text-warm-600 uppercase tracking-wider">Azioni</th>
               </tr>

@@ -25,6 +25,7 @@ const D: Record<string, Dict> = {
   "common.loading": { it: "Caricamento…", fr: "Chargement…", en: "Loading…", de: "Lädt…", es: "Cargando…" },
   "common.empty": { it: "Nessun contenuto disponibile.", fr: "Aucun contenu disponible.", en: "No content available.", de: "Keine Inhalte verfügbar.", es: "Sin contenido disponible." },
   "common.download": { it: "Scarica", fr: "Télécharger", en: "Download", de: "Herunterladen", es: "Descargar" },
+  "common.all": { it: "Tutti", fr: "Tous", en: "All", de: "Alle", es: "Todos" },
   "common.download_pdf": { it: "Scarica PDF", fr: "Télécharger PDF", en: "Download PDF", de: "PDF herunterladen", es: "Descargar PDF" },
   "common.open": { it: "Apri", fr: "Ouvrir", en: "Open", de: "Öffnen", es: "Abrir" },
   "common.save": { it: "Salva", fr: "Enregistrer", en: "Save", de: "Speichern", es: "Guardar" },
