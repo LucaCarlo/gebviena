@@ -34,9 +34,7 @@ export default async function Page() {
             previewUnavailable: t("catalogs.preview_unavailable"),
             pdfUnavailable: t("catalogs.pdf_unavailable"),
             downloadPdf: t("common.download_pdf"),
-            sectionCataloghi: t("catalogs.section.cataloghi"),
-            sectionSlowLiving: t("catalogs.section.slow_living"),
-            sectionPoster: t("catalogs.section.poster"),
+            allLabel: t("common.all"),
           }}
         />
       </div>

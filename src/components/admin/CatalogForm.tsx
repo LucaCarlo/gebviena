@@ -12,10 +12,7 @@ interface CatalogFormProps {
   catalogId?: string;
 }
 
-const SECTIONS = [
-  { value: "cataloghi", label: "Cataloghi" },
-  { value: "slow-living", label: "Slow Living Magazine" },
-];
+interface CategoryOption { slug: string; label: string }
 
 export default function CatalogForm({ catalogId }: CatalogFormProps) {
   const tCtx = useTranslationCtx();
@@ -24,6 +21,7 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
   const [error, setError] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -63,6 +61,17 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
   }, [catalogId]);
 
   useEffect(() => { loadCatalog(); }, [loadCatalog]);
+
+  // Carica categorie disponibili (anche disattivate, così l'admin può vedere/mantenere
+  // un valore impostato anche se la categoria è stata disabilitata).
+  useEffect(() => {
+    fetch("/api/admin/catalog-categories")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setCategories((d.data as Array<{ slug: string; label: string }>).map((c) => ({ slug: c.slug, label: c.label })));
+      })
+      .catch(() => {});
+  }, []);
 
   const handleNameChange = (name: string) => {
     setForm((prev) => ({
@@ -177,17 +186,22 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
           </div>
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-              Sezione *
+              Categoria *
             </label>
             <select
               value={form.section}
               onChange={(e) => updateField("section", e.target.value)}
               className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
             >
-              {SECTIONS.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
+              {categories.length === 0 && <option value={form.section}>{form.section || "—"}</option>}
+              {categories.map((c) => (
+                <option key={c.slug} value={c.slug}>{c.label}</option>
               ))}
+              {form.section && !categories.find((c) => c.slug === form.section) && (
+                <option value={form.section}>{form.section} (categoria rimossa)</option>
+              )}
             </select>
+            <a href="/admin/catalogs/categories" className="block text-[10px] text-warm-500 hover:text-warm-800 mt-1">Gestisci categorie →</a>
           </div>
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
