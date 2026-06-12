@@ -148,16 +148,42 @@ export interface DayWithSnapshot {
   data: SnapshotData;
 }
 
+/** Cache del primo giorno con dati (per non iterare anni di giorni vuoti). */
+let _dataStartCache: { value: Date | null; expires: number } | null = null;
+async function getDataStartDay(): Promise<Date | null> {
+  if (_dataStartCache && Date.now() < _dataStartCache.expires) return _dataStartCache.value;
+  const [pvRows, oldestOrder] = await Promise.all([
+    prisma.$queryRaw<{ d: Date | null }[]>`SELECT MIN(createdAt) AS d FROM PageView WHERE host = 'STORE'`,
+    prisma.order.findFirst({ orderBy: { createdAt: "asc" }, select: { createdAt: true } }),
+  ]);
+  const dates: Date[] = [];
+  if (pvRows?.[0]?.d) dates.push(new Date(pvRows[0].d));
+  if (oldestOrder?.createdAt) dates.push(new Date(oldestOrder.createdAt));
+  const min = dates.length > 0 ? new Date(Math.min(...dates.map((d) => d.getTime()))) : null;
+  if (min) min.setHours(0, 0, 0, 0);
+  _dataStartCache = { value: min, expires: Date.now() + 5 * 60 * 1000 };
+  return min;
+}
+
 /**
  * Per ogni giorno passato nel range [from..to] (escluso oggi):
  *   - se snapshot esiste → usa quello
  *   - se manca → calcolalo e salvalo
  * Ritorna i dati pronti da sommare.
+ *
+ * GUARD: clampa `from` al primo giorno con dati reali (evita di iterare anni
+ * di giorni vuoti, es. compare period per "Tutto" che parte nel 1974).
  */
 export async function ensureSnapshotsForRange(from: Date, to: Date): Promise<DayWithSnapshot[]> {
   const today = new Date(); today.setHours(0, 0, 0, 0);
+  const dataStart = await getDataStartDay();
+  if (!dataStart) return []; // niente dati nel DB
+
+  const effectiveFrom = from < dataStart ? dataStart : from;
   const endExclusiveToday = new Date(Math.min(to.getTime(), today.getTime() - 1));
-  const cursor = new Date(from); cursor.setHours(0, 0, 0, 0);
+  if (effectiveFrom > endExclusiveToday) return [];
+
+  const cursor = new Date(effectiveFrom); cursor.setHours(0, 0, 0, 0);
   const days: Date[] = [];
   while (cursor <= endExclusiveToday) {
     days.push(new Date(cursor));
