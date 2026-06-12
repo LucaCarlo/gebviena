@@ -8,6 +8,8 @@ interface SaleConfig {
   endDate: string | null; // ISO date string
   messageIt: string;
   messageFr: string;
+  countdownPrefixIt?: string;
+  countdownPrefixFr?: string;
 }
 
 function diff(endMs: number, nowMs: number) {
@@ -60,7 +62,10 @@ export default function SaleBanner() {
     cfg!.messageIt || "Merce in svendita limitata",
     cfg!.messageFr || cfg!.messageIt || "Marchandise en vente limitée"
   );
-  const closesIn = t("La svendita si chiuderà tra:", "La vente se termine dans :");
+  const closesIn = t(
+    cfg!.countdownPrefixIt || "La vendita speciale si chiuderà tra:",
+    cfg!.countdownPrefixFr || cfg!.countdownPrefixIt || "La vente spéciale se termine dans :"
+  );
 
   return (
     <div

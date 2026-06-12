@@ -274,6 +274,19 @@ const DEFINITIONS: SettingDef[] = [
     placeholder: "Marchandise en vente limitée",
   },
   {
+    key: "store.sale_banner.countdown_prefix_it",
+    group: "store_sale_banner",
+    label: "Testo prima del countdown (IT)",
+    placeholder: "La vendita speciale si chiuderà tra:",
+    hint: "Frase che appare prima del countdown (es. 02 g · 14 h · 23 m). Lascia vuoto per nasconderlo.",
+  },
+  {
+    key: "store.sale_banner.countdown_prefix_fr",
+    group: "store_sale_banner",
+    label: "Testo prima del countdown (FR)",
+    placeholder: "La vente spéciale se termine dans:",
+  },
+  {
     key: "store.sale_banner.end_date",
     group: "store_sale_banner",
     label: "Data e ora di fine svendita",
