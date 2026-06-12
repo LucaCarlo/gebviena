@@ -946,12 +946,9 @@ export default function ProductForm({ productId }: ProductFormProps) {
           onChange={(url) => updateField("instructionsUrl", url)}
           folder="instructions"
         />
-        <PdfUploadField
-          label="Cura e manutenzione"
-          value={form.careUrl}
-          onChange={(url) => updateField("careUrl", url)}
-          folder="care"
-        />
+        {/* "Cura e manutenzione" rimossa: i PDF di cura/manutenzione sono
+            ora generali e si gestiscono in
+            Admin → Gestione professionisti → Informazioni tecniche. */}
       </div>
 
       <div className="sticky bottom-0 -mx-4 lg:-mx-8 px-4 lg:px-8 py-3 bg-warm-50 border-t border-warm-200 flex gap-3 z-10">
