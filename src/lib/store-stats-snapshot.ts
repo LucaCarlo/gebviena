@@ -191,10 +191,25 @@ export async function ensureSnapshotsForRange(from: Date, to: Date): Promise<Day
   }
   if (days.length === 0) return [];
 
-  const existing = await prisma.storeStatsDaySnapshot.findMany({
-    where: { day: { in: days } },
-  });
-  const existingByKey = new Map(existing.map((s) => [dayKey(s.day), s]));
+  // Usa raw SQL con date string per evitare il TZ-shift Prisma su @db.Date:
+  // se server è CEST (UTC+2), passare JS Date "2026-06-11 00:00 local" diventa
+  // "2026-06-10 22:00 UTC" → MySQL la legge come DATE '2026-06-10', miss del row '2026-06-11'.
+  const dayStrings = days.map((d) => dayKey(d));
+  const existingRaw = await prisma.$queryRaw<{
+    day: Date; revenueCents: bigint; refundCents: bigint; orderCount: number;
+    abandonedCount: number; uniqueVisitors: number;
+    topProductsJson: string | null; channelsJson: string | null;
+  }[]>(Prisma.sql`
+    SELECT day, revenueCents, refundCents, orderCount, abandonedCount, uniqueVisitors, topProductsJson, channelsJson
+    FROM StoreStatsDaySnapshot WHERE day IN (${Prisma.join(dayStrings)})
+  `);
+  const existingByKey = new Map(existingRaw.map((s) => {
+    // s.day arriva come Date a UTC-midnight; dayKey() (che usa metodi locali)
+    // potrebbe ritornare il giorno PRECEDENTE in TZ negativa. Per coerenza
+    // ricalcoliamo la chiave usando UTC.
+    const k = `${s.day.getUTCFullYear()}-${String(s.day.getUTCMonth() + 1).padStart(2,"0")}-${String(s.day.getUTCDate()).padStart(2,"0")}`;
+    return [k, s];
+  }));
 
   const missing = days.filter((d) => !existingByKey.has(dayKey(d)));
   // Calcola in parallelo (max 6 alla volta per non saturare il pool)
@@ -215,7 +230,6 @@ export async function ensureSnapshotsForRange(from: Date, to: Date): Promise<Day
         uniqueVisitors: data.uniqueVisitors,
         topProductsJson: JSON.stringify(data.topProducts),
         channelsJson: JSON.stringify(data.channels),
-        computedAt: new Date(),
       });
     }
   }
