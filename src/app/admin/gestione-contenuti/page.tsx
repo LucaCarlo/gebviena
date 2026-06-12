@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   ChevronDown,
   Save,
@@ -14,11 +15,40 @@ import {
   Image as LucideImage,
   Images,
   Languages,
+  Home,
+  Package,
+  Briefcase,
+  Globe,
+  Award,
+  Phone,
+  ShoppingBag,
+  Menu as MenuIcon,
+  Box,
 } from "lucide-react";
 import { HERO_PAGES, PAGE_IMAGES_CONFIG } from "@/lib/constants";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 import { UI_STRINGS_BY_KEY } from "@/lib/ui-strings";
 import type { HeroSlide, PageImage } from "@/types";
+
+/* ── Tab groups (ordinamento user-friendly) ── */
+type TabKey =
+  | "homepage" | "prodotti" | "progetti" | "mondo-gtv"
+  | "professionisti" | "contatti" | "shop" | "header" | "footer" | "altro";
+
+const TABS: { key: TabKey; label: string; icon: React.ElementType; pages: string[] }[] = [
+  { key: "homepage",       label: "Homepage",                icon: Home,        pages: ["homepage"] },
+  { key: "prodotti",       label: "Pagina Prodotti",         icon: Package,     pages: ["products", "prodotti-dettaglio"] },
+  { key: "progetti",       label: "Pagina Progetti",         icon: Briefcase,   pages: ["projects"] },
+  { key: "mondo-gtv",      label: "Mondo GTV",               icon: Globe,       pages: ["mondo-gtv", "curvatura-legno", "sostenibilita", "designer-e-premi", "experience", "gtv-experience", "campagne-video", "news", "collaborazioni", "heritage", "brand-manifesto", "realizzazioni-custom"] },
+  { key: "professionisti", label: "Frontend Professionisti", icon: Award,       pages: ["professionisti", "cataloghi", "materiale-tecnico", "ufficio-stampa", "rete-vendita", "richiesta-info"] },
+  { key: "contatti",       label: "Contatti",                icon: Phone,       pages: ["contatti"] },
+  { key: "shop",           label: "Shop",                    icon: ShoppingBag, pages: ["store-home"] },
+  { key: "header",         label: "Header / Menu",           icon: MenuIcon,    pages: ["menu"] },
+  { key: "footer",         label: "Footer",                  icon: Box,         pages: ["footer"] },
+  { key: "altro",          label: "Altro",                   icon: Box,         pages: [] }, // pagine non mappate (fallback)
+];
+const VALID_TAB_KEYS: TabKey[] = TABS.map((t) => t.key);
+const PAGES_IN_NAMED_TABS = new Set(TABS.flatMap((t) => t.pages));
 
 interface LanguageRow {
   code: string;
@@ -55,6 +85,24 @@ const ALL_PAGES: { value: string; label: string; hasHero: boolean; hasImages: bo
 })();
 
 export default function GestioneImmaginiPage() {
+  /* ── Tab routing ── */
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get("tab") as TabKey | null;
+  const initialTab: TabKey = tabFromUrl && VALID_TAB_KEYS.includes(tabFromUrl) ? tabFromUrl : "homepage";
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+  useEffect(() => {
+    const t = searchParams.get("tab") as TabKey | null;
+    const next: TabKey = t && VALID_TAB_KEYS.includes(t) ? t : "homepage";
+    if (next !== activeTab) setActiveTab(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+  const switchTab = useCallback((t: TabKey) => {
+    setActiveTab(t);
+    router.replace(`${pathname}?tab=${t}`, { scroll: false });
+  }, [router, pathname]);
+
   /* ── State ── */
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [images, setImages] = useState<PageImage[]>([]);
@@ -150,11 +198,21 @@ export default function GestioneImmaginiPage() {
     return existing?.imageUrl || defaultUrl;
   };
 
-  const getLinkUrl = (page: string, section: string) => {
-    const key = `${page}:${section}`;
+  const defaultLang = languages.find((l) => l.isDefault)?.code || "it";
+
+  const getLinkUrl = (page: string, section: string, lang: string) => {
+    const key = `${lang}:${page}:${section}`;
     if (key in linkEdits) return linkEdits[key];
     const existing = images.find((i) => i.page === page && i.section === section);
-    return existing?.linkUrl || "";
+    if (!existing) return "";
+    if (lang === defaultLang) return existing.linkUrl || "";
+    if (existing.linkUrlI18n) {
+      try {
+        const m = JSON.parse(existing.linkUrlI18n) as Record<string, string>;
+        return m?.[lang] || "";
+      } catch { return ""; }
+    }
+    return "";
   };
 
   const handleImageChange = (page: string, section: string, url: string) => {
@@ -163,8 +221,8 @@ export default function GestioneImmaginiPage() {
     setSaved(false);
   };
 
-  const handleLinkChange = (page: string, section: string, url: string) => {
-    setLinkEdits((prev) => ({ ...prev, [`${page}:${section}`]: url }));
+  const handleLinkChange = (page: string, section: string, lang: string, url: string) => {
+    setLinkEdits((prev) => ({ ...prev, [`${lang}:${page}:${section}`]: url }));
     setDirty(true);
     setSaved(false);
   };
@@ -193,18 +251,28 @@ export default function GestioneImmaginiPage() {
     setSaving(true);
     setSaved(false);
 
-    const imagesToSave: { page: string; section: string; label: string; imageUrl: string; linkUrl?: string | null; sortOrder: number }[] = [];
+    const imagesToSave: { page: string; section: string; label: string; imageUrl: string; linkUrl?: string | null; linkUrlI18n?: string | null; sortOrder: number }[] = [];
     for (const pageConfig of PAGE_IMAGES_CONFIG) {
       for (let idx = 0; idx < pageConfig.images.length; idx++) {
         const imgConfig = pageConfig.images[idx];
         const url = getImageUrl(pageConfig.page, imgConfig.section, imgConfig.defaultUrl);
-        const link = imgConfig.acceptLink ? getLinkUrl(pageConfig.page, imgConfig.section) : null;
+        // Link di default (lingua di default) + mappa per le altre lingue.
+        const link = imgConfig.acceptLink ? getLinkUrl(pageConfig.page, imgConfig.section, defaultLang) : "";
+        let linkI18n: Record<string, string> | null = null;
+        if (imgConfig.acceptLink) {
+          for (const l of languages) {
+            if (l.code === defaultLang) continue;
+            const v = getLinkUrl(pageConfig.page, imgConfig.section, l.code).trim();
+            if (v) { (linkI18n ||= {})[l.code] = v; }
+          }
+        }
         imagesToSave.push({
           page: pageConfig.page,
           section: imgConfig.section,
           label: imgConfig.label,
           imageUrl: url,
           linkUrl: link || null,
+          linkUrlI18n: linkI18n ? JSON.stringify(linkI18n) : null,
           sortOrder: idx,
         });
       }
@@ -306,10 +374,17 @@ export default function GestioneImmaginiPage() {
 
   const hasImageData = images.length > 0;
 
+  // Pagine visibili nel tab attivo (mantiene l'ordine di ALL_PAGES)
+  const activeTabMeta = TABS.find((t) => t.key === activeTab)!;
+  const visiblePages = activeTab === "altro"
+    ? ALL_PAGES.filter((p) => !PAGES_IN_NAMED_TABS.has(p.value))
+    : ALL_PAGES.filter((p) => activeTabMeta.pages.includes(p.value))
+      .sort((a, b) => activeTabMeta.pages.indexOf(a.value) - activeTabMeta.pages.indexOf(b.value));
+
   return (
     <div>
       {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-warm-800">Gestione Contenuti</h1>
           <p className="text-sm text-warm-500 mt-1">
@@ -359,9 +434,41 @@ export default function GestioneImmaginiPage() {
         </div>
       </div>
 
-      {/* ── Pages list ── */}
-      <div className="space-y-3">
-        {ALL_PAGES.map((page) => {
+      {/* ── Layout tab verticali (come Gestione Professionisti) ── */}
+      <div className="flex flex-col md:flex-row gap-6">
+        <nav className="md:w-64 flex-shrink-0">
+          <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+            {TABS.filter((t) => {
+              if (t.key === "altro") {
+                return ALL_PAGES.some((p) => !PAGES_IN_NAMED_TABS.has(p.value));
+              }
+              return true;
+            }).map((t) => {
+              const Icon = t.icon;
+              const isActive = activeTab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => switchTab(t.key)}
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors text-left ${
+                    isActive ? "bg-warm-800 text-white" : "text-warm-600 hover:bg-warm-100 hover:text-warm-800"
+                  }`}
+                >
+                  <Icon size={18} />
+                  <span className="hidden md:inline">{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        <div className="flex-1 min-w-0 space-y-3">
+        {visiblePages.length === 0 && (
+          <div className="bg-white rounded-xl border border-warm-200 p-10 text-center text-warm-400 text-sm">
+            Nessuna pagina configurata in questa sezione.
+          </div>
+        )}
+        {visiblePages.map((page) => {
           const isOpen = expanded[page.value] ?? false;
           const pageSlides = slides.filter((s) => s.page === page.value);
           const pageConfig = PAGE_IMAGES_CONFIG.find((c) => c.page === page.value);
@@ -549,16 +656,20 @@ export default function GestioneImmaginiPage() {
                             {imgConfig.acceptLink && (
                               <div>
                                 <label className="block text-[11px] font-semibold text-warm-600 uppercase tracking-wider mb-1">
-                                  Link URL (opzionale)
+                                  Link URL — {targetLang.toUpperCase()} (opzionale)
                                 </label>
                                 <input
                                   type="url"
-                                  value={getLinkUrl(pageConfig.page, imgConfig.section)}
-                                  onChange={(e) => handleLinkChange(pageConfig.page, imgConfig.section, e.target.value)}
+                                  value={getLinkUrl(pageConfig.page, imgConfig.section, targetLang)}
+                                  onChange={(e) => handleLinkChange(pageConfig.page, imgConfig.section, targetLang, e.target.value)}
                                   placeholder="https://... oppure /prodotti/nome-prodotto"
                                   className="w-full border border-warm-300 rounded px-3 py-1.5 text-xs focus:border-warm-800 focus:outline-none"
                                 />
-                                <p className="text-[10px] text-warm-400 mt-1">Se compilato, il CTA della sezione punterà a questo URL (accetta path interni o URL completi).</p>
+                                <p className="text-[10px] text-warm-400 mt-1">
+                                  {targetLang === defaultLang
+                                    ? "CTA della sezione (lingua di default). Cambia lingua qui sopra per impostare un link diverso per le altre lingue."
+                                    : `Link per la lingua ${targetLang.toUpperCase()}. Se vuoto, viene usato il link di default (${defaultLang.toUpperCase()}).`}
+                                </p>
                               </div>
                             )}
                             {imgConfig.textKeys && imgConfig.textKeys.length > 0 && (
@@ -610,6 +721,7 @@ export default function GestioneImmaginiPage() {
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
