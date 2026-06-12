@@ -13,6 +13,10 @@ export interface PconConfig {
   sid?: string | null;
   ovc?: string | null;
   lang?: string | null;
+  // Se true → mantiene la barra superiore di pCon con "Apri catalogo / Torna
+  // al catalogo" (sh=true). Default false (sh=false), usato dove embediamo
+  // il configuratore in pagina prodotto come anteprima.
+  showCatalogBar?: boolean;
 }
 
 export function hasPconConfig(p: PconConfig): boolean {
@@ -28,8 +32,10 @@ export function buildPconUrl(p: PconConfig): string {
   if (p.ovc && p.ovc.trim()) parts.push(`ovc=${encodeURIComponent(p.ovc.trim())}`);
   const lang = (p.lang && p.lang.trim()) || PCON_DEFAULT_LANG;
   parts.push(`lang=${encodeURIComponent(lang)}`);
-  // sh=false → nasconde la barra "Aprire il catalogo" in alto al configuratore.
-  parts.push("sh=false");
+  // sh controlla la barra "Apri catalogo" in alto al configuratore di pCon.
+  // Per l'area professionisti vogliamo true (così l'utente ha il pulsante
+  // "torna al catalogo" integrato). Per embed in pagina prodotto: false.
+  parts.push(`sh=${p.showCatalogBar ? "true" : "false"}`);
   return parts.join("&");
 }
 
