@@ -275,17 +275,6 @@ export default function StoreStatsPage() {
         Vendite, conversione, prodotti e clienti per periodo · confronto col periodo precedente.
       </p>
 
-      {/* Banner caricamento: mostra esattamente cosa è ancora in carico,
-          così l'utente non pensa che la pagina sia bloccata. */}
-      {loading && (
-        <div className="mb-4 inline-flex items-center gap-2 text-xs text-warm-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded">
-          <Loader2 size={12} className="animate-spin text-amber-700" />
-          {loadingCore && loadingHeavy && "Caricamento dati… (KPI e tabelle in corso)"}
-          {loadingCore && !loadingHeavy && "Caricamento KPI…"}
-          {!loadingCore && loadingHeavy && "Caricamento tabelle (prodotti, canali)…"}
-        </div>
-      )}
-
       {/* Selettore periodo */}
       <div className="bg-white border border-warm-200 rounded-lg p-4 mb-6 space-y-3">
         <div className="flex flex-wrap items-center gap-2">

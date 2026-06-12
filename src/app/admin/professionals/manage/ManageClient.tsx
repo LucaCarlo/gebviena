@@ -60,44 +60,46 @@ export default function ManageClient() {
   const ActiveIcon = activeMeta.icon;
 
   return (
-    <div className="flex flex-col md:flex-row gap-6">
-      {/* Vertical tabs (desktop) / Horizontal pills (mobile) */}
-      <nav className="md:w-64 flex-shrink-0">
-        <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const isActive = active === t.key;
-            return (
-              <button
-                key={t.key}
-                onClick={() => switchTab(t.key)}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors text-left ${
-                  isActive
-                    ? "bg-warm-800 text-white"
-                    : "text-warm-600 hover:bg-warm-100 hover:text-warm-800"
-                }`}
-              >
-                <Icon size={18} />
-                <span className="hidden md:inline">{t.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+    <div>
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Vertical tabs (desktop) / Horizontal pills (mobile) */}
+        <nav className="md:w-64 flex-shrink-0">
+          <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              const isActive = active === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => switchTab(t.key)}
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors text-left ${
+                    isActive
+                      ? "bg-warm-800 text-white"
+                      : "text-warm-600 hover:bg-warm-100 hover:text-warm-800"
+                  }`}
+                >
+                  <Icon size={18} />
+                  <span className="hidden md:inline">{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <section className="bg-white rounded-lg border border-warm-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-warm-200 bg-warm-50/50 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-warm-900 text-white flex items-center justify-center">
-              <ActiveIcon size={16} />
+        {/* Content */}
+        <div className="flex-1 min-w-0 space-y-5">
+          {/* Sezione attiva: titolo+sottotitolo sul background (no strip grigia) */}
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-warm-800 text-white flex items-center justify-center flex-shrink-0">
+              <ActiveIcon size={18} />
             </div>
             <div>
-              <div className="font-medium text-warm-900">{activeMeta.label}</div>
-              <div className="text-xs text-warm-500">{activeMeta.subtitle}</div>
+              <h2 className="text-lg font-semibold text-warm-800">{activeMeta.label}</h2>
+              <p className="text-sm text-warm-500 mt-0.5">{activeMeta.subtitle}</p>
             </div>
           </div>
-          <div className="p-6">
+
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
             {active === "bacheca" && <BachecaTab />}
 
             {active === "tecnica" && (
@@ -163,7 +165,7 @@ export default function ManageClient() {
 
             {active === "impostazioni" && <AreaSettingsTab />}
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );

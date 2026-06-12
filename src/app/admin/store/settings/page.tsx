@@ -649,18 +649,19 @@ export default function StoreSettingsPage() {
         </nav>
 
         {/* Tab content */}
-        <div className="flex-1 min-w-0">
-          <section className="bg-white rounded-lg border border-warm-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-warm-200 bg-warm-50/50 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-warm-900 text-white flex items-center justify-center">
-                <ActiveIcon size={16} />
-              </div>
-              <div>
-                <div className="font-medium text-warm-900">{activeMeta.title}</div>
-                <div className="text-xs text-warm-500">{activeMeta.subtitle}</div>
-              </div>
+        <div className="flex-1 min-w-0 space-y-5">
+          {/* Sezione attiva: titolo+sottotitolo sul background (no strip grigia) */}
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-warm-800 text-white flex items-center justify-center flex-shrink-0">
+              <ActiveIcon size={18} />
             </div>
-            <div className="p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold text-warm-800">{activeMeta.title}</h2>
+              <p className="text-sm text-warm-500 mt-0.5">{activeMeta.subtitle}</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
               {activeTab === "store_sorting" && (
                 <SortingTab values={sorting} onChange={setSorting} />
               )}
@@ -845,8 +846,7 @@ export default function StoreSettingsPage() {
                   </div>
                 );
               })}
-            </div>
-          </section>
+          </div>
 
           <div className="flex justify-end mt-6">
             <button
