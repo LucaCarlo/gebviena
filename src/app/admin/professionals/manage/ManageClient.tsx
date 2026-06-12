@@ -134,9 +134,9 @@ export default function ManageClient() {
             {active === "aziendale" && (
               <RedirectCard
                 title="Informazioni aziendali"
-                description={"I dati dell’azienda (sede, contatti, P.IVA) sono gestiti nella pagina “Impostazioni Store” → tab “Generale”."}
-                href="/admin/store/settings"
-                cta="Apri Impostazioni Store"
+                description={"I dati dell’azienda (nome, descrizione, loghi, contatti, P.IVA) sono gestiti nella pagina “Impostazioni del sito” → tab “Azienda”."}
+                href="/admin/settings?tab=azienda"
+                cta="Apri Impostazioni del sito → Azienda"
               />
             )}
 

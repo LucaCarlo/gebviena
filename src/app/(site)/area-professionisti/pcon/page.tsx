@@ -6,7 +6,7 @@ import { isSectionAllowedForRole, getSection } from "../_lib/sections";
 import { getProT } from "@/lib/pro-translations";
 import { buildPconUrl } from "@/lib/pcon";
 import { getProSettings, isSectionVisible } from "@/lib/pro-settings";
-import PconBackButton from "./PconBackButton";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 const SLUG = "pcon";
@@ -16,7 +16,6 @@ export default async function Page() {
   if (!pro) redirect("/area-professionisti/accesso");
   if (!isSectionAllowedForRole(SLUG, pro.role)) redirect("/area-professionisti");
 
-  // Check override admin (area disabilitata o pCon disabilitato/nascosto per ruolo)
   const settings = await getProSettings();
   if (settings.areaDisabled) redirect("/area-professionisti/manutenzione");
   if (!isSectionVisible(settings, pro.role, SLUG, true)) redirect("/area-professionisti");
@@ -26,10 +25,24 @@ export default async function Page() {
   const t = getProT(lang);
   const section = getSection(SLUG, lang)!;
 
-  // pconProductSlug (configurabile dall'admin) sarà usato in futuro per
-  // aprire il configuratore su uno specifico prodotto; per ora il buildPconUrl
-  // non espone un parametro slug → carichiamo la home del catalogo.
-  const pconUrl = buildPconUrl({ lang });
+  // Prodotto di apertura: se l'admin ha scelto uno slug, carico la sua
+  // configurazione pCon (ban/sid/ovc/moc). Se il prodotto non esiste o non
+  // ha pCon configurato, fallback alla home del configuratore (solo lang).
+  let pconParams: Parameters<typeof buildPconUrl>[0] = { lang, showCatalogBar: true };
+  if (settings.pconProductSlug) {
+    const product = await prisma.product.findUnique({
+      where: { slug: settings.pconProductSlug },
+      select: { pconBan: true, pconSid: true, pconOvc: true, pconMoc: true },
+    });
+    if (product && product.pconBan) {
+      pconParams = {
+        lang,
+        showCatalogBar: true,
+        ban: product.pconBan, sid: product.pconSid, ovc: product.pconOvc, moc: product.pconMoc,
+      };
+    }
+  }
+  const pconUrl = buildPconUrl(pconParams);
 
   return (
     <main className="min-h-screen bg-warm-50 pt-24 pb-12">
@@ -47,9 +60,8 @@ export default async function Page() {
             </h1>
           </div>
           <div className="flex items-center gap-4 flex-wrap">
-            {/* Forza il ricaricamento dell'iframe con cache buster — vedi
-                PconBackButton.tsx per il dettaglio del fix. */}
-            <PconBackButton url={pconUrl} label={t("pcon.back_to_catalog")} />
+            {/* Il "torna al catalogo" è ora integrato in pCon (sh=true)
+                quindi non serve un pulsante esterno custom. */}
             <a
               href={pconUrl}
               target="_blank"
