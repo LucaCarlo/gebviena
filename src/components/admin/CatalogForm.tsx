@@ -201,7 +201,6 @@ export default function CatalogForm({ catalogId }: CatalogFormProps) {
                 <option value={form.section}>{form.section} (categoria rimossa)</option>
               )}
             </select>
-            <a href="/admin/catalogs/categories" className="block text-[10px] text-warm-500 hover:text-warm-800 mt-1">Gestisci categorie →</a>
           </div>
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">

@@ -282,34 +282,42 @@ const DEFINITIONS: SettingDef[] = [
     hint: "Il countdown si aggiorna verso questa data. Superata, il banner si nasconde automaticamente.",
   },
 
-  // ── Modalità offline ──
+  // ── Apertura e chiusura store ──
   {
     key: "store.maintenance.enabled",
     group: "store_maintenance",
-    label: "Modalità offline attiva",
+    label: "Forza chiusura manuale (subito)",
     type: "boolean",
-    hint: "Quando attiva, lo store mostra una pagina di attesa a tutti i visitatori. L'admin (/admin) resta accessibile.",
+    hint: "Quando attivo, lo store è subito chiuso e mostra la pagina di attesa a tutti. L'admin (/admin) resta accessibile. Le date di chiusura/apertura programmate qui sotto hanno priorità su questo flag.",
+  },
+  {
+    key: "store.maintenance.closing_date",
+    group: "store_maintenance",
+    label: "Data e ora di chiusura automatica",
+    type: "datetime-local",
+    placeholder: "2026-07-31T20:00",
+    hint: "Da questa data lo store si chiude automaticamente. Lascia vuoto per gestione manuale.",
+  },
+  {
+    key: "store.maintenance.opening_date",
+    group: "store_maintenance",
+    label: "Data e ora di apertura automatica",
+    type: "datetime-local",
+    placeholder: "2026-09-01T09:00",
+    hint: "Da questa data lo store si riapre automaticamente (annulla sia la chiusura programmata che il flag manuale). Lascia vuoto per gestione manuale.",
   },
   {
     key: "store.maintenance.title",
     group: "store_maintenance",
-    label: "Titolo pagina",
+    label: "Titolo pagina di chiusura",
     placeholder: "Stiamo arrivando",
   },
   {
     key: "store.maintenance.message",
     group: "store_maintenance",
-    label: "Messaggio",
+    label: "Messaggio della pagina di chiusura",
     type: "textarea",
     placeholder: "Lo store online sarà disponibile a breve. Resta aggiornato.",
-  },
-  {
-    key: "store.maintenance.opening_date",
-    group: "store_maintenance",
-    label: "Data e ora di apertura",
-    type: "datetime-local",
-    placeholder: "2026-05-15T09:00",
-    hint: "Se valorizzata, viene mostrato un countdown alla data esatta. Lascia vuoto per nasconderlo.",
   },
 ];
 
@@ -355,8 +363,8 @@ const GROUP_META: Record<Group, { title: string; subtitle: string; icon: typeof 
     icon: Megaphone,
   },
   store_maintenance: {
-    title: "Modalità offline",
-    subtitle: "Mette lo store in modalità 'arrivo presto' con countdown alla riapertura",
+    title: "Apertura e chiusura",
+    subtitle: "Programma quando lo store apre o chiude (con countdown alla riapertura sulla pagina di attesa).",
     icon: PowerOff,
   },
 };
@@ -597,7 +605,7 @@ export default function StoreSettingsPage() {
       <header className="mb-6">
         <h1 className="text-2xl font-semibold text-warm-900">Impostazioni Store</h1>
         <p className="text-sm text-warm-500 mt-1">
-          Configurazione del modulo e-commerce (Stripe, tasse, email, banner, modalità offline).
+          Configurazione del modulo e-commerce (Stripe, tasse, email, banner, apertura e chiusura).
         </p>
       </header>
 
