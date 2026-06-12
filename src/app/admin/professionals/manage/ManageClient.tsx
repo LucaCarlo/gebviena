@@ -2,21 +2,37 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bell, FileText, Camera, Image as ImageIcon, FileCode, Briefcase, FolderOpen, ExternalLink } from "lucide-react";
+import { Bell, FileText, FileCode, FolderOpen, Box, Camera, Image as ImageIcon, Briefcase, AlertTriangle, Shield, ExternalLink } from "lucide-react";
 import BachecaTab from "./tabs/BachecaTab";
 import PdfListTab from "./tabs/PdfListTab";
 import PlaceholderTab from "./tabs/PlaceholderTab";
+import PconConfigTab from "./tabs/PconConfigTab";
+import MaintenanceTab from "./tabs/MaintenanceTab";
+import AreaSettingsTab from "./tabs/AreaSettingsTab";
 
-type TabKey = "bacheca" | "listini" | "press" | "media" | "tecnica" | "aziendale" | "cataloghi";
+type TabKey =
+  | "bacheca"
+  | "tecnica"
+  | "media"
+  | "cataloghi"
+  | "pcon"
+  | "listini"
+  | "press"
+  | "aziendale"
+  | "manutenzione"
+  | "impostazioni";
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType; subtitle: string }[] = [
-  { key: "bacheca",   label: "Bacheca",                icon: Bell,        subtitle: "Novità da pubblicare ai professionisti" },
-  { key: "listini",   label: "Listini prezzi",         icon: FileText,    subtitle: "PDF visibili a Rivenditori e Agenti" },
-  { key: "press",     label: "Press kit",              icon: Camera,      subtitle: "Materiali per la stampa" },
-  { key: "media",     label: "Media",                  icon: ImageIcon,   subtitle: "Foto, render, digital assets" },
-  { key: "tecnica",   label: "Informazioni tecniche", icon: FileCode,    subtitle: "PDF + link alle schede prodotto" },
-  { key: "aziendale", label: "Informazioni aziendali", icon: Briefcase,   subtitle: "Vai alle impostazioni azienda" },
-  { key: "cataloghi", label: "Cataloghi",              icon: FolderOpen,  subtitle: "Vai alla gestione cataloghi" },
+  { key: "bacheca",      label: "Bacheca",                       icon: Bell,            subtitle: "Novità da pubblicare ai professionisti" },
+  { key: "tecnica",      label: "Informazioni tecniche",         icon: FileCode,        subtitle: "PDF + link alle schede prodotto" },
+  { key: "media",        label: "Digital & Media",               icon: ImageIcon,       subtitle: "Foto, render e materiali digitali" },
+  { key: "cataloghi",    label: "Cataloghi, poster e journal",   icon: FolderOpen,      subtitle: "Vai alla gestione cataloghi" },
+  { key: "pcon",         label: "pCon configuratore",            icon: Box,             subtitle: "Impostazioni del configuratore pCon" },
+  { key: "listini",      label: "Listini prezzi",                icon: FileText,        subtitle: "PDF visibili a Rivenditori e Agenti" },
+  { key: "press",        label: "Press kit",                     icon: Camera,          subtitle: "Materiali per la stampa" },
+  { key: "aziendale",    label: "Informazioni aziendali",        icon: Briefcase,       subtitle: "Vai alle impostazioni azienda" },
+  { key: "manutenzione", label: "Pagina manutenzione",           icon: AlertTriangle,   subtitle: "Testi della pagina di manutenzione dell’area" },
+  { key: "impostazioni", label: "Impostazioni area riservata",   icon: Shield,          subtitle: "Quali sezioni sono visibili e a chi" },
 ];
 
 export default function ManageClient() {
@@ -27,7 +43,7 @@ export default function ManageClient() {
   return (
     <div className="flex flex-col md:flex-row gap-6">
       {/* Vertical tabs (desktop) / Horizontal pills (mobile) */}
-      <nav className="md:w-60 flex-shrink-0">
+      <nav className="md:w-64 flex-shrink-0">
         <div className="flex md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
           {TABS.map((t) => {
             const Icon = t.icon;
@@ -64,25 +80,13 @@ export default function ManageClient() {
           </div>
           <div className="p-6">
             {active === "bacheca" && <BachecaTab />}
-            {active === "listini" && (
-              <PdfListTab
-                section="listini-prezzi"
-                title="Listini prezzi"
-                description={"I PDF caricati qui appariranno nell’area professionisti alla voce “Listino prezzi” (visibili a Rivenditori e Agenti)."}
-              />
-            )}
-            {active === "press" && (
-              <PlaceholderTab title="Press kit — in lavorazione" description="Sezione in fase di definizione. Verrà attivata appena decideremo cosa caricare." />
-            )}
-            {active === "media" && (
-              <PlaceholderTab title="Media — in lavorazione" description="Sezione in fase di definizione. Verrà attivata appena decideremo cosa caricare." />
-            )}
+
             {active === "tecnica" && (
               <div className="space-y-6">
                 <PdfListTab
                   section="informazioni-tecniche"
-                  title="PDF manutenzione e tecnici"
-                  description={"PDF generali (es. manutenzione cura del legno, certificazioni) che appariranno nella sezione “Informazioni tecniche” dell’area professionisti."}
+                  title="PDF generali e tecnici (cura, manutenzione, certificazioni)"
+                  description={"I PDF caricati qui appariranno nell’area professionisti alla sezione “Informazioni tecniche”. Sono GENERALI (non legati a un singolo prodotto)."}
                   embedded
                 />
                 <div className="border border-warm-200 bg-warm-50/50 rounded-lg p-4">
@@ -99,6 +103,34 @@ export default function ManageClient() {
                 </div>
               </div>
             )}
+
+            {active === "media" && (
+              <PlaceholderTab title="Digital & Media — in lavorazione" description="Sezione in fase di definizione: gestione foto, render, e altri asset digitali per i professionisti." />
+            )}
+
+            {active === "cataloghi" && (
+              <RedirectCard
+                title="Cataloghi, poster e journal"
+                description={"Per gestire i cataloghi (cataloghi prodotti, monografie, slow living magazine, poster) c’è una sezione dedicata."}
+                href="/admin/catalogs"
+                cta="Apri Cataloghi"
+              />
+            )}
+
+            {active === "pcon" && <PconConfigTab />}
+
+            {active === "listini" && (
+              <PdfListTab
+                section="listini-prezzi"
+                title="Listini prezzi"
+                description={"I PDF caricati qui appariranno nell’area professionisti alla voce “Listino prezzi” (visibili a Rivenditori e Agenti)."}
+              />
+            )}
+
+            {active === "press" && (
+              <PlaceholderTab title="Press kit — in lavorazione" description="Sezione in fase di definizione. Verrà attivata appena decideremo cosa caricare." />
+            )}
+
             {active === "aziendale" && (
               <RedirectCard
                 title="Informazioni aziendali"
@@ -107,14 +139,10 @@ export default function ManageClient() {
                 cta="Apri Impostazioni Store"
               />
             )}
-            {active === "cataloghi" && (
-              <RedirectCard
-                title="Cataloghi"
-                description={"Per gestire i cataloghi (cataloghi prodotti, monografie, slow living magazine) c’è una sezione dedicata."}
-                href="/admin/catalogs"
-                cta="Apri Cataloghi"
-              />
-            )}
+
+            {active === "manutenzione" && <MaintenanceTab />}
+
+            {active === "impostazioni" && <AreaSettingsTab />}
           </div>
         </section>
       </div>

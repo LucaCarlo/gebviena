@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { getAuthProfessional } from "@/lib/professional-auth";
 import { getProT } from "@/lib/pro-translations";
 import { prisma } from "@/lib/prisma";
+import { getProSettings, isSectionVisible } from "@/lib/pro-settings";
 import LogoutButton from "./LogoutButton";
 import { getSectionsForRole } from "./_lib/sections";
 
@@ -13,13 +14,21 @@ export default async function AreaProfessionistiPage() {
   const pro = await getAuthProfessional();
   if (!pro) redirect("/area-professionisti/accesso");
 
+  // Settings dell'area: se l'admin ha disattivato l'area, vai a manutenzione
+  // (l'accesso resta attivo perché /accesso non passa di qui).
+  const settings = await getProSettings();
+  if (settings.areaDisabled) redirect("/area-professionisti/manutenzione");
+
   // La lingua delle pagine area pro segue quella dell'header del sito
   // (URL prefix /fr, /en, ecc.). Il campo `pro.language` viene usato solo come
   // lingua di default al login (vedi AccessoForm).
   const h = await headers();
   const lang = h.get("x-gtv-lang") || "it";
   const t = getProT(lang);
-  const sections = getSectionsForRole(pro.role, lang);
+  // Sezioni default per il ruolo + override da admin (nasconde quelle disabilitate).
+  const sections = getSectionsForRole(pro.role, lang).filter((s) =>
+    isSectionVisible(settings, pro.role, s.slug, true),
+  );
 
   // Conteggio bacheca non letti: notifiche visibili per il ruolo del prof,
   // meno quelle già marcate come lette nella tabella read.
