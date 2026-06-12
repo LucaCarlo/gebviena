@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Bell, FileText, FileCode, FolderOpen, Box, Camera, Image as ImageIcon, Briefcase, AlertTriangle, Shield, ExternalLink } from "lucide-react";
 import BachecaTab from "./tabs/BachecaTab";
 import PdfListTab from "./tabs/PdfListTab";
@@ -35,8 +36,26 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType; subtitle: str
   { key: "impostazioni", label: "Impostazioni area riservata",   icon: Shield,          subtitle: "Quali sezioni sono visibili e a chi" },
 ];
 
+const VALID_TAB_KEYS: TabKey[] = ["bacheca", "tecnica", "media", "cataloghi", "pcon", "listini", "press", "aziendale", "manutenzione", "impostazioni"];
+
 export default function ManageClient() {
-  const [active, setActive] = useState<TabKey>("bacheca");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get("tab") as TabKey | null;
+  const initialTab: TabKey = tabFromUrl && VALID_TAB_KEYS.includes(tabFromUrl) ? tabFromUrl : "bacheca";
+  const [active, setActive] = useState<TabKey>(initialTab);
+  useEffect(() => {
+    const t = searchParams.get("tab") as TabKey | null;
+    const next: TabKey = t && VALID_TAB_KEYS.includes(t) ? t : "bacheca";
+    if (next !== active) setActive(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+  const switchTab = useCallback((t: TabKey) => {
+    setActive(t);
+    router.replace(`${pathname}?tab=${t}`, { scroll: false });
+  }, [router, pathname]);
+
   const activeMeta = TABS.find((t) => t.key === active)!;
   const ActiveIcon = activeMeta.icon;
 
@@ -51,7 +70,7 @@ export default function ManageClient() {
             return (
               <button
                 key={t.key}
-                onClick={() => setActive(t.key)}
+                onClick={() => switchTab(t.key)}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors text-left ${
                   isActive
                     ? "bg-warm-800 text-white"

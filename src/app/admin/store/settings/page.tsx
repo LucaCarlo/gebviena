@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Loader2, Check, AlertCircle, Lock, Eye, EyeOff, CreditCard, Mail, Settings as SettingsIcon, PowerOff, Megaphone, BarChart3, Search, ShoppingCart, ArrowDownUp, Pencil, X as XIcon } from "lucide-react";
 import SortingTab from "./SortingTab";
 
@@ -411,7 +412,24 @@ export default function StoreSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
-  const [activeTab, setActiveTab] = useState<Group>("store_general");
+
+  // Tab attivo sincronizzato con ?tab= nell'URL (deep-link).
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get("tab") as Group | null;
+  const initialTab: Group = tabFromUrl && TAB_ORDER.includes(tabFromUrl) ? tabFromUrl : "store_general";
+  const [activeTab, setActiveTab] = useState<Group>(initialTab);
+  useEffect(() => {
+    const t = searchParams.get("tab") as Group | null;
+    const next: Group = t && TAB_ORDER.includes(t) ? t : "store_general";
+    if (next !== activeTab) setActiveTab(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+  const switchTab = useCallback((t: Group) => {
+    setActiveTab(t);
+    router.replace(`${pathname}?tab=${t}`, { scroll: false });
+  }, [router, pathname]);
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -594,7 +612,7 @@ export default function StoreSettingsPage() {
               return (
                 <button
                   key={g}
-                  onClick={() => setActiveTab(g)}
+                  onClick={() => switchTab(g)}
                   className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                     isActive
                       ? "bg-warm-800 text-white"
