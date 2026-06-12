@@ -7,6 +7,8 @@ import RecaptchaProvider from "@/components/providers/RecaptchaProvider";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { getCurrentLang, loadAllUiTranslations, DEFAULT_LANG } from "@/lib/i18n";
 import StoreHeader from "@/components/store/StoreHeader";
+import PendingOrdersBanner from "@/components/store/PendingOrdersBanner";
+import SaleBanner from "@/components/store/SaleBanner";
 import MaintenanceScreen from "@/components/store/MaintenanceScreen";
 import { CustomerAuthProvider } from "@/contexts/CustomerAuthContext";
 import { CartProvider } from "@/contexts/CartContext";
@@ -33,11 +35,26 @@ async function loadMaintenanceConfig() {
   try {
     const rows = await prisma.setting.findMany({ where: { group: "store_maintenance" } });
     const map = new Map(rows.map((r) => [r.key, r.value]));
+    const manualEnabled = map.get("store.maintenance.enabled") === "true";
+    const closingRaw = map.get("store.maintenance.closing_date") || "";
+    const openingRaw = map.get("store.maintenance.opening_date") || "";
+    const closing = closingRaw ? new Date(closingRaw) : null;
+    const opening = openingRaw ? new Date(openingRaw) : null;
+    const now = new Date();
+
+    // Logica: l'apertura programmata vince sulla chiusura programmata (riapertura automatica).
+    // Se siamo dopo l'apertura → store aperto.
+    // Altrimenti se siamo dopo la chiusura → store chiuso.
+    // Altrimenti si usa il flag manuale.
+    let enabled = manualEnabled;
+    if (closing && !isNaN(closing.getTime()) && now >= closing) enabled = true;
+    if (opening && !isNaN(opening.getTime()) && now >= opening) enabled = false;
+
     return {
-      enabled: map.get("store.maintenance.enabled") === "true",
+      enabled,
       title: map.get("store.maintenance.title") || "",
       message: map.get("store.maintenance.message") || "",
-      openingDate: map.get("store.maintenance.opening_date") || "",
+      openingDate: openingRaw,
     };
   } catch {
     return { enabled: false, title: "", message: "", openingDate: "" };
@@ -76,10 +93,12 @@ export default async function StoreLayout({ children }: { children: React.ReactN
             className="bg-white min-h-screen relative overflow-hidden"
             style={{ marginLeft: "var(--site-margin)", marginRight: "var(--site-margin)" }}
           >
+            <SaleBanner />
             <Suspense fallback={<div className="fixed top-0 left-0 right-0 h-20 md:h-24 bg-white border-b border-neutral-100 z-50" />}>
               <StoreHeader />
             </Suspense>
-            <main className="pt-20 md:pt-24">{children}</main>
+            <PendingOrdersBanner />
+            <main className="pt-[calc(var(--store-sale-banner-h,0px)+5rem)] md:pt-[calc(var(--store-sale-banner-h,0px)+6rem)]">{children}</main>
             <StoreFooter />
           </div>
         </CartProvider>
