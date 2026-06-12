@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   Mail,
   Shield,
@@ -16,8 +17,15 @@ import {
   Languages,
   Share2,
   MapPin,
+  CreditCard,
   Cookie,
+  Building2,
+  FileText,
+  Trash2,
+  ImageIcon,
 } from "lucide-react";
+import ImageUploadField from "@/components/admin/ImageUploadField";
+import MediaPickerModal from "@/components/admin/MediaPickerModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -55,7 +63,7 @@ interface BackupPreview {
   [key: string]: number;
 }
 
-type TabKey = "smtp" | "recaptcha" | "iubenda" | "languages" | "translations" | "social" | "maps" | "stats" | "backup" | "storage";
+type TabKey = "smtp" | "recaptcha" | "iubenda" | "languages" | "translations" | "social" | "maps" | "analytics" | "payments" | "azienda" | "stats" | "backup" | "storage";
 
 interface TabDef {
   key: TabKey;
@@ -71,6 +79,9 @@ const TABS: TabDef[] = [
   { key: "translations", label: "Traduzioni AI", icon: Languages },
   { key: "social", label: "Social", icon: Share2 },
   { key: "maps", label: "Google Maps", icon: MapPin },
+  { key: "analytics", label: "Analytics / GTM", icon: BarChart3 },
+  { key: "payments", label: "Pagamenti", icon: CreditCard },
+  { key: "azienda", label: "Azienda", icon: Building2 },
   { key: "stats", label: "Statistiche", icon: BarChart3 },
   { key: "backup", label: "Backup", icon: Database },
   { key: "storage", label: "Storage Cloud", icon: Cloud },
@@ -1118,6 +1129,182 @@ function IubendaTab({ showToast }: { showToast: (m: string, t: "success" | "erro
 
 // ─── Google Maps Tab ─────────────────────────────────────────────────────────
 
+function AnalyticsTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
+  const [form, setForm] = useState({
+    gtm_site_id: "",
+    gtm_store_id: "",
+    ga4_id: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings?group=analytics")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          const next = { ...form };
+          for (const s of data.data) {
+            if (s.key in next) (next as Record<string, string>)[s.key] = s.value;
+          }
+          setForm(next);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const settings = Object.entries(form).map(([key, value]) => ({ key, value, group: "analytics" }));
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (data.success) showToast("Impostazioni analytics salvate", "success");
+      else showToast(data.error || "Errore", "error");
+    } catch {
+      showToast("Errore di connessione", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const Field = ({ k, label, ph, hint }: { k: keyof typeof form; label: string; ph: string; hint: string }) => (
+    <div>
+      <label className="block text-sm font-medium text-warm-800 mb-1.5">{label}</label>
+      <input
+        type="text"
+        value={form[k]}
+        onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+        placeholder={ph}
+        className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm font-mono focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+      />
+      <p className="text-xs text-warm-500 mt-1.5">{hint}</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-light text-warm-900">Analytics / Google Tag Manager</h2>
+        <p className="text-sm text-warm-500 mt-1">
+          Container GTM caricati automaticamente: il sito principale usa l&apos;ID Sito, lo store usa l&apos;ID Store.
+          GA4 viene gestito tramite i container GTM. Le modifiche sono attive al primo caricamento pagina.
+        </p>
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
+        <Field k="gtm_site_id" label="GTM — Sito principale" ph="GTM-XXXXXXX"
+          hint="Container Google Tag Manager per gebruederthonetvienna.com" />
+        <Field k="gtm_store_id" label="GTM — Store" ph="GTM-XXXXXXX"
+          hint="Container Google Tag Manager per store.gebruederthonetvienna.com" />
+        <Field k="ga4_id" label="ID misurazione GA4" ph="G-XXXXXXXXXX"
+          hint="ID GA4 (di riferimento; il tracciamento avviene tramite i container GTM sopra)" />
+        {!form.gtm_site_id.trim() && !form.gtm_store_id.trim() && (
+          <div className="text-xs px-3 py-2 rounded bg-amber-50 border border-amber-200 text-amber-800">
+            ⚠ Senza ID GTM il tracciamento Google non è attivo. Inserisci almeno un container.
+          </div>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-warm-800 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50"
+        >
+          {saving ? "Salvataggio..." : "Salva"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PaymentsTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
+  const [form, setForm] = useState({
+    pay_bonifico_enabled: "false",
+    pay_paypal_enabled: "false",
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings?group=payments")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          const next = { ...form };
+          for (const s of data.data) {
+            if (s.key in next) (next as Record<string, string>)[s.key] = s.value;
+          }
+          setForm(next);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const settings = Object.entries(form).map(([key, value]) => ({ key, value, group: "payments" }));
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (data.success) showToast("Impostazioni pagamenti salvate", "success");
+      else showToast(data.error || "Errore", "error");
+    } catch {
+      showToast("Errore di connessione", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const Toggle = ({ k, label, hint }: { k: keyof typeof form; label: string; hint: string }) => {
+    const on = form[k] === "true";
+    return (
+      <div className="flex items-start justify-between gap-4 py-3 border-b border-warm-100 last:border-0">
+        <div>
+          <div className="text-sm font-medium text-warm-800">{label}</div>
+          <p className="text-xs text-warm-500 mt-1">{hint}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setForm({ ...form, [k]: on ? "false" : "true" })}
+          className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${on ? "bg-warm-800" : "bg-warm-300"}`}
+          aria-pressed={on}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? "translate-x-5" : ""}`} />
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-light text-warm-900">Metodi di pagamento</h2>
+        <p className="text-sm text-warm-500 mt-1">
+          Abilita o disabilita i metodi di pagamento alternativi a carta di credito. Disabilitati di default:
+          l&apos;integrazione vera e propria al checkout verrà gestita in un secondo momento.
+        </p>
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6">
+        <Toggle k="pay_bonifico_enabled" label="Bonifico bancario"
+          hint="Consenti il pagamento tramite bonifico bancario." />
+        <Toggle k="pay_paypal_enabled" label="PayPal"
+          hint="Consenti il pagamento tramite PayPal." />
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="mt-5 bg-warm-800 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50"
+        >
+          {saving ? "Salvataggio..." : "Salva"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MapsTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
   const [form, setForm] = useState({
     maps_provider: "leaflet",
@@ -1581,10 +1768,267 @@ function TranslationsAITab({ showToast }: { showToast: (m: string, t: "success" 
   );
 }
 
+// ─── Azienda Tab ─────────────────────────────────────────────────────────────
+// Informazioni aziendali di Gebrüder Thonet Vienna: nome, descrizione, loghi,
+// documenti corporate, contatti. Mostrate nella pagina /area-professionisti/
+// materiale-aziendale (visibile a rivenditori e agenti).
+
+/** Campo upload PDF (drag&drop + libreria media) usato nella tab Azienda. */
+function AziendaPdfField({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("skipCompression", "true");
+    formData.append("folder", "company");
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.success) onChange(data.data.url);
+    } catch { /* silent */ } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div>
+      <label className={labelClass}>{label}</label>
+      {value ? (
+        <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-lg border border-warm-200">
+          <FileText size={20} className="text-warm-500 flex-shrink-0" />
+          <span className="text-sm text-warm-700 truncate flex-1">{value.split("/").pop()}</span>
+          <a href={value} target="_blank" rel="noopener noreferrer" className="text-xs text-warm-500 hover:text-warm-800 underline">Apri</a>
+          <button type="button" onClick={() => onChange("")} className="p-1 text-warm-400 hover:text-red-500 transition-colors">
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <label className="flex-1 flex items-center gap-2 px-4 py-3 border border-dashed border-warm-300 rounded-lg cursor-pointer hover:border-warm-500 transition-colors">
+            <Upload size={16} className="text-warm-400" />
+            <span className="text-sm text-warm-500">{uploading ? "Caricamento..." : `Carica PDF`}</span>
+            <input type="file" accept=".pdf,application/pdf" onChange={handleUpload} className="hidden" disabled={uploading} />
+          </label>
+          <button type="button" onClick={() => setPickerOpen(true)} className="flex items-center gap-2 px-4 py-3 border border-warm-300 rounded-lg text-sm text-warm-600 hover:bg-warm-50 hover:border-warm-400 transition-colors">
+            <ImageIcon size={16} />
+            Da Media
+          </button>
+        </div>
+      )}
+      <MediaPickerModal
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(urls) => { if (urls[0]) onChange(urls[0]); }}
+        imagesOnly={false}
+        defaultFolder="company"
+      />
+    </div>
+  );
+}
+
+function AziendaTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
+  const [form, setForm] = useState({
+    company_name: "",
+    company_description: "",
+    company_logo_main: "",
+    company_logo_white: "",
+    company_logo_dark: "",
+    company_profile_pdf: "",
+    company_brand_guidelines_pdf: "",
+    company_presentation_pdf: "",
+    company_address: "",
+    company_phone: "",
+    company_email: "",
+    company_website: "",
+    company_vat: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings?group=azienda")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          const next = { ...form };
+          for (const s of data.data) {
+            if (s.key in next) (next as Record<string, string>)[s.key] = s.value;
+          }
+          setForm(next);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const settings = Object.entries(form).map(([key, value]) => ({ key, value, group: "azienda" }));
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (data.success) showToast("Informazioni aziendali salvate", "success");
+      else showToast(data.error || "Errore nel salvataggio", "error");
+    } catch {
+      showToast("Errore di connessione", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const update = (key: string, value: string) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-warm-800">Informazioni aziendali</h2>
+        <p className="text-sm text-warm-500 mt-1">
+          I dati inseriti qui appaiono nella pagina &ldquo;Materiale aziendale&rdquo;
+          dell&apos;area riservata professionisti (rivenditori e agenti).
+          Carica i file con drag &amp; drop oppure scegli dalla libreria media.
+        </p>
+      </div>
+
+      {/* Identità */}
+      <div className="bg-white border border-warm-200 rounded-lg p-5 space-y-4">
+        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Identità</h3>
+        <div>
+          <label className={labelClass}>Nome azienda</label>
+          <input type="text" value={form.company_name} onChange={(e) => update("company_name", e.target.value)} className={inputClass} placeholder="Gebrüder Thonet Vienna" />
+        </div>
+        <div>
+          <label className={labelClass}>Descrizione / Claim</label>
+          <textarea value={form.company_description} onChange={(e) => update("company_description", e.target.value)} rows={3} className={inputClass} placeholder="Breve descrizione dell'azienda…" />
+        </div>
+      </div>
+
+      {/* Loghi */}
+      <div className="bg-white border border-warm-200 rounded-lg p-5 space-y-5">
+        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Loghi</h3>
+        <ImageUploadField
+          label="Logo principale"
+          value={form.company_logo_main}
+          onChange={(url) => update("company_logo_main", url)}
+          onRemove={() => update("company_logo_main", "")}
+          purpose="general"
+          folder="company"
+          helpText="PNG/SVG/JPG con sfondo trasparente preferibile."
+        />
+        <ImageUploadField
+          label="Logo versione bianca"
+          value={form.company_logo_white}
+          onChange={(url) => update("company_logo_white", url)}
+          onRemove={() => update("company_logo_white", "")}
+          purpose="general"
+          folder="company"
+          helpText="Da usare su sfondi scuri."
+        />
+        <ImageUploadField
+          label="Logo versione nera / scura"
+          value={form.company_logo_dark}
+          onChange={(url) => update("company_logo_dark", url)}
+          onRemove={() => update("company_logo_dark", "")}
+          purpose="general"
+          folder="company"
+          helpText="Da usare su sfondi chiari."
+        />
+      </div>
+
+      {/* Documenti */}
+      <div className="bg-white border border-warm-200 rounded-lg p-5 space-y-4">
+        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Documenti corporate</h3>
+        <AziendaPdfField
+          label="Company Profile"
+          value={form.company_profile_pdf}
+          onChange={(url) => update("company_profile_pdf", url)}
+        />
+        <AziendaPdfField
+          label="Brand Guidelines"
+          value={form.company_brand_guidelines_pdf}
+          onChange={(url) => update("company_brand_guidelines_pdf", url)}
+        />
+        <AziendaPdfField
+          label="Presentazione"
+          value={form.company_presentation_pdf}
+          onChange={(url) => update("company_presentation_pdf", url)}
+        />
+      </div>
+
+      {/* Contatti */}
+      <div className="bg-white border border-warm-200 rounded-lg p-5 space-y-4">
+        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Contatti</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Indirizzo</label>
+            <input type="text" value={form.company_address} onChange={(e) => update("company_address", e.target.value)} className={inputClass} placeholder="Via, civico, CAP, città" />
+          </div>
+          <div>
+            <label className={labelClass}>P. IVA / Codice fiscale</label>
+            <input type="text" value={form.company_vat} onChange={(e) => update("company_vat", e.target.value)} className={inputClass} placeholder="IT0123456789" />
+          </div>
+          <div>
+            <label className={labelClass}>Telefono</label>
+            <input type="text" value={form.company_phone} onChange={(e) => update("company_phone", e.target.value)} className={inputClass} placeholder="+39 …" />
+          </div>
+          <div>
+            <label className={labelClass}>Email</label>
+            <input type="email" value={form.company_email} onChange={(e) => update("company_email", e.target.value)} className={inputClass} placeholder="info@…" />
+          </div>
+          <div className="md:col-span-2">
+            <label className={labelClass}>Sito web</label>
+            <input type="text" value={form.company_website} onChange={(e) => update("company_website", e.target.value)} className={inputClass} placeholder="https://www.gebruederthonetvienna.com" />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button onClick={handleSave} disabled={saving} className={btnPrimary}>
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+          {saving ? "Salvataggio…" : "Salva informazioni aziendali"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Settings Page ──────────────────────────────────────────────────────
 
+const VALID_TABS: TabKey[] = ["smtp", "recaptcha", "iubenda", "languages", "translations", "social", "maps", "analytics", "payments", "azienda", "stats", "backup", "storage"];
+
 export default function AdminSettingsPage() {
-  const [activeTab, setActiveTab] = useState<TabKey>("smtp");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Tab attivo sincronizzato con ?tab= nella URL. Permette deep-link
+  // (es. /admin/settings?tab=azienda) e bookmark del singolo tab.
+  const tabFromUrl = searchParams.get("tab") as TabKey | null;
+  const initialTab: TabKey = tabFromUrl && VALID_TABS.includes(tabFromUrl) ? tabFromUrl : "smtp";
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+
+  // Sync URL → state quando l'utente naviga avanti/indietro col browser
+  useEffect(() => {
+    const t = searchParams.get("tab") as TabKey | null;
+    const next: TabKey = t && VALID_TABS.includes(t) ? t : "smtp";
+    if (next !== activeTab) setActiveTab(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Cambio tab: aggiorna stato + URL (replace, no scroll, no nuova entry history)
+  const switchTab = useCallback((t: TabKey) => {
+    setActiveTab(t);
+    router.replace(`${pathname}?tab=${t}`, { scroll: false });
+  }, [router, pathname]);
+
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const showToast = useCallback((message: string, type: "success" | "error") => {
@@ -1611,8 +2055,14 @@ export default function AdminSettingsPage() {
         return <SocialTab showToast={showToast} />;
       case "maps":
         return <MapsTab showToast={showToast} />;
+      case "analytics":
+        return <AnalyticsTab showToast={showToast} />;
+      case "payments":
+        return <PaymentsTab showToast={showToast} />;
       case "iubenda":
         return <IubendaTab showToast={showToast} />;
+      case "azienda":
+        return <AziendaTab showToast={showToast} />;
     }
   };
 
@@ -1635,7 +2085,7 @@ export default function AdminSettingsPage() {
               return (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => switchTab(tab.key)}
                   className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                     isActive
                       ? "bg-warm-800 text-white"
