@@ -537,6 +537,17 @@ function CtaButton({ cta }: { cta: NewsCta }) {
     ? { download: "", target: "_blank", rel: "noopener noreferrer" }
     : ext ? { target: "_blank", rel: "noopener noreferrer" } : {};
   const style = cta.style || "default";
+  // Icona custom uploadata: vince sempre, anche se è stato selezionato uno stile badge.
+  if (cta.iconUrl) {
+    return (
+      <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-warm-900 transition-colors">
+        <span className="relative w-5 h-5">
+          <Image src={cta.iconUrl} alt="" fill className="object-contain invert" sizes="20px" />
+        </span>
+        <span className="text-sm">{cta.label || ""}</span>
+      </a>
+    );
+  }
   if (style === "google_play" || style === "app_store") {
     const isGP = style === "google_play";
     return (
