@@ -426,11 +426,8 @@ export function RelatedInfo() {
    ───────────────────────────────────────────────────────────────────────── */
 
 const CTA_STYLE_OPTIONS: { value: CtaButtonStyle; label: string }[] = [
-  { value: "default",     label: "Pulsante normale" },
-  { value: "google_play", label: "Badge Google Play" },
-  { value: "app_store",   label: "Badge App Store" },
-  { value: "windows",     label: "Badge Windows" },
-  { value: "macos",       label: "Badge macOS" },
+  { value: "default", label: "Pulsante normale" },
+  { value: "custom",  label: "Personalizzato (icona SVG)" },
 ];
 
 /* ── FEATURE / STRUMENTO ───────────────────────────────────────────────── */
@@ -519,12 +516,12 @@ export function FeatureToolEditor({ data, onChange, sourceData }: { data: NewsFe
               </select>
               <button type="button" onClick={() => delCta(i)} className="col-span-1 p-1.5 text-warm-400 hover:text-red-600" title="Rimuovi pulsante"><X size={14} /></button>
             </div>
-            <div className="grid grid-cols-12 gap-2 items-start">
-              <div className="col-span-11">
-                <label className="block text-[10px] font-semibold text-warm-600 uppercase tracking-wider mb-1">Icona personalizzata (sostituisce il badge predefinito)</label>
-                <ImageUploadField label="" value={c.iconUrl || ""} onChange={(url) => updCta(i, { iconUrl: url })} onRemove={() => updCta(i, { iconUrl: "" })} purpose="general" folder="news" helpText="SVG o PNG quadrato. Se compilato sovrascrive lo stile selezionato sopra." />
+            {c.style === "custom" && (
+              <div>
+                <label className="block text-[10px] font-semibold text-warm-600 uppercase tracking-wider mb-1">Icona SVG/PNG *</label>
+                <ImageUploadField label="" value={c.iconUrl || ""} onChange={(url) => updCta(i, { iconUrl: url })} onRemove={() => updCta(i, { iconUrl: "" })} purpose="general" folder="news" helpText="Carica un SVG o PNG quadrato (preferito formato vettoriale)." />
               </div>
-            </div>
+            )}
           </div>
         ))}
         {(data.ctas || []).length === 0 && <div className="text-xs text-warm-400">Nessun pulsante. Clicca &laquo;Aggiungi pulsante&raquo;.</div>}
