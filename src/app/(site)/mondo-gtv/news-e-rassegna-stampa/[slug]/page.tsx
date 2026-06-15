@@ -641,9 +641,9 @@ function CardsRow({ d }: { d: NewsCardsRowData }) {
                   </span>
                 </div>
               )}
-              {num && <div className="text-[14px] text-black/60 mb-3 font-light">{num}</div>}
-              <h3 className="font-sans text-[28px] md:text-[32px] text-black font-bold leading-tight mb-4 tracking-tight">{it.title}</h3>
-              {it.description && <p className="text-[15px] text-black font-light leading-relaxed">{it.description}</p>}
+              {num && <div className="text-[16px] text-black/60 mb-3 font-light">{num}</div>}
+              <h3 className="font-sans text-[28px] md:text-[34px] text-black font-bold leading-tight mb-5 tracking-tight">{it.title}</h3>
+              {it.description && <p className="text-[17px] text-black font-light leading-relaxed">{it.description}</p>}
             </div>
           );
         })}
@@ -664,10 +664,10 @@ function FaqBlock({ d }: { d: NewsFaqData }) {
         {items.map((it, i) => (
           <details key={i} className="group bg-warm-50/60 border border-warm-100 rounded-lg overflow-hidden">
             <summary className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-4 hover:bg-warm-100/50 transition-colors">
-              <span className="text-[15px] md:text-[16px] text-black font-medium">{it.question}</span>
-              <span className="text-warm-500 text-xl group-open:rotate-45 transition-transform">+</span>
+              <span className="text-[17px] md:text-[18px] text-black font-medium">{it.question}</span>
+              <span className="text-warm-500 text-2xl group-open:rotate-45 transition-transform">+</span>
             </summary>
-            <div className="px-5 py-4 border-t border-warm-100 text-[15px] text-black/80 font-light leading-relaxed whitespace-pre-line">{it.answer}</div>
+            <div className="px-5 py-4 border-t border-warm-100 text-[17px] text-black/80 font-light leading-relaxed whitespace-pre-line">{it.answer}</div>
           </details>
         ))}
       </div>
@@ -688,8 +688,8 @@ function StatsBlock({ d }: { d: NewsStatsData }) {
       <div className={`grid grid-cols-2 ${gridCols} gap-6 md:gap-10`}>
         {items.map((s, i) => (
           <div key={i} className="text-center">
-            <div className="font-serif text-[40px] md:text-[64px] text-black font-light leading-none mb-3 tabular-nums">{s.value}</div>
-            <div className="text-[13px] md:text-[14px] uppercase tracking-[0.12em] text-warm-700">{s.label}</div>
+            <div className="font-serif text-[44px] md:text-[64px] text-black font-light leading-none mb-3 tabular-nums">{s.value}</div>
+            <div className="text-[15px] md:text-[16px] uppercase tracking-[0.12em] text-warm-700 font-medium">{s.label}</div>
           </div>
         ))}
       </div>
@@ -703,9 +703,9 @@ function QuoteBlock({ d }: { d: NewsQuoteData }) {
   return (
     <section className="gtv-container py-12 md:py-16">
       <blockquote className={`max-w-3xl mx-auto ${isCenter ? "text-center" : "text-left"}`}>
-        <div className="text-[24px] md:text-[32px] font-serif italic text-black leading-snug mb-6">&ldquo;{d.text}&rdquo;</div>
+        <div className="text-[26px] md:text-[34px] font-serif italic text-black leading-snug mb-6">&ldquo;{d.text}&rdquo;</div>
         {(d.author || d.authorRole) && (
-          <footer className="text-[14px] text-warm-700 uppercase tracking-[0.12em]">
+          <footer className="text-[16px] text-warm-700 uppercase tracking-[0.12em]">
             {d.author && <span className="font-semibold text-black">{d.author}</span>}
             {d.author && d.authorRole && <span className="mx-2">&middot;</span>}
             {d.authorRole && <span>{d.authorRole}</span>}
@@ -731,9 +731,9 @@ function TimelineBlock({ d }: { d: NewsTimelineData }) {
           const isRight = i % 2 === 1;
           const content = (
             <>
-              <div className="text-[14px] uppercase tracking-[0.12em] text-warm-500 font-semibold">{it.date}</div>
-              <div className="font-sans text-[20px] md:text-[24px] text-black font-medium mt-1 mb-2">{it.title}</div>
-              {it.description && <p className="text-[15px] text-black/80 font-light leading-relaxed">{it.description}</p>}
+              <div className="text-[15px] uppercase tracking-[0.12em] text-warm-500 font-semibold">{it.date}</div>
+              <div className="font-sans text-[22px] md:text-[26px] text-black font-medium mt-1 mb-2">{it.title}</div>
+              {it.description && <p className="text-[16px] md:text-[17px] text-black/80 font-light leading-relaxed">{it.description}</p>}
             </>
           );
           return (
@@ -770,12 +770,12 @@ function ComparisonTableBlock({ d }: { d: NewsComparisonTableData }) {
         <h2 className="text-center font-sans text-[28px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
       )}
       <div className="max-w-5xl mx-auto overflow-x-auto">
-        <table className="w-full text-[15px]">
+        <table className="w-full text-[17px]">
           <thead>
             <tr className="border-b-2 border-black">
-              <th className="text-left px-4 py-3 font-medium">&nbsp;</th>
+              <th className="text-left px-4 py-4 font-medium">&nbsp;</th>
               {cols.map((c, i) => (
-                <th key={i} className={`text-center px-4 py-3 font-semibold ${i === hl ? "bg-warm-50" : ""}`}>{c}</th>
+                <th key={i} className={`text-center px-4 py-4 font-semibold text-[18px] ${i === hl ? "bg-warm-50" : ""}`}>{c}</th>
               ))}
             </tr>
           </thead>
