@@ -49,7 +49,7 @@ export default function DesignerGrid({ designers }: { designers: Designer[] }) {
               )}
             </div>
             <div className="mt-4">
-              <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+              <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 {designer.name}
               </h3>
             </div>

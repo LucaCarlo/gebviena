@@ -69,6 +69,27 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const result = await requirePermission("products", "delete");
   if (isErrorResponse(result)) return result;
 
-  await prisma.product.delete({ where: { id: params.id } });
-  return NextResponse.json({ success: true });
+  // Guard: blocca DELETE se questo Product ha uno StoreProduct collegato.
+  // L'admin deve prima cancellare/scollegare il prodotto store, altrimenti
+  // perderebbe varianti, ordini-storici, prezzi e traduzioni.
+  const linkedStore = await prisma.storeProduct.findUnique({
+    where: { productId: params.id },
+    select: { id: true },
+  });
+  if (linkedStore) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Questo prodotto è collegato a uno StoreProduct (negozio online). Per non perdere lo store devi prima eliminarlo da Store → Prodotti, oppure spunta 'Solo store (escludi dal catalogo sito)' se vuoi solo nasconderlo dal catalogo del sito.",
+      },
+      { status: 409 }
+    );
+  }
+
+  try {
+    await prisma.product.delete({ where: { id: params.id } });
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    return NextResponse.json({ success: false, error: String(e) }, { status: 500 });
+  }
 }

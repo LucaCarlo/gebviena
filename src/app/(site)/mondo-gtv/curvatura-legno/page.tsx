@@ -119,7 +119,7 @@ export default async function CurvaturaLegnoPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
             {/* Left: text */}
             <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "0", paddingRight: "60px" }}>
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+              <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 {T["curvatura-legno.technique.title"]}
               </h2>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 mb-6">
@@ -178,7 +178,7 @@ export default async function CurvaturaLegnoPage() {
 
             {/* Right: text */}
             <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "60px", paddingRight: "0" }}>
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+              <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 {T["curvatura-legno.patent.title"]}
               </h2>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 mb-6">
@@ -205,7 +205,7 @@ export default async function CurvaturaLegnoPage() {
       <section className="py-20 md:py-28">
         <div className="gtv-container">
           <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
-          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+          <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             {T["common.related"]}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

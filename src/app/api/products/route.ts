@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { DEFAULT_LANG } from "@/lib/i18n";
 import { mergeFirstTranslation, resolveLangFromRequest, TRANSLATABLE_FIELDS } from "@/lib/translate-payload";
+import { getAuthUser } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -17,7 +18,11 @@ export async function GET(req: NextRequest) {
   // Il catalogo del sito principale mostra solo i prodotti "veri": esclude
   // i Product-copia generati per lo store / artefatti (excludeFromCatalog).
   // I prodotti reali che sono ANCHE nello store restano visibili.
-  const where: Record<string, unknown> = { isActive: true, excludeFromCatalog: false };
+  const requestedAdmin = searchParams.get("admin") === "true";
+  const isAdmin = requestedAdmin && (await getAuthUser()) !== null;
+  const where: Record<string, unknown> = isAdmin
+    ? { excludeFromCatalog: false }
+    : { isActive: true, excludeFromCatalog: false };
   if (category && category !== "TUTTI") where.category = { contains: category };
   if (subcategory) where.subcategory = subcategory;
   if (featured === "true") where.isFeatured = true;
@@ -35,7 +40,7 @@ export async function GET(req: NextRequest) {
       },
       skip: (page - 1) * limit,
       take: limit,
-      orderBy: { sortOrder: "asc" },
+      orderBy: { name: "asc" },
     }),
     prisma.product.count({ where }),
   ]);

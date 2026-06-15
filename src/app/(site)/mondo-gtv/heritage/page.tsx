@@ -279,7 +279,7 @@ export default async function HeritagePage() {
 
           {/* Right: text */}
           <div className="flex flex-col justify-center px-6 py-12 lg:px-[150px] lg:py-24">
-            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+            <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               {T["heritage.coin.title"]}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
@@ -293,7 +293,7 @@ export default async function HeritagePage() {
       <section className="py-20 md:py-28">
         <div className="gtv-container">
           <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
-          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+          <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             {T["common.related"]}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

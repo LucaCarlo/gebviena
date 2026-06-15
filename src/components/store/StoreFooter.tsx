@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useT, useLang } from "@/contexts/I18nContext";
+import AssistanceContactForm from "./AssistanceContactForm";
 
 /**
  * Footer dedicato allo store: snello, senza i link alle pagine del sito
- * principale. Solo contatti per assistenza + orari, bilingue IT/FR.
- * Il bottom bar (copyright + disclaimer marchio + "Built by") è identico
- * a quello del sito principale.
+ * principale. Sezione "Assistenza" centrata con form contatti inline +
+ * telefono + orari. Il bottom bar (copyright + disclaimer marchio + "Built by")
+ * è identico a quello del sito principale.
  */
 export default function StoreFooter() {
   const t = useT();
@@ -32,15 +33,13 @@ export default function StoreFooter() {
     <footer className="border-t border-warm-200 bg-white">
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
         <div className="text-[13px] text-warm-700 leading-relaxed text-center">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-2">
+          <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-3">
             {isFr ? "Assistance" : "Assistenza"}
           </div>
-          <div>
-            <a href="mailto:info@gebruederthonetvienna.com" className="hover:text-warm-900 transition-colors">
-              info@gebruederthonetvienna.com
-            </a>
-          </div>
-          <div>
+
+          <AssistanceContactForm />
+
+          <div className="mt-5">
             <a href="tel:+390110133330" className="hover:text-warm-900 transition-colors">
               +39 011 0133330
             </a>

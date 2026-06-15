@@ -571,7 +571,7 @@ function ProjectsContent() {
                     <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
                       {lookupLabel(typeLabelMap, project.type)}
                     </p>
-                    <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                    <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                       {project.name}
                     </h3>
                   </div>

@@ -189,7 +189,7 @@ export default async function DesignerDetailPage({ params }: PageProps) {
       {products.length > 0 && (
         <section className="py-16 lg:py-24">
           <div className="text-center mb-12">
-            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+            <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               {T["designers.detail.products"]}
             </h2>
           </div>
@@ -226,7 +226,7 @@ export default async function DesignerDetailPage({ params }: PageProps) {
                         {cardLabel}
                       </p>
                     )}
-                    <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                    <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                       {product!.name}
                     </h3>
                   </div>

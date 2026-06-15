@@ -1066,7 +1066,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       {(relatedLoading || related.length > 0) && (
         <section className="mt-20 pt-14 border-t border-warm-200">
           <p className="uppercase text-[14px] tracking-[0.03em] text-black font-light mb-2">{t("Prodotti correlati", "Produits associés")}</p>
-          <h2 className="font-sans text-[28px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-12">
+          <h2 className="font-sans text-[25px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-12">
             {product.category?.name ? t(`Altro da ${product.category.name}`, `Plus de ${product.category.name}`) : t("Altri prodotti dello shop", "Autres produits de la boutique")}
           </h2>
           {relatedLoading ? (

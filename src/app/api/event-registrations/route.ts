@@ -7,6 +7,9 @@ import {
   getEmailConfig,
 } from "@/lib/event-registration";
 import { assignTagBySlug } from "@/lib/tags";
+import { sendCapiEvent } from "@/lib/fb-capi";
+import { verifyRecaptcha } from "@/lib/recaptcha";
+import { normalizeEmail, isLikelyDotSpam, isLikelyGibberishName } from "@/lib/email-spam";
 import { headers } from "next/headers";
 
 function generateUUID(): string {
@@ -20,7 +23,6 @@ export async function POST(req: Request) {
     const {
       firstName,
       lastName,
-      email,
       profile,
       company,
       phone,
@@ -33,6 +35,7 @@ export async function POST(req: Request) {
       landingPageId,
       inviteToken,
     } = body;
+    let email: string = body.email || "";
 
     if (!firstName || !lastName || !email || !country || !city || !zipCode) {
       return NextResponse.json(
@@ -49,9 +52,40 @@ export async function POST(req: Request) {
       );
     }
 
+    // Anti-spam #1: pattern "Gmail dot abuse" (es. a.b.c.d.e@gmail.com bot)
+    if (isLikelyDotSpam(email)) {
+      console.warn(`[event-registrations] rifiutata email pattern spam: ${email}`);
+      return NextResponse.json(
+        { success: false, error: "Invalid email address" },
+        { status: 400 }
+      );
+    }
+
+    // Anti-spam #1b: nome gibberish
+    if (isLikelyGibberishName(firstName) || isLikelyGibberishName(lastName)) {
+      console.warn(`[event-registrations] rifiutato nome gibberish: ${firstName} ${lastName} <${email}>`);
+      return NextResponse.json(
+        { success: false, error: "Invalid name" },
+        { status: 400 }
+      );
+    }
+
+    // Anti-spam #2: reCAPTCHA Enterprise (era completamente assente!)
+    const recaptchaToken = typeof body.recaptchaToken === "string" ? body.recaptchaToken : "";
+    const human = await verifyRecaptcha(recaptchaToken, "event_registration");
+    if (!human) {
+      return NextResponse.json(
+        { success: false, error: "Verifica anti-bot fallita" },
+        { status: 400 }
+      );
+    }
+
+    // Canonicalizza email (Gmail dedup tramite punti / +tag)
+    email = normalizeEmail(email);
+
     // Check for duplicate registration
     const existing = await prisma.eventRegistration.findFirst({
-      where: { email: email.toLowerCase().trim(), landingPageId: landingPageId || undefined },
+      where: { email, landingPageId: landingPageId || undefined },
     });
     if (existing) {
       return NextResponse.json(
@@ -111,6 +145,34 @@ export async function POST(req: Request) {
         languageCode: userLang,
       },
     });
+
+    // Meta CAPI: Lead server-side per ogni registrazione evento
+    // event_id condiviso col pixel client = `lead-event-${registration.id}`.
+    {
+      const h = headers();
+      const clientIp = h.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+      const clientUserAgent = h.get("user-agent") || null;
+      sendCapiEvent({
+        eventName: "Lead",
+        eventId: `lead-event-${registration.id}`,
+        actionSource: "website",
+        userData: {
+          email,
+          phone: phone || null,
+          firstName: firstName || null,
+          lastName: lastName || null,
+          city: city || null,
+          postalCode: zipCode || null,
+          country: country || null,
+          clientIp,
+          clientUserAgent,
+        },
+        customData: {
+          content_name: "landing-page-event",
+          content_category: "event_registration",
+        },
+      }).catch((err) => console.error("[event-registrations] sendCapiEvent Lead error:", err));
+    }
 
     // Link invitation to registration if valid
     if (invitation) {

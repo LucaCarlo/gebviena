@@ -155,7 +155,7 @@ function CatalogSection({ item, textLeft }: { item: Catalog; textLeft: boolean }
         </p>
       )}
       {item.title && (
-        <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+        <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
           {item.title}
         </h2>
       )}

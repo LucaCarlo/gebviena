@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { computeShipping, FREE_STANDARD_SHIPPING_THRESHOLD_CENTS } from "@/lib/shipping-rates";
+import { computeShipping, getFreeShippingThresholdCents } from "@/lib/shipping-rates";
 import { marketFromCountry, resolveVariantPrice } from "@/lib/store-pricing";
 
 export const dynamic = "force-dynamic";
@@ -37,10 +37,12 @@ export async function POST(req: NextRequest) {
     const shippingFloor = storePickup ? 0 : (Number.isFinite(body.shippingFloor) ? Math.max(0, Math.trunc(body.shippingFloor)) : 0);
     const withUnboxingService = storePickup ? false : body.withUnboxingService === true;
 
+    const freeShippingThresholdCents = await getFreeShippingThresholdCents();
+
     if (!items.length) {
       return NextResponse.json({
         success: true,
-        data: emptyQuote(country),
+        data: emptyQuote(country, freeShippingThresholdCents),
       });
     }
 
@@ -94,7 +96,7 @@ export async function POST(req: NextRequest) {
           unboxingFeeCents: 0,
           totalShippingCents: 0,
           freeShippingApplied: false,
-          freeShippingThresholdCents: FREE_STANDARD_SHIPPING_THRESHOLD_CENTS,
+          freeShippingThresholdCents,
           resolvedRegion: "Ritiro al punto di vendita",
           notes: [],
           storePickup: true,
@@ -115,7 +117,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         data: {
-          ...emptyQuote(country),
+          ...emptyQuote(country, freeShippingThresholdCents),
           subtotalCents,
           totalVolumeM3,
           totalBoxes,
@@ -127,7 +129,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const result = computeShipping({
+    const result = await computeShipping({
       country,
       postalCode,
       province,
@@ -154,7 +156,7 @@ export async function POST(req: NextRequest) {
         unboxingFeeCents: result.unboxingFeeCents,
         totalShippingCents: result.totalShippingCents,
         freeShippingApplied: result.freeShippingApplied,
-        freeShippingThresholdCents: FREE_STANDARD_SHIPPING_THRESHOLD_CENTS,
+        freeShippingThresholdCents,
         resolvedRegion: result.resolvedRegion,
         notes: result.notes,
         totalCents: subtotalCents + result.totalShippingCents,
@@ -166,7 +168,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function emptyQuote(country: string) {
+function emptyQuote(country: string, freeShippingThresholdCents: number) {
   return {
     ready: false,
     country,
@@ -179,7 +181,7 @@ function emptyQuote(country: string) {
     unboxingFeeCents: 0,
     totalShippingCents: 0,
     freeShippingApplied: false,
-    freeShippingThresholdCents: FREE_STANDARD_SHIPPING_THRESHOLD_CENTS,
+    freeShippingThresholdCents,
     resolvedRegion: null as string | null,
     notes: [] as string[],
     totalCents: 0,

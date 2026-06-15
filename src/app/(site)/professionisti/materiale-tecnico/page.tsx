@@ -34,7 +34,27 @@ interface FabricCategory {
   files: FabricFile[];
 }
 
+// Tipologie canoniche in ordine di priorità (la prima vince se il prodotto
+// ne ha più di una). "CLASSICI" è una linea di prodotto (non una tipologia):
+// viene ignorata. "verniciature-custom" / vuoto / valori sconosciuti → "ALTRO".
 const CATEGORY_ORDER = ["SEDUTE", "IMBOTTITI", "COMPLEMENTI", "TAVOLI", "OUTDOOR"];
+const CATEGORY_ALIASES: Record<string, string> = { "SEDIE": "SEDUTE" };
+
+function extractCategory(raw: string | null): string {
+  if (!raw) return "ALTRO";
+  const parts = raw.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
+  let bestIdx = -1;
+  let best: string | null = null;
+  for (const p of parts) {
+    const norm = CATEGORY_ALIASES[p] || p;
+    const idx = CATEGORY_ORDER.indexOf(norm);
+    if (idx !== -1 && (bestIdx === -1 || idx < bestIdx)) {
+      bestIdx = idx;
+      best = norm;
+    }
+  }
+  return best || "ALTRO";
+}
 
 type Tab = "modelli" | "schede" | "tessuti";
 
@@ -90,7 +110,7 @@ export default function MaterialeTecnicoPage() {
   const grouped = useMemo(() => {
     const map = new Map<string, ProductSheet[]>();
     for (const p of filtered) {
-      const cat = (p.category || "").split(",")[0].trim().toUpperCase() || "ALTRO";
+      const cat = extractCategory(p.category);
       if (!map.has(cat)) map.set(cat, []);
       map.get(cat)!.push(p);
     }

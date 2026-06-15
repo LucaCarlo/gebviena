@@ -152,7 +152,7 @@ export default async function CampaignDetailPage({ params }: Params) {
                 <section key={block.id} className="gtv-container" style={{ marginBottom: "-100px" }}>
                   {d.title && (
                     <h2
-                      className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto"
+                      className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto"
                       dangerouslySetInnerHTML={{ __html: d.title }}
                     />
                   )}
@@ -190,7 +190,7 @@ export default async function CampaignDetailPage({ params }: Params) {
                       >
                         {d.title && (
                           <h2
-                            className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4"
+                            className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4"
                             dangerouslySetInnerHTML={{ __html: d.title }}
                           />
                         )}
@@ -352,7 +352,7 @@ export default async function CampaignDetailPage({ params }: Params) {
       {related.length > 0 && (
         <section className="py-20 md:py-28">
           <div className="px-2 md:px-3 lg:px-4">
-            <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+            <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
               {T["campagne-video.detail.related"]}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
@@ -367,7 +367,7 @@ export default async function CampaignDetailPage({ params }: Params) {
                     {c.type && (
                       <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">{lookupLabel(categoryLabelMap, c.type)}</p>
                     )}
-                    <h4 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                    <h4 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                       {c.name}
                     </h4>
                   </div>

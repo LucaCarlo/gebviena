@@ -134,7 +134,7 @@ export default function Footer() {
         <div className="mx-auto w-full max-w-[1420px] px-4 md:px-8 py-14 md:py-18">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
             <div>
-              <h3 className="font-sans text-[28px] font-light uppercase tracking-[inherit] leading-[1.15] text-black">
+              <h3 className="font-sans text-[25px] font-light uppercase tracking-[inherit] leading-[1.15] text-black">
                 {t("footer.newsletter.title")}
               </h3>
               <p className="font-sans text-[16px] font-light mt-0.5 text-black">

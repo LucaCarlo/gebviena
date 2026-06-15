@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
 import type { PointOfSale } from "@/types";
 import AdminListFilters from "@/components/admin/AdminListFilters";
 
 export default function AdminStoresPage() {
+  const router = useRouter();
   const [stores, setStores] = useState<PointOfSale[]>([]);
   const [loading, setLoading] = useState(true);
   const importRef = useRef<HTMLInputElement>(null);
@@ -125,7 +127,40 @@ export default function AdminStoresPage() {
           totalCount={stores.length}
           filteredCount={filteredStores.length}
         />
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
+        {/* Mobile: card list */}
+        <div className="md:hidden space-y-2">
+          {filteredStores.map((store) => (
+            <Link
+              key={store.id}
+              href={`/admin/stores/${store.id}`}
+              className="block bg-white rounded-lg border border-warm-200 p-3"
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-warm-800 truncate">{store.name}</div>
+                  <div className="text-[11px] text-warm-600 truncate">
+                    {(store.city || "—") + " · " + (store.country || "—")}
+                  </div>
+                  {store.phone && (
+                    <div className="text-[11px] text-warm-500 truncate">{store.phone}</div>
+                  )}
+                </div>
+                <button
+                  onClick={(e) => { e.preventDefault(); handleDelete(store.id); }}
+                  className="p-1.5 text-warm-400 hover:text-red-600 shrink-0"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </Link>
+          ))}
+          {filteredStores.length === 0 && (
+            <div className="text-center py-12 text-warm-400 bg-white rounded-lg border border-warm-200">Nessun negozio trovato</div>
+          )}
+        </div>
+
+        {/* Desktop: tabella */}
+        <div className="hidden md:block bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 border-b border-warm-200">
               <tr>
@@ -138,7 +173,15 @@ export default function AdminStoresPage() {
             </thead>
             <tbody className="divide-y divide-warm-100">
               {filteredStores.map((store) => (
-                <tr key={store.id} className="hover:bg-warm-50 transition-colors">
+                <tr
+                  key={store.id}
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.closest("a, button, input, label")) return;
+                    router.push(`/admin/stores/${store.id}`);
+                  }}
+                  className="hover:bg-warm-50 transition-colors cursor-pointer"
+                >
                   <td className="px-6 py-4 font-medium text-warm-800">{store.name}</td>
                   <td className="px-6 py-4 text-warm-600">{store.city}</td>
                   <td className="px-6 py-4 text-warm-600">{store.country}</td>

@@ -10,7 +10,7 @@ interface Kpi {
   minDate: string | null; maxDate: string | null;
 }
 interface Data {
-  filterHost: string; range: string; isHourly: boolean; isStore: boolean;
+  filterHost: string; range: string; isHourly: boolean; isMonthly: boolean; isStore: boolean;
   kpi: Kpi;
   series: { date: string; views: number }[];
   topPages: { path: string; count: number }[];
@@ -25,7 +25,16 @@ interface Data {
 
 const PIE = ["#8a6d3b", "#b08968", "#cdb38b", "#7d8c7a", "#9c6644", "#6b705c", "#a5a58d", "#c9ada7"];
 const fmtD = (s: string) => { try { return new Date(s).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" }); } catch { return s; } };
-const fmtBucket = (s: string, hourly: boolean) => { if (hourly) { const m = s.match(/(\d{2}):00$/); return m ? m[1] + "h" : s; } return fmtD(s); };
+const MONTH_IT = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+const fmtBucket = (s: string, hourly: boolean, monthly = false) => {
+  if (hourly) { const m = s.match(/(\d{2}):00$/); return m ? m[1] + "h" : s; }
+  if (monthly) {
+    const m = s.match(/^(\d{4})-(\d{2})$/);
+    if (m) return `${MONTH_IT[parseInt(m[2], 10) - 1]} ${m[1].slice(2)}`;
+    return s;
+  }
+  return fmtD(s);
+};
 const fmtDT = (s: string) => { try { return new Date(s).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }); } catch { return s; } };
 const fmtDur = (sec: number) => {
   if (!sec || sec < 1) return "0s";
@@ -84,8 +93,8 @@ function Card({ children }: { children: React.ReactNode }) {
 const RANGES: [string, string][] = [["1d", "Ultimo giorno"], ["7d", "7 giorni"], ["30d", "30 giorni"], ["1y", "1 anno"], ["all", "Totale"]];
 
 export default function AdminAnalyticsPage() {
-  const [data, setData] = useState<Data | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<Partial<Data>>({});
+  const [loadedSections, setLoadedSections] = useState<Set<string>>(new Set());
   const [host, setHost] = useState<"" | "SITO" | "STORE">("");
   const [range, setRange] = useState<string>("all");
   const [recent, setRecent] = useState<Data["recent"]>([]);
@@ -100,15 +109,42 @@ export default function AdminAnalyticsPage() {
     return `${s ? `?${s}` : ""}${extra ? (s ? "&" : "?") + extra : ""}`;
   }, [host, range]);
 
+  // Carica TUTTE le sezioni IN PARALLELO (snapshot precalcolati = read DB veloci).
+  // Ogni sezione aggiorna lo state appena pronta, quindi compaiono in modo
+  // progressivo ma senza aspettare la più lenta prima di partire con la successiva.
+  // session-time resta una CTE pesante: gira in parallelo come le altre e si
+  // aggiorna quando finisce — non blocca il render.
   const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await fetch(`/api/analytics${qs()}`, { cache: "no-store" });
-      const j = await r.json();
-      setData(j.data || null);
-      setRecent(j.data?.recent || []);
-      setRecMore(!!j.data?.recentHasMore);
-    } catch { /* ignore */ } finally { setLoading(false); }
+    setLoadedSections(new Set());
+    setData({});
+    setRecent([]);
+    const fetchSection = async (sec: string) => {
+      try {
+        const r = await fetch(`/api/analytics${qs(`section=${sec}`)}`, { cache: "no-store" });
+        const j = await r.json();
+        if (!j.success || !j.data) return;
+        if (sec === "session-time") {
+          setData((prev) => prev.kpi ? { ...prev, kpi: { ...prev.kpi, avgSeconds: j.data.avgSeconds } } : prev);
+        } else {
+          setData((prev) => ({ ...prev, ...j.data }));
+        }
+        if (sec === "recent") {
+          setRecent(j.data.recent || []);
+          setRecMore(!!j.data.recentHasMore);
+        }
+        setLoadedSections((prev) => new Set(prev).add(sec));
+      } catch { /* ignore */ }
+    };
+    await Promise.all([
+      fetchSection("kpi"),
+      fetchSection("store"),
+      fetchSection("geo"),
+      fetchSection("sources"),
+      fetchSection("devices"),
+      fetchSection("pages"),
+      fetchSection("recent"),
+      fetchSection("session-time"),
+    ]);
   }, [qs]);
 
   const loadMore = useCallback(async () => {
@@ -123,8 +159,11 @@ export default function AdminAnalyticsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const isLoaded = (s: string) => loadedSections.has(s);
+  const loading = loadedSections.size === 0;
+
   const k = data?.kpi;
-  const maxSeries = Math.max(1, ...(data?.series.map((s) => s.views) || [1]));
+  const maxSeries = Math.max(1, ...(data?.series?.map((s) => s.views) || [1]));
   const periodLabel = k && k.minDate ? `${k.periodDays} ${k.periodDays === 1 ? "giorno" : "giorni"} · ${fmtD(String(k.minDate))}–${fmtD(String(k.maxDate))}` : "—";
 
   return (
@@ -149,29 +188,32 @@ export default function AdminAnalyticsPage() {
         </div>
       </div>
 
-      {loading || !data ? (
-        <div className="py-20 text-center text-warm-400">Caricamento…</div>
-      ) : (
-        <div className="space-y-6">
-          {/* KPI — unica riga */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { i: <Users size={16} />, l: "Visitatori unici", v: k!.unique.toLocaleString("it-IT"), s: "" },
-              { i: <Clock size={16} />, l: "Tempo medio sul sito", v: fmtDur(k!.avgSeconds), s: "permanenza media per sessione" },
-              { i: <Activity size={16} />, l: `Media / ${k!.avgUnit}`, v: k!.avg.toLocaleString("it-IT"), s: "visitatori unici" },
-              { i: <CalendarDays size={16} />, l: "Periodo", v: String(k!.periodDays), s: periodLabel },
-            ].map((c) => (
-              <Card key={c.l}>
-                <div className="text-warm-400 mb-1">{c.i}</div>
-                <div className="text-2xl font-bold text-warm-900">{c.v}</div>
-                <div className="text-[11px] text-warm-500 uppercase tracking-wide">{c.l}</div>
-                {c.s && <div className="text-[10px] text-warm-400 mt-0.5">{c.s}</div>}
-              </Card>
-            ))}
-          </div>
+      <div className="space-y-6">
+          {/* KPI — unica riga (sez. "kpi") */}
+          {isLoaded("kpi") && k ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { i: <Users size={16} />, l: "Visitatori unici", v: k.unique.toLocaleString("it-IT"), s: "" },
+                { i: <Clock size={16} />, l: "Tempo medio sul sito", v: k.avgSeconds == null ? "…" : fmtDur(k.avgSeconds), s: k.avgSeconds == null ? "calcolo in corso" : "permanenza media per sessione" },
+                { i: <Activity size={16} />, l: `Media / ${k.avgUnit}`, v: k.avg.toLocaleString("it-IT"), s: "visitatori unici" },
+                { i: <CalendarDays size={16} />, l: "Periodo", v: String(k.periodDays), s: periodLabel },
+              ].map((c) => (
+                <Card key={c.l}>
+                  <div className="text-warm-400 mb-1">{c.i}</div>
+                  <div className="text-2xl font-bold text-warm-900">{c.v}</div>
+                  <div className="text-[11px] text-warm-500 uppercase tracking-wide">{c.l}</div>
+                  {c.s && <div className="text-[10px] text-warm-400 mt-0.5">{c.s}</div>}
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[0,1,2,3].map((i) => <Card key={i}><div className="h-16 bg-warm-100 rounded animate-pulse" /></Card>)}
+            </div>
+          )}
 
           {/* Funnel STORE — solo con filtro Store */}
-          {data.isStore && (
+          {isLoaded("store") && data.isStore && data.store && (
             <Card>
               <h3 className="text-sm font-semibold text-warm-800 mb-1 flex items-center gap-2"><ShoppingCart size={15} /> Funnel acquisto (Store)</h3>
               <p className="text-[11px] text-warm-400 mb-4">Percorso del visitatore verso l&apos;acquisto — % sui visitatori store.</p>
@@ -189,45 +231,69 @@ export default function AdminAnalyticsPage() {
             </Card>
           )}
 
-          {/* Andamento (visitatori unici) */}
-          <Card>
-            <h3 className="text-sm font-semibold text-warm-800 mb-4">Andamento {data.isHourly ? "orario" : "giornaliero"} (visitatori unici)</h3>
-            {data.series.length === 0 ? <p className="text-xs text-warm-400">Nessun dato.</p> : (
-              <div className="flex items-end gap-1.5 h-44">
-                {data.series.map((s) => (
-                  <div key={s.date} className="flex-1 flex flex-col items-center gap-1 group min-w-[8px]">
-                    <div className="text-[10px] text-warm-500 opacity-0 group-hover:opacity-100">{s.views.toLocaleString("it-IT")}</div>
-                    <div className="w-full bg-warm-700 rounded-t" style={{ height: `${(s.views / maxSeries) * 150}px` }} />
-                    <div className="text-[9px] text-warm-400 -rotate-45 origin-top-left whitespace-nowrap mt-1">{fmtBucket(s.date, data.isHourly)}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+          {/* Andamento (visitatori unici) — dentro la sez. "kpi" */}
+          {isLoaded("kpi") && data.series ? (
+            <Card>
+              <h3 className="text-sm font-semibold text-warm-800 mb-4">Andamento {data.isHourly ? "orario" : data.isMonthly ? "mensile" : "giornaliero"} (visitatori unici)</h3>
+              {data.series.length === 0 ? <p className="text-xs text-warm-400">Nessun dato.</p> : (
+                <div className="flex items-end gap-1.5 h-44">
+                  {data.series.map((s) => (
+                    <div key={s.date} className="flex-1 flex flex-col items-center gap-1 group min-w-[8px]">
+                      <div className="text-[10px] text-warm-500 opacity-0 group-hover:opacity-100">{s.views.toLocaleString("it-IT")}</div>
+                      <div className="w-full bg-warm-700 rounded-t" style={{ height: `${(s.views / maxSeries) * 150}px` }} />
+                      <div className="text-[9px] text-warm-400 -rotate-45 origin-top-left whitespace-nowrap mt-1">{fmtBucket(s.date, !!data.isHourly, !!data.isMonthly)}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          ) : <Card><div className="h-44 bg-warm-100 rounded animate-pulse" /></Card>}
 
-          {/* Geo (visitatori unici) */}
+          {/* Geo + Sorgenti */}
           <div className="grid md:grid-cols-2 gap-3">
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Globe size={15} /> Nazioni <span className="text-[10px] text-warm-400 normal-case">(visitatori unici)</span></h3><Pie items={data.geo.countries} /></Card>
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Sorgenti traffico <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Pie items={data.sources} /></Card>
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Top città <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.geo.cities} color="#9c6644" /></Card>
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Top regioni <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.geo.regions} color="#7d8c7a" /></Card>
+            {isLoaded("geo") && data.geo ? (
+              <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Globe size={15} /> Nazioni <span className="text-[10px] text-warm-400 normal-case">(visitatori unici)</span></h3><Pie items={data.geo.countries} /></Card>
+            ) : <Card><div className="h-44 bg-warm-100 rounded animate-pulse" /></Card>}
+            {isLoaded("sources") && data.sources ? (
+              <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Sorgenti traffico <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Pie items={data.sources} /></Card>
+            ) : <Card><div className="h-44 bg-warm-100 rounded animate-pulse" /></Card>}
+            {isLoaded("geo") && data.geo ? (
+              <>
+                <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Top città <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.geo.cities} color="#9c6644" /></Card>
+                <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Top regioni <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.geo.regions} color="#7d8c7a" /></Card>
+              </>
+            ) : (
+              <>
+                <Card><div className="h-44 bg-warm-100 rounded animate-pulse" /></Card>
+                <Card><div className="h-44 bg-warm-100 rounded animate-pulse" /></Card>
+              </>
+            )}
           </div>
 
           {/* Dispositivi + Sistema */}
           <div className="grid md:grid-cols-2 gap-3">
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Smartphone size={15} /> Dispositivo <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.devices} color="#8a6d3b" /></Card>
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Monitor size={15} /> Sistema</h3><Bars items={data.systems} color="#6b705c" /></Card>
+            {isLoaded("devices") && data.devices && data.systems ? (
+              <>
+                <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Smartphone size={15} /> Dispositivo <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.devices} color="#8a6d3b" /></Card>
+                <Card><h3 className="text-sm font-semibold text-warm-800 mb-3 flex items-center gap-2"><Monitor size={15} /> Sistema</h3><Bars items={data.systems} color="#6b705c" /></Card>
+              </>
+            ) : (
+              <>
+                <Card><div className="h-32 bg-warm-100 rounded animate-pulse" /></Card>
+                <Card><div className="h-32 bg-warm-100 rounded animate-pulse" /></Card>
+              </>
+            )}
           </div>
 
-          {/* Pagine / prodotti più visti (visitatori unici) */}
-          {data.isStore ? (
+          {/* Pagine / prodotti più visti */}
+          {data.isStore && isLoaded("store") && data.store && isLoaded("pages") && data.topPages ? (
             <div className="grid md:grid-cols-2 gap-3">
               <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Prodotti più visti <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.store.topProducts.map((p) => ({ name: p.path, count: p.count }))} /></Card>
               <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Pagine store più viste <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.topPages.map((p) => ({ name: p.path, count: p.count }))} color="#b08968" /></Card>
             </div>
-          ) : (
-            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Pagine più viste <span className="text-[10px] text-warm-400">(visitatori unici)</span></h3><Bars items={data.topPages.map((p) => ({ name: p.path, count: p.count }))} /></Card>
-          )}
+          ) : !data.isStore && isLoaded("pages") && data.topPages ? (
+            <Card><h3 className="text-sm font-semibold text-warm-800 mb-3">Pagine più viste</h3><Bars items={data.topPages.map((p) => ({ name: p.path, count: p.count }))} /></Card>
+          ) : <Card><div className="h-44 bg-warm-100 rounded animate-pulse" /></Card>}
 
           {/* Recenti */}
           <Card>
@@ -262,6 +328,10 @@ export default function AdminAnalyticsPage() {
               )}
             </div>
           </Card>
+      </div>
+      {loading && (
+        <div className="fixed bottom-4 right-4 bg-warm-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg">
+          Caricamento in corso…
         </div>
       )}
     </div>

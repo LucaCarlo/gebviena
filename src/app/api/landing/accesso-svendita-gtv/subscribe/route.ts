@@ -6,6 +6,7 @@ import { assignTagBySlug } from "@/lib/tags";
 import { buildEmailFooterHtml, getEmailFooterConfig } from "@/lib/event-registration";
 import { headers } from "next/headers";
 import { verifyRecaptcha } from "@/lib/recaptcha";
+import { isLikelyDotSpam, isLikelyGibberishName, normalizeEmail } from "@/lib/email-spam";
 
 const TEMPLATE_NAME = "Conferma pre-accesso svendita";
 // Permalink possibili della landing svendita: il vecchio era "accesso-svendita-gtv",
@@ -159,6 +160,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Accettazione privacy richiesta" }, { status: 400 });
     }
 
+    // Anti-spam #1: pattern "Gmail dot abuse" (a.b.c.d.e@gmail.com bot)
+    if (isLikelyDotSpam(emailRaw)) {
+      console.warn(`[landing svendita] rifiutata email pattern spam: ${emailRaw}`);
+      return NextResponse.json({ success: false, error: "Email non valida" }, { status: 400 });
+    }
+    // Anti-spam #1b: nomi gibberish tipo "MCiHydzzzDbehOtCJpVJtq" (consonanti
+    // casuali senza vocali / pattern entropico). reCAPTCHA da solo non basta
+    // perché alcuni bot generano token validi con score sopra soglia.
+    if (isLikelyGibberishName(firstName) || isLikelyGibberishName(lastName)) {
+      console.warn(`[landing svendita] rifiutato nome gibberish: ${firstName} ${lastName} <${emailRaw}>`);
+      return NextResponse.json({ success: false, error: "Nome non valido" }, { status: 400 });
+    }
+
     // Anti-bot: reCAPTCHA Enterprise. verifyRecaptcha è "graceful":
     // se reCAPTCHA non è configurato/abilitato o l'API Google fallisce
     // → ritorna true (non blocca utenti reali). Blocca solo token
@@ -169,7 +183,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Verifica anti-bot non superata. Riprova." }, { status: 400 });
     }
 
-    const email = emailRaw.toLowerCase();
+    // Canonicalizza email (Gmail dot/+tag dedup → stessa entità lato DB).
+    const email = normalizeEmail(emailRaw);
 
     // IP del visitatore dal reverse-proxy (nginx). x-forwarded-for può essere
     // "client, proxy1, proxy2": prendiamo il primo. Fallback x-real-ip.

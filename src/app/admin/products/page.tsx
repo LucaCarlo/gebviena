@@ -3,7 +3,8 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Pencil, Trash2, Download, Upload, FileSpreadsheet, FileJson } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Pencil, Trash2, Download, Upload, FileSpreadsheet, FileJson, Copy, Eye, EyeOff } from "lucide-react";
 import type { Product } from "@/types";
 import AdminListFilters from "@/components/admin/AdminListFilters";
 
@@ -54,6 +55,7 @@ function escapeCSV(val: string | null | undefined): string {
 }
 
 export default function AdminProductsPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -62,16 +64,43 @@ export default function AdminProductsPage() {
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
 
   const fetchProducts = () => {
-    fetch("/api/products?limit=10000")
+    // admin=true → l'API restituisce anche bozze (isActive=false) se sei admin loggato
+    fetch("/api/products?limit=10000&admin=true")
       .then((r) => r.json())
       .then((data) => { setProducts(data.data || []); setLoading(false); });
   };
 
   useEffect(() => { fetchProducts(); }, []);
 
+  const handleDuplicate = async (id: string) => {
+    if (!confirm("Duplicare questo prodotto? La copia verrà creata come bozza.")) return;
+    const res = await fetch(`/api/products/${id}/duplicate`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) { alert(data?.error || "Errore nella duplicazione"); return; }
+    fetchProducts();
+  };
+
+  const handleTogglePublish = async (id: string, currentIsActive: boolean) => {
+    setProducts((arr) => arr.map((p) => p.id === id ? { ...p, isActive: !currentIsActive } : p));
+    const res = await fetch(`/api/products/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !currentIsActive }),
+    });
+    if (!res.ok) {
+      setProducts((arr) => arr.map((p) => p.id === id ? { ...p, isActive: currentIsActive } : p));
+      alert("Errore nel cambio di stato");
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Sei sicuro di voler eliminare questo prodotto?")) return;
-    await fetch(`/api/products/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: "Errore eliminazione" }));
+      alert(data.error || "Impossibile eliminare il prodotto.");
+      return;
+    }
     fetchProducts();
   };
 
@@ -296,7 +325,56 @@ export default function AdminProductsPage() {
           totalCount={products.length}
           filteredCount={filteredProducts.length}
         />
-        <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
+        {/* Mobile: card list */}
+        <div className="md:hidden space-y-2">
+          {filteredProducts.map((p) => (
+            <div key={p.id} className="bg-white rounded-lg border border-warm-200 p-3">
+              <div className="flex items-start gap-3">
+                <Link href={`/admin/products/${p.id}`} className="block shrink-0">
+                  <div className="w-14 h-14 relative rounded overflow-hidden bg-warm-100">
+                    <Image src={p.coverImage || p.imageUrl} alt={p.name} fill className="object-cover" sizes="56px" />
+                  </div>
+                </Link>
+                <Link href={`/admin/products/${p.id}`} className="flex-1 min-w-0 block">
+                  <div className="font-medium text-warm-800 truncate">{p.name}</div>
+                  <div className="text-[11px] text-warm-500 font-mono truncate">{p.slug}</div>
+                  {(p.designerName || p.designer?.name) && (
+                    <div className="text-[11px] text-warm-600 truncate">{p.designerName || p.designer?.name}</div>
+                  )}
+                </Link>
+                <button onClick={() => handleDuplicate(p.id)} title="Duplica" className="p-1.5 text-warm-400 hover:text-warm-800 shrink-0">
+                  <Copy size={14} />
+                </button>
+                <button
+                  onClick={() => handleTogglePublish(p.id, p.isActive ?? true)}
+                  title={p.isActive ? "Metti in bozza" : "Pubblica"}
+                  className={`p-1.5 shrink-0 ${p.isActive ? "text-emerald-600 hover:text-emerald-800" : "text-warm-400 hover:text-warm-800"}`}
+                >
+                  {p.isActive ? <Eye size={14} /> : <EyeOff size={14} />}
+                </button>
+                <button onClick={() => handleDelete(p.id)} className="p-1.5 text-warm-400 hover:text-red-600 shrink-0">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              {(p.category || p.subcategory) && (
+                <div className="mt-2 ml-[68px] flex flex-wrap gap-1">
+                  {(p.category || "").split(",").filter(Boolean).map((t: string) => (
+                    <span key={t} className="px-1.5 py-0.5 bg-warm-100 text-warm-600 text-[10px] rounded">{t}</span>
+                  ))}
+                  {p.subcategory && (
+                    <span className="text-[10px] text-warm-500">{p.subcategory}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-12 text-warm-400 bg-white rounded-lg border border-warm-200">Nessun prodotto trovato</div>
+          )}
+        </div>
+
+        {/* Desktop: tabella */}
+        <div className="hidden md:block bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-warm-50 border-b border-warm-200">
               <tr>
@@ -311,7 +389,16 @@ export default function AdminProductsPage() {
             </thead>
             <tbody className="divide-y divide-warm-100">
               {filteredProducts.map((p) => (
-                <tr key={p.id} className="hover:bg-warm-50 transition-colors">
+                <tr
+                  key={p.id}
+                  onClick={(e) => {
+                    // non navigare se ho cliccato sui bottoni d'azione
+                    const target = e.target as HTMLElement;
+                    if (target.closest("a, button")) return;
+                    router.push(`/admin/products/${p.id}`);
+                  }}
+                  className="hover:bg-warm-50 transition-colors cursor-pointer"
+                >
                   <td className="px-6 py-3">
                     <div className="w-12 h-12 relative rounded overflow-hidden bg-warm-100">
                       <Image src={p.coverImage || p.imageUrl} alt={p.name} fill className="object-cover" sizes="48px" />
@@ -330,10 +417,20 @@ export default function AdminProductsPage() {
                   <td className="px-6 py-4 text-warm-500 text-xs">{p.subcategory || "—"}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Link href={`/admin/products/${p.id}`} className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors">
+                      <Link href={`/admin/products/${p.id}`} title="Modifica" className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors">
                         <Pencil size={16} />
                       </Link>
-                      <button onClick={() => handleDelete(p.id)} className="p-1.5 text-warm-400 hover:text-red-600 transition-colors">
+                      <button onClick={() => handleDuplicate(p.id)} title="Duplica" className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors">
+                        <Copy size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleTogglePublish(p.id, p.isActive ?? true)}
+                        title={p.isActive ? "In linea — clicca per metterlo in bozza" : "In bozza — clicca per pubblicare"}
+                        className={`p-1.5 transition-colors ${p.isActive ? "text-emerald-600 hover:text-emerald-800" : "text-warm-400 hover:text-warm-800"}`}
+                      >
+                        {p.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
+                      </button>
+                      <button onClick={() => handleDelete(p.id)} title="Elimina" className="p-1.5 text-warm-400 hover:text-red-600 transition-colors">
                         <Trash2 size={16} />
                       </button>
                     </div>

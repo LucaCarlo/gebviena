@@ -101,7 +101,7 @@ export default async function DesignerPremiPage() {
 
       {/* ── DESIGNER grid ────────────────────────────────────────── */}
       <section className="w-full py-20 md:py-28">
-        <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-10">
+        <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-10">
           {T["designer-premi.designers.title"]}
         </h2>
         <DesignerGrid designers={designers} />
@@ -115,7 +115,7 @@ export default async function DesignerPremiPage() {
       {/* ── PREMI ────────────────────────────────────────────────── */}
       <section className="py-20 md:py-28">
         <div className="mx-auto w-[95%] max-w-[90%]">
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+          <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             {T["designer-premi.awards.title"]}
           </h2>
 
@@ -165,7 +165,7 @@ export default async function DesignerPremiPage() {
                   <div className="flex-1 pl-6 md:pl-10">
                     {products.length === 0 ? (
                       <div className="py-4">
-                        <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                        <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                           {award.name}
                         </h3>
                         {award.organization && (
@@ -207,7 +207,7 @@ export default async function DesignerPremiPage() {
                                     {productLabel(prod.category, prod.subcategory)}
                                   </p>
                                 )}
-                                <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                                <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                                   {prod.name}
                                 </h3>
                               </div>
@@ -228,7 +228,7 @@ export default async function DesignerPremiPage() {
       <section className="py-20 md:py-28">
         <div className="gtv-container">
           <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
-            <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+            <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
               {T["common.related"]}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
