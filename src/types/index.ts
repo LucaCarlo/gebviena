@@ -326,6 +326,7 @@ export interface NewsCta {
   label: string;
   href: string;
   style?: CtaButtonStyle;
+  iconUrl?: string;   // SVG/PNG custom — se compilato, sostituisce il badge predefinito
 }
 export interface NewsFeatureToolData {
   imageUrl: string;
