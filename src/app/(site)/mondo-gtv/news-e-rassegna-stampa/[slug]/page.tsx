@@ -539,17 +539,17 @@ function CtaButton({ cta }: { cta: NewsCta }) {
   // Personalizzato con icona uploadata → pulsante nero con icona
   if (cta.style === "custom" && cta.iconUrl) {
     return (
-      <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-warm-900 transition-colors">
+      <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-md hover:bg-warm-900 transition-colors">
         <span className="relative w-5 h-5">
           <Image src={cta.iconUrl} alt="" fill className="object-contain invert" sizes="20px" />
         </span>
-        <span className="text-sm">{cta.label || ""}</span>
+        <span className="text-[15px] font-medium">{cta.label || ""}</span>
       </a>
     );
   }
   // Default: link minimal con freccia
   return (
-    <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-1 uppercase text-[14px] tracking-[0.03em] text-black font-medium hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
+    <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-1 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
       {cta.label || "Scopri"} &rarr;
     </a>
   );
@@ -575,8 +575,8 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
         </div>
       )}
       <h3 className="text-[25px] md:text-[28px] font-sans text-black font-light mb-3">{d.title}</h3>
-      {d.description && <p className="text-[15px] md:text-[16px] text-black font-light leading-relaxed mb-6 whitespace-pre-line">{d.description}</p>}
-      {d.scrollLabel && <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-2">{d.scrollLabel}</div>}
+      {d.description && <p className="text-[16px] md:text-[17px] text-black font-light leading-relaxed mb-6 whitespace-pre-line">{d.description}</p>}
+      {d.scrollLabel && <div className="text-[13px] uppercase tracking-[0.18em] text-warm-500 mb-2 font-medium">{d.scrollLabel}</div>}
       {d.ctas && d.ctas.length > 0 && (
         <div className="flex flex-wrap gap-3">
           {d.ctas.map((c, i) => <CtaButton key={i} cta={c} />)}
@@ -586,10 +586,10 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
   );
   const bulletsEl = d.bullets && d.bullets.filter(Boolean).length > 0 ? (
     <div className="h-full px-6 py-10 md:px-10 md:py-12 md:border-l border-warm-100 flex flex-col justify-center">
-      {d.bulletsTitle && <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-4">{d.bulletsTitle}</div>}
-      <ul className="space-y-2">
+      {d.bulletsTitle && <div className="text-[13px] uppercase tracking-[0.18em] text-warm-500 mb-4 font-medium">{d.bulletsTitle}</div>}
+      <ul className="space-y-2.5">
         {d.bullets.filter(Boolean).map((b, i) => (
-          <li key={i} className="flex items-start gap-2 text-[15px] text-black font-light">
+          <li key={i} className="flex items-start gap-2 text-[16px] text-black font-light leading-snug">
             <span className="text-warm-400 mt-1.5">&bull;</span>
             <span>{b}</span>
           </li>
