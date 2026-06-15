@@ -475,12 +475,12 @@ export function FeatureToolEditor({ data, onChange, sourceData }: { data: NewsFe
 
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo *</label>
-        <input type="text" value={data.title} onChange={(e) => onChange({ ...data, title: e.target.value })} placeholder="es. pCon.facts" className="w-full border border-warm-300 rounded px-4 py-2.5 text-base font-semibold focus:border-warm-800 focus:outline-none" />
+        <input type="text" value={data.title} onChange={(e) => onChange({ ...data, title: e.target.value })} placeholder="es. pCon.facts" className="w-full border border-warm-300 rounded px-4 py-2.5 text-base font-semibold text-warm-900 placeholder:text-warm-400 bg-white focus:border-warm-800 focus:outline-none" />
       </div>
 
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Descrizione</label>
-        <textarea value={data.description} onChange={(e) => onChange({ ...data, description: e.target.value })} rows={3} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none" placeholder="Tutte le informazioni di prodotto, sempre con te." />
+        <textarea value={data.description} onChange={(e) => onChange({ ...data, description: e.target.value })} rows={3} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm text-warm-900 placeholder:text-warm-400 bg-white focus:border-warm-800 focus:outline-none" placeholder="Tutte le informazioni di prodotto, sempre con te." />
       </div>
 
       <div className="border border-warm-200 bg-warm-50/30 rounded p-4 space-y-3">
