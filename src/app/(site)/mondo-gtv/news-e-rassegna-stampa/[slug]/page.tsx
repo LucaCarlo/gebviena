@@ -559,7 +559,7 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
   const imgLeft = d.imagePosition !== "right";
   const isVid = isVideoFile(d.imageUrl);
   const imageEl = (
-    <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "1 / 1" }}>
+    <div className="relative bg-warm-100 overflow-hidden h-full min-h-[280px]" style={{ aspectRatio: "4 / 3" }}>
       {d.imageUrl && (isVid ? (
         <NewsVideoFill src={d.imageUrl} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} />
       ) : (
@@ -568,13 +568,13 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
     </div>
   );
   const contentEl = (
-    <div className="px-6 py-10 md:px-10 md:py-12">
+    <div className="px-6 py-10 md:px-10 md:py-12 flex flex-col justify-center">
       {d.logoUrl && (
         <div className="relative w-12 h-12 mb-3">
           <Image src={d.logoUrl} alt="" fill className="object-contain" sizes="48px" />
         </div>
       )}
-      <h3 className="text-[28px] md:text-[32px] font-sans text-black font-light mb-3">{d.title}</h3>
+      <h3 className="text-[25px] md:text-[28px] font-sans text-black font-light mb-3">{d.title}</h3>
       {d.description && <p className="text-[15px] md:text-[16px] text-black font-light leading-relaxed mb-6 whitespace-pre-line">{d.description}</p>}
       {d.scrollLabel && <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-2">{d.scrollLabel}</div>}
       {d.ctas && d.ctas.length > 0 && (
@@ -585,7 +585,7 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
     </div>
   );
   const bulletsEl = d.bullets && d.bullets.filter(Boolean).length > 0 ? (
-    <div className="px-6 py-10 md:px-10 md:py-12 md:border-l border-warm-100">
+    <div className="px-6 py-10 md:px-10 md:py-12 md:border-l border-warm-100 flex flex-col justify-center">
       {d.bulletsTitle && <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-4">{d.bulletsTitle}</div>}
       <ul className="space-y-2">
         {d.bullets.filter(Boolean).map((b, i) => (
@@ -603,15 +603,15 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
       <div className="grid grid-cols-1 md:grid-cols-12 items-stretch">
         {imgLeft ? (
           <>
-            <div className="md:col-span-4">{imageEl}</div>
-            <div className={bulletsEl ? "md:col-span-5" : "md:col-span-8"}>{contentEl}</div>
+            <div className="md:col-span-5">{imageEl}</div>
+            <div className={bulletsEl ? "md:col-span-4" : "md:col-span-7"}>{contentEl}</div>
             {bulletsEl && <div className="md:col-span-3">{bulletsEl}</div>}
           </>
         ) : (
           <>
             {bulletsEl && <div className="md:col-span-3">{bulletsEl}</div>}
-            <div className={bulletsEl ? "md:col-span-5" : "md:col-span-8"}>{contentEl}</div>
-            <div className="md:col-span-4">{imageEl}</div>
+            <div className={bulletsEl ? "md:col-span-4" : "md:col-span-7"}>{contentEl}</div>
+            <div className="md:col-span-5">{imageEl}</div>
           </>
         )}
       </div>
