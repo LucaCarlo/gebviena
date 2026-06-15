@@ -270,7 +270,7 @@ export default function ProjectDetailPage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+            <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               {t("progetti.detail.products_used")}
             </h2>
           </motion.div>
@@ -298,7 +298,7 @@ export default function ProjectDetailPage() {
                       <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
                         {lookupLabel(productLabelMap, product.subcategory || (product.category || "").split(",")[0])}
                       </p>
-                      <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                      <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                         {product.name}
                       </h3>
                     </div>

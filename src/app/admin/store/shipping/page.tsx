@@ -1,182 +1,243 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, ChevronRight, ChevronDown, Plus, Trash2, Check, X, AlertCircle, Info, Pencil } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Loader2, Save, Check, AlertCircle, RotateCcw, Database, Upload, ChevronDown, ChevronRight, Clock, Power, Trash2 } from "lucide-react";
 
-type Service = "CURBSIDE" | "FLOOR_1_3" | "FLOOR_4_10_MAX6";
-
-const SERVICES: { value: Service; label: string; short: string }[] = [
-  { value: "CURBSIDE", label: "Bordo strada", short: "BS" },
-  { value: "FLOOR_1_3", label: "Piano 1-3", short: "P1-3" },
-  { value: "FLOOR_4_10_MAX6", label: "Piano 4-10 (max 6 m³)", short: "P4-10" },
-];
-
-interface Region { code: string; name: string; sortOrder: number; }
-interface Province { code: string; name: string; regionCode: string; }
-interface City { code: string; name: string; provinceCode: string; }
-
-interface Tariff {
-  id: string;
-  countryCode: string;
-  regionCode: string | null;
-  provinceCode: string | null;
-  cityCode: string | null;
-  service: Service;
-  pricePerM3Cents: number;
-  minChargeCents: number;
-  maxVolumeM3: string | number | null;
-  notes: string | null;
-  isActive: boolean;
+interface Settings {
+  freeThresholdCents: number;
+  itFallbackCents: number;
+  frStandardPerM3Cents: number;
+  unboxingPerM3Cents: number;
+  rowPerBoxCents: number;
 }
 
-type TariffScope =
-  | { level: "country"; regionCode: null; provinceCode: null; cityCode: null }
-  | { level: "region"; regionCode: string; provinceCode: null; cityCode: null }
-  | { level: "province"; regionCode: string; provinceCode: string; cityCode: null }
-  | { level: "city"; regionCode: string; provinceCode: string; cityCode: string };
+interface Region {
+  code: string;
+  label: string;
+  rateCents: number | null;
+  sortOrder: number;
+  leadTime: string | null;
+}
+
+interface Config {
+  settings: Settings;
+  regionsByCountry: Record<string, Region[]>;
+  floorDeliveryByCountry: Record<string, number>;
+  leadTimeByCountry: Record<string, string>;
+}
+
+const centsToEur = (c: number): string => (c / 100).toFixed(2);
+const centsOrEmpty = (c: number | null): string => (c == null ? "" : (c / 100).toFixed(2));
+const eurToCents = (s: string): number | null => {
+  const trimmed = s.trim();
+  if (!trimmed) return null;
+  const v = parseFloat(trimmed.replace(",", "."));
+  if (!Number.isFinite(v)) return null;
+  return Math.round(v * 100);
+};
 
 export default function StoreShippingPage() {
+  const [config, setConfig] = useState<Config | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [regions, setRegions] = useState<Region[]>([]);
-  const [provinces, setProvinces] = useState<Province[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
-  const [tariffs, setTariffs] = useState<Tariff[]>([]);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [editor, setEditor] = useState<{ scope: TariffScope; label: string } | null>(null);
-  const [addCityFor, setAddCityFor] = useState<Province | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [countries, setCountries] = useState<Array<{ countryCode: string; name: string; regions: number; provinces: number; cities: number; disabled: boolean }>>([]);
+  // Flag in-flight per il bottone azioni per ogni paese (evita doppi click).
+  const [busyCountry, setBusyCountry] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Accordion state per ciascun blocco regioni — chiuso di default
+  const [openCountry, setOpenCountry] = useState<Record<string, boolean>>({ IT: false, FR: false });
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 3500);
   };
 
-  const fetchAll = useCallback(async () => {
+  const fetchConfig = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/store/shipping?country=IT").then((r) => r.json());
-    if (res.success) {
-      setRegions(res.data.regions);
-      setProvinces(res.data.provinces);
-      setCities(res.data.cities);
-      setTariffs(res.data.tariffs);
+    try {
+      const res = await fetch("/api/store/shipping-config");
+      const data = await res.json();
+      if (data.success) {
+        setConfig(data.data);
+        setDirty(false);
+      } else {
+        showToast(data.error || "Errore caricamento configurazione", false);
+      }
+    } catch {
+      showToast("Errore di rete", false);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { fetchConfig(); }, [fetchConfig]);
 
-  const tariffsByScope = useMemo(() => {
-    const map = new Map<string, Tariff[]>();
-    const key = (t: Tariff) => `${t.regionCode || "*"}:${t.provinceCode || "*"}:${t.cityCode || "*"}`;
-    for (const t of tariffs) {
-      const k = key(t);
-      const list = map.get(k) || [];
-      list.push(t);
-      map.set(k, list);
-    }
-    return map;
-  }, [tariffs]);
+  const fetchCountries = useCallback(async () => {
+    try {
+      const res = await fetch("/api/store/geo/countries");
+      const data = await res.json();
+      if (data.success) setCountries(data.data || []);
+    } catch { /* silent */ }
+  }, []);
 
-  const getTariffs = (region: string | null, province: string | null, city: string | null) =>
-    tariffsByScope.get(`${region || "*"}:${province || "*"}:${city || "*"}`) || [];
+  useEffect(() => { fetchCountries(); }, [fetchCountries]);
 
-  const tariffLabel = (ts: Tariff[]) => {
-    if (ts.length === 0) return null;
-    const parts: string[] = [];
-    for (const s of SERVICES) {
-      const t = ts.find((x) => x.service === s.value);
-      if (t) parts.push(`${s.short} ${(t.pricePerM3Cents / 100).toFixed(0)}€`);
-    }
-    return parts.join(" · ");
+  const updateSetting = (key: keyof Settings, eurValue: string) => {
+    if (!config) return;
+    const c = eurToCents(eurValue);
+    setConfig({ ...config, settings: { ...config.settings, [key]: c == null ? 0 : c } });
+    setDirty(true);
   };
 
-  // resolve cascade tariffs (what's actually in effect for a node)
-  const resolvedTariffs = (region: string | null, province: string | null, city: string | null): Tariff[] => {
-    // Order: most specific first
-    const candidates: Array<[string | null, string | null, string | null]> = [
-      [region, province, city],
-      [region, province, null],
-      [region, null, null],
-      [null, null, null],
-    ];
-    const out: Partial<Record<Service, Tariff>> = {};
-    for (const [r, p, c] of candidates) {
-      const list = getTariffs(r, p, c);
-      for (const t of list) {
-        if (!out[t.service]) out[t.service] = t;
-      }
-    }
-    return Object.values(out).filter((x): x is Tariff => Boolean(x));
+  const updateRegionRate = (country: string, code: string, eurValue: string) => {
+    if (!config) return;
+    const list = config.regionsByCountry[country] || [];
+    const newList = list.map((r) => r.code === code ? { ...r, rateCents: eurToCents(eurValue) } : r);
+    setConfig({ ...config, regionsByCountry: { ...config.regionsByCountry, [country]: newList } });
+    setDirty(true);
   };
 
-  const handleSaveTariffs = async (scope: TariffScope, values: Partial<Record<Service, { pricePerM3Cents: number; maxVolumeM3: number | null }>>) => {
+  const updateFloorDelivery = (countryCode: string, eurValue: string) => {
+    if (!config) return;
+    const c = eurToCents(eurValue);
+    const newMap = { ...(config.floorDeliveryByCountry || {}) };
+    if (c == null) delete newMap[countryCode];
+    else newMap[countryCode] = c;
+    setConfig({ ...config, floorDeliveryByCountry: newMap });
+    setDirty(true);
+  };
+
+  const updateCountryLeadTime = (countryCode: string, value: string) => {
+    if (!config) return;
+    const newMap = { ...(config.leadTimeByCountry || {}) };
+    newMap[countryCode] = value;
+    setConfig({ ...config, leadTimeByCountry: newMap });
+    setDirty(true);
+  };
+
+  const updateRegionLeadTime = (country: string, code: string, value: string) => {
+    if (!config) return;
+    const list = config.regionsByCountry[country] || [];
+    const trimmed = value.trim();
+    const newList = list.map((r) => r.code === code ? { ...r, leadTime: trimmed || null } : r);
+    setConfig({ ...config, regionsByCountry: { ...config.regionsByCountry, [country]: newList } });
+    setDirty(true);
+  };
+
+  const save = async () => {
+    if (!config) return;
     setSaving(true);
     try {
-      for (const s of SERVICES) {
-        const v = values[s.value];
-        if (v === undefined) continue;
-        await fetch("/api/store/shipping/tariffs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            countryCode: "IT",
-            regionCode: scope.regionCode,
-            provinceCode: scope.provinceCode,
-            cityCode: scope.cityCode,
-            service: s.value,
-            pricePerM3Cents: v.pricePerM3Cents,
-            maxVolumeM3: v.maxVolumeM3,
-          }),
-        });
-      }
-      await fetchAll();
-      showToast("Tariffe salvate", true);
-      setEditor(null);
-    } catch {
-      showToast("Errore salvataggio", false);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeleteTariffs = async (region: string | null, province: string | null, city: string | null) => {
-    if (!confirm("Rimuovere l'override da questo livello? Erediterà dal livello superiore.")) return;
-    const ts = getTariffs(region, province, city);
-    for (const t of ts) {
-      await fetch(`/api/store/shipping/tariffs/${t.id}`, { method: "DELETE" });
-    }
-    await fetchAll();
-    showToast("Override rimosso", true);
-  };
-
-  const handleCreateCityTariff = async (province: Province, cityName: string) => {
-    setSaving(true);
-    try {
-      // Crea la città (usando una tariffa bozza)
-      await fetch("/api/store/shipping/tariffs", {
-        method: "POST",
+      const res = await fetch("/api/store/shipping-config", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          countryCode: "IT",
-          regionCode: province.regionCode,
-          provinceCode: province.code,
-          cityName,
-          service: "CURBSIDE",
-          pricePerM3Cents: 0,
+          settings: config.settings,
+          regionsByCountry: Object.fromEntries(
+            Object.entries(config.regionsByCountry).map(([country, list]) => [
+              country,
+              list.map((r) => ({ code: r.code, label: r.label, rateCents: r.rateCents, leadTime: r.leadTime })),
+            ])
+          ),
+          floorDeliveryByCountry: config.floorDeliveryByCountry || {},
+          leadTimeByCountry: config.leadTimeByCountry || {},
         }),
       });
-      await fetchAll();
-      setAddCityFor(null);
-      showToast(`Città "${cityName}" creata, ora imposta le tariffe`, true);
+      const data = await res.json();
+      if (data.success) {
+        showToast("Configurazione salvata", true);
+        setDirty(false);
+      } else {
+        showToast(data.error || "Errore salvataggio", false);
+      }
     } catch {
-      showToast("Errore", false);
+      showToast("Errore di rete", false);
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
+  const toggleCountryDisabled = async (countryCode: string, nextDisabled: boolean) => {
+    setBusyCountry(countryCode);
+    try {
+      const res = await fetch("/api/store/geo/countries", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ countryCode, disabled: nextDisabled }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCountries((cs) => cs.map((c) => c.countryCode === countryCode ? { ...c, disabled: nextDisabled } : c));
+        showToast(nextDisabled ? `${countryCode} disattivato` : `${countryCode} riattivato`, true);
+      } else {
+        showToast(data.error || "Errore", false);
+      }
+    } catch {
+      showToast("Errore di rete", false);
+    } finally {
+      setBusyCountry(null);
+    }
+  };
+
+  const deleteCountry = async (countryCode: string, name: string, cityCount: number) => {
+    const msg = `Eliminare definitivamente il dataset geografico di ${name} (${countryCode})?\n\n` +
+      `Verranno cancellati: ${cityCount.toLocaleString("it-IT")} città, le province, le regioni, ` +
+      `e i valori di consegna al piano, tempi di consegna, IVA e tariffe regionali specifici per ${countryCode}.\n\n` +
+      `Gli ordini già effettuati NON saranno toccati (l'indirizzo è salvato come snapshot).\n\n` +
+      `Questa operazione è IRREVERSIBILE. Continuare?`;
+    if (!confirm(msg)) return;
+    setBusyCountry(countryCode);
+    try {
+      const res = await fetch(`/api/store/geo/countries?code=${encodeURIComponent(countryCode)}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        setCountries((cs) => cs.filter((c) => c.countryCode !== countryCode));
+        showToast(`${name} eliminato (${data.data?.cities ?? 0} città)`, true);
+        // Ricarica la shipping config: le ShippingRegionRate e i Setting sono stati cancellati.
+        fetchConfig();
+      } else {
+        showToast(data.error || "Errore", false);
+      }
+    } catch {
+      showToast("Errore di rete", false);
+    } finally {
+      setBusyCountry(null);
+    }
+  };
+
+  const handleImportFile = async (file: File) => {
+    setImporting(true);
+    try {
+      const text = await file.text();
+      let payload: unknown;
+      try { payload = JSON.parse(text); } catch {
+        showToast("File JSON non valido", false);
+        return;
+      }
+      const res = await fetch("/api/store/geo/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`${data.countryName || data.countryCode}: ${data.citiesInserted} città inserite`, true);
+        await fetchCountries();
+      } else {
+        showToast(data.error || "Errore durante l'import", false);
+      }
+    } catch {
+      showToast("Errore di rete o file troppo grande", false);
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  if (loading || !config) {
     return (
       <div className="flex items-center justify-center py-24 text-warm-400">
         <Loader2 className="animate-spin" size={24} />
@@ -184,263 +245,315 @@ export default function StoreShippingPage() {
     );
   }
 
-  const countryTariffs = getTariffs(null, null, null);
+  const itRegions = config.regionsByCountry.IT || [];
+  const frRegions = config.regionsByCountry.FR || [];
 
   return (
-    <div className="max-w-5xl">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-warm-900">Spedizioni</h1>
-        <p className="text-sm text-warm-500 mt-1">
-          Tariffe €/m³ (IVA esclusa) per Italia. Gerarchia <strong>Regione → Provincia → Città</strong>.
-          Il livello più specifico ha priorità, se manca si eredita dal livello superiore.
-        </p>
+    <div className="space-y-6">
+      <header className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold text-warm-900">Spedizioni</h1>
+          <p className="text-sm text-warm-500 mt-1">
+            Tutti i costi di spedizione del checkout. Le modifiche sono attive entro pochi secondi.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={fetchConfig}
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm text-warm-600 border border-warm-200 rounded hover:bg-warm-50 disabled:opacity-50"
+            title="Ricarica dal server (scarta modifiche non salvate)"
+          >
+            <RotateCcw size={14} /> Ricarica
+          </button>
+          <button
+            onClick={save}
+            disabled={saving || !dirty}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-warm-900 text-white rounded hover:bg-black disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            Salva
+          </button>
+        </div>
       </header>
 
-      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6 flex items-start gap-3">
-        <Info size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
-        <div className="text-sm text-blue-900">
-          <strong>Come funziona:</strong> imposta la tariffa al livello più generico possibile (regione).
-          Solo dove serve un prezzo diverso, aggiungi un override su provincia o città.
-          Il calcolo usa sempre la tariffa più vicina alla destinazione del cliente.
+      {/* Soglie generali — contiene la soglia free shipping e i fallback paese.
+          Quando aggiungeremo altre nazioni, qui dovranno apparire anche i loro fallback. */}
+      <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Soglie generali</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <EurField
+            label="Spedizione standard GRATUITA sopra"
+            help="Sopra questa soglia di subtotale, la spedizione standard è azzerata. I servizi aggiuntivi (piano, disimballo) restano comunque fatturati."
+            value={config.settings.freeThresholdCents}
+            onChange={(v) => updateSetting("freeThresholdCents", v)}
+            suffix="€"
+          />
+          <EurField
+            label="Fallback Italia"
+            help="Tariffa flat applicata se né la provincia né il CAP corrispondono a nessuna regione IT."
+            value={config.settings.itFallbackCents}
+            onChange={(v) => updateSetting("itFallbackCents", v)}
+            suffix="€"
+          />
+          <EurField
+            label="Fallback Francia"
+            help="Tariffa al m³ applicata a tutte le régions FR senza override esplicito. La Corse parte di default con override 300 €/m³ (modificabile dall'accordion Francia)."
+            value={config.settings.frStandardPerM3Cents}
+            onChange={(v) => updateSetting("frStandardPerM3Cents", v)}
+            suffix="€/m³"
+          />
+          <EurField
+            label="Fallback Resto del mondo"
+            help="Stima grezza per spedizioni in paesi diversi da IT e FR."
+            value={config.settings.rowPerBoxCents}
+            onChange={(v) => updateSetting("rowPerBoxCents", v)}
+            suffix="€/scatola"
+          />
         </div>
-      </div>
+      </section>
 
-      {/* Country-level (fallback) */}
-      <section className="bg-white rounded-lg border border-warm-200 p-4 mb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-medium text-warm-900">🇮🇹 Italia — fallback paese</div>
-            <div className="text-xs text-warm-500 mt-0.5">
-              Usata quando né regione, né provincia, né città hanno tariffa definita.
-            </div>
+      {/* ===== ITALIA — accordion con 20 regioni ===== */}
+      <CountryAccordion
+        title="Italia — tariffa flat per regione"
+        info="Lookup via sigla provincia (es. MI → Lombardia), fallback prefisso CAP."
+        open={openCountry.IT}
+        onToggle={() => setOpenCountry((s) => ({ ...s, IT: !s.IT }))}
+        regions={itRegions}
+        onChange={(code, v) => updateRegionRate("IT", code, v)}
+        onLeadTimeChange={(code, v) => updateRegionLeadTime("IT", code, v)}
+        defaultFallbackLabel={`Fallback IT: ${centsToEur(config.settings.itFallbackCents)} €`}
+        leadTimeFallback={config.leadTimeByCountry?.IT || "6 settimane"}
+      />
+
+      {/* ===== FRANCIA — accordion con 18 régions ===== */}
+      <CountryAccordion
+        title="Francia — tariffa flat per régione"
+        info={`Lasciando vuoto, la régione usa il fallback Francia (${centsToEur(config.settings.frStandardPerM3Cents)} €/m³). La Corse parte già con override 300 €/m³ (modificabile).`}
+        open={openCountry.FR}
+        onToggle={() => setOpenCountry((s) => ({ ...s, FR: !s.FR }))}
+        regions={frRegions}
+        onChange={(code, v) => updateRegionRate("FR", code, v)}
+        onLeadTimeChange={(code, v) => updateRegionLeadTime("FR", code, v)}
+        defaultFallbackLabel={`Fallback FR: ${centsToEur(config.settings.frStandardPerM3Cents)} €/m³`}
+        leadTimeFallback={config.leadTimeByCountry?.FR || "6 semaines"}
+        rateSuffix="€/m³"
+      />
+
+      {/* Servizi aggiuntivi — Consegna al piano (per paese) + Disimballo */}
+      <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Servizi aggiuntivi (additivi alla standard)</h2>
+        <div className="space-y-3">
+          <h3 className="text-xs font-medium text-warm-700 uppercase tracking-wide">Consegna al piano (€/m³)</h3>
+          <p className="text-[11px] text-warm-500 -mt-2">
+            Quando il cliente sceglie un piano ≥1. Ogni paese ha la sua tariffa; &quot;Resto del mondo&quot; è il fallback usato per le nazioni senza valore esplicito.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {(() => {
+              // Lista paesi: quelli importati (countries) + ROW alla fine.
+              // Quando importi una nuova nazione, qui appare automaticamente.
+              const seen = new Set<string>();
+              const items: { code: string; label: string }[] = [];
+              for (const c of countries) {
+                const cc = c.countryCode.toUpperCase();
+                if (cc === "ROW" || seen.has(cc)) continue;
+                seen.add(cc);
+                items.push({ code: cc, label: c.name });
+              }
+              items.push({ code: "ROW", label: "Resto del mondo" });
+              return items.map((it) => (
+                <EurField
+                  key={it.code}
+                  label={`${it.label}${it.code !== "ROW" ? ` (${it.code})` : ""}`}
+                  help={it.code === "ROW" ? "Tariffa applicata ai paesi senza un valore esplicito impostato." : undefined}
+                  value={config.floorDeliveryByCountry?.[it.code] ?? 0}
+                  onChange={(v) => updateFloorDelivery(it.code, v)}
+                  suffix="€/m³"
+                />
+              ));
+            })()}
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-warm-100">
+          <EurField
+            label="Disimballo + smaltimento"
+            help="Per ogni m³ fatturabile, se il cliente lo seleziona."
+            value={config.settings.unboxingPerM3Cents}
+            onChange={(v) => updateSetting("unboxingPerM3Cents", v)}
+            suffix="€/m³"
+          />
+        </div>
+      </section>
+
+      {/* Tempi di consegna — fallback per paese (override per régione disponibile negli accordion) */}
+      <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider inline-flex items-center gap-2">
+          <Clock size={15} /> Tempi di consegna
+        </h2>
+        <p className="text-xs text-warm-500 -mt-2">
+          Stima mostrata al cliente nel checkout e nelle email transazionali. Ogni paese ha il suo fallback;
+          per le régions con esigenze particolari (es. Corse, isole) puoi sovrascrivere il valore singolarmente
+          dall&apos;accordion del paese qui sopra. &quot;Resto del mondo&quot; è il fallback usato per le nazioni senza valore esplicito.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(() => {
+            const seen = new Set<string>();
+            const items: { code: string; label: string }[] = [];
+            for (const c of countries) {
+              const cc = c.countryCode.toUpperCase();
+              if (cc === "ROW" || seen.has(cc)) continue;
+              seen.add(cc);
+              items.push({ code: cc, label: c.name });
+            }
+            items.push({ code: "ROW", label: "Resto del mondo" });
+            return items.map((it) => (
+              <div key={it.code}>
+                <label className="block text-xs font-medium text-warm-700 mb-1">
+                  {it.label}{it.code !== "ROW" ? ` (${it.code})` : ""}
+                </label>
+                <input
+                  type="text"
+                  maxLength={64}
+                  value={config.leadTimeByCountry?.[it.code] ?? ""}
+                  onChange={(e) => updateCountryLeadTime(it.code, e.target.value)}
+                  placeholder={it.code === "IT" ? "es. 6 settimane" : it.code === "FR" ? "es. 6 semaines" : "es. 8-10 settimane"}
+                  className="w-full border border-warm-200 rounded px-3 py-2 text-sm focus:border-warm-700 outline-none"
+                />
+              </div>
+            ));
+          })()}
+        </div>
+      </section>
+
+      {/* Database geografici */}
+      <section className="bg-white rounded-lg border border-warm-200 p-5 space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider inline-flex items-center gap-2">
+              <Database size={15} /> Database geografici
+            </h2>
+            <p className="text-xs text-warm-600 mt-1">
+              Nazioni il cui dataset (regioni, province, città con CAP) è caricato. Usate per i dropdown del checkout.
+            </p>
+          </div>
+        </div>
+
+        {countries.length > 0 && (
+          <div className="border border-warm-200 rounded overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-warm-50 text-warm-500 text-xs">
+                <tr>
+                  <th className="px-4 py-2 text-left">Nazione</th>
+                  <th className="px-4 py-2 text-right">Regioni</th>
+                  <th className="px-4 py-2 text-right">Province</th>
+                  <th className="px-4 py-2 text-right">Città</th>
+                  <th className="px-4 py-2 text-center w-44">Azioni</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-warm-100">
+                {countries.map((c) => {
+                  const isBusy = busyCountry === c.countryCode;
+                  return (
+                    <tr key={c.countryCode} className={c.disabled ? "bg-warm-50/60 opacity-75" : ""}>
+                      <td className="px-4 py-2.5 text-warm-800">
+                        <span className="font-mono text-warm-500 mr-2">{c.countryCode}</span> {c.name}
+                        {c.disabled && (
+                          <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider bg-warm-200 text-warm-700">
+                            disattivato
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.regions}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.provinces}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-warm-700">{c.cities.toLocaleString("it-IT")}</td>
+                      <td className="px-2 py-1.5 text-center">
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => toggleCountryDisabled(c.countryCode, !c.disabled)}
+                            disabled={isBusy}
+                            title={c.disabled
+                              ? "Riattiva: i clienti potranno di nuovo selezionare questo paese al checkout"
+                              : "Disattiva: il paese resta in database ma non sarà selezionabile dai clienti al checkout"}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border transition-colors disabled:opacity-50 ${
+                              c.disabled
+                                ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                : "border-warm-300 text-warm-700 hover:bg-warm-50"
+                            }`}
+                          >
+                            {isBusy ? <Loader2 size={12} className="animate-spin" /> : <Power size={12} />}
+                            {c.disabled ? "Riattiva" : "Disattiva"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteCountry(c.countryCode, c.name, c.cities)}
+                            disabled={isBusy}
+                            title="Elimina definitivamente regioni, province, città e impostazioni geografiche per questo paese"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-300 text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="border border-dashed border-warm-300 rounded p-4 space-y-3">
+          <div className="text-xs font-semibold text-warm-700 inline-flex items-center gap-2">
+            <Upload size={13} /> Carica una nuova nazione (file JSON)
+          </div>
+          <p className="text-[11px] text-warm-500 leading-relaxed">
+            Formato JSON:
+            <code className="ml-1 px-1 py-0.5 bg-warm-50 rounded">{`{ "countryCode": "DE", "countryName": "Germania", "regions": [{"code","name"}], "provinces": [{"code","name","regionCode"}], "cities": [{"code","name","provinceCode","caps":[]}] }`}</code>.
+            Import idempotente (non duplica). Per re-importare, cancellare prima i record DB della nazione.
+          </p>
           <div className="flex items-center gap-2">
-            {countryTariffs.length > 0 && (
-              <span className="text-sm text-warm-700 font-mono">{tariffLabel(countryTariffs)}</span>
-            )}
-            <button
-              onClick={() => setEditor({
-                scope: { level: "country", regionCode: null, provinceCode: null, cityCode: null },
-                label: "Italia (fallback paese)",
-              })}
-              className="px-3 py-1.5 text-sm bg-warm-100 hover:bg-warm-200 rounded-lg inline-flex items-center gap-1"
-            >
-              <Pencil size={12} /> {countryTariffs.length > 0 ? "Modifica" : "Imposta"}
-            </button>
-            {countryTariffs.length > 0 && (
-              <button
-                onClick={() => handleDeleteTariffs(null, null, null)}
-                className="p-1.5 text-red-500 hover:bg-red-50 rounded"
-                title="Rimuovi"
-              >
-                <Trash2 size={14} />
-              </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              disabled={importing}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleImportFile(f);
+              }}
+              className="block w-full max-w-md text-xs text-warm-700 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-warm-100 file:text-warm-800 file:cursor-pointer hover:file:bg-warm-200 disabled:opacity-50"
+            />
+            {importing && (
+              <span className="text-xs text-warm-500 inline-flex items-center gap-1">
+                <Loader2 size={12} className="animate-spin" /> Import in corso (può richiedere minuti)…
+              </span>
             )}
           </div>
         </div>
       </section>
 
-      {/* Regioni */}
-      <div className="space-y-2">
-        {regions.map((r) => {
-          const regProvinces = provinces.filter((p) => p.regionCode === r.code);
-          const regTariffs = getTariffs(r.code, null, null);
-          const isOpen = expanded[`r:${r.code}`];
-          const hasOverride = regTariffs.length > 0;
-          return (
-            <section key={r.code} className="bg-white rounded-lg border border-warm-200 overflow-hidden">
-              <div className="flex items-center gap-2 p-3 hover:bg-warm-50">
-                <button
-                  onClick={() => setExpanded((e) => ({ ...e, [`r:${r.code}`]: !isOpen }))}
-                  className="text-warm-400 p-1"
-                >
-                  {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                </button>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-warm-900">{r.name}</div>
-                  <div className="text-xs text-warm-500">
-                    {regProvinces.length} province
-                    {hasOverride ? (
-                      <span className="ml-2 text-warm-700">· tariffa regione: <span className="font-mono">{tariffLabel(regTariffs)}</span></span>
-                    ) : (
-                      <span className="ml-2 text-warm-400 italic">nessuna tariffa regione</span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() =>
-                    setEditor({
-                      scope: { level: "region", regionCode: r.code, provinceCode: null, cityCode: null },
-                      label: `Regione ${r.name}`,
-                    })
-                  }
-                  className="px-3 py-1.5 text-xs bg-warm-100 hover:bg-warm-200 rounded-lg inline-flex items-center gap-1"
-                >
-                  <Pencil size={12} /> {hasOverride ? "Modifica regione" : "Imposta regione"}
-                </button>
-                {hasOverride && (
-                  <button
-                    onClick={() => handleDeleteTariffs(r.code, null, null)}
-                    className="p-1.5 text-red-500 hover:bg-red-50 rounded"
-                    title="Rimuovi tariffa regione"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
-
-              {isOpen && (
-                <div className="border-t border-warm-100 bg-warm-50/50 divide-y divide-warm-100">
-                  {regProvinces.map((p) => {
-                    const provTariffs = getTariffs(r.code, p.code, null);
-                    const provHasOverride = provTariffs.length > 0;
-                    const provCities = cities.filter((c) => c.provinceCode === p.code);
-                    const isProvOpen = expanded[`p:${p.code}`];
-                    const effective = resolvedTariffs(r.code, p.code, null);
-                    return (
-                      <div key={p.code}>
-                        <div className="flex items-center gap-2 p-3 pl-10 hover:bg-warm-50">
-                          <button
-                            onClick={() => setExpanded((e) => ({ ...e, [`p:${p.code}`]: !isProvOpen }))}
-                            className={`text-warm-400 p-1 ${provCities.length === 0 && !provHasOverride ? "invisible" : ""}`}
-                          >
-                            {isProvOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                          </button>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm text-warm-900">
-                              {p.name}
-                              <span className="ml-2 text-xs text-warm-400 font-mono">{p.code}</span>
-                            </div>
-                            <div className="text-xs">
-                              {provHasOverride ? (
-                                <span className="text-amber-700 inline-flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                                  <strong>Override provincia</strong>: <span className="font-mono">{tariffLabel(provTariffs)}</span>
-                                </span>
-                              ) : effective.length > 0 ? (
-                                <span className="text-warm-500 inline-flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 bg-warm-300 rounded-full" />
-                                  eredita: <span className="font-mono">{tariffLabel(effective)}</span>
-                                </span>
-                              ) : (
-                                <span className="text-red-500 inline-flex items-center gap-1">
-                                  <AlertCircle size={10} />
-                                  nessuna tariffa disponibile
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() =>
-                              setEditor({
-                                scope: { level: "province", regionCode: r.code, provinceCode: p.code, cityCode: null },
-                                label: `Provincia ${p.name}`,
-                              })
-                            }
-                            className="px-2.5 py-1 text-xs bg-white border border-warm-200 hover:bg-warm-100 rounded inline-flex items-center gap-1"
-                          >
-                            <Pencil size={11} /> {provHasOverride ? "Modifica" : "Override"}
-                          </button>
-                          {provHasOverride && (
-                            <button
-                              onClick={() => handleDeleteTariffs(r.code, p.code, null)}
-                              className="p-1 text-red-500 hover:bg-red-50 rounded"
-                              title="Rimuovi override"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setAddCityFor(p)}
-                            className="p-1 text-warm-500 hover:text-warm-900 hover:bg-white rounded"
-                            title="Aggiungi città con tariffa custom"
-                          >
-                            <Plus size={12} />
-                          </button>
-                        </div>
-
-                        {isProvOpen && provCities.length > 0 && (
-                          <div className="bg-white divide-y divide-warm-100">
-                            {provCities.map((c) => {
-                              const cityTariffs = getTariffs(r.code, p.code, c.code);
-                              const cityEff = resolvedTariffs(r.code, p.code, c.code);
-                              return (
-                                <div key={c.code} className="flex items-center gap-2 p-2 pl-16 hover:bg-warm-50">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-sm text-warm-800">{c.name}</div>
-                                    <div className="text-xs">
-                                      {cityTariffs.length > 0 ? (
-                                        <span className="text-amber-700 inline-flex items-center gap-1">
-                                          <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                                          <strong>Override città</strong>: <span className="font-mono">{tariffLabel(cityTariffs)}</span>
-                                        </span>
-                                      ) : (
-                                        <span className="text-warm-500 inline-flex items-center gap-1">
-                                          <span className="w-1.5 h-1.5 bg-warm-300 rounded-full" />
-                                          eredita: <span className="font-mono">{tariffLabel(cityEff)}</span>
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <button
-                                    onClick={() =>
-                                      setEditor({
-                                        scope: { level: "city", regionCode: r.code, provinceCode: p.code, cityCode: c.code },
-                                        label: `Città ${c.name}`,
-                                      })
-                                    }
-                                    className="px-2 py-1 text-xs bg-warm-100 hover:bg-warm-200 rounded"
-                                  >
-                                    <Pencil size={11} />
-                                  </button>
-                                  {cityTariffs.length > 0 && (
-                                    <button
-                                      onClick={() => handleDeleteTariffs(r.code, p.code, c.code)}
-                                      className="p-1 text-red-500 hover:bg-red-50 rounded"
-                                      title="Rimuovi override"
-                                    >
-                                      <Trash2 size={11} />
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-          );
-        })}
+      {/* Bottom save bar */}
+      <div className="flex items-center justify-end gap-2 pt-2 pb-6">
+        {dirty && (
+          <span className="text-xs text-amber-700 inline-flex items-center gap-1 mr-2">
+            <AlertCircle size={13} /> Modifiche non salvate
+          </span>
+        )}
+        <button
+          onClick={save}
+          disabled={saving || !dirty}
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm bg-warm-900 text-white rounded hover:bg-black disabled:opacity-50"
+        >
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          Salva configurazione
+        </button>
       </div>
-
-      {editor && (
-        <TariffEditor
-          label={editor.label}
-          scope={editor.scope}
-          existing={getTariffs(editor.scope.regionCode, editor.scope.provinceCode, editor.scope.cityCode)}
-          effective={resolvedTariffs(editor.scope.regionCode, editor.scope.provinceCode, editor.scope.cityCode)}
-          onSave={handleSaveTariffs}
-          onCancel={() => setEditor(null)}
-          saving={saving}
-        />
-      )}
-
-      {addCityFor && (
-        <AddCityModal
-          province={addCityFor}
-          onSave={handleCreateCityTariff}
-          onCancel={() => setAddCityFor(null)}
-          saving={saving}
-        />
-      )}
 
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 px-4 py-2.5 rounded-lg shadow-lg text-sm flex items-center gap-2 ${
+          className={`fixed bottom-6 right-6 px-4 py-2.5 rounded-lg shadow-lg text-sm flex items-center gap-2 z-50 ${
             toast.ok ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
           }`}
         >
@@ -452,139 +565,114 @@ export default function StoreShippingPage() {
   );
 }
 
-function TariffEditor({
-  label, scope, existing, effective, onSave, onCancel, saving,
+function CountryAccordion({
+  title, info, open, onToggle, regions, onChange, onLeadTimeChange, defaultFallbackLabel, leadTimeFallback, rateSuffix = "€",
 }: {
-  label: string;
-  scope: TariffScope;
-  existing: Tariff[];
-  effective: Tariff[];
-  onSave: (scope: TariffScope, values: Partial<Record<Service, { pricePerM3Cents: number; maxVolumeM3: number | null }>>) => void;
-  onCancel: () => void;
-  saving: boolean;
+  title: string;
+  info?: string;
+  open: boolean;
+  onToggle: () => void;
+  regions: Region[];
+  onChange: (code: string, eurValue: string) => void;
+  onLeadTimeChange: (code: string, value: string) => void;
+  defaultFallbackLabel: string;
+  leadTimeFallback: string;
+  rateSuffix?: string;
 }) {
-  const initial: Record<Service, number> = {
-    CURBSIDE: (existing.find((t) => t.service === "CURBSIDE")?.pricePerM3Cents
-      ?? effective.find((t) => t.service === "CURBSIDE")?.pricePerM3Cents ?? 0) / 100,
-    FLOOR_1_3: (existing.find((t) => t.service === "FLOOR_1_3")?.pricePerM3Cents
-      ?? effective.find((t) => t.service === "FLOOR_1_3")?.pricePerM3Cents ?? 0) / 100,
-    FLOOR_4_10_MAX6: (existing.find((t) => t.service === "FLOOR_4_10_MAX6")?.pricePerM3Cents
-      ?? effective.find((t) => t.service === "FLOOR_4_10_MAX6")?.pricePerM3Cents ?? 0) / 100,
-  };
-  const [vals, setVals] = useState<Record<Service, string>>({
-    CURBSIDE: initial.CURBSIDE.toString(),
-    FLOOR_1_3: initial.FLOOR_1_3.toString(),
-    FLOOR_4_10_MAX6: initial.FLOOR_4_10_MAX6.toString(),
-  });
-
-  const update = (s: Service, v: string) => setVals((prev) => ({ ...prev, [s]: v }));
-
-  const save = () => {
-    const payload: Partial<Record<Service, { pricePerM3Cents: number; maxVolumeM3: number | null }>> = {};
-    for (const s of SERVICES) {
-      const cents = Math.round(Number(vals[s.value]) * 100);
-      if (Number.isFinite(cents) && cents >= 0) {
-        payload[s.value] = {
-          pricePerM3Cents: cents,
-          maxVolumeM3: s.value === "FLOOR_4_10_MAX6" ? 6 : null,
-        };
-      }
-    }
-    onSave(scope, payload);
-  };
-
+  const overrides = regions.filter((r) => r.rateCents != null).length;
+  const leadOverrides = regions.filter((r) => r.leadTime).length;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-xl max-w-lg w-full shadow-xl">
-        <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
+    <section className="bg-white rounded-lg border border-warm-200 overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full px-5 py-4 flex items-center justify-between gap-3 hover:bg-warm-50 transition-colors"
+      >
+        <div className="flex items-center gap-3 text-left">
+          {open ? <ChevronDown size={16} className="text-warm-500" /> : <ChevronRight size={16} className="text-warm-500" />}
           <div>
-            <h2 className="font-semibold text-warm-900">Tariffe: {label}</h2>
-            <p className="text-xs text-warm-500 mt-0.5">Prezzi €/m³ IVA esclusa</p>
+            <h2 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">{title}</h2>
+            {info && <p className="text-[11px] text-warm-500 mt-0.5 normal-case font-normal tracking-normal">{info}</p>}
           </div>
-          <button onClick={onCancel} className="text-warm-400 hover:text-warm-900">
-            <X size={18} />
-          </button>
         </div>
-
-        <div className="p-6 space-y-4">
-          {SERVICES.map((s) => (
-            <div key={s.value} className="flex items-center gap-3">
-              <div className="flex-1">
-                <div className="text-sm font-medium text-warm-900">{s.label}</div>
-                {s.value === "FLOOR_4_10_MAX6" && (
-                  <div className="text-xs text-warm-500">Limite automatico: volume carrello ≤ 6 m³</div>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  value={vals[s.value]}
-                  onChange={(e) => update(s.value, e.target.value)}
-                  className="w-28 px-3 py-2 border border-warm-200 rounded-lg text-sm text-right"
-                />
-                <span className="text-sm text-warm-500 w-12">€/m³</span>
-              </div>
-            </div>
-          ))}
+        <span className="text-[11px] text-warm-500 shrink-0">
+          {regions.length} regioni · {overrides} tariffa · {leadOverrides} tempi
+        </span>
+      </button>
+      {open && (
+        <div className="border-t border-warm-200">
+          <table className="w-full text-sm">
+            <thead className="bg-warm-50 text-warm-500 text-xs">
+              <tr>
+                <th className="px-5 py-2 text-left">Regione</th>
+                <th className="px-5 py-2 text-right w-44">Tariffa ({rateSuffix})</th>
+                <th className="px-5 py-2 text-right w-56">Tempo di consegna</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-warm-100">
+              {regions.map((r) => (
+                <tr key={r.code}>
+                  <td className="px-5 py-2.5 text-warm-800">
+                    <span className="font-mono text-[11px] text-warm-400 mr-2">{r.code}</span>
+                    {r.label}
+                  </td>
+                  <td className="px-5 py-1.5 text-right">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={centsOrEmpty(r.rateCents)}
+                      onChange={(e) => onChange(r.code, e.target.value)}
+                      placeholder={defaultFallbackLabel}
+                      className="w-36 text-right border border-warm-200 rounded px-2 py-1 text-sm focus:border-warm-700 outline-none placeholder:text-warm-400 placeholder:text-[11px]"
+                    />
+                  </td>
+                  <td className="px-5 py-1.5 text-right">
+                    <input
+                      type="text"
+                      maxLength={64}
+                      value={r.leadTime ?? ""}
+                      onChange={(e) => onLeadTimeChange(r.code, e.target.value)}
+                      placeholder={leadTimeFallback}
+                      className="w-48 border border-warm-200 rounded px-2 py-1 text-sm focus:border-warm-700 outline-none placeholder:text-warm-400 placeholder:text-[11px]"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-
-        <div className="px-6 py-4 border-t border-warm-200 flex justify-end gap-2">
-          <button onClick={onCancel} className="px-4 py-2 text-sm text-warm-600 hover:text-warm-900">Annulla</button>
-          <button
-            onClick={save}
-            disabled={saving}
-            className="px-4 py-2 bg-warm-900 text-white rounded-lg hover:bg-warm-800 disabled:opacity-50 text-sm inline-flex items-center gap-2"
-          >
-            {saving && <Loader2 className="animate-spin" size={14} />}
-            Salva tariffe
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </section>
   );
 }
 
-function AddCityModal({
-  province, onSave, onCancel, saving,
+function EurField({
+  label, help, value, onChange, suffix,
 }: {
-  province: Province;
-  onSave: (province: Province, cityName: string) => void;
-  onCancel: () => void;
-  saving: boolean;
+  label: string;
+  help?: string;
+  value: number;
+  onChange: (eurValue: string) => void;
+  suffix: string;
 }) {
-  const [name, setName] = useState("");
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-xl max-w-md w-full shadow-xl">
-        <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
-          <h2 className="font-semibold text-warm-900">Aggiungi città a {province.name}</h2>
-          <button onClick={onCancel} className="text-warm-400 hover:text-warm-900"><X size={18} /></button>
-        </div>
-        <div className="p-6 space-y-3">
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={`es. Fiumicino (provincia di ${province.name})`}
-            className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm"
-          />
-          <p className="text-xs text-warm-500">
-            Verrà creata una città con tariffa placeholder. Poi potrai impostare le tariffe specifiche.
-          </p>
-        </div>
-        <div className="px-6 py-4 border-t border-warm-200 flex justify-end gap-2">
-          <button onClick={onCancel} className="px-4 py-2 text-sm text-warm-600 hover:text-warm-900">Annulla</button>
-          <button
-            onClick={() => name.trim() && onSave(province, name.trim())}
-            disabled={saving || !name.trim()}
-            className="px-4 py-2 bg-warm-900 text-white rounded-lg hover:bg-warm-800 disabled:opacity-50 text-sm"
-          >
-            Crea e imposta tariffe
-          </button>
-        </div>
+    <div>
+      <label className="block text-xs font-medium text-warm-700 mb-1">{label}</label>
+      <div className="relative">
+        <input
+          type="number"
+          step="0.01"
+          min={0}
+          value={centsToEur(value)}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full text-right border border-warm-200 rounded px-3 py-2 text-sm focus:border-warm-700 outline-none pr-16"
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-warm-500 pointer-events-none">
+          {suffix}
+        </span>
       </div>
+      {help && <p className="text-[11px] text-warm-500 mt-1">{help}</p>}
     </div>
   );
 }

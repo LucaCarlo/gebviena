@@ -8,6 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import GallerySlideshow from "@/components/site/GallerySlideshow";
 import ProductCard, { type ProductCardData } from "./ProductCard";
 import { useStoreT } from "@/lib/use-store-t";
+import { fbTrack } from "@/lib/fbpixel";
 
 type AttrType =
   | "MATERIAL"
@@ -212,6 +213,40 @@ export default function ProductDetail({ product }: { product: Product }) {
     setTimeout(() => setJustAdded(false), 1800);
   };
 
+  // Meta Pixel: ViewContent ad ogni apertura prodotto. event_id condiviso col
+  // CAPI server-side (lo stesso slug + un timestamp arrotondato a 30s perché
+  // ricariche entro 30s siano viste da Meta come lo stesso evento e dedupate
+  // tra browser e server; oltre i 30s diventano due eventi distinti come
+  // segnali di reinteresse).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const firstPrice = product.variants?.[0]?.priceCents ?? 0;
+    const bucket30s = Math.floor(Date.now() / 30000);
+    const eventID = `vc-${product.slug}-${bucket30s}`;
+    const value = firstPrice / 100;
+    fbTrack("ViewContent", {
+      content_ids: [product.slug],
+      content_name: product.name,
+      content_type: "product",
+      value,
+      currency: "EUR",
+    }, eventID);
+    // CAPI server gemello — fire-and-forget.
+    fetch("/api/store/public/track/view-content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventID,
+        content_ids: [product.slug],
+        content_name: product.name,
+        value,
+        currency: "EUR",
+        eventSourceUrl: window.location.href,
+      }),
+      keepalive: true,
+    }).catch(() => { /* silent */ });
+  }, [product.slug, product.name, product.variants]);
+
   useEffect(() => {
     if (!customer) { setIsFav(false); return; }
     fetch("/api/store/public/favorites?lang=it", { cache: "no-store" })
@@ -237,6 +272,15 @@ export default function ProductDetail({ product }: { product: Product }) {
           body: JSON.stringify({ storeProductId: product.id }),
         });
         setIsFav(true);
+        // Tracking Meta Pixel: aggiunta alla lista desideri
+        const firstPrice = product.variants?.[0]?.priceCents ?? 0;
+        fbTrack("AddToWishlist", {
+          content_ids: [product.slug],
+          content_name: product.name,
+          content_type: "product",
+          value: firstPrice / 100,
+          currency: "EUR",
+        });
       }
     } finally { setFavBusy(false); }
   }
@@ -498,6 +542,25 @@ export default function ProductDetail({ product }: { product: Product }) {
   // Slideshow verticale accanto alla descrizione (1 immagine alla volta)
   const [descrSlideIdx, setDescrSlideIdx] = useState(0);
   useEffect(() => { setDescrSlideIdx(0); }, [verticalCatalog.length]);
+
+  // Alt reali delle immagini verticali, per mostrarli come tooltip in hover.
+  const [catalogAltMap, setCatalogAltMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (verticalCatalog.length === 0) return;
+    fetch("/api/media/alt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urls: verticalCatalog }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setCatalogAltMap((prev) => ({ ...prev, ...(d.data || {}) })); })
+      .catch(() => { /* silent */ });
+  }, [verticalCatalog]);
+
+  // Toggle del popover alt-text sullo slideshow verticale (apre/chiude al click
+  // sull'icona info). Si richiude cambiando immagine.
+  const [showVerticalAlt, setShowVerticalAlt] = useState(false);
+  useEffect(() => { setShowVerticalAlt(false); }, [descrSlideIdx]);
 
   // Quando cambia la variante selezionata salta all'immagine di quella variante
   // (se la variante non ha immagini proprie, va alla prima del prodotto).
@@ -890,15 +953,38 @@ export default function ProductDetail({ product }: { product: Product }) {
                 con object-contain → niente taglio. Frecce + indicatore. */}
             {verticalCatalog.length > 0 && (
               <div className="self-start">
-                <div className="relative bg-warm-50 overflow-hidden" style={{ aspectRatio: "3 / 4" }}>
+                <div
+                  className="group relative bg-warm-50 overflow-hidden"
+                  style={{ aspectRatio: "3 / 4" }}
+                  onMouseLeave={() => setShowVerticalAlt(false)}
+                >
                   <Image
                     src={verticalCatalog[descrSlideIdx % verticalCatalog.length]}
-                    alt={`${product.name} — ${descrSlideIdx + 1}`}
+                    alt={catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]] || `${product.name} — ${descrSlideIdx + 1}`}
                     fill
                     sizes="(max-width: 1024px) 100vw, 45vw"
                     className="object-contain"
                     priority
                   />
+                  {catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]] && (
+                    <>
+                      {/* Icona info in basso a sinistra: invisibile, compare in hover; click → alt-text */}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setShowVerticalAlt((v) => !v); }}
+                        aria-label={t("Info immagine", "Info image")}
+                        className="absolute bottom-4 left-4 z-20 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center shadow-sm cursor-pointer opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-warm-100"
+                      >
+                        i
+                      </button>
+                      {showVerticalAlt && (
+                        <div className="absolute bottom-14 left-4 z-20 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug">
+                          {catalogAltMap[verticalCatalog[descrSlideIdx % verticalCatalog.length]]}
+                          <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
+                        </div>
+                      )}
+                    </>
+                  )}
                   {verticalCatalog.length > 1 && (
                     <>
                       <button
@@ -980,7 +1066,7 @@ export default function ProductDetail({ product }: { product: Product }) {
       {(relatedLoading || related.length > 0) && (
         <section className="mt-20 pt-14 border-t border-warm-200">
           <p className="uppercase text-[14px] tracking-[0.03em] text-black font-light mb-2">{t("Prodotti correlati", "Produits associés")}</p>
-          <h2 className="font-sans text-[28px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-12">
+          <h2 className="font-sans text-[25px] md:text-[34px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-12">
             {product.category?.name ? t(`Altro da ${product.category.name}`, `Plus de ${product.category.name}`) : t("Altri prodotti dello shop", "Autres produits de la boutique")}
           </h2>
           {relatedLoading ? (
@@ -1194,6 +1280,22 @@ function abbreviateLabel(label: string): { abbr: string; full: string } {
   return { abbr: norm.charAt(0).toUpperCase(), full: norm.toLowerCase() };
 }
 
+function translateBlockName(name: string, isFr: boolean): string {
+  if (!isFr) return name;
+  // Traduzioni runtime per i blockName comuni dei DimensionBlock (memorizzati nel DB in IT).
+  return name
+    .replace(/Dimensioni complete/gi, "Dimensions complètes")
+    .replace(/Dimensioni/gi, "Dimensions")
+    .replace(/altezza seduta/gi, "hauteur d’assise")
+    .replace(/altezza bracciolo/gi, "hauteur d’accoudoir")
+    .replace(/altezza impilamento/gi, "hauteur d’empilage")
+    .replace(/larghezza/gi, "largeur")
+    .replace(/profondità/gi, "profondeur")
+    .replace(/altezza/gi, "hauteur")
+    .replace(/diametro/gi, "diamètre")
+    .replace(/lunghezza/gi, "longueur");
+}
+
 function DimensionsRow({
   labels,
   values,
@@ -1204,6 +1306,7 @@ function DimensionsRow({
   blockName: string;
 }) {
   const t = useStoreT();
+  const isFr = t("x", "y") === "y";
   const [legendOpen, setLegendOpen] = useState(false);
   const entries = labels
     .filter((l) => values[l])
@@ -1215,7 +1318,7 @@ function DimensionsRow({
     <div className="mt-6 pt-6 border-t border-warm-200">
       <div className="text-[12px] uppercase tracking-[0.22em] text-warm-500 mb-3 inline-flex items-center gap-1.5">
         <Ruler size={12} /> {t("Dimensioni", "Dimensions")}
-        <span className="normal-case tracking-normal text-warm-400 ml-1 text-[12px]">· {blockName}</span>
+        <span className="normal-case tracking-normal text-warm-400 ml-1 text-[12px]">· {translateBlockName(blockName, isFr)}</span>
         <span className="relative inline-flex">
           <button
             type="button"

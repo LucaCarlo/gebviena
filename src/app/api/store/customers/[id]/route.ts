@@ -53,3 +53,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }
+
+/** DELETE: elimina il customer. Address/CustomerFavorite/CustomerLoginToken
+ *  vengono cancellati a cascata. Gli Order restano con customerId=NULL
+ *  (onDelete:SetNull) — la cronologia ordini non si perde. */
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const result = await requirePermission("store_customers", "delete");
+  if (isErrorResponse(result)) return result;
+  try {
+    await prisma.customer.delete({ where: { id: params.id } });
+    return NextResponse.json({ success: true });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
+  }
+}

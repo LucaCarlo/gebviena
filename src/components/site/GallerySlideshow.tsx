@@ -15,6 +15,12 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
   const [altMap, setAltMap] = useState<Record<string, string>>({});
+  const [showAlt, setShowAlt] = useState(false);
+  // Dimensioni del contenitore + dimensioni naturali delle immagini: servono a
+  // calcolare il rettangolo reale dell'immagine (object-contain la centra con
+  // bordi vuoti) e posizionare l'icona info nell'angolo dell'IMMAGINE, non della div.
+  const [box, setBox] = useState<{ cw: number; ch: number }>({ cw: 0, ch: 0 });
+  const [natural, setNatural] = useState<Record<string, { w: number; h: number }>>({});
 
   useEffect(() => {
     if (images.length === 0) return;
@@ -28,11 +34,21 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
       .catch(() => { /* silent */ });
   }, [images]);
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setBox({ cw: el.clientWidth, ch: el.clientHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const canGoPrev = current > 0;
   const canGoNext = current < images.length - 1;
 
-  const goNext = () => { if (canGoNext) setCurrent((prev) => prev + 1); };
-  const goPrev = () => { if (canGoPrev) setCurrent((prev) => prev - 1); };
+  const goNext = () => { if (canGoNext) { setCurrent((prev) => prev + 1); setShowAlt(false); } };
+  const goPrev = () => { if (canGoPrev) { setCurrent((prev) => prev - 1); setShowAlt(false); } };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const el = containerRef.current;
@@ -59,16 +75,27 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
 
   const currentAlt = altMap[images[current]] || `${name} ${current + 1}`;
 
+  // Angolo in basso a sinistra dell'immagine visualizzata (object-contain centra
+  // l'immagine; calcoliamo i bordi vuoti per ancorare l'icona all'immagine).
+  const nat = natural[images[current]];
+  let iconLeft = 12;
+  let iconBottom = 12;
+  if (nat && box.cw > 0 && box.ch > 0) {
+    const scale = Math.min(box.cw / nat.w, box.ch / nat.h);
+    iconLeft = (box.cw - nat.w * scale) / 2 + 12;
+    iconBottom = (box.ch - nat.h * scale) / 2 + 12;
+  }
+
   return (
     <section id={id} className="pb-16 lg:pb-24">
       <div className="w-full">
         <div
           ref={containerRef}
-          className="relative w-full overflow-hidden aspect-video lg:aspect-auto lg:h-[768px]"
+          className="group relative w-full overflow-hidden aspect-video lg:aspect-auto lg:h-[768px]"
           style={{ cursor: cursorStyle }}
           onClick={handleClick}
           onMouseMove={handleMouseMove}
-          onMouseLeave={() => setHoverSide(null)}
+          onMouseLeave={() => { setHoverSide(null); setShowAlt(false); }}
         >
           {/* Slide track: tutte le immagini in riga, shift con translateX */}
           <div
@@ -84,15 +111,38 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
                   className="object-contain"
                   sizes="100vw"
                   priority={i === 0}
+                  onLoad={(e) => {
+                    const tg = e.currentTarget;
+                    if (tg.naturalWidth) {
+                      setNatural((prev) => prev[url] ? prev : { ...prev, [url]: { w: tg.naturalWidth, h: tg.naturalHeight } });
+                    }
+                  }}
                 />
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Alt text sotto l'immagine (centrato) */}
-        <div className="px-4 lg:px-6 mt-4 min-h-[1.5em] text-center">
-          <p className="text-[13px] text-warm-600 leading-snug">{currentAlt}</p>
+          {/* Icona info in basso a sinistra: invisibile, compare solo in hover.
+              Click → mostra/nasconde l'alt-text dell'immagine corrente. */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setShowAlt((v) => !v); }}
+            aria-label="Info immagine"
+            style={{ left: iconLeft, bottom: iconBottom }}
+            className="absolute z-10 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center shadow-sm cursor-pointer opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-warm-100"
+          >
+            i
+          </button>
+          {showAlt && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ left: iconLeft, bottom: iconBottom + 40 }}
+              className="absolute z-10 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug"
+            >
+              {currentAlt}
+              <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
+            </div>
+          )}
         </div>
 
         {images.length > 1 && (

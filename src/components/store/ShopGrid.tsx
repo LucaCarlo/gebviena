@@ -50,7 +50,7 @@ export default function ShopGrid({ products }: { products: ProductCardData[] }) 
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-x-3 gap-y-6 sm:gap-6">
             {visible.map((p) => (
               <ProductCard
                 key={p.id}

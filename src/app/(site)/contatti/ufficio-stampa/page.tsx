@@ -39,7 +39,7 @@ export default async function UfficioStampaPage() {
             <p className="text-[20px] text-black leading-snug font-light tracking-normal">
               {T["ufficio-stampa.intro"]}
             </p>
-            <p className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-8">
+            <p className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mt-8">
               {T["ufficio-stampa.agency"]}
             </p>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-6">

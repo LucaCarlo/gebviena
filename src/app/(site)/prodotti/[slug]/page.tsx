@@ -464,7 +464,7 @@ export default function ProductDetailPage() {
                 className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:px-[150px] py-16 lg:py-24"
               >
                 <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">{t("prodotti.detail.designer.label")}</p>
-                <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                   {product.designer.name}
                 </h2>
                 {product.designer.bio && (
@@ -718,7 +718,7 @@ export default function ProductDetailPage() {
                       {proj.country}
                     </p>
                   )}
-                  <h3 className="font-sans text-[28px] text-white leading-[1.15] font-light uppercase tracking-[inherit]">
+                  <h3 className="font-sans text-[25px] text-white leading-[1.15] font-light uppercase tracking-[inherit]">
                     {proj.name}
                   </h3>
                   <Link
@@ -739,7 +739,7 @@ export default function ProductDetailPage() {
                 className="flex flex-col justify-center bg-white px-5 py-12 sm:px-8 sm:py-14 md:px-16 md:py-16 lg:pl-[160px] lg:pr-[80px] lg:py-[72px]"
               >
                 <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{t("prodotti.detail.projects.label")}</p>
-                <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                   {t("prodotti.detail.projects.title").replace("{name}", product.name)}
                 </h3>
                 <div className="flex flex-col gap-4 mt-8">
@@ -769,7 +769,7 @@ export default function ProductDetailPage() {
             className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:pl-[135px] lg:pr-20 py-16 lg:py-24 bg-white"
           >
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">{t("prodotti.detail.support.label")}</p>
-            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] whitespace-pre-line">
+            <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] whitespace-pre-line">
               {t("prodotti.detail.support.title")}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-6">

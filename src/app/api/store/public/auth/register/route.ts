@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signCustomerToken, CUSTOMER_COOKIE_NAME, customerCookieOptions } from "@/lib/customer-auth";
+import { verifyRecaptcha } from "@/lib/recaptcha";
+import { isLikelyDotSpam, isLikelyGibberishName } from "@/lib/email-spam";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +17,31 @@ export async function POST(req: Request) {
     const phone = body.phone ? String(body.phone).trim() : null;
     const language = body.language ? String(body.language) : "it";
     const marketingOptIn = !!body.marketingOptIn;
+    const recaptchaToken = body.recaptchaToken ? String(body.recaptchaToken) : "";
 
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       return NextResponse.json({ success: false, error: "Email non valida" }, { status: 400 });
     }
     if (!password || password.length < 8) {
       return NextResponse.json({ success: false, error: "La password deve contenere almeno 8 caratteri" }, { status: 400 });
+    }
+
+    // Anti-spam #1: pattern "Gmail dot abuse"
+    if (isLikelyDotSpam(email)) {
+      console.warn(`[register] rifiutata email pattern spam: ${email}`);
+      return NextResponse.json({ success: false, error: "Email non valida" }, { status: 400 });
+    }
+
+    // Anti-spam #2: nome gibberish (es. "EnSxDqxGtkegxvBtCgg")
+    if (isLikelyGibberishName(`${firstName || ""} ${lastName || ""}`)) {
+      console.warn(`[register] rifiutato nome gibberish: ${firstName} ${lastName} <${email}>`);
+      return NextResponse.json({ success: false, error: "Nome non valido" }, { status: 400 });
+    }
+
+    // Anti-spam #3: reCAPTCHA SEMPRE (token assente = bot che posta direttamente all'API)
+    const human = await verifyRecaptcha(recaptchaToken, "store_register");
+    if (!human) {
+      return NextResponse.json({ success: false, error: "Verifica anti-bot fallita" }, { status: 400 });
     }
 
     const existing = await prisma.customer.findUnique({ where: { email } });

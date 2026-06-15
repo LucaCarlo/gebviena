@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getStripe, getStoreGeneralConfig } from "@/lib/stripe-config";
+import { getStripe, getStoreGeneralConfig, getTaxRateBp } from "@/lib/stripe-config";
 import { computeShipping } from "@/lib/shipping-rates";
-import { marketFromCountry, resolveVariantPrice, vatRateBp } from "@/lib/store-pricing";
+import { marketFromCountry, resolveVariantPrice } from "@/lib/store-pricing";
+import { sendCapiEvent } from "@/lib/fb-capi";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +30,9 @@ export async function POST(req: NextRequest) {
     const customer = body.customer || {};
     const shippingAddress = body.shippingAddress;
     const billingAddress = body.billingAddress || shippingAddress;
-    const shippingFloor = Number.isFinite(body.shippingFloor) ? Math.max(0, Math.trunc(body.shippingFloor)) : 0;
-    const withUnboxingService = body.withUnboxingService === true;
+    const storePickup = body.storePickup === true;
+    const shippingFloor = storePickup ? 0 : (Number.isFinite(body.shippingFloor) ? Math.max(0, Math.trunc(body.shippingFloor)) : 0);
+    const withUnboxingService = storePickup ? false : body.withUnboxingService === true;
 
     if (!items.length) return NextResponse.json({ success: false, error: "Carrello vuoto" }, { status: 400 });
     if (!customer.email || !customer.firstName || !customer.lastName) {
@@ -138,7 +140,7 @@ export async function POST(req: NextRequest) {
     // Altri paesi: 90€/scatola fallback.
     // Soglia free shipping 950€ azzera SOLO la standard.
     // Piano (consegna al piano) e disimballo restano additivi anche con free.
-    const shippingResult = computeShipping({
+    const shippingResult = await computeShipping({
       country: (shippingAddress.country || "IT").toUpperCase(),
       postalCode: shippingAddress.postalCode || "",
       province: shippingAddress.province || "",
@@ -149,20 +151,44 @@ export async function POST(req: NextRequest) {
       withUnboxingService,
     });
     // shippingCents (sul DB Order) = standard + piano. unboxingFeeCents resta separato.
-    const shippingCents = shippingResult.standardShippingCents + shippingResult.floorDeliveryCents;
-    const unboxingFeeCents = shippingResult.unboxingFeeCents;
+    // Ritiro in negozio: nessun costo di spedizione né servizi aggiuntivi.
+    const shippingCents = storePickup ? 0 : shippingResult.standardShippingCents + shippingResult.floorDeliveryCents;
+    const unboxingFeeCents = storePickup ? 0 : shippingResult.unboxingFeeCents;
     console.log("[create-payment-intent] shipping calc:", shippingResult.notes.join(" · "));
 
     const cfg = await getStoreGeneralConfig();
     // Prezzi IVA inclusa: la tax è informativa, calcolata come "tax compresa"
-    // (back-out dal lordo). L'aliquota dipende dal mercato di spedizione
-    // (IT 22%, FR 20%) — il prezzo che il cliente vede è già "ivato giusto".
-    const taxRateBpMarket = vatRateBp(market);
+    // (back-out dal lordo). L'aliquota dipende dal mercato di spedizione e
+    // arriva ora dai setting admin (Generale → IVA IT/FR).
+    const taxRateBpMarket = getTaxRateBp(cfg, market);
     const taxCents = Math.round((subtotalCents * taxRateBpMarket) / (10000 + taxRateBpMarket));
     const totalCents = subtotalCents + shippingCents + unboxingFeeCents;
 
-    // Genera orderNumber
-    const orderNumber = "GTV-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+    // Se esiste già un Order ABANDONED_CHECKOUT linkato a questo cartSessionId
+    // (creato dall'autosave track-abandoned mentre l'utente compilava il form),
+    // riusiamo il suo orderNumber: cosi' lo promuoveremo poi a PENDING invece
+    // di crearne uno nuovo, e l'orderNumber esposto al cliente resta coerente.
+    const cartSessionId = typeof body.cartSessionId === "string" ? body.cartSessionId.trim().slice(0, 64) : "";
+    let abandonedOrderId: string | null = null;
+    let abandonedOrderNumber: string | null = null;
+    if (cartSessionId) {
+      const cart = await prisma.cart.findUnique({
+        where: { sessionId: cartSessionId },
+        select: { convertedOrderId: true },
+      });
+      if (cart?.convertedOrderId) {
+        const o = await prisma.order.findUnique({
+          where: { id: cart.convertedOrderId },
+          select: { id: true, status: true, orderNumber: true },
+        });
+        if (o && o.status === "ABANDONED_CHECKOUT") {
+          abandonedOrderId = o.id;
+          abandonedOrderNumber = o.orderNumber;
+        }
+      }
+    }
+    const orderNumber = abandonedOrderNumber
+      || ("GTV-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase());
 
     // Cerca o crea customer. Se non esiste, lo creiamo SENZA password (passwordHash=null):
     // dopo il pagamento gli mandiamo un magic-link per impostarla. Se esiste già,
@@ -226,35 +252,111 @@ export async function POST(req: NextRequest) {
       description: `Order ${orderNumber} — ${customer.firstName} ${customer.lastName}`,
     });
 
-    // Crea Order in DB
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        customerId,
-        status: "PENDING",
-        email: customer.email,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        phone: customer.phone || null,
-        language: orderLang,
-        customerTaxId,
-        shippingAddress: JSON.stringify(shippingAddress),
-        billingAddress: JSON.stringify(billingAddress),
-        subtotalCents,
-        shippingCents,
-        shippingFloor,
-        withUnboxingService,
-        unboxingFeeCents,
-        taxCents,
-        totalCents,
-        currency: cfg.currency,
-        taxRateBp: taxRateBpMarket,
-        paymentProvider: "stripe",
-        stripePaymentIntentId: paymentIntent.id,
-        customerNotes: body.customerNotes || null,
-        items: { create: orderItems },
-      },
-    });
+    let order;
+    if (abandonedOrderId) {
+      // Promuovi ABANDONED_CHECKOUT → PENDING + stripe. Sostituisci gli items col carrello attuale.
+      await prisma.orderItem.deleteMany({ where: { orderId: abandonedOrderId } });
+      order = await prisma.order.update({
+        where: { id: abandonedOrderId },
+        data: {
+          customerId,
+          status: "PENDING",
+          email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone: customer.phone || null,
+          language: orderLang,
+          customerTaxId,
+          shippingAddress: JSON.stringify(shippingAddress),
+          billingAddress: JSON.stringify(billingAddress),
+          subtotalCents,
+          shippingCents,
+          shippingFloor,
+          withUnboxingService,
+          unboxingFeeCents,
+          storePickup,
+          taxCents,
+          totalCents,
+          currency: cfg.currency,
+          taxRateBp: taxRateBpMarket,
+          paymentProvider: "stripe",
+          paymentMethodType: null,
+          paymentErrorMessage: null,
+          stripePaymentIntentId: paymentIntent.id,
+          customerNotes: body.customerNotes || null,
+          items: { create: orderItems },
+        },
+      });
+    } else {
+      order = await prisma.order.create({
+        data: {
+          orderNumber,
+          customerId,
+          status: "PENDING",
+          email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone: customer.phone || null,
+          language: orderLang,
+          customerTaxId,
+          shippingAddress: JSON.stringify(shippingAddress),
+          billingAddress: JSON.stringify(billingAddress),
+          subtotalCents,
+          shippingCents,
+          shippingFloor,
+          withUnboxingService,
+          unboxingFeeCents,
+          storePickup,
+          taxCents,
+          totalCents,
+          currency: cfg.currency,
+          taxRateBp: taxRateBpMarket,
+          paymentProvider: "stripe",
+          stripePaymentIntentId: paymentIntent.id,
+          customerNotes: body.customerNotes || null,
+          items: { create: orderItems },
+        },
+      });
+    }
+
+    // Marca il Cart come converted (così esce dalla lista "carrelli abbandonati")
+    if (cartSessionId) {
+      prisma.cart.updateMany({
+        where: { sessionId: cartSessionId },
+        data: { converted: true, convertedOrderId: order.id },
+      }).catch(() => { /* silent */ });
+    }
+
+    // Meta CAPI: AddPaymentInfo server-side, dedup col client via event_id = `${orderNumber}:api`
+    {
+      const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+      const clientUserAgent = req.headers.get("user-agent") || null;
+      sendCapiEvent({
+        eventName: "AddPaymentInfo",
+        eventId: `${order.orderNumber}:api`,
+        actionSource: "website",
+        userData: {
+          email: customer.email,
+          phone: customer.phone || null,
+          firstName: customer.firstName || null,
+          lastName: customer.lastName || null,
+          city: shippingAddress.city || null,
+          postalCode: shippingAddress.postalCode || null,
+          country: shippingAddress.country || null,
+          externalId: customerId,
+          clientIp,
+          clientUserAgent,
+        },
+        customData: {
+          value: totalCents / 100,
+          currency: cfg.currency,
+          content_type: "product",
+          content_ids: orderItems.map((i) => i.variantId).filter((x): x is string => !!x),
+          num_items: orderItems.reduce((s, i) => s + i.quantity, 0),
+          order_id: order.orderNumber,
+        },
+      }).catch((err) => console.error("[create-payment-intent] CAPI AddPaymentInfo error:", err));
+    }
 
     return NextResponse.json({
       success: true,

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useT } from "@/contexts/I18nContext";
+import { fbTrack } from "@/lib/fbpixel";
 
 interface SearchResult {
   type: string;
@@ -68,6 +69,10 @@ export default function SearchPanel({ isOpen, onClose }: SearchPanelProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const q = query.trim();
+    if (q.length >= 2) {
+      fbTrack("Search", { search_string: q, content_category: "site" });
+    }
     doSearch(query);
   };
 

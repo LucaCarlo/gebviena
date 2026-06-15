@@ -136,7 +136,7 @@ export default async function GtvExperiencePage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch">
           {/* Left: text */}
           <div className="flex flex-col justify-center px-6 py-12 lg:px-[150px] lg:py-24">
-            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+            <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               {T["gtv-experience.stories.title"]}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
@@ -175,7 +175,7 @@ export default async function GtvExperiencePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-start">
             {/* Left: text */}
             <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "0", paddingRight: "60px" }}>
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+              <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 {T["gtv-experience.lobby.title"]}
               </h2>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 mb-6">
@@ -240,7 +240,7 @@ export default async function GtvExperiencePage() {
 
             {/* Right: text */}
             <div className="flex flex-col" style={{ paddingTop: "10px", paddingLeft: "60px", paddingRight: "0" }}>
-              <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+              <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                 {T["gtv-experience.corridors.title"]}
               </h2>
               <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 mb-6">
@@ -322,7 +322,7 @@ export default async function GtvExperiencePage() {
 
           {/* Right: text */}
           <div className="flex flex-col justify-center px-6 py-12 lg:px-[150px] lg:py-24">
-            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+            <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               {T["gtv-experience.live.title"]}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
@@ -336,7 +336,7 @@ export default async function GtvExperiencePage() {
       <section className="py-20 md:py-28">
         <div className="gtv-container">
           <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
-            <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+            <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
               {T["common.related"]}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

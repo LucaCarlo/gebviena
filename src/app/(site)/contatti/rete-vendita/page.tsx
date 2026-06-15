@@ -5,6 +5,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
 import { useT, useLang } from "@/contexts/I18nContext";
+import { fbTrack } from "@/lib/fbpixel";
 import MapView, { type MapApi } from "@/components/site/MapView";
 import type { PointOfSale } from "@/types";
 
@@ -169,6 +170,11 @@ export default function ReteVenditaPage() {
       });
       const data = await res.json();
       if (data.success) {
+        fbTrack(
+          "Lead",
+          { content_name: "rete-vendita", content_category: "contact_form" },
+          data?.data?.id ? `lead-${data.data.id}` : undefined
+        );
         setContactSent(true);
       } else {
         setContactError(data.error || "Errore durante l'invio.");

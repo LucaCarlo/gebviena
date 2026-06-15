@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { fbTrack } from "@/lib/fbpixel";
 
 interface LandingConfig {
   id?: string;
@@ -115,6 +116,11 @@ export default function LandingPage() {
       const data = await res.json();
 
       if (data.success) {
+        fbTrack(
+          "Lead",
+          { content_name: "landing-page-event", content_category: "event_registration" },
+          data?.data?.id ? `lead-event-${data.data.id}` : undefined
+        );
         setQrCode(data.data.qrCode);
         setQrDataUrl(data.data.qrDataUrl || "");
         setSuccess(true);
@@ -225,7 +231,7 @@ export default function LandingPage() {
                   />
                 </svg>
               </div>
-              <h2 className="font-sans text-[28px] md:text-[36px] text-dark tracking-tight font-light mb-4">
+              <h2 className="font-sans text-[25px] md:text-[36px] text-dark tracking-tight font-light mb-4">
                 {config.successTitle}
               </h2>
               {config.successMessage && (

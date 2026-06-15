@@ -4,9 +4,13 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Search, Download, Trash2, CheckCircle2, XCircle, Users, Send, X, Mail,
-  Tag, Plus, Loader2, Upload, FileText, Pencil, Eye, Building2,
+  Tag, Loader2, Upload, FileText, Pencil, Building2,
   MapPin, StickyNote, User, ChevronLeft, Clock,
 } from "lucide-react";
+import BulkEmailModal from "@/components/admin/BulkEmailModal";
+import ImportExportButtons from "@/components/admin/ImportExportButtons";
+import TablePagination from "@/components/admin/TablePagination";
+import SortableTh, { type SortDir } from "@/components/admin/SortableTh";
 
 /* ───── Types ───── */
 
@@ -42,7 +46,7 @@ const EMPTY_FORM = {
 /* ───── Component ───── */
 
 type InvitedFilter = "all" | "true" | "false";
-const PAGE_SIZE = 50;
+const DEFAULT_PAGE_SIZE = 50;
 
 export default function AdminSubscribersPage() {
   const searchParams = useSearchParams();
@@ -60,8 +64,10 @@ export default function AdminSubscribersPage() {
   const [contactsLoading, setContactsLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [totalCount, setTotalCount] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [hasLandingPage, setHasLandingPage] = useState(false);
   const [invitedFilter, setInvitedFilter] = useState<InvitedFilter>("all");
   const [checkinFilter, setCheckinFilter] = useState<"all" | "true" | "false">("all");
@@ -84,6 +90,7 @@ export default function AdminSubscribersPage() {
   const [showSimpleEmail, setShowSimpleEmail] = useState(false);
   const [showTagAssign, setShowTagAssign] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [bulkEmailOpen, setBulkEmailOpen] = useState(false);
   const [showEmailChoice, setShowEmailChoice] = useState(false);
   const [showEditContact, setShowEditContact] = useState(false);
   const [viewContact, setViewContact] = useState<UnifiedContact | null>(null);
@@ -120,7 +127,7 @@ export default function AdminSubscribersPage() {
     const targetPage = opts.pageOverride ?? (opts.append ? page + 1 : 1);
     if (opts.append) setLoadingMore(true); else setContactsLoading(true);
 
-    const params = new URLSearchParams({ page: String(targetPage), pageSize: String(PAGE_SIZE) });
+    const params = new URLSearchParams({ page: String(targetPage), pageSize: String(pageSize), sortBy, sortDir });
     if (search) params.set("search", search);
     if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
     if (invitedFilter !== "all") params.set("invited", invitedFilter);
@@ -133,14 +140,13 @@ export default function AdminSubscribersPage() {
       if (d.success) {
         setContacts((prev) => (opts.append ? [...prev, ...(d.data || [])] : (d.data || [])));
         setTotalCount(d.totalCount || 0);
-        setHasMore(!!d.hasMore);
         setHasLandingPage(!!d.hasLandingPage);
         setPage(targetPage);
       }
     } catch {}
 
     if (opts.append) setLoadingMore(false); else setContactsLoading(false);
-  }, [activeTab, search, invitedFilter, checkinFilter, langFilter, page, isEventoDetail]);
+  }, [activeTab, search, invitedFilter, checkinFilter, langFilter, page, pageSize, sortBy, sortDir, isEventoDetail]);
 
   const fetchEventRegs = useCallback(async () => {
     setEventLoading(true);
@@ -157,7 +163,7 @@ export default function AdminSubscribersPage() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // Refetch on filter change — always reset to page 1
+  // Refetch on filter / sort / pageSize change — sempre reset a pagina 1
   useEffect(() => {
     if (isEventoDetail) return;
     fetchContacts({ pageOverride: 1 });
@@ -165,7 +171,7 @@ export default function AdminSubscribersPage() {
     setSelectAllMatching(false);
     setAllMatchingSubIds(new Map());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, search, invitedFilter, checkinFilter, langFilter]);
+  }, [activeTab, search, invitedFilter, checkinFilter, langFilter, sortBy, sortDir, pageSize]);
 
   // Load lingue disponibili per il filtro
   useEffect(() => {
@@ -256,20 +262,23 @@ export default function AdminSubscribersPage() {
   /* ───── Delete ───── */
 
   const handleDeleteContact = async (email: string) => {
-    if (!confirm("Eliminare questo contatto?")) return;
-    const contact = contacts.find((c) => c.email === email);
-    if (contact?.subscriberId) {
-      await fetch(`/api/newsletter/subscribers/${contact.subscriberId}`, { method: "DELETE" });
-    }
+    if (!confirm("Eliminare definitivamente questo contatto?\n\nVerranno cancellati: iscrizione newsletter, registrazioni eventi e tutti i tag associati. L'operazione è irreversibile.")) return;
+    await fetch("/api/contacts/unified/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emails: [email] }),
+    });
     fetchContacts(); fetchTags();
   };
 
   const handleBulkDelete = async () => {
-    if (!selected.size || !confirm(`Eliminare ${selected.size} contatti?`)) return;
-    const ids = getSelectedSubscriberIds();
-    if (ids.length > 0) {
-      await fetch("/api/newsletter/subscribers", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
-    }
+    if (!selected.size || !confirm(`Eliminare definitivamente ${selected.size} contatti?\n\nVerranno cancellati: iscrizione newsletter, registrazioni eventi e tag. L'operazione è irreversibile.`)) return;
+    const emails = Array.from(selected);
+    await fetch("/api/contacts/unified/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emails }),
+    });
     clearSelection();
     fetchContacts(); fetchTags();
   };
@@ -589,95 +598,132 @@ export default function AdminSubscribersPage() {
 
   /* ═══ LIST VIEW ═══ */
   return (
-    <div className="p-6 md:p-8">
+    <div>
       {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-warm-900">Utenti</h1>
+          <h1 className="text-2xl font-semibold text-warm-900">Utenti</h1>
+          <p className="text-sm text-warm-500 mt-1">
+            Iscritti newsletter, contatti tag-only e registrazioni a eventi/landing — vista unificata per email.
+          </p>
+          <p className="text-xs text-warm-500 mt-1.5">
+            <strong>{totalCount || filteredContacts.length}</strong> {(totalCount || filteredContacts.length) === 1 ? "contatto" : "contatti"}
+            {selected.size > 0 && <> · <strong>{selected.size}</strong> selezionati</>}
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {!isEventoDetail && selected.size > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {selected.size > 0 ? (
             <>
-              <button onClick={openTemplateModal} className="flex items-center gap-2 bg-warm-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-900 transition-colors">
-                <FileText size={14} /> Template email ({selected.size})
+              <button
+                onClick={() => setBulkEmailOpen(true)}
+                className="inline-flex items-center gap-2 bg-warm-900 hover:bg-warm-800 text-white px-4 py-2 rounded text-sm font-medium"
+              >
+                <Mail size={14} /> Invia email ({selected.size})
               </button>
-              <button onClick={() => { setShowSimpleEmail(true); setSendResult(null); setEmailSubject(""); setEmailBody(""); }}
-                className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors">
-                <Mail size={14} /> Email semplice
+              <button
+                onClick={() => setShowTagAssign(true)}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded border border-warm-300 text-warm-700 hover:bg-warm-50"
+                title="Assegna tag ai contatti selezionati"
+              >
+                <Tag size={14} /> Tag
               </button>
-              <button onClick={() => setShowTagAssign(true)} className="flex items-center gap-2 bg-warm-100 text-warm-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors" title="Assegna tag"><Tag size={14} /></button>
-              <button onClick={handleBulkDelete} className="flex items-center gap-2 bg-red-50 text-red-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors" title="Elimina"><Trash2 size={14} /></button>
+              <button
+                onClick={handleBulkDelete}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded border border-red-300 text-red-700 hover:bg-red-50"
+                title="Elimina i contatti selezionati"
+              >
+                <Trash2 size={14} />
+              </button>
+              <button onClick={() => setSelected(new Set())} className="text-sm text-warm-600 hover:text-warm-900 underline">
+                Annulla selezione
+              </button>
             </>
           ) : (
-            <div className="flex gap-2">
-              <button onClick={() => { setShowImport(true); setImportResult(null); }}
-                className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors">
-                <Upload size={14} /> Importa
-              </button>
-              {isEventoDetail && (
-                <button onClick={() => window.open("/api/event-registrations?format=csv", "_blank")}
-                  className="flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors">
-                  <Download size={16} /> Esporta CSV
-                </button>
+            <>
+              {isEventoDetail ? (
+                <>
+                  <button onClick={() => { setShowImport(true); setImportResult(null); }}
+                    className="inline-flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded text-sm font-medium hover:bg-warm-200">
+                    <Upload size={14} /> Importa
+                  </button>
+                  <button onClick={() => window.open("/api/event-registrations?format=csv", "_blank")}
+                    className="inline-flex items-center gap-2 bg-warm-100 text-warm-700 px-4 py-2 rounded text-sm font-medium hover:bg-warm-200">
+                    <Download size={14} /> Esporta
+                  </button>
+                </>
+              ) : (
+                <ImportExportButtons
+                  exportUrl={(() => {
+                    const params = new URLSearchParams({ format: "csv" });
+                    if (search) params.set("search", search);
+                    if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
+                    if (invitedFilter !== "all") params.set("invited", invitedFilter);
+                    if (checkinFilter !== "all") params.set("checkedIn", checkinFilter);
+                    if (langFilter !== "all") params.set("lang", langFilter);
+                    return `/api/contacts/unified?${params}`;
+                  })()}
+                  exportLabel="Esporta utenti CSV (con filtri attivi)"
+                  importUrl="/api/newsletter/import"
+                  importColumns={{
+                    email: ["email", "e-mail", "mail"],
+                    firstName: ["firstname", "nome"],
+                    lastName: ["lastname", "cognome"],
+                    company: ["company", "azienda"],
+                    phone: ["phone", "telefono"],
+                    city: ["city", "città", "citta"],
+                    country: ["country", "paese", "nazione"],
+                    profile: ["profile", "profilo"],
+                    notes: ["notes", "note"],
+                  }}
+                  exampleCsv={"email,firstName,lastName,company,phone,city,country\nmario.rossi@example.com,Mario,Rossi,Studio Rossi,+39 333 1234567,Milano,IT\n"}
+                  templateFilename="utenti-template.csv"
+                  onImported={() => fetchContacts({ pageOverride: 1 })}
+                />
               )}
-            </div>
+            </>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-warm-200 overflow-x-auto scrollbar-hidden">
-        {tabItems.map((tab) => (
-          <button key={tab.key} onClick={() => { setActiveTab(tab.key); clearSelection(); }}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0 ${activeTab === tab.key ? "border-current" : "border-transparent text-warm-400 hover:text-warm-600"}`}
-            style={activeTab === tab.key ? { borderColor: tab.color, color: tab.color } : undefined}>
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tab.color }} />
-            {tab.label}
-            {tab.key !== "all" && (
-              <span className="text-[10px] font-semibold bg-warm-100 text-warm-500 px-1.5 py-0.5 rounded-full">{tab.count}</span>
-            )}
-          </button>
-        ))}
-        <button onClick={() => setShowNewTag(true)} className="flex items-center px-3 py-3 text-warm-400 hover:text-warm-600 transition-colors border-b-2 border-transparent -mb-px shrink-0" title="Nuovo tag"><Plus size={14} /></button>
-      </div>
-
-      {/* Search + sub-filters */}
-      <div className="mb-6 flex flex-wrap gap-3 items-center">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-          <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Cerca per nome, email, azienda, città..."
-            className="w-full sm:w-80 pl-10 pr-4 py-2.5 border border-warm-300 rounded-lg text-sm focus:border-warm-800 focus:outline-none" />
+      {/* Search + sub-filters — stile uniforme con Professionisti */}
+      <div className="bg-white border border-warm-200 rounded-lg p-4 mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[280px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Cerca per nome, email, azienda, città…"
+            className="w-full pl-9 pr-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none"
+          />
         </div>
-        {!isEventoDetail && hasLandingPage && (
-          <select
-            value={invitedFilter}
-            onChange={(e) => setInvitedFilter(e.target.value as InvitedFilter)}
-            className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
-            title="Filtra per stato invito a questa landing"
-          >
-            <option value="all">Tutti</option>
-            <option value="true">Invitati</option>
-            <option value="false">Non invitati</option>
-          </select>
-        )}
-        {!isEventoDetail && (
-          <select
-            value={checkinFilter}
-            onChange={(e) => setCheckinFilter(e.target.value as "all" | "true" | "false")}
-            className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
-            title="Filtra per stato check-in evento"
-          >
-            <option value="all">Check-in: tutti</option>
-            <option value="true">Check-in: si</option>
-            <option value="false">Check-in: no</option>
-          </select>
-        )}
-        {!isEventoDetail && availableLangs.length > 0 && (
+
+        {/* Filtro Tag */}
+        <select
+          value={activeTab}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === "__new__") { setShowNewTag(true); return; }
+            setActiveTab(v); clearSelection();
+          }}
+          className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
+          title="Filtra per tag / origine"
+        >
+          {tabItems.map((tab) => (
+            <option key={tab.key} value={tab.key}>
+              {tab.label}{tab.key !== "all" ? ` (${tab.count})` : ""}
+            </option>
+          ))}
+          <option value="__new__">＋ Crea nuovo tag…</option>
+        </select>
+
+        {/* Lingua: sempre disponibile */}
+        {availableLangs.length > 0 && (
           <select
             value={langFilter}
             onChange={(e) => setLangFilter(e.target.value)}
-            className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white"
-            title="Filtra per lingua del visitatore al momento dell'iscrizione"
+            className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
+            title="Filtra per lingua dell'utente al momento dell'iscrizione"
           >
             <option value="all">Lingua: tutte</option>
             {availableLangs.map((l) => (
@@ -686,28 +732,47 @@ export default function AdminSubscribersPage() {
             <option value="unknown">Lingua: sconosciuta</option>
           </select>
         )}
-        {!isEventoDetail && (
-          <button
-            onClick={() => {
-              const params = new URLSearchParams({ format: "csv" });
-              if (search) params.set("search", search);
-              if (activeTab.startsWith("tag:")) params.set("tag", activeTab.replace("tag:", ""));
-              if (invitedFilter !== "all") params.set("invited", invitedFilter);
-              if (checkinFilter !== "all") params.set("checkedIn", checkinFilter);
-              if (langFilter !== "all") params.set("lang", langFilter);
-              window.open(`/api/contacts/unified?${params}`, "_blank");
-            }}
-            className="flex items-center gap-1.5 text-sm text-warm-600 hover:text-warm-800 border border-warm-300 rounded-lg px-3 py-2.5"
-            title="Esporta CSV con i filtri applicati"
+
+        {/* Invitato: solo se c'è una landing page collegata al tag corrente */}
+        {!isEventoDetail && hasLandingPage && (
+          <select
+            value={invitedFilter}
+            onChange={(e) => setInvitedFilter(e.target.value as InvitedFilter)}
+            className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
+            title="Filtra per stato invito a questa landing"
           >
-            <Download size={14} /> Esporta CSV
-          </button>
+            <option value="all">Tutti</option>
+            <option value="true">Invitati</option>
+            <option value="false">Non invitati</option>
+          </select>
         )}
-        {!isEventoDetail && (
-          <span className="text-xs text-warm-500 ml-auto">
-            {totalCount > 0 ? <>Mostro <strong>{contacts.length}</strong> di <strong>{totalCount}</strong></> : ""}
-          </span>
+
+        {/* Check-in: ha senso solo quando vediamo gli iscritti agli eventi
+            (tag "evento") o "tutti", non quando filtriamo per un tag non-evento. */}
+        {(activeTab === "all" || isEventoDetail) && (
+          <select
+            value={checkinFilter}
+            onChange={(e) => setCheckinFilter(e.target.value as "all" | "true" | "false")}
+            className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
+            title="Filtra per stato check-in evento"
+          >
+            <option value="all">Check-in: tutti</option>
+            <option value="true">Check-in: sì</option>
+            <option value="false">Check-in: no</option>
+          </select>
         )}
+
+        <select
+          value={pageSize}
+          onChange={(e) => setPageSize(parseInt(e.target.value, 10))}
+          className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white ml-auto"
+          title="Numero di contatti per pagina"
+        >
+          <option value="20">Per pagina: 20</option>
+          <option value="50">Per pagina: 50</option>
+          <option value="100">Per pagina: 100</option>
+          <option value="200">Per pagina: 200</option>
+        </select>
         {isEventoDetail && (
           <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value as EventFilter)}
             className="border border-warm-300 rounded-lg px-3 py-2.5 text-sm focus:border-warm-800 focus:outline-none bg-white">
@@ -724,7 +789,37 @@ export default function AdminSubscribersPage() {
       ) : isEventoDetail ? (
         /* ═══ Evento detail ═══ */
         filteredEvent.length === 0 ? <EmptyState text="Nessuna registrazione" /> : (
-          <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
+          <>
+          {/* Mobile: card list */}
+          <div className="md:hidden space-y-2">
+            {filteredEvent.map((r) => (
+              <div key={r.id} className="bg-white rounded-lg border border-warm-200 p-3">
+                <div className="flex items-start gap-2 justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-warm-800 truncate">{r.firstName} {r.lastName}</div>
+                    <div className="text-[11px] text-warm-600 font-mono truncate">{r.email}</div>
+                    {(r.city || r.country) && (
+                      <div className="text-[11px] text-warm-500 truncate">{[r.city, r.country].filter(Boolean).join(", ")}</div>
+                    )}
+                    <div className="text-[10px] text-warm-400 font-mono mt-0.5">QR {r.qrCode.slice(0, 8)}\u2026</div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => handleCheckIn(r.id, !r.checkedIn)} title={r.checkedIn ? "Check-in fatto" : "Fai check-in"}>
+                      {r.checkedIn ? <CheckCircle2 size={20} className="text-green-500" /> : <XCircle size={20} className="text-warm-300 hover:text-warm-500" />}
+                    </button>
+                    <button onClick={() => handleDeleteEvent(r.id)} className="text-warm-400 hover:text-red-500 p-1" title="Elimina"><Trash2 size={15} /></button>
+                  </div>
+                </div>
+                <div className="flex items-center flex-wrap gap-1.5 mt-1.5">
+                  {r.profile && <span className="text-[10px] font-medium bg-warm-100 text-warm-600 px-1.5 py-0.5 rounded">{r.profile}</span>}
+                  <span className="text-[10px] text-warm-400 ml-auto">{fmtDate(r.createdAt)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: tabella */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="border-b border-warm-200 bg-warm-50">
                 <Th>Nome</Th><Th>Email</Th><Th className="hidden md:table-cell">Profilo</Th><Th className="hidden lg:table-cell">Luogo</Th><Th className="text-center">Check-in</Th><Th className="hidden md:table-cell">Data</Th><Th className="w-12" />
@@ -748,11 +843,99 @@ export default function AdminSubscribersPage() {
               </tbody>
             </table>
           </div>
+          </>
         )
       ) : (
         /* ═══ Unified contacts ═══ */
         filteredContacts.length === 0 ? <EmptyState text={activeTab !== "all" ? "Nessun utente con questo tag" : "Nessun contatto"} /> : (
-          <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
+          <>
+          {/* Mobile: card list */}
+          <div className="md:hidden space-y-2">
+            {selected.size > 0 && (
+              <div className="bg-warm-50 border border-warm-200 rounded-lg px-3 py-2 text-[12px] text-warm-700 flex items-center gap-2 flex-wrap">
+                {selectAllMatching ? (
+                  <>
+                    <span>Selezionati <strong>tutti i {totalCount}</strong></span>
+                    <button onClick={clearSelection} className="ml-auto text-warm-600 underline">Annulla</button>
+                  </>
+                ) : (
+                  <>
+                    <span><strong>{selected.size}</strong> selezionati</span>
+                    {totalCount > selected.size && (
+                      <button onClick={selectAllAcrossPages} disabled={selectingAll} className="text-warm-900 underline disabled:opacity-50">
+                        {selectingAll ? "…" : `Tutti ${totalCount}`}
+                      </button>
+                    )}
+                    <button onClick={clearSelection} className="ml-auto text-warm-600 underline">Annulla</button>
+                  </>
+                )}
+              </div>
+            )}
+            {filteredContacts.map((c) => {
+              const isSel = selected.has(c.email);
+              return (
+                <div key={c.email} className={`bg-white rounded-lg border border-warm-200 p-3 ${isSel ? "bg-warm-50" : ""}`}>
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isSel}
+                      onChange={() => toggleSelect(c.email)}
+                      className="accent-warm-800 mt-1 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0" onClick={() => { if (c.subscriberId) window.location.href = `/admin/subscribers/${c.subscriberId}`; else setViewContact(c); }}>
+                      <div className="font-medium text-warm-800 truncate">{contactName(c)}</div>
+                      {c.company && <div className="text-[11px] text-warm-500 truncate">{c.company}</div>}
+                      <div className="text-[11px] text-warm-600 font-mono truncate">{c.email}</div>
+                      {(c.city || c.country) && (
+                        <div className="text-[11px] text-warm-500 truncate">{[c.city, c.country].filter(Boolean).join(", ")}</div>
+                      )}
+                    </div>
+                  </div>
+                  {c.tags.length > 0 && (
+                    <div className="grid grid-cols-2 gap-1 mt-2 ml-6 max-w-[220px]">
+                      {c.tags.slice(0, 4).map((t) => (
+                        <span
+                          key={t.id}
+                          title={t.name}
+                          className="text-[10px] font-medium leading-[1.4] px-1.5 py-0 rounded truncate"
+                          style={{ backgroundColor: `${t.color}22`, color: t.color }}
+                        >
+                          {t.name}
+                        </span>
+                      ))}
+                      {c.tags.length > 4 && (
+                        <span className="text-[10px] font-medium leading-[1.4] px-1.5 py-0 rounded bg-warm-100 text-warm-600">+{c.tags.length - 4} tag</span>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-2 mt-2 ml-6">
+                    <span className="text-[10px] text-warm-500">
+                      {c.createdAt ? new Date(c.createdAt).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" }) : ""}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => { setSelected(new Set([c.email])); setShowEmailChoice(true); setSendResult(null); }}
+                        title="Invia email"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded border border-warm-300 text-warm-700 hover:bg-warm-50"
+                      >
+                        <Mail size={11} /> Email
+                      </button>
+                      <button
+                        onClick={() => handleDeleteContact(c.email)}
+                        title="Elimina"
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded border border-red-300 text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: tabella */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-warm-200 overflow-x-auto">
             {/* Banner "seleziona tutti cross-pagina" */}
             {selected.size > 0 && (
               <div className="px-4 py-2.5 bg-warm-50 border-b border-warm-200 text-[13px] text-warm-700 flex items-center gap-3 flex-wrap">
@@ -789,75 +972,117 @@ export default function AdminSubscribersPage() {
             )}
             <table className="w-full text-sm">
               <thead><tr className="border-b border-warm-200 bg-warm-50">
-                <th className="text-left px-4 py-3 w-10"><input type="checkbox" checked={selectAllMatching || (selected.size === currentList.length && currentList.length > 0)} onChange={selectAll} className="accent-warm-800" /></th>
-                <Th>Nome</Th><Th>Email</Th><Th className="hidden md:table-cell">Città</Th><Th className="hidden md:table-cell">Tag</Th><Th className="hidden lg:table-cell">Origine</Th><Th className="w-36" />
+                <th className="text-left px-4 py-4 w-10"><input type="checkbox" checked={selectAllMatching || (selected.size === currentList.length && currentList.length > 0)} onChange={selectAll} className="accent-warm-800" /></th>
+                <SortableTh field="firstName" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Nome</SortableTh>
+                <SortableTh field="email" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Email</SortableTh>
+                <SortableTh field="createdAt" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }} className="hidden md:table-cell">Data iscrizione</SortableTh>
+                <th className="text-left px-4 py-4 text-xs font-semibold text-warm-700 hidden md:table-cell">Tag</th>
+                <th className="text-center px-4 py-4 text-xs font-semibold text-warm-700 w-52">Azioni</th>
               </tr></thead>
               <tbody className="divide-y divide-warm-100">
-                {filteredContacts.map((c) => (
-                  <tr key={c.email} className={`hover:bg-warm-50/50 transition-colors ${selected.has(c.email) ? "bg-warm-50" : ""}`}>
-                    <td className="px-4 py-3"><input type="checkbox" checked={selected.has(c.email)} onChange={() => toggleSelect(c.email)} className="accent-warm-800" /></td>
+                {filteredContacts.map((c) => {
+                  const canOpenDetail = !!c.subscriberId;
+                  const goDetail = () => { if (canOpenDetail) window.location.href = `/admin/subscribers/${c.subscriberId}`; else setViewContact(c); };
+                  return (
+                  <tr
+                    key={c.email}
+                    onClick={goDetail}
+                    className={`cursor-pointer hover:bg-warm-50/70 transition-colors ${selected.has(c.email) ? "bg-warm-50" : ""}`}
+                  >
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(c.email)} onChange={() => toggleSelect(c.email)} className="accent-warm-800" />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-warm-800">{contactName(c)}</div>
                       {c.company && <div className="text-[10px] text-warm-400">{c.company}</div>}
                     </td>
                     <td className="px-4 py-3 text-warm-600 text-xs">{c.email}</td>
-                    <td className="px-4 py-3 text-warm-600 text-xs hidden md:table-cell">
-                      {[c.city, c.country].filter(Boolean).join(", ") || "—"}
+                    <td className="px-4 py-3 text-warm-600 text-xs hidden md:table-cell whitespace-nowrap">
+                      {c.createdAt
+                        ? new Date(c.createdAt).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" })
+                        : "—"}
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {c.tags.map((t) => <span key={t.id} className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: t.color }}>{t.name}</span>)}
-                      </div>
+                      {/* Tag in griglia 2x2: max 4 visibili, "+N" se altri.
+                          Stile pillola "Origine": text-[10px] font-medium px-2 py-0.5 rounded. */}
+                      {c.tags.length === 0 ? <span className="text-[10px] text-warm-400">—</span> : (
+                        <div className="grid grid-cols-2 gap-1 max-w-[200px]">
+                          {c.tags.slice(0, 4).map((t) => (
+                            <span
+                              key={t.id}
+                              title={t.name}
+                              className="text-[10px] font-medium leading-[1.4] px-1.5 py-0 rounded truncate"
+                              style={{ backgroundColor: `${t.color}22`, color: t.color }}
+                            >
+                              {t.name}
+                            </span>
+                          ))}
+                          {c.tags.length > 4 && (
+                            <span className="text-[10px] font-medium leading-[1.4] px-1.5 py-0 rounded bg-warm-100 text-warm-600">
+                              +{c.tags.length - 4} tag
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${
-                        c.source === "entrambi" ? "bg-purple-100 text-purple-600" :
-                        c.source === "landing_svendita" ? "bg-rose-100 text-rose-700" :
-                        c.source === "newsletter" ? "bg-blue-100 text-blue-600" :
-                        c.source === "evento" ? "bg-amber-100 text-amber-600" :
-                        "bg-warm-100 text-warm-600"
-                      }`}>
-                        {c.source === "entrambi" ? "Newsletter + Evento" :
-                          c.source === "landing_svendita" ? "Vendita Speciale" :
-                          c.source === "newsletter" ? "Newsletter" :
-                          c.source === "evento" ? "Evento" : "Solo tag"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => setViewContact(c)} className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors" title="Visualizza profilo"><Eye size={15} /></button>
-                        <button onClick={() => openEditContact(c)} className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors" title="Modifica"><Pencil size={15} /></button>
-                        <button onClick={() => { setSelected(new Set([c.email])); setShowEmailChoice(true); setSendResult(null); }} className="p-1.5 text-warm-400 hover:text-warm-600 transition-colors" title="Email"><Mail size={15} /></button>
-                        <button onClick={() => handleDeleteContact(c.email)} className="p-1.5 text-warm-400 hover:text-red-500 transition-colors" title="Elimina"><Trash2 size={15} /></button>
+                    <td className="px-2 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => { setSelected(new Set([c.email])); setShowEmailChoice(true); setSendResult(null); }}
+                          title="Invia email a questo contatto"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-warm-300 text-warm-700 hover:bg-warm-50 transition-colors"
+                        >
+                          <Mail size={12} /> Invia email
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteContact(c.email)}
+                          title="Elimina definitivamente il contatto"
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-red-300 text-red-700 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
+          </>
         )
       )}
 
-      {/* "Carica altri" — only on the unified-contacts view, when more pages exist */}
-      {!isEventoDetail && hasMore && (
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={() => fetchContacts({ append: true })}
-            disabled={loadingMore}
-            className="flex items-center gap-2 bg-warm-100 text-warm-700 px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors disabled:opacity-50"
-          >
-            {loadingMore ? <Loader2 size={14} className="animate-spin" /> : null}
-            {loadingMore ? "Caricamento..." : `Carica altri ${Math.min(PAGE_SIZE, totalCount - contacts.length)}`}
-          </button>
-        </div>
+      {/* Paginazione numerica (sostituisce il vecchio "Carica altri") */}
+      {!isEventoDetail && (
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={(p) => fetchContacts({ pageOverride: p })}
+        />
       )}
+      {loadingMore && <div className="flex justify-center mt-3"><Loader2 size={14} className="animate-spin text-warm-400" /></div>}
 
       {/* ═══ Modals ═══ */}
       {renderTemplateModal()}
       {renderSimpleEmailModal()}
       {renderEmailChoiceModal()}
       {renderEditModal()}
+
+      {/* Bulk email modal — esperienza coerente con Clienti e Professionisti
+          (template oppure email semplice). Per scheduling e segmenti avanzati
+          restano i modal "renderTemplateModal" e "renderSimpleEmailModal" che
+          gestiscono ancora subscriberIds, ma non sono più triggerati dal
+          header — sono accessibili come fallback se servono. */}
+      <BulkEmailModal
+        open={bulkEmailOpen}
+        onClose={() => setBulkEmailOpen(false)}
+        emails={Array.from(selected)}
+        contextLabel="utenti"
+      />
 
       {/* ═══ Tag Assign ═══ */}
       {showTagAssign && (
@@ -1095,7 +1320,7 @@ export default function AdminSubscribersPage() {
 /* ───── Helpers ───── */
 
 function Th({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
-  return <th className={`text-left px-4 py-3 font-semibold text-warm-600 text-xs uppercase tracking-wider ${className}`}>{children}</th>;
+  return <th className={`text-left px-4 py-3 font-medium text-warm-500 text-xs ${className}`}>{children}</th>;
 }
 
 function EmptyState({ text }: { text: string }) {

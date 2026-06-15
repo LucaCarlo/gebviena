@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
+import { fbTrack } from "@/lib/fbpixel";
 import type { HeroSlide } from "@/types";
 
 interface FieldConfig {
@@ -166,6 +167,11 @@ export default function CollaborazioniPage() {
         return;
       }
 
+      fbTrack(
+        "Lead",
+        { content_name: "collaborazioni", content_category: "contact_form" },
+        data?.data?.id ? `lead-${data.data.id}` : undefined
+      );
       setSent(true);
     } catch {
       setError("Errore di connessione. Riprova più tardi.");
@@ -330,7 +336,7 @@ export default function CollaborazioniPage() {
           <div className="max-w-[940px] mx-auto">
             {sent ? (
               <div className="text-center py-12">
-                <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">{t("collaborazioni.success.title")}</h2>
+                <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] mb-4">{t("collaborazioni.success.title")}</h2>
                 <p className="text-[16px] text-black font-light">{t("collaborazioni.success.message")}</p>
               </div>
             ) : (

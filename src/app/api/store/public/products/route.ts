@@ -6,6 +6,75 @@ import { marketFromLang, resolveVariantPrice } from "@/lib/store-pricing";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// Strategie di ordinamento supportate (mirror di quelle nel tab Ordinamento admin).
+type SortStrategy =
+  | "newest"
+  | "oldest"
+  | "name-asc"
+  | "name-desc"
+  | "price-asc"
+  | "price-desc"
+  | "manual"
+  | "random";
+
+// PRNG seedato (mulberry32) per il random "stabile per sessione".
+function mulberry32(seed: number) {
+  return function () {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffleInPlace<T>(arr: T[], rng: () => number): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function seedFromString(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+// Carica le impostazioni di ordinamento store_sorting dal DB (cached con TTL breve).
+let _cachedSortCfg: { value: SortConfig; ts: number } | null = null;
+const SORT_CFG_TTL_MS = 30_000;
+
+interface SortConfig {
+  strategy: SortStrategy;
+  randomMode: "per-request" | "per-session";
+  pinnedIds: string[];
+  allowUserOverride: boolean;
+}
+
+async function loadSortConfig(): Promise<SortConfig> {
+  if (_cachedSortCfg && Date.now() - _cachedSortCfg.ts < SORT_CFG_TTL_MS) return _cachedSortCfg.value;
+  const rows = await prisma.setting.findMany({
+    where: { key: { in: ["store.sort.strategy", "store.sort.random_mode", "store.sort.pinned_ids", "store.sort.allow_user_override"] } },
+  });
+  const map = new Map(rows.map((r) => [r.key, r.value]));
+  const strategy = (map.get("store.sort.strategy") || "newest") as SortStrategy;
+  const randomMode = (map.get("store.sort.random_mode") || "per-request") === "per-session" ? "per-session" : "per-request";
+  let pinnedIds: string[] = [];
+  try {
+    const raw = map.get("store.sort.pinned_ids") || "[]";
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) pinnedIds = parsed.filter((x) => typeof x === "string");
+  } catch { /* ignore */ }
+  const allowUserOverride = (map.get("store.sort.allow_user_override") || "true") !== "false";
+  const value: SortConfig = { strategy, randomMode, pinnedIds, allowUserOverride };
+  _cachedSortCfg = { value, ts: Date.now() };
+  return value;
+}
+
 /**
  * GET /api/store/public/products
  * Query: lang, category=<slug> | categoryId, attrs=ID1,ID2, q, minPrice, maxPrice,
@@ -21,7 +90,14 @@ export async function GET(req: NextRequest) {
   const minPrice = Number(sp.get("minPrice")) || 0;
   const maxPrice = Number(sp.get("maxPrice")) || 0;
   const onlyAvailable = sp.get("onlyAvailable") === "1";
-  const sort = sp.get("sort") || "newest";
+  const sortParam = sp.get("sort");
+
+  // Carica config di ordinamento dallo store: l'admin sceglie strategia globale,
+  // l'utente può sovrascriverla via ?sort= solo se allowUserOverride === true.
+  const sortCfg = await loadSortConfig();
+  const sort: SortStrategy = (sortParam && sortCfg.allowUserOverride)
+    ? (sortParam as SortStrategy)
+    : sortCfg.strategy;
 
   const market = marketFromLang(lang);
 
@@ -57,8 +133,23 @@ export async function GET(req: NextRequest) {
     ];
   }
 
-  let orderBy: Prisma.StoreProductOrderByWithRelationInput[] = [{ sortOrder: "asc" }, { publishedAt: "desc" }];
-  if (sort === "name") orderBy = [{ product: { name: "asc" } }];
+  // OrderBy iniziale lato DB: solo per le strategie che mappano direttamente su
+  // colonne Prisma. price-asc/desc e random sono completati dopo in JS perché
+  // dipendono dal mercato e/o richiedono shuffle determinista.
+  // Retrocompat: alcuni client più vecchi inviano sort=name (= name-asc).
+  const sortNormalized: SortStrategy = (sort as string) === "name" ? "name-asc" : sort;
+  let orderBy: Prisma.StoreProductOrderByWithRelationInput[];
+  switch (sortNormalized) {
+    case "oldest":     orderBy = [{ publishedAt: "asc" }]; break;
+    case "name-asc":   orderBy = [{ product: { name: "asc" } }]; break;
+    case "name-desc":  orderBy = [{ product: { name: "desc" } }]; break;
+    case "manual":     orderBy = [{ sortOrder: "asc" }, { publishedAt: "desc" }]; break;
+    case "newest":
+    case "random":
+    case "price-asc":
+    case "price-desc":
+    default:           orderBy = [{ sortOrder: "asc" }, { publishedAt: "desc" }]; break;
+  }
 
   const products = await prisma.storeProduct.findMany({
     where,
@@ -170,7 +261,55 @@ export async function GET(req: NextRequest) {
     sorted = [...filtered].sort((a, b) => effective(a) - effective(b));
   } else if (sort === "price-desc") {
     sorted = [...filtered].sort((a, b) => effective(b) - effective(a));
+  } else if (sort === "random") {
+    // Seed:
+    // - per-request: nuovo seed ad ogni chiamata (Math.random) → ordine sempre diverso
+    // - per-session: seed da query param `seed` (passato dalla Server Component
+    //                che legge il cookie gtv_shop_seed settato dal middleware),
+    //                fallback al cookie diretto del browser se chiamata client-side,
+    //                fallback random se proprio non c'è (caso edge: prima richiesta
+    //                client-only senza middleware path).
+    let seed: number;
+    if (sortCfg.randomMode === "per-session") {
+      const seedParam = sp.get("seed");
+      let cookieVal: string | null = null;
+      if (!seedParam) {
+        const cookieHeader = req.headers.get("cookie") || "";
+        const m = cookieHeader.match(/(?:^|; )gtv_shop_seed=([^;]+)/);
+        cookieVal = m ? decodeURIComponent(m[1]) : null;
+      }
+      const seedSource = seedParam || cookieVal || "";
+      if (seedSource) {
+        seed = seedFromString(seedSource);
+      } else {
+        // Caso edge: nessun cookie/seed — usa random ma non lo persistiamo
+        // (lo farà il middleware al prossimo navigation della pagina).
+        seed = (Math.floor(Math.random() * 0xffffffff)) >>> 0;
+      }
+    } else {
+      seed = (Math.floor(Math.random() * 0xffffffff)) >>> 0;
+    }
+    const rng = mulberry32(seed);
+    sorted = shuffleInPlace([...filtered], rng);
   }
 
-  return NextResponse.json({ success: true, data: sorted });
+  return NextResponse.json({ success: true, data: applyPinned(sorted, sortCfg.pinnedIds) });
+}
+
+// I prodotti pinnati vanno SEMPRE in cima, nell'ordine indicato dall'admin.
+// Il resto della lista mantiene l'ordinamento già calcolato. Se un id pinned
+// non è nella lista (filtrato fuori da category/q/disponibilità), viene
+// ignorato silenziosamente.
+function applyPinned<T extends { id: string }>(list: T[], pinnedIds: string[]): T[] {
+  if (pinnedIds.length === 0) return list;
+  const pinSet = new Set(pinnedIds);
+  const indexed = new Map<string, T>();
+  for (const item of list) indexed.set(item.id, item);
+  const pinned: T[] = [];
+  for (const id of pinnedIds) {
+    const item = indexed.get(id);
+    if (item) pinned.push(item);
+  }
+  const rest = list.filter((x) => !pinSet.has(x.id));
+  return [...pinned, ...rest];
 }

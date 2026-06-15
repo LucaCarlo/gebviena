@@ -39,12 +39,31 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     if (updateData.isActive !== undefined) fields.isActive = updateData.isActive;
     if (updateData.imageUrl !== undefined) fields.imageUrl = updateData.imageUrl || null;
 
+    // Snapshot del value precedente per cascade rename sui Product collegati
+    const previous = await prisma.contentTypology.findUnique({
+      where: { id: params.id },
+      select: { value: true, contentType: true },
+    });
+
     const data = await prisma.$transaction(async (tx) => {
       // Update the typology fields
       await tx.contentTypology.update({
         where: { id: params.id },
         data: fields,
       });
+
+      // Cascade rename: se l'admin ha cambiato il `value`, aggiorna anche la
+      // stringa memorizzata nel CSV Product.category (e StoreProduct dove serve).
+      // Senza questo, i prodotti restano "orfani" (puntano al vecchio name).
+      const newValue = typeof fields.value === "string" ? fields.value : null;
+      if (previous && newValue && previous.value !== newValue && previous.contentType === "products") {
+        await tx.$executeRawUnsafe(
+          `UPDATE Product SET category = REPLACE(category, ?, ?) WHERE category LIKE CONCAT('%', ?, '%')`,
+          previous.value,
+          newValue,
+          previous.value
+        );
+      }
 
       // If categoryIds provided, replace all category associations
       if (Array.isArray(categoryIds)) {

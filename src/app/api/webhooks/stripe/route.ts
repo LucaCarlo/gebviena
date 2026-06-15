@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe, getStripeConfig } from "@/lib/stripe-config";
 import { sendOrderConfirmationEmail } from "@/lib/order-email";
+import { sendCapiPurchase } from "@/lib/fb-capi";
 import type Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
@@ -46,13 +47,20 @@ export async function POST(req: NextRequest) {
         }
         if (order.status === "PAID") break; // idempotenza
 
+        // Estrai il metodo di pagamento esatto dal latest_charge
+        let methodType: string | null = null;
+        try {
+          const charge = pi.latest_charge && typeof pi.latest_charge !== "string" ? pi.latest_charge : null;
+          methodType = charge?.payment_method_details?.type || (pi.payment_method_types && pi.payment_method_types[0]) || null;
+        } catch { /* */ }
+
         let promoted = false;
         await prisma.$transaction(async (tx) => {
           const fresh = await tx.order.findUnique({ where: { id: order.id }, select: { status: true } });
           if (fresh?.status !== "PENDING") return; // race con order-status fallback
           await tx.order.update({
             where: { id: order.id },
-            data: { status: "PAID", paidAt: new Date() },
+            data: { status: "PAID", paidAt: new Date(), paymentMethodType: methodType || undefined },
           });
           // Decrementa stock
           for (const item of order.items) {
@@ -75,17 +83,36 @@ export async function POST(req: NextRequest) {
           sendOrderConfirmationEmail(order.id).catch((err) => {
             console.error("[stripe-webhook] sendOrderConfirmationEmail error:", err);
           });
+          // Meta CAPI: invia Purchase server-side (idempotente con pixel client
+          // via event_id = orderNumber). Fire-and-forget per non bloccare il webhook.
+          sendCapiPurchase(order.id).catch((err) => {
+            console.error("[stripe-webhook] sendCapiPurchase error:", err);
+          });
         }
         break;
       }
 
       case "payment_intent.payment_failed": {
         const pi = event.data.object as Stripe.PaymentIntent;
+        const err = pi.last_payment_error;
+        const msg = err
+          ? [err.code, err.decline_code, err.message].filter(Boolean).join(" · ").slice(0, 500)
+          : null;
         await prisma.order.updateMany({
-          where: { stripePaymentIntentId: pi.id, status: "PENDING" },
+          where: { stripePaymentIntentId: pi.id, status: { in: ["PENDING", "ABANDONED_CHECKOUT"] } },
+          data: { status: "PAYMENT_FAILED", paymentErrorMessage: msg },
+        });
+        console.log("[stripe-webhook] PI failed:", pi.id, "·", msg);
+        break;
+      }
+
+      case "payment_intent.canceled": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        await prisma.order.updateMany({
+          where: { stripePaymentIntentId: pi.id, status: { in: ["PENDING", "ABANDONED_CHECKOUT", "PAYMENT_FAILED"] } },
           data: { status: "CANCELLED" },
         });
-        console.log("[stripe-webhook] PI failed:", pi.id);
+        console.log("[stripe-webhook] PI canceled:", pi.id);
         break;
       }
 

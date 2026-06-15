@@ -93,7 +93,7 @@ export default async function BrandManifestoPage() {
           {/* Right: text — same style as product page description */}
           <div className="flex flex-col justify-center px-6 py-12 lg:px-[150px] lg:py-24">
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{T["brand-manifesto.heritage.label"]}</p>
-            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+            <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               {T["brand-manifesto.heritage.title"]}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
@@ -114,7 +114,7 @@ export default async function BrandManifestoPage() {
       <section className="gtv-container" style={{ paddingTop: "96px", paddingBottom: "85px" }}>
         <div className="max-w-[940px] mx-auto">
           <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{T["brand-manifesto.production.label"]}</p>
-          <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+          <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
             {T["brand-manifesto.production.title"]}
           </h2>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
@@ -157,7 +157,7 @@ export default async function BrandManifestoPage() {
           {/* Left: text — same style/padding as Our Heritage */}
           <div className="flex flex-col justify-center px-6 py-12 lg:px-[150px] lg:py-24">
             <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light mb-1.5">{T["brand-manifesto.designers.label"]}</p>
-            <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+            <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
               {T["brand-manifesto.designers.title"]}
             </h2>
             <p className="text-[20px] text-black leading-snug font-light tracking-normal mt-8">
@@ -183,7 +183,7 @@ export default async function BrandManifestoPage() {
       <section className="py-20 md:py-28">
         <div className="gtv-container">
           <div className="mx-auto" style={{ maxWidth: "73.5%" }}>
-          <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
+          <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">
             {T["common.related"]}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

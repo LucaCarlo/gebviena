@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_LANG } from "@/lib/i18n";
 import { mergeFirstTranslation, resolveLangFromRequest, TRANSLATABLE_FIELDS } from "@/lib/translate-payload";
+import { getAuthUser } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get("slug");
@@ -36,6 +37,16 @@ export async function GET(req: NextRequest) {
 
   if (!raw) {
     return NextResponse.json({ success: false, error: "Articolo non trovato" }, { status: 404 });
+  }
+
+  // Le news in bozza (isActive=false) sono visibili SOLO agli admin loggati.
+  // Per i visitatori normali → 404 (come se non esistesse), evita leak dei
+  // contenuti non pubblicati via URL diretta.
+  if (!raw.isActive) {
+    const admin = await getAuthUser();
+    if (!admin) {
+      return NextResponse.json({ success: false, error: "Articolo non trovato" }, { status: 404 });
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

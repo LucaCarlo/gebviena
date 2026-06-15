@@ -69,7 +69,7 @@ export default function ProductSpotlight({ ambianceImage, productImage, ctaLink 
             >
               {t("home.spotlight.label")}
             </p>
-            <h2 className="font-sans text-[28px] !text-black leading-[1.15] font-light uppercase tracking-[inherit] whitespace-pre-line">
+            <h2 className="font-sans text-[25px] !text-black leading-[1.15] font-light uppercase tracking-[inherit] whitespace-pre-line">
               {t("home.spotlight.title")}
             </h2>
             <Link
