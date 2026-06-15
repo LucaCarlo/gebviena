@@ -559,7 +559,7 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
   const imgLeft = d.imagePosition !== "right";
   const isVid = isVideoFile(d.imageUrl);
   const imageEl = (
-    <div className="relative bg-warm-100 overflow-hidden h-full min-h-[280px]" style={{ aspectRatio: "4 / 3" }}>
+    <div className="relative bg-warm-100 overflow-hidden w-full h-full" style={{ aspectRatio: "4 / 3" }}>
       {d.imageUrl && (isVid ? (
         <NewsVideoFill src={d.imageUrl} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} />
       ) : (
@@ -568,7 +568,7 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
     </div>
   );
   const contentEl = (
-    <div className="px-6 py-10 md:px-10 md:py-12 flex flex-col justify-center">
+    <div className="h-full px-6 py-10 md:px-10 md:py-12 flex flex-col justify-center">
       {d.logoUrl && (
         <div className="relative w-12 h-12 mb-3">
           <Image src={d.logoUrl} alt="" fill className="object-contain" sizes="48px" />
@@ -585,7 +585,7 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
     </div>
   );
   const bulletsEl = d.bullets && d.bullets.filter(Boolean).length > 0 ? (
-    <div className="px-6 py-10 md:px-10 md:py-12 md:border-l border-warm-100 flex flex-col justify-center">
+    <div className="h-full px-6 py-10 md:px-10 md:py-12 md:border-l border-warm-100 flex flex-col justify-center">
       {d.bulletsTitle && <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-4">{d.bulletsTitle}</div>}
       <ul className="space-y-2">
         {d.bullets.filter(Boolean).map((b, i) => (
