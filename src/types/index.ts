@@ -321,7 +321,7 @@ export interface NewsTwoImagesInlineData {
 
 // Block "Strumento / Feature" — immagine + card laterale con logo, paragrafo,
 // lista "ideale per" e fino a 2 CTA (anche badge store).
-export type CtaButtonStyle = "default" | "google_play" | "app_store" | "windows" | "macos";
+export type CtaButtonStyle = "default" | "custom";
 export interface NewsCta {
   label: string;
   href: string;

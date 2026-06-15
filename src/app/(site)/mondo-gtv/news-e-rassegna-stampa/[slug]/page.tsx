@@ -212,7 +212,7 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
   const textEl = (
     <div className="flex flex-col justify-center px-8 py-16 md:px-16 md:py-20 lg:px-24 xl:px-[150px] xl:py-[96px]">
       {d.title && (
-        <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]" dangerouslySetInnerHTML={{ __html: d.title }} />
+        <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]" dangerouslySetInnerHTML={{ __html: d.title }} />
       )}
       {d.text && (
         <div className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.text }} />
@@ -343,7 +343,7 @@ function ParagraphBlock({ d }: { d: NewsParagraphData }) {
   return (
     <section className="gtv-container">
       {d.title && (
-        <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto" dangerouslySetInnerHTML={{ __html: d.title }} />
+        <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-6 max-w-[940px] mx-auto" dangerouslySetInnerHTML={{ __html: d.title }} />
       )}
       {d.body && (
         <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.body }} />
@@ -382,7 +382,7 @@ function RelatedBlock({ related, categoryLabelMap, title }: { related: NewsArtic
   return (
     <section className="py-20 md:py-28">
       <div className="px-2 md:px-3 lg:px-4">
-        <h3 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">{title}</h3>
+        <h3 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit] text-center mb-12">{title}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-14 md:gap-x-4 md:gap-y-20">
           {related.slice(0, 4).map((rel) => (
             <Link key={rel.id} href={`/mondo-gtv/news-e-rassegna-stampa/${rel.slug}`} className="group block">
@@ -391,7 +391,7 @@ function RelatedBlock({ related, categoryLabelMap, title }: { related: NewsArtic
               </div>
               <div className="mt-4">
                 {rel.category && <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">{lookupLabel(categoryLabelMap, rel.category)}</p>}
-                <h4 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">{rel.title}</h4>
+                <h4 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">{rel.title}</h4>
               </div>
             </Link>
           ))}
@@ -536,9 +536,8 @@ function CtaButton({ cta }: { cta: NewsCta }) {
   const linkProps = isPdf
     ? { download: "", target: "_blank", rel: "noopener noreferrer" }
     : ext ? { target: "_blank", rel: "noopener noreferrer" } : {};
-  const style = cta.style || "default";
-  // Icona custom uploadata: vince sempre, anche se è stato selezionato uno stile badge.
-  if (cta.iconUrl) {
+  // Personalizzato con icona uploadata → pulsante nero con icona
+  if (cta.style === "custom" && cta.iconUrl) {
     return (
       <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-warm-900 transition-colors">
         <span className="relative w-5 h-5">
@@ -548,36 +547,7 @@ function CtaButton({ cta }: { cta: NewsCta }) {
       </a>
     );
   }
-  if (style === "google_play" || style === "app_store") {
-    const isGP = style === "google_play";
-    return (
-      <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-warm-900 transition-colors">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          {isGP ? (
-            <path d="M3.609 1.814 13.792 12 3.61 22.186A.997.997 0 0 1 3 21.275V2.725a1 1 0 0 1 .609-.911zm10.89 10.893L21.4 8.829A1 1 0 0 1 21.4 15.17l-6.9 4.122-3.501-3.501zm-1.5 1.5L4.609 22.586 14.79 13.79l-1.792-1.793z"/>
-          ) : (
-            <path d="M17.05 12.04c-.03-2.83 2.31-4.18 2.42-4.25-1.32-1.93-3.37-2.19-4.1-2.22-1.75-.18-3.41 1.03-4.3 1.03-.89 0-2.25-1-3.7-.98-1.9.03-3.66 1.11-4.64 2.81-1.98 3.43-.51 8.5 1.42 11.28.94 1.36 2.06 2.89 3.52 2.84 1.42-.06 1.95-.91 3.66-.91s2.2.91 3.7.88c1.53-.03 2.5-1.38 3.43-2.75 1.09-1.58 1.54-3.11 1.56-3.19-.03-.01-2.99-1.15-3.02-4.56zM14.6 4.07c.79-.95 1.32-2.27 1.18-3.59-1.13.05-2.51.75-3.32 1.7-.72.83-1.36 2.17-1.19 3.45 1.27.1 2.55-.64 3.33-1.56z"/>
-          )}
-        </svg>
-        <span className="text-sm">{cta.label || (isGP ? "Google Play" : "App Store")}</span>
-      </a>
-    );
-  }
-  if (style === "windows" || style === "macos") {
-    const isWin = style === "windows";
-    return (
-      <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-warm-900 transition-colors">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          {isWin ? (
-            <path d="M2 4.5 10 3v8.5H2V4.5zM2 13H10v8.5L2 19.5V13zm9-10.07L22 1.4V11h-11V2.93zM11 13h11v9.6L11 21V13z"/>
-          ) : (
-            <path d="M17.05 12.04c-.03-2.83 2.31-4.18 2.42-4.25-1.32-1.93-3.37-2.19-4.1-2.22-1.75-.18-3.41 1.03-4.3 1.03-.89 0-2.25-1-3.7-.98-1.9.03-3.66 1.11-4.64 2.81-1.98 3.43-.51 8.5 1.42 11.28.94 1.36 2.06 2.89 3.52 2.84 1.42-.06 1.95-.91 3.66-.91s2.2.91 3.7.88c1.53-.03 2.5-1.38 3.43-2.75 1.09-1.58 1.54-3.11 1.56-3.19-.03-.01-2.99-1.15-3.02-4.56zM14.6 4.07c.79-.95 1.32-2.27 1.18-3.59-1.13.05-2.51.75-3.32 1.7-.72.83-1.36 2.17-1.19 3.45 1.27.1 2.55-.64 3.33-1.56z"/>
-          )}
-        </svg>
-        <span className="text-sm">{cta.label || (isWin ? "Windows" : "macOS")}</span>
-      </a>
-    );
-  }
+  // Default: link minimal con freccia
   return (
     <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-1 uppercase text-[14px] tracking-[0.03em] text-black font-medium hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
       {cta.label || "Scopri"} &rarr;
@@ -672,7 +642,7 @@ function CardsRow({ d }: { d: NewsCardsRowData }) {
                 </div>
               )}
               {num && <div className="text-[14px] text-black/60 mb-3 font-light">{num}</div>}
-              <h3 className="font-sans text-[25px] md:text-[32px] text-black font-bold leading-tight mb-4 tracking-tight">{it.title}</h3>
+              <h3 className="font-sans text-[28px] md:text-[32px] text-black font-bold leading-tight mb-4 tracking-tight">{it.title}</h3>
               {it.description && <p className="text-[15px] text-black font-light leading-relaxed">{it.description}</p>}
             </div>
           );
@@ -688,7 +658,7 @@ function FaqBlock({ d }: { d: NewsFaqData }) {
   return (
     <section className="gtv-container py-12 md:py-16">
       {d.sectionTitle && (
-        <h2 className="text-center font-sans text-[25px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
+        <h2 className="text-center font-sans text-[28px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
       )}
       <div className="max-w-3xl mx-auto space-y-3">
         {items.map((it, i) => (
@@ -713,7 +683,7 @@ function StatsBlock({ d }: { d: NewsStatsData }) {
   return (
     <section className="gtv-container py-12 md:py-16">
       {d.sectionTitle && (
-        <h2 className="text-center font-sans text-[25px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
+        <h2 className="text-center font-sans text-[28px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
       )}
       <div className={`grid grid-cols-2 ${gridCols} gap-6 md:gap-10`}>
         {items.map((s, i) => (
@@ -755,19 +725,32 @@ function TimelineBlock({ d }: { d: NewsTimelineData }) {
         <h2 className="text-center font-sans text-[25px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
       )}
       <div className="max-w-3xl mx-auto relative">
+        {/* Linea verticale centrale */}
         <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-warm-200 md:-translate-x-px" aria-hidden="true" />
         {items.map((it, i) => {
-          const right = i % 2 === 1;
+          const isRight = i % 2 === 1;
+          const content = (
+            <>
+              <div className="text-[14px] uppercase tracking-[0.12em] text-warm-500 font-semibold">{it.date}</div>
+              <div className="font-sans text-[20px] md:text-[24px] text-black font-medium mt-1 mb-2">{it.title}</div>
+              {it.description && <p className="text-[15px] text-black/80 font-light leading-relaxed">{it.description}</p>}
+            </>
+          );
           return (
-            <div key={i} className={`relative grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 ${right ? "md:[direction:rtl]" : ""}`}>
-              <div className="absolute left-4 md:left-1/2 top-2 w-3 h-3 rounded-full bg-black -translate-x-1/2" aria-hidden="true" />
-              <div className={`pl-10 md:pl-0 ${right ? "md:pr-10 md:[direction:ltr] md:text-left" : "md:pr-10 md:text-right"}`}>
-                <div className="text-[14px] uppercase tracking-[0.12em] text-warm-500 font-semibold">{it.date}</div>
-                <div className="font-sans text-[20px] md:text-[24px] text-black font-medium mt-1">{it.title}</div>
-              </div>
-              <div className={`pl-10 md:pl-0 md:[direction:ltr] ${right ? "md:text-left md:pl-10" : "md:text-left md:pl-10"}`}>
-                {it.description && <p className="text-[15px] text-black/80 font-light leading-relaxed">{it.description}</p>}
-              </div>
+            <div key={i} className="relative grid grid-cols-1 md:grid-cols-2 mb-10">
+              {/* Pallino sulla linea centrale */}
+              <div className="absolute left-4 md:left-1/2 top-2 w-3 h-3 rounded-full bg-black -translate-x-1/2 z-10" aria-hidden="true" />
+              {isRight ? (
+                <>
+                  <div className="hidden md:block" />
+                  <div className="pl-10 md:pl-12">{content}</div>
+                </>
+              ) : (
+                <>
+                  <div className="pl-10 md:pl-0 md:pr-12 md:text-right">{content}</div>
+                  <div className="hidden md:block" />
+                </>
+              )}
             </div>
           );
         })}
@@ -784,7 +767,7 @@ function ComparisonTableBlock({ d }: { d: NewsComparisonTableData }) {
   return (
     <section className="gtv-container py-12 md:py-16">
       {d.sectionTitle && (
-        <h2 className="text-center font-sans text-[25px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
+        <h2 className="text-center font-sans text-[28px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
       )}
       <div className="max-w-5xl mx-auto overflow-x-auto">
         <table className="w-full text-[15px]">
