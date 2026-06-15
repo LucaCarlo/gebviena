@@ -22,24 +22,48 @@ function isUploadedVideo(url: string | undefined | null): boolean {
   return !!url && /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url);
 }
 
-function VideoPlaybackToggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+interface VideoToggleProps {
+  autoplay: boolean;
+  controls: boolean;
+  onAutoplay: (v: boolean) => void;
+  onControls: (v: boolean) => void;
+}
+
+function VideoPlaybackToggle({ autoplay, controls, onAutoplay, onControls }: VideoToggleProps) {
   return (
-    <label className="flex items-start gap-2 cursor-pointer p-3 border border-warm-200 rounded bg-warm-50/50">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 w-4 h-4 accent-warm-800"
-      />
-      <div>
-        <div className="text-sm font-medium text-warm-800">Riproduci il video automaticamente</div>
-        <div className="text-[11px] text-warm-500 mt-0.5">
-          Se attivato: il video parte automaticamente in loop, senza audio e senza
-          controls (effetto background). Se disattivato (default): il visitatore vede
-          i controls e clicca play, con audio.
+    <div className="p-3 border border-warm-200 rounded bg-warm-50/50 space-y-2">
+      <div className="text-[11px] font-semibold text-warm-600 uppercase tracking-wider">Opzioni video</div>
+
+      <label className="flex items-start gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={autoplay}
+          onChange={(e) => onAutoplay(e.target.checked)}
+          className="mt-0.5 w-4 h-4 accent-warm-800"
+        />
+        <div>
+          <div className="text-sm font-medium text-warm-800">Avvia in automatico</div>
+          <div className="text-[11px] text-warm-500 mt-0.5">
+            Il video parte da solo, in loop e senza audio (richiesto dal browser per l&rsquo;autoplay).
+          </div>
         </div>
-      </div>
-    </label>
+      </label>
+
+      <label className="flex items-start gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={controls}
+          onChange={(e) => onControls(e.target.checked)}
+          className="mt-0.5 w-4 h-4 accent-warm-800"
+        />
+        <div>
+          <div className="text-sm font-medium text-warm-800">Mostra barra controlli</div>
+          <div className="text-[11px] text-warm-500 mt-0.5">
+            Play/pausa, volume e schermo intero visibili al visitatore. Si combina con &laquo;Avvia in automatico&raquo;: parte da solo ma con la barra disponibile.
+          </div>
+        </div>
+      </label>
+    </div>
   );
 }
 
@@ -133,7 +157,7 @@ export function ImageTextBgEditor({ data, onChange, sourceData }: { data: NewsIm
       </div>
       <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo />
       {isUploadedVideo(data.imageUrl) && (
-        <VideoPlaybackToggle checked={!!data.videoAutoplay} onChange={(v) => onChange({ ...data, videoAutoplay: v })} />
+        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (opzionale)</label>
@@ -174,7 +198,7 @@ export function SingleImageEditor({ data, onChange, sourceData }: { data: NewsSi
     <div className="space-y-4">
       <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Puoi caricare un'immagine o un video (MP4, WebM)." />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
-        <VideoPlaybackToggle checked={!!data.videoAutoplay} onChange={(v) => onChange({ ...data, videoAutoplay: v })} />
+        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">…oppure URL video esterno (YouTube, Vimeo)</label>
@@ -194,7 +218,7 @@ export function ImageWithParagraphEditor({ data, onChange, sourceData }: { data:
     <div className="space-y-4">
       <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Puoi caricare un'immagine o un video (MP4, WebM)." />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
-        <VideoPlaybackToggle checked={!!data.videoAutoplay} onChange={(v) => onChange({ ...data, videoAutoplay: v })} />
+        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">…oppure URL video esterno (YouTube, Vimeo)</label>
@@ -218,7 +242,7 @@ export function FullwidthBannerEditor({ data, onChange, sourceData }: { data: Ne
     <div className="space-y-4">
       <ImageUploadField label="Immagine o video (full-width, scuro)" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="hero" folder="news" aspectRatio={1600 / 900} acceptVideo />
       {isUploadedVideo(data.imageUrl) && (
-        <VideoPlaybackToggle checked={!!data.videoAutoplay} onChange={(v) => onChange({ ...data, videoAutoplay: v })} />
+        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (sovraimpresso)</label>

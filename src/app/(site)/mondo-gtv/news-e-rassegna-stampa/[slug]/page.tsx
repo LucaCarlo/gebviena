@@ -20,29 +20,39 @@ function isVideoFile(url: string | undefined | null): boolean {
   return !!url && /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url);
 }
 
-/* Video player per news. Per default mostra i controls (l'utente clicca
-   play). Se autoplay=true viene riprodotto in loop muto come background
-   senza controls — utile per banner / image-text. */
-function NewsVideoFill({ src, autoplay = false, className = "" }: { src: string; autoplay?: boolean; className?: string }) {
-  if (autoplay) {
-    return (
-      <video
-        src={src}
-        autoPlay
-        muted
-        loop
-        playsInline
-        className={`absolute inset-0 w-full h-full object-cover bg-black ${className}`}
-      />
-    );
-  }
+/* Video player per news. Le due opzioni (autoplay e controls) sono indipendenti:
+   - autoplay solo → background muto in loop
+   - controls solo → click-to-play con barra
+   - entrambi → parte da solo e mostra anche la barra
+   - nessuno → richiede click ma senza barra visibile (raro) */
+function NewsVideoFill({ src, autoplay = false, controls = true, className = "" }: { src: string; autoplay?: boolean; controls?: boolean; className?: string }) {
+  // muted è obbligatorio per autoplay (policy browser); se non c'è autoplay teniamo il suono attivo
   return (
     <video
       src={src}
-      controls
+      autoPlay={autoplay || undefined}
+      muted={autoplay || undefined}
+      loop={autoplay || undefined}
+      controls={controls || undefined}
       playsInline
-      preload="metadata"
-      className={`news-video absolute inset-0 w-full h-full object-cover bg-black ${className}`}
+      preload={autoplay ? undefined : "metadata"}
+      className={`${controls ? "news-video " : ""}absolute inset-0 w-full h-full object-cover bg-black ${className}`}
+    />
+  );
+}
+
+/* Variante inline (w-full h-auto) per i blocchi che mostrano video nel flusso. */
+function NewsVideoInline({ src, autoplay = false, controls = true, className = "w-full h-auto bg-warm-100" }: { src: string; autoplay?: boolean; controls?: boolean; className?: string }) {
+  return (
+    <video
+      src={src}
+      autoPlay={autoplay || undefined}
+      muted={autoplay || undefined}
+      loop={autoplay || undefined}
+      controls={controls || undefined}
+      playsInline
+      preload={autoplay ? undefined : "metadata"}
+      className={`${controls ? "news-video " : ""}${className}`}
     />
   );
 }
@@ -97,21 +107,11 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
                 <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
                   <iframe src={`https://player.vimeo.com/video/${vimeo[1]}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
                 </div>
-              ) : d.videoAutoplay ? (
-                <video src={video} autoPlay muted loop playsInline className="w-full h-auto bg-warm-100" />
               ) : (
-                <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
-                  <source src={video} />
-                </video>
+                <NewsVideoInline src={video} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} />
               )
             ) : imageIsVideo ? (
-              d.videoAutoplay ? (
-                <video src={d.imageUrl} autoPlay muted loop playsInline className="w-full h-auto bg-warm-100" />
-              ) : (
-                <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
-                  <source src={d.imageUrl} />
-                </video>
-              )
+              <NewsVideoInline src={d.imageUrl} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} />
             ) : (
               <Image src={d.imageUrl} alt="" width={400} height={400} className="w-full h-auto" sizes="140px" />
             )}
@@ -134,21 +134,16 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
   return (
     <section className="relative w-full" style={{ height: "85vh" }}>
       {isVid ? (
-        d.videoAutoplay ? (
-          <video
-            src={d.imageUrl}
-            autoPlay muted loop playsInline
-            className="absolute inset-0 w-full h-full object-cover brightness-[0.6] bg-black"
-          />
-        ) : (
-          <video
-            src={d.imageUrl}
-            controls
-            playsInline
-            preload="metadata"
-            className="news-video absolute inset-0 w-full h-full object-cover brightness-[0.85] bg-black"
-          />
-        )
+        <video
+          src={d.imageUrl}
+          autoPlay={d.videoAutoplay || undefined}
+          muted={d.videoAutoplay || undefined}
+          loop={d.videoAutoplay || undefined}
+          controls={d.videoControls !== false || undefined}
+          playsInline
+          preload={d.videoAutoplay ? undefined : "metadata"}
+          className={`${d.videoControls !== false ? "news-video " : ""}absolute inset-0 w-full h-full object-cover bg-black ${d.videoAutoplay ? "brightness-[0.6]" : "brightness-[0.85]"}`}
+        />
       ) : (
         <Image src={d.imageUrl} alt={d.title || ""} fill className="object-cover brightness-[0.6]" sizes="100vw" />
       )}
@@ -182,7 +177,7 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
   const imageEl = (
     <div className="relative bg-warm-200 overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
       {d.imageUrl && (imageIsVideo ? (
-        <NewsVideoFill src={d.imageUrl} autoplay={!!d.videoAutoplay} />
+        <NewsVideoFill src={d.imageUrl} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} />
       ) : (
         <Image src={d.imageUrl} alt={d.title || articleTitle} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
       ))}
@@ -318,21 +313,11 @@ function SingleImage({ d }: { d: NewsSingleImageData }) {
             <div className="relative w-full bg-warm-100" style={{ aspectRatio: "16 / 9" }}>
               <iframe src={`https://player.vimeo.com/video/${vimeo[1]}${autoplay ? "?autoplay=1&muted=1&loop=1" : ""}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
             </div>
-          ) : autoplay ? (
-            <video src={video} autoPlay muted loop playsInline className="w-full h-auto bg-warm-100" />
           ) : (
-            <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
-              <source src={video} />
-            </video>
+            <NewsVideoInline src={video} autoplay={autoplay} controls={d.videoControls !== false} />
           )
         ) : imageIsVideo ? (
-          autoplay ? (
-            <video src={d.imageUrl} autoPlay muted loop playsInline className="w-full h-auto bg-warm-100" />
-          ) : (
-            <video controls playsInline preload="metadata" className="news-video w-full h-auto bg-warm-100">
-              <source src={d.imageUrl} />
-            </video>
-          )
+          <NewsVideoInline src={d.imageUrl} autoplay={autoplay} controls={d.videoControls !== false} />
         ) : (
           <Image src={d.imageUrl} alt={d.caption || ""} width={1600} height={1000} className="w-full h-auto" sizes="(max-width: 940px) 100vw, 940px" />
         )}

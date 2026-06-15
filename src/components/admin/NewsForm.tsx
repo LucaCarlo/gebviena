@@ -16,6 +16,7 @@ interface NewsFormProps {
   category?: string;
 }
 
+// Label fallback solo per le 4 categorie di default; le altre (custom) usano la label DB.
 const CATEGORY_LABELS: Record<string, string> = {
   exhibition: "Exhibition",
   news: "News",
@@ -23,7 +24,19 @@ const CATEGORY_LABELS: Record<string, string> = {
   storia: "Storia",
 };
 
+interface CategoryOption { id: string; value: string; label: string }
+
 export default function NewsForm({ articleId, category: categoryProp }: NewsFormProps) {
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  useEffect(() => {
+    fetch("/api/categories?contentType=news")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.data)) {
+          setCategories((d.data as Array<{ id: string; value: string; label: string }>).map((c) => ({ id: c.id, value: c.value, label: c.label })));
+        }
+      }).catch(() => {});
+  }, []);
   const tCtx = useTranslationCtx();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -265,17 +278,28 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
   return (
     <form onSubmit={handleSubmit} className="flex gap-6 items-start">
       {/* Left: main form */}
-      <div className="flex-1 min-w-0 max-w-4xl space-y-6">
+      <div className="flex-1 min-w-0 space-y-6">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">{error}</div>
         )}
 
-        {/* Category badge (read-only) */}
-        <div className="flex items-center gap-2">
+        {/* Category select (editable) */}
+        <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs text-warm-400 uppercase tracking-wider">Categoria:</span>
-          <span className="px-3 py-1 bg-warm-100 text-warm-700 text-xs font-semibold uppercase tracking-wider rounded-full">
-            {CATEGORY_LABELS[form.category] || form.category}
-          </span>
+          <select
+            value={form.category}
+            onChange={(e) => updateField("category", e.target.value)}
+            className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          >
+            {/* fallback se la categoria attuale non è nella lista (cat. rimossa o non ancora caricata) */}
+            {form.category && !categories.find((c) => c.value === form.category) && (
+              <option value={form.category}>{CATEGORY_LABELS[form.category] || form.category}</option>
+            )}
+            {categories.length === 0 && !form.category && <option value="">— seleziona categoria —</option>}
+            {categories.map((c) => (
+              <option key={c.id} value={c.value}>{c.label}</option>
+            ))}
+          </select>
         </div>
 
         {/* ── COMMON FIELDS ────────────────────────────────────── */}
@@ -378,8 +402,8 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           />
         </div>
 
-        {/* Submit */}
-        <div className="flex gap-3">
+        {/* Submit — sticky bottom: sempre visibile senza scorrere */}
+        <div className="sticky bottom-0 -mx-4 lg:-mx-8 px-4 lg:px-8 py-3 bg-warm-50 border-t border-warm-200 flex gap-3 z-10">
           <button type="submit" disabled={loading} className="bg-warm-800 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50 transition-colors">
             {loading ? "Salvataggio..." : articleId ? "Aggiorna" : "Crea articolo"}
           </button>

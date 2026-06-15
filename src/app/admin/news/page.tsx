@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Pencil, Trash2, Download, Upload, Copy, Eye, EyeOff } from "lucide-react";
 import type { NewsArticle } from "@/types";
 import AdminListFilters from "@/components/admin/AdminListFilters";
 
@@ -13,13 +14,22 @@ interface CategoryItem {
   id: string;
 }
 
+interface LanguageRow { code: string; name: string; flag: string | null; isDefault: boolean; isActive: boolean }
+
 export default function AdminNewsPage() {
+  const router = useRouter();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const importRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+
+  // Modal duplica lingue
+  const [duplicateModal, setDuplicateModal] = useState<{ id: string; title: string } | null>(null);
+  const [languages, setLanguages] = useState<LanguageRow[]>([]);
+  const [selectedLangs, setSelectedLangs] = useState<Set<string>>(new Set());
+  const [duplicating, setDuplicating] = useState(false);
 
   const fetchArticles = () => {
     fetch("/api/news?admin=true&limit=500")
@@ -35,12 +45,73 @@ export default function AdminNewsPage() {
     fetch("/api/categories?contentType=news")
       .then((r) => r.json())
       .then((data) => setCategories(data.data || []));
+    fetch("/api/languages")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          const langs = (data.data as LanguageRow[]).filter((l) => l.isActive);
+          setLanguages(langs);
+          // Preselezione: solo la lingua di default (es. IT)
+          const def = langs.find((l) => l.isDefault);
+          setSelectedLangs(new Set(def ? [def.code] : []));
+        }
+      }).catch(() => {});
   }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Sei sicuro di voler eliminare questo articolo?")) return;
     await fetch(`/api/news/${id}`, { method: "DELETE" });
     fetchArticles();
+  };
+
+  const handleDuplicate = (id: string, title: string) => {
+    // Apri modal scelta lingue
+    setDuplicateModal({ id, title });
+    // Pre-seleziona la lingua di default
+    const def = languages.find((l) => l.isDefault);
+    setSelectedLangs(new Set(def ? [def.code] : languages.map((l) => l.code)));
+  };
+
+  const confirmDuplicate = async () => {
+    if (!duplicateModal) return;
+    setDuplicating(true);
+    const langs = Array.from(selectedLangs);
+    const res = await fetch(`/api/news/${duplicateModal.id}/duplicate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ languages: langs.length === languages.length ? "all" : langs }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setDuplicating(false);
+    if (!res.ok || !data.success) {
+      alert(data?.error || "Errore nella duplicazione");
+      return;
+    }
+    setDuplicateModal(null);
+    fetchArticles();
+  };
+
+  const toggleLang = (code: string) => {
+    setSelectedLangs((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code); else next.add(code);
+      return next;
+    });
+  };
+
+  const handleTogglePublish = async (id: string, currentIsActive: boolean) => {
+    // Update ottimistico: aggiorno lo stato locale subito, poi rollback se fail
+    setArticles((arr) => arr.map((a) => a.id === id ? { ...a, isActive: !currentIsActive } : a));
+    const res = await fetch(`/api/news/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !currentIsActive }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      setArticles((arr) => arr.map((a) => a.id === id ? { ...a, isActive: currentIsActive } : a));
+      alert(data?.error || "Errore nel cambio di stato");
+    }
   };
 
   const handleExport = async () => {
@@ -153,7 +224,56 @@ export default function AdminNewsPage() {
             totalCount={articles.length}
             filteredCount={filteredArticles.length}
           />
-          <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
+          {/* Mobile: card list */}
+          <div className="md:hidden space-y-2">
+            {filteredArticles.map((a) => (
+              <div key={a.id} className="bg-white rounded-lg border border-warm-200 p-3">
+                <div className="flex items-start gap-3">
+                  {a.imageUrl ? (
+                    <Link href={`/admin/news/${a.id}`} className="block shrink-0">
+                      <div className="w-14 h-14 relative rounded overflow-hidden bg-warm-100">
+                        <Image src={a.imageUrl} alt="" fill className="object-cover" sizes="56px" />
+                      </div>
+                    </Link>
+                  ) : null}
+                  <Link href={`/admin/news/${a.id}`} className="flex-1 min-w-0 block">
+                    <div className="font-medium text-warm-800 truncate">{a.title}</div>
+                    <div className="text-[11px] text-warm-600 truncate">
+                      {(a.category || "—") + " · " + formatDate(a.publishedAt)}
+                    </div>
+                    <div className="mt-1">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                          a.isActive ? "bg-green-100 text-green-700" : "bg-warm-100 text-warm-500"
+                        }`}
+                      >
+                        {a.isActive ? "Pubblicato" : "Bozza"}
+                      </span>
+                    </div>
+                  </Link>
+                  <button onClick={() => handleDuplicate(a.id, a.title)} title="Duplica" className="p-1.5 text-warm-400 hover:text-warm-800 shrink-0">
+                    <Copy size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleTogglePublish(a.id, a.isActive)}
+                    title={a.isActive ? "Metti in bozza" : "Pubblica"}
+                    className={`p-1.5 shrink-0 ${a.isActive ? "text-emerald-600 hover:text-emerald-800" : "text-warm-400 hover:text-warm-800"}`}
+                  >
+                    {a.isActive ? <Eye size={14} /> : <EyeOff size={14} />}
+                  </button>
+                  <button onClick={() => handleDelete(a.id)} title="Elimina" className="p-1.5 text-warm-400 hover:text-red-600 shrink-0">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {filteredArticles.length === 0 && (
+              <div className="text-center py-12 text-warm-400 bg-white rounded-lg border border-warm-200">Nessun articolo trovato</div>
+            )}
+          </div>
+
+          {/* Desktop: tabella */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-warm-50 border-b border-warm-200">
                 <tr>
@@ -167,7 +287,15 @@ export default function AdminNewsPage() {
               </thead>
               <tbody className="divide-y divide-warm-100">
                 {filteredArticles.map((a) => (
-                  <tr key={a.id} className="hover:bg-warm-50 transition-colors">
+                  <tr
+                    key={a.id}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.closest("a, button")) return;
+                      router.push(`/admin/news/${a.id}`);
+                    }}
+                    className="hover:bg-warm-50 transition-colors cursor-pointer"
+                  >
                     <td className="px-6 py-3">
                       {a.imageUrl && (
                         <div className="w-10 h-10 relative rounded overflow-hidden bg-warm-100 flex-shrink-0">
@@ -184,15 +312,25 @@ export default function AdminNewsPage() {
                           a.isActive ? "bg-green-100 text-green-700" : "bg-warm-100 text-warm-500"
                         }`}
                       >
-                        {a.isActive ? "Attivo" : "Bozza"}
+                        {a.isActive ? "Pubblicato" : "Bozza"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Link href={`/admin/news/${a.id}`} className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors">
+                        <Link href={`/admin/news/${a.id}`} title="Modifica" className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors">
                           <Pencil size={16} />
                         </Link>
-                        <button onClick={() => handleDelete(a.id)} className="p-1.5 text-warm-400 hover:text-red-600 transition-colors">
+                        <button onClick={() => handleDuplicate(a.id, a.title)} title="Duplica" className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors">
+                          <Copy size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleTogglePublish(a.id, a.isActive)}
+                          title={a.isActive ? "In linea — clicca per metterlo in bozza" : "In bozza — clicca per pubblicare"}
+                          className={`p-1.5 transition-colors ${a.isActive ? "text-emerald-600 hover:text-emerald-800" : "text-warm-400 hover:text-warm-800"}`}
+                        >
+                          {a.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
+                        </button>
+                        <button onClick={() => handleDelete(a.id)} title="Elimina" className="p-1.5 text-warm-400 hover:text-red-600 transition-colors">
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -206,6 +344,45 @@ export default function AdminNewsPage() {
             )}
           </div>
         </>
+      )}
+
+      {/* Modal scelta lingue per duplicazione */}
+      {duplicateModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => !duplicating && setDuplicateModal(null)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-warm-900 mb-1">Duplica articolo</h2>
+            <p className="text-sm text-warm-500 mb-4">
+              Seleziona quali traduzioni copiare dall&rsquo;articolo &ldquo;<span className="font-medium text-warm-800">{duplicateModal.title}</span>&rdquo;.
+            </p>
+
+            {languages.length === 0 ? (
+              <div className="text-sm text-warm-500 py-2">Caricamento lingue&hellip;</div>
+            ) : (
+              <div className="space-y-2 mb-4">
+                {languages.map((l) => (
+                  <label key={l.code} className="flex items-center gap-3 px-3 py-2 border border-warm-200 rounded-lg cursor-pointer hover:bg-warm-50">
+                    <input type="checkbox" checked={selectedLangs.has(l.code)} onChange={() => toggleLang(l.code)} className="w-4 h-4 accent-warm-800" />
+                    <span className="text-base">{l.flag || ""}</span>
+                    <span className="text-sm text-warm-800 flex-1">{l.name}</span>
+                    {l.isDefault && <span className="text-[10px] uppercase tracking-wider text-warm-400">default</span>}
+                  </label>
+                ))}
+                <div className="flex items-center gap-3 pt-1">
+                  <button type="button" onClick={() => setSelectedLangs(new Set(languages.map((l) => l.code)))} className="text-xs text-warm-600 hover:text-warm-900 underline">Seleziona tutte</button>
+                  <span className="text-warm-300">&middot;</span>
+                  <button type="button" onClick={() => { const def = languages.find((l) => l.isDefault); setSelectedLangs(new Set(def ? [def.code] : [])); }} className="text-xs text-warm-600 hover:text-warm-900 underline">Solo default</button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-warm-100">
+              <button onClick={() => setDuplicateModal(null)} disabled={duplicating} className="px-4 py-2 text-sm text-warm-600 border border-warm-300 rounded hover:bg-warm-100 disabled:opacity-50">Annulla</button>
+              <button onClick={confirmDuplicate} disabled={duplicating || selectedLangs.size === 0} className="px-4 py-2 text-sm bg-warm-800 text-white rounded hover:bg-warm-900 disabled:opacity-50">
+                {duplicating ? "Duplicazione…" : `Duplica${selectedLangs.size > 0 ? ` (${selectedLangs.size} ${selectedLangs.size === 1 ? "lingua" : "lingue"})` : ""}`}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
