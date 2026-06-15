@@ -243,6 +243,13 @@ export type NewsBlockV2Type =
   | "fullwidth_banner"
   | "caslon_title"
   | "two_images_inline"
+  | "feature_tool"
+  | "cards_row"
+  | "faq"
+  | "stats"
+  | "quote"
+  | "timeline"
+  | "comparison_table"
   | "product"
   | "share"
   | "related";
@@ -256,6 +263,7 @@ export interface NewsImageTextBgData {
   title?: string;
   text: string;
   imageUrl: string;
+  videoUrl?: string;       // URL video esterno (YouTube/Vimeo) opzionale
   imagePosition: "left" | "right";
   ctaLabel?: string;
   ctaHref?: string;
@@ -266,7 +274,7 @@ export interface NewsImageTextBgData {
 }
 
 export interface NewsThreeImagesData {
-  images: { url: string; caption: string }[];
+  images: { url: string; caption: string; videoUrl?: string }[];
 }
 
 export interface NewsSingleImageData {
@@ -288,6 +296,7 @@ export interface NewsImageWithParagraphData {
 
 export interface NewsFullwidthBannerData {
   imageUrl: string;
+  videoUrl?: string;       // URL video esterno (YouTube/Vimeo) opzionale
   title: string;
   ctaLabel?: string;
   ctaHref?: string;
@@ -305,9 +314,98 @@ export interface NewsCaslonTitleData {
 // Due foto affiancate, con allineamento a sinistra / centro / destra del
 // gruppo (sbandiera). Larghezza fissa, due colonne uguali.
 export interface NewsTwoImagesInlineData {
-  images: { url: string; caption?: string }[];
+  images: { url: string; caption?: string; videoUrl?: string }[];
   align?: "left" | "center" | "right";
   caption?: string;
+}
+
+// Block "Strumento / Feature" — immagine + card laterale con logo, paragrafo,
+// lista "ideale per" e fino a 2 CTA (anche badge store).
+export type CtaButtonStyle = "default" | "google_play" | "app_store" | "windows" | "macos";
+export interface NewsCta {
+  label: string;
+  href: string;
+  style?: CtaButtonStyle;
+}
+export interface NewsFeatureToolData {
+  imageUrl: string;
+  videoUrl?: string;
+  videoAutoplay?: boolean;
+  videoControls?: boolean;
+  imagePosition?: "left" | "right";
+  logoUrl?: string;       // piccolo SVG/PNG sopra il titolo (es. logo brand)
+  title: string;
+  description: string;
+  bulletsTitle?: string;  // es. "IDEALE PER"
+  bullets: string[];      // elenco bullet
+  ctas: NewsCta[];        // 0-2 pulsanti
+  scrollLabel?: string;   // testo sopra il CTA es. "SCARICA PCON.FACTS"
+}
+
+// Block "Cards / Come funziona" — fino a 4 card affiancate.
+export interface NewsCardItem {
+  number?: string;        // es. "01." (auto se vuoto)
+  iconUrl?: string;       // SVG/PNG icona (rendering in cerchio nero)
+  title: string;
+  description?: string;
+}
+export interface NewsCardsRowData {
+  sectionTitle?: string;
+  columns?: 2 | 3 | 4;
+  autoNumber?: boolean;
+  items: NewsCardItem[];
+}
+
+// Block "FAQ"
+export interface NewsFaqItem {
+  question: string;
+  answer: string;
+}
+export interface NewsFaqData {
+  sectionTitle?: string;
+  items: NewsFaqItem[];
+}
+
+// Block "Statistiche" — 2-4 numeri grossi con descrizione
+export interface NewsStatItem {
+  value: string;          // es. "+500", "10K"
+  label: string;          // descrizione breve
+}
+export interface NewsStatsData {
+  sectionTitle?: string;
+  items: NewsStatItem[];
+  columns?: 2 | 3 | 4;
+}
+
+// Block "Citazione" — testo grande tra virgolette + autore
+export interface NewsQuoteData {
+  text: string;
+  author?: string;
+  authorRole?: string;
+  align?: "left" | "center";
+}
+
+// Block "Timeline" — eventi cronologici (data + titolo + descrizione)
+export interface NewsTimelineItem {
+  date: string;           // es. "1849" o "Marzo 2024"
+  title: string;
+  description?: string;
+}
+export interface NewsTimelineData {
+  sectionTitle?: string;
+  items: NewsTimelineItem[];
+}
+
+// Block "Tabella di confronto"
+export interface NewsComparisonRow {
+  label: string;
+  values: string[];        // tanti valori quante sono le colonne
+}
+export interface NewsComparisonTableData {
+  sectionTitle?: string;
+  columnHeaders: string[]; // nomi delle colonne di confronto (es. "Base", "Pro", "Enterprise")
+  rows: NewsComparisonRow[];
+  highlightColumn?: number; // colonna evidenziata (0-based), opzionale
 }
 
 export type NewsShareData = Record<string, never>;
@@ -329,6 +427,13 @@ export interface NewsBlockV2 {
     | NewsFullwidthBannerData
     | NewsCaslonTitleData
     | NewsTwoImagesInlineData
+    | NewsFeatureToolData
+    | NewsCardsRowData
+    | NewsFaqData
+    | NewsStatsData
+    | NewsQuoteData
+    | NewsTimelineData
+    | NewsComparisonTableData
     | NewsProductData
     | NewsShareData
     | NewsRelatedData;

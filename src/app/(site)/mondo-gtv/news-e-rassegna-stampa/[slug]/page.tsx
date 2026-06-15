@@ -11,6 +11,9 @@ import type {
   NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
   NewsCaslonTitleData, NewsTwoImagesInlineData,
+  NewsFeatureToolData, NewsCardsRowData, NewsFaqData, NewsStatsData,
+  NewsQuoteData, NewsTimelineData, NewsComparisonTableData,
+  NewsCta,
 } from "@/types";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
@@ -55,6 +58,44 @@ function NewsVideoInline({ src, autoplay = false, controls = true, className = "
       className={`${controls ? "news-video " : ""}${className}`}
     />
   );
+}
+
+/* Renderer "smart" che decide tra YouTube/Vimeo/video locale/immagine in base ai dati.
+   Usato dove l'admin può scegliere immagine OPPURE videoUrl esterno. */
+function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillContainer = false, aspectRatio = "3 / 4.2" }: { imageUrl?: string; videoUrl?: string; alt?: string; autoplay?: boolean; controls?: boolean; fillContainer?: boolean; aspectRatio?: string }) {
+  const ext = (videoUrl || "").trim();
+  const yt = ext.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  const vimeo = ext.match(/vimeo\.com\/(\d+)/);
+  const isExtVid = !!(yt || vimeo);
+  const localVid = !isExtVid && ext && isVideoFile(ext) ? ext : (isVideoFile(imageUrl) ? imageUrl! : "");
+  const wrapper = fillContainer
+    ? <div className="relative w-full h-full bg-warm-100 overflow-hidden">{null}</div>
+    : null;
+  void wrapper;
+  const containerStyle = fillContainer ? undefined : { aspectRatio };
+  const containerClass = fillContainer ? "relative w-full h-full bg-warm-100 overflow-hidden" : "relative w-full bg-warm-100 overflow-hidden";
+
+  if (yt) {
+    return (
+      <div className={containerClass} style={containerStyle}>
+        <iframe src={`https://www.youtube.com/embed/${yt[1]}${autoplay ? `?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=${controls === false ? 0 : 1}` : `?rel=0&controls=${controls === false ? 0 : 1}`}`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+      </div>
+    );
+  }
+  if (vimeo) {
+    return (
+      <div className={containerClass} style={containerStyle}>
+        <iframe src={`https://player.vimeo.com/video/${vimeo[1]}${autoplay ? "?autoplay=1&muted=1&loop=1" : ""}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+      </div>
+    );
+  }
+  if (localVid) {
+    return <NewsVideoFill src={localVid} autoplay={!!autoplay} controls={controls !== false} />;
+  }
+  if (imageUrl) {
+    return <Image src={imageUrl} alt={alt || ""} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />;
+  }
+  return null;
 }
 
 interface ArticleWithRelated extends NewsArticle {
@@ -129,24 +170,12 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
 }
 
 function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
-  if (!d.imageUrl) return null;
-  const isVid = isVideoFile(d.imageUrl);
+  if (!d.imageUrl && !d.videoUrl) return null;
   return (
     <section className="relative w-full" style={{ height: "85vh" }}>
-      {isVid ? (
-        <video
-          src={d.imageUrl}
-          autoPlay={d.videoAutoplay || undefined}
-          muted={d.videoAutoplay || undefined}
-          loop={d.videoAutoplay || undefined}
-          controls={d.videoControls !== false || undefined}
-          playsInline
-          preload={d.videoAutoplay ? undefined : "metadata"}
-          className={`${d.videoControls !== false ? "news-video " : ""}absolute inset-0 w-full h-full object-cover bg-black ${d.videoAutoplay ? "brightness-[0.6]" : "brightness-[0.85]"}`}
-        />
-      ) : (
-        <Image src={d.imageUrl} alt={d.title || ""} fill className="object-cover brightness-[0.6]" sizes="100vw" />
-      )}
+      <div className={`absolute inset-0 ${d.videoAutoplay ? "brightness-[0.6]" : "brightness-[0.85]"}`}>
+        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || ""} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer />
+      </div>
       <div className="absolute top-14 md:top-18 lg:top-22 left-0 right-0 px-7 md:px-12 lg:px-16 text-left">
         {d.title && (
           <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug max-w-3xl">
@@ -173,14 +202,11 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
 
 function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title: string }) {
   const imgLeft = d.imagePosition === "left";
-  const imageIsVideo = isVideoFile(d.imageUrl);
   const imageEl = (
     <div className="relative bg-warm-200 overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
-      {d.imageUrl && (imageIsVideo ? (
-        <NewsVideoFill src={d.imageUrl} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} />
-      ) : (
-        <Image src={d.imageUrl} alt={d.title || articleTitle} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
-      ))}
+      {(d.imageUrl || d.videoUrl) && (
+        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer />
+      )}
     </div>
   );
   const textEl = (
@@ -216,26 +242,19 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
 }
 
 function ThreeImages({ d }: { d: NewsThreeImagesData }) {
-  const imgs = (d.images || []).filter((i) => i.url);
+  const imgs = (d.images || []).filter((i) => i.url || i.videoUrl);
   if (!imgs.length) return null;
   return (
     <section className="px-2 md:px-3 lg:px-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-3 md:gap-x-4 gap-y-8">
-        {imgs.map((img, i) => {
-          const isVid = isVideoFile(img.url);
-          return (
-            <div key={i}>
-              <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
-                {isVid ? (
-                  <NewsVideoFill src={img.url} />
-                ) : (
-                  <Image src={img.url} alt={img.caption || ""} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
-                )}
-              </div>
-              {img.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>}
+        {imgs.map((img, i) => (
+          <div key={i}>
+            <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
+              <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer />
             </div>
-          );
-        })}
+            {img.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>}
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -258,7 +277,7 @@ function CaslonTitle({ d }: { d: NewsCaslonTitleData }) {
 }
 
 function TwoImagesInline({ d }: { d: NewsTwoImagesInlineData }) {
-  const imgs = (d.images || []).filter((i) => i.url);
+  const imgs = (d.images || []).filter((i) => i.url || i.videoUrl);
   if (imgs.length === 0) return null;
   const align = d.align || "center";
   const justify = align === "left" ? "justify-start" : align === "right" ? "justify-end" : "justify-center";
@@ -266,21 +285,14 @@ function TwoImagesInline({ d }: { d: NewsTwoImagesInlineData }) {
     <section className="gtv-container">
       <div className={`mx-auto max-w-[1240px] px-4 md:px-6 flex ${justify}`}>
         <div className="grid grid-cols-2 gap-3 md:gap-4 w-full max-w-[820px]">
-          {imgs.slice(0, 2).map((img, i) => {
-            const isVid = isVideoFile(img.url);
-            return (
-              <div key={i}>
-                <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
-                  {isVid ? (
-                    <NewsVideoFill src={img.url} />
-                  ) : (
-                    <Image src={img.url} alt={img.caption || ""} fill className="object-cover" sizes="(max-width: 768px) 50vw, 410px" />
-                  )}
-                </div>
-                {img.caption && <p className="text-[13px] text-black mt-2 font-light text-center">{img.caption}</p>}
+          {imgs.slice(0, 2).map((img, i) => (
+            <div key={i}>
+              <div className="relative aspect-[3/4] bg-warm-100 overflow-hidden">
+                <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer />
               </div>
-            );
-          })}
+              {img.caption && <p className="text-[13px] text-black mt-2 font-light text-center">{img.caption}</p>}
+            </div>
+          ))}
         </div>
       </div>
       {d.caption && (
@@ -477,6 +489,13 @@ export default function NewsDetailPage() {
                   case "fullwidth_banner": node = <FullwidthBanner d={b.data as NewsFullwidthBannerData} />; break;
                   case "caslon_title": node = <CaslonTitle d={b.data as NewsCaslonTitleData} />; break;
                   case "two_images_inline": node = <TwoImagesInline d={b.data as NewsTwoImagesInlineData} />; break;
+                  case "feature_tool": node = <FeatureTool d={b.data as NewsFeatureToolData} />; break;
+                  case "cards_row": node = <CardsRow d={b.data as NewsCardsRowData} />; break;
+                  case "faq": node = <FaqBlock d={b.data as NewsFaqData} />; break;
+                  case "stats": node = <StatsBlock d={b.data as NewsStatsData} />; break;
+                  case "quote": node = <QuoteBlock d={b.data as NewsQuoteData} />; break;
+                  case "timeline": node = <TimelineBlock d={b.data as NewsTimelineData} />; break;
+                  case "comparison_table": node = <ComparisonTableBlock d={b.data as NewsComparisonTableData} />; break;
                   case "product": node = <ProductBlock productId={(b.data as NewsProductData).productId} />; break;
                   case "share": node = <ShareBlock title={article.title} />; break;
                   default: node = null;
@@ -504,5 +523,280 @@ export default function NewsDetailPage() {
         </nav>
       </div>
     </>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   RENDER PUBBLICO DEI NUOVI BLOCK TYPES
+   ───────────────────────────────────────────────────────────────────────── */
+
+function CtaButton({ cta }: { cta: NewsCta }) {
+  const isPdf = /\.pdf($|\?)/i.test(cta.href || "");
+  const ext = /^https?:\/\//i.test(cta.href || "");
+  const linkProps = isPdf
+    ? { download: "", target: "_blank", rel: "noopener noreferrer" }
+    : ext ? { target: "_blank", rel: "noopener noreferrer" } : {};
+  const style = cta.style || "default";
+  if (style === "google_play" || style === "app_store") {
+    const isGP = style === "google_play";
+    return (
+      <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-warm-900 transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          {isGP ? (
+            <path d="M3.609 1.814 13.792 12 3.61 22.186A.997.997 0 0 1 3 21.275V2.725a1 1 0 0 1 .609-.911zm10.89 10.893L21.4 8.829A1 1 0 0 1 21.4 15.17l-6.9 4.122-3.501-3.501zm-1.5 1.5L4.609 22.586 14.79 13.79l-1.792-1.793z"/>
+          ) : (
+            <path d="M17.05 12.04c-.03-2.83 2.31-4.18 2.42-4.25-1.32-1.93-3.37-2.19-4.1-2.22-1.75-.18-3.41 1.03-4.3 1.03-.89 0-2.25-1-3.7-.98-1.9.03-3.66 1.11-4.64 2.81-1.98 3.43-.51 8.5 1.42 11.28.94 1.36 2.06 2.89 3.52 2.84 1.42-.06 1.95-.91 3.66-.91s2.2.91 3.7.88c1.53-.03 2.5-1.38 3.43-2.75 1.09-1.58 1.54-3.11 1.56-3.19-.03-.01-2.99-1.15-3.02-4.56zM14.6 4.07c.79-.95 1.32-2.27 1.18-3.59-1.13.05-2.51.75-3.32 1.7-.72.83-1.36 2.17-1.19 3.45 1.27.1 2.55-.64 3.33-1.56z"/>
+          )}
+        </svg>
+        <span className="text-sm">{cta.label || (isGP ? "Google Play" : "App Store")}</span>
+      </a>
+    );
+  }
+  if (style === "windows" || style === "macos") {
+    const isWin = style === "windows";
+    return (
+      <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-md hover:bg-warm-900 transition-colors">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          {isWin ? (
+            <path d="M2 4.5 10 3v8.5H2V4.5zM2 13H10v8.5L2 19.5V13zm9-10.07L22 1.4V11h-11V2.93zM11 13h11v9.6L11 21V13z"/>
+          ) : (
+            <path d="M17.05 12.04c-.03-2.83 2.31-4.18 2.42-4.25-1.32-1.93-3.37-2.19-4.1-2.22-1.75-.18-3.41 1.03-4.3 1.03-.89 0-2.25-1-3.7-.98-1.9.03-3.66 1.11-4.64 2.81-1.98 3.43-.51 8.5 1.42 11.28.94 1.36 2.06 2.89 3.52 2.84 1.42-.06 1.95-.91 3.66-.91s2.2.91 3.7.88c1.53-.03 2.5-1.38 3.43-2.75 1.09-1.58 1.54-3.11 1.56-3.19-.03-.01-2.99-1.15-3.02-4.56zM14.6 4.07c.79-.95 1.32-2.27 1.18-3.59-1.13.05-2.51.75-3.32 1.7-.72.83-1.36 2.17-1.19 3.45 1.27.1 2.55-.64 3.33-1.56z"/>
+          )}
+        </svg>
+        <span className="text-sm">{cta.label || (isWin ? "Windows" : "macOS")}</span>
+      </a>
+    );
+  }
+  return (
+    <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-1 uppercase text-[14px] tracking-[0.03em] text-black font-medium hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
+      {cta.label || "Scopri"} &rarr;
+    </a>
+  );
+}
+
+function FeatureTool({ d }: { d: NewsFeatureToolData }) {
+  const imgLeft = d.imagePosition !== "right";
+  const isVid = isVideoFile(d.imageUrl);
+  const imageEl = (
+    <div className="relative bg-warm-100 overflow-hidden" style={{ aspectRatio: "1 / 1" }}>
+      {d.imageUrl && (isVid ? (
+        <NewsVideoFill src={d.imageUrl} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} />
+      ) : (
+        <Image src={d.imageUrl} alt={d.title} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 33vw" />
+      ))}
+    </div>
+  );
+  const contentEl = (
+    <div className="px-6 py-10 md:px-10 md:py-12">
+      {d.logoUrl && (
+        <div className="relative w-12 h-12 mb-3">
+          <Image src={d.logoUrl} alt="" fill className="object-contain" sizes="48px" />
+        </div>
+      )}
+      <h3 className="text-[28px] md:text-[32px] font-sans text-black font-light mb-3">{d.title}</h3>
+      {d.description && <p className="text-[15px] md:text-[16px] text-black font-light leading-relaxed mb-6 whitespace-pre-line">{d.description}</p>}
+      {d.scrollLabel && <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-2">{d.scrollLabel}</div>}
+      {d.ctas && d.ctas.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {d.ctas.map((c, i) => <CtaButton key={i} cta={c} />)}
+        </div>
+      )}
+    </div>
+  );
+  const bulletsEl = d.bullets && d.bullets.filter(Boolean).length > 0 ? (
+    <div className="px-6 py-10 md:px-10 md:py-12 md:border-l border-warm-100">
+      {d.bulletsTitle && <div className="text-[11px] uppercase tracking-[0.18em] text-warm-500 mb-4">{d.bulletsTitle}</div>}
+      <ul className="space-y-2">
+        {d.bullets.filter(Boolean).map((b, i) => (
+          <li key={i} className="flex items-start gap-2 text-[15px] text-black font-light">
+            <span className="text-warm-400 mt-1.5">&bull;</span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : null;
+
+  return (
+    <section className="w-full bg-warm-50/40 my-3">
+      <div className="grid grid-cols-1 md:grid-cols-12 items-stretch">
+        {imgLeft ? (
+          <>
+            <div className="md:col-span-4">{imageEl}</div>
+            <div className={bulletsEl ? "md:col-span-5" : "md:col-span-8"}>{contentEl}</div>
+            {bulletsEl && <div className="md:col-span-3">{bulletsEl}</div>}
+          </>
+        ) : (
+          <>
+            {bulletsEl && <div className="md:col-span-3">{bulletsEl}</div>}
+            <div className={bulletsEl ? "md:col-span-5" : "md:col-span-8"}>{contentEl}</div>
+            <div className="md:col-span-4">{imageEl}</div>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CardsRow({ d }: { d: NewsCardsRowData }) {
+  const items = d.items || [];
+  if (items.length === 0) return null;
+  const cols = d.columns || 3;
+  const gridCols = cols === 2 ? "md:grid-cols-2" : cols === 4 ? "md:grid-cols-4" : "md:grid-cols-3";
+  return (
+    <section className="gtv-container py-12 md:py-16">
+      {d.sectionTitle && (
+        <h2 className="text-center font-sans text-[36px] md:text-[48px] text-black font-bold tracking-tight mb-10 md:mb-14">{d.sectionTitle}</h2>
+      )}
+      <div className={`grid grid-cols-1 ${gridCols} gap-6`}>
+        {items.map((it, i) => {
+          const num = d.autoNumber === false ? (it.number || "") : `${String(i + 1).padStart(2, "0")}.`;
+          return (
+            <div key={i} className="bg-warm-50/60 px-8 py-12 md:px-10 md:py-14 flex flex-col">
+              {it.iconUrl && (
+                <div className="w-14 h-14 rounded-full bg-black flex items-center justify-center mb-10">
+                  <span className="relative w-7 h-7">
+                    <Image src={it.iconUrl} alt="" fill className="object-contain invert" sizes="28px" />
+                  </span>
+                </div>
+              )}
+              {num && <div className="text-[14px] text-black/60 mb-3 font-light">{num}</div>}
+              <h3 className="font-sans text-[28px] md:text-[32px] text-black font-bold leading-tight mb-4 tracking-tight">{it.title}</h3>
+              {it.description && <p className="text-[15px] text-black font-light leading-relaxed">{it.description}</p>}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function FaqBlock({ d }: { d: NewsFaqData }) {
+  const items = d.items || [];
+  if (items.length === 0) return null;
+  return (
+    <section className="gtv-container py-12 md:py-16">
+      {d.sectionTitle && (
+        <h2 className="text-center font-sans text-[28px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
+      )}
+      <div className="max-w-3xl mx-auto space-y-3">
+        {items.map((it, i) => (
+          <details key={i} className="group bg-warm-50/60 border border-warm-100 rounded-lg overflow-hidden">
+            <summary className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-4 hover:bg-warm-100/50 transition-colors">
+              <span className="text-[15px] md:text-[16px] text-black font-medium">{it.question}</span>
+              <span className="text-warm-500 text-xl group-open:rotate-45 transition-transform">+</span>
+            </summary>
+            <div className="px-5 py-4 border-t border-warm-100 text-[15px] text-black/80 font-light leading-relaxed whitespace-pre-line">{it.answer}</div>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function StatsBlock({ d }: { d: NewsStatsData }) {
+  const items = d.items || [];
+  if (items.length === 0) return null;
+  const cols = d.columns || 3;
+  const gridCols = cols === 2 ? "md:grid-cols-2" : cols === 4 ? "md:grid-cols-4" : "md:grid-cols-3";
+  return (
+    <section className="gtv-container py-12 md:py-16">
+      {d.sectionTitle && (
+        <h2 className="text-center font-sans text-[28px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
+      )}
+      <div className={`grid grid-cols-2 ${gridCols} gap-6 md:gap-10`}>
+        {items.map((s, i) => (
+          <div key={i} className="text-center">
+            <div className="font-serif text-[40px] md:text-[64px] text-black font-light leading-none mb-3 tabular-nums">{s.value}</div>
+            <div className="text-[13px] md:text-[14px] uppercase tracking-[0.12em] text-warm-700">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function QuoteBlock({ d }: { d: NewsQuoteData }) {
+  if (!d.text) return null;
+  const isCenter = d.align !== "left";
+  return (
+    <section className="gtv-container py-12 md:py-16">
+      <blockquote className={`max-w-3xl mx-auto ${isCenter ? "text-center" : "text-left"}`}>
+        <div className="text-[24px] md:text-[32px] font-serif italic text-black leading-snug mb-6">&ldquo;{d.text}&rdquo;</div>
+        {(d.author || d.authorRole) && (
+          <footer className="text-[14px] text-warm-700 uppercase tracking-[0.12em]">
+            {d.author && <span className="font-semibold text-black">{d.author}</span>}
+            {d.author && d.authorRole && <span className="mx-2">&middot;</span>}
+            {d.authorRole && <span>{d.authorRole}</span>}
+          </footer>
+        )}
+      </blockquote>
+    </section>
+  );
+}
+
+function TimelineBlock({ d }: { d: NewsTimelineData }) {
+  const items = d.items || [];
+  if (items.length === 0) return null;
+  return (
+    <section className="gtv-container py-12 md:py-16">
+      {d.sectionTitle && (
+        <h2 className="text-center font-sans text-[28px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
+      )}
+      <div className="max-w-3xl mx-auto relative">
+        <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-px bg-warm-200 md:-translate-x-px" aria-hidden="true" />
+        {items.map((it, i) => {
+          const right = i % 2 === 1;
+          return (
+            <div key={i} className={`relative grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 ${right ? "md:[direction:rtl]" : ""}`}>
+              <div className="absolute left-4 md:left-1/2 top-2 w-3 h-3 rounded-full bg-black -translate-x-1/2" aria-hidden="true" />
+              <div className={`pl-10 md:pl-0 ${right ? "md:pr-10 md:[direction:ltr] md:text-left" : "md:pr-10 md:text-right"}`}>
+                <div className="text-[14px] uppercase tracking-[0.12em] text-warm-500 font-semibold">{it.date}</div>
+                <div className="font-sans text-[20px] md:text-[24px] text-black font-medium mt-1">{it.title}</div>
+              </div>
+              <div className={`pl-10 md:pl-0 md:[direction:ltr] ${right ? "md:text-left md:pl-10" : "md:text-left md:pl-10"}`}>
+                {it.description && <p className="text-[15px] text-black/80 font-light leading-relaxed">{it.description}</p>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function ComparisonTableBlock({ d }: { d: NewsComparisonTableData }) {
+  const cols = d.columnHeaders || [];
+  const rows = d.rows || [];
+  if (cols.length === 0 || rows.length === 0) return null;
+  const hl = typeof d.highlightColumn === "number" ? d.highlightColumn : -1;
+  return (
+    <section className="gtv-container py-12 md:py-16">
+      {d.sectionTitle && (
+        <h2 className="text-center font-sans text-[28px] md:text-[36px] text-black font-bold tracking-tight mb-10">{d.sectionTitle}</h2>
+      )}
+      <div className="max-w-5xl mx-auto overflow-x-auto">
+        <table className="w-full text-[15px]">
+          <thead>
+            <tr className="border-b-2 border-black">
+              <th className="text-left px-4 py-3 font-medium">&nbsp;</th>
+              {cols.map((c, i) => (
+                <th key={i} className={`text-center px-4 py-3 font-semibold ${i === hl ? "bg-warm-50" : ""}`}>{c}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, ri) => (
+              <tr key={ri} className="border-b border-warm-200">
+                <td className="px-4 py-3 text-black font-light text-left">{r.label}</td>
+                {cols.map((_, ci) => (
+                  <td key={ci} className={`text-center px-4 py-3 ${ci === hl ? "bg-warm-50" : ""}`}>{r.values[ci] || "—"}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

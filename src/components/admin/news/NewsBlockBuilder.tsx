@@ -4,17 +4,22 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   GripVertical, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Plus, Copy,
   Type, LayoutTemplate, Grid3x3, Image as ImageIcon, Share2, Package, AlignCenter, Maximize2,
+  Wrench, ListOrdered, HelpCircle, BarChart3, Quote as QuoteIcon, Clock, Table,
 } from "lucide-react";
 import type {
   NewsBlockV2, NewsBlockV2Type,
   NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
   NewsCaslonTitleData, NewsTwoImagesInlineData,
+  NewsFeatureToolData, NewsCardsRowData, NewsFaqData, NewsStatsData,
+  NewsQuoteData, NewsTimelineData, NewsComparisonTableData,
 } from "@/types";
 import {
   ParagraphEditor, ImageTextBgEditor, ThreeImagesEditor, SingleImageEditor,
   ImageWithParagraphEditor, FullwidthBannerEditor, ProductEditor, ShareInfo, RelatedInfo,
   CaslonTitleEditor, TwoImagesInlineEditor,
+  FeatureToolEditor, CardsRowEditor, FaqEditor, StatsEditor,
+  QuoteEditor, TimelineEditor, ComparisonTableEditor,
 } from "./NewsBlockEditors";
 
 const MENU: { type: NewsBlockV2Type; icon: React.ElementType; label: string }[] = [
@@ -26,6 +31,13 @@ const MENU: { type: NewsBlockV2Type; icon: React.ElementType; label: string }[] 
   { type: "single_image", icon: ImageIcon, label: "Immagine singola" },
   { type: "image_with_paragraph", icon: AlignCenter, label: "Immagine + paragrafo centrato" },
   { type: "fullwidth_banner", icon: Maximize2, label: "Banner full-width con testo" },
+  { type: "feature_tool", icon: Wrench, label: "Strumento / Feature" },
+  { type: "cards_row", icon: ListOrdered, label: "Cards (Come funziona)" },
+  { type: "faq", icon: HelpCircle, label: "FAQ" },
+  { type: "stats", icon: BarChart3, label: "Statistiche / Numeri" },
+  { type: "quote", icon: QuoteIcon, label: "Citazione" },
+  { type: "timeline", icon: Clock, label: "Timeline" },
+  { type: "comparison_table", icon: Table, label: "Tabella di confronto" },
   { type: "product", icon: Package, label: "Prodotto correlato" },
   { type: "share", icon: Share2, label: "Condividi" },
 ];
@@ -44,6 +56,13 @@ function defaultData(t: NewsBlockV2Type): NewsBlockV2["data"] {
     case "fullwidth_banner": return { imageUrl: "", title: "", ctaLabel: "", ctaHref: "" } satisfies NewsFullwidthBannerData;
     case "caslon_title": return { text: "", align: "center" } satisfies NewsCaslonTitleData;
     case "two_images_inline": return { images: [{ url: "" }, { url: "" }], align: "center", caption: "" } satisfies NewsTwoImagesInlineData;
+    case "feature_tool": return { imageUrl: "", imagePosition: "left", title: "", description: "", bulletsTitle: "IDEALE PER", bullets: [""], ctas: [] } satisfies NewsFeatureToolData;
+    case "cards_row": return { sectionTitle: "", columns: 3, autoNumber: true, items: [{ title: "", description: "" }, { title: "", description: "" }, { title: "", description: "" }] } satisfies NewsCardsRowData;
+    case "faq": return { sectionTitle: "", items: [{ question: "", answer: "" }] } satisfies NewsFaqData;
+    case "stats": return { sectionTitle: "", columns: 3, items: [{ value: "", label: "" }, { value: "", label: "" }, { value: "", label: "" }] } satisfies NewsStatsData;
+    case "quote": return { text: "", author: "", authorRole: "", align: "center" } satisfies NewsQuoteData;
+    case "timeline": return { sectionTitle: "", items: [{ date: "", title: "", description: "" }] } satisfies NewsTimelineData;
+    case "comparison_table": return { sectionTitle: "", columnHeaders: ["Base", "Pro"], rows: [{ label: "", values: ["", ""] }] } satisfies NewsComparisonTableData;
     case "product": return { productId: "" } satisfies NewsProductData;
     case "share": return {};
     case "related": return {};
@@ -129,6 +148,13 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
       case "fullwidth_banner": return <FullwidthBannerEditor data={b.data as NewsFullwidthBannerData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsFullwidthBannerData> | undefined} />;
       case "caslon_title": return <CaslonTitleEditor data={b.data as NewsCaslonTitleData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsCaslonTitleData> | undefined} />;
       case "two_images_inline": return <TwoImagesInlineEditor data={b.data as NewsTwoImagesInlineData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsTwoImagesInlineData> | undefined} />;
+      case "feature_tool": return <FeatureToolEditor data={b.data as NewsFeatureToolData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsFeatureToolData> | undefined} />;
+      case "cards_row": return <CardsRowEditor data={b.data as NewsCardsRowData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsCardsRowData> | undefined} />;
+      case "faq": return <FaqEditor data={b.data as NewsFaqData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsFaqData> | undefined} />;
+      case "stats": return <StatsEditor data={b.data as NewsStatsData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsStatsData> | undefined} />;
+      case "quote": return <QuoteEditor data={b.data as NewsQuoteData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsQuoteData> | undefined} />;
+      case "timeline": return <TimelineEditor data={b.data as NewsTimelineData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsTimelineData> | undefined} />;
+      case "comparison_table": return <ComparisonTableEditor data={b.data as NewsComparisonTableData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsComparisonTableData> | undefined} />;
       case "product": return <ProductEditor data={b.data as NewsProductData} onChange={(d) => upd(b.id, d)} />;
       case "share": return <ShareInfo />;
       case "related": return <RelatedInfo />;
