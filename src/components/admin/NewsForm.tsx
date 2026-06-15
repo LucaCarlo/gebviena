@@ -265,7 +265,7 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
   return (
     <form onSubmit={handleSubmit} className="flex gap-6 items-start">
       {/* Left: main form */}
-      <div className="flex-1 min-w-0 max-w-4xl space-y-6">
+      <div className="flex-1 min-w-0 space-y-6">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">{error}</div>
         )}
@@ -378,8 +378,8 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           />
         </div>
 
-        {/* Submit */}
-        <div className="flex gap-3">
+        {/* Submit — sticky bottom: sempre visibile senza scorrere */}
+        <div className="sticky bottom-0 -mx-4 lg:-mx-8 px-4 lg:px-8 py-3 bg-warm-50 border-t border-warm-200 flex gap-3 z-10">
           <button type="submit" disabled={loading} className="bg-warm-800 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50 transition-colors">
             {loading ? "Salvataggio..." : articleId ? "Aggiorna" : "Crea articolo"}
           </button>

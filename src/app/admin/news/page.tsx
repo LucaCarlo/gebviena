@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Pencil, Trash2, Download, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Pencil, Trash2, Download, Upload, Copy, Eye, EyeOff } from "lucide-react";
 import type { NewsArticle } from "@/types";
 import AdminListFilters from "@/components/admin/AdminListFilters";
 
@@ -14,6 +15,7 @@ interface CategoryItem {
 }
 
 export default function AdminNewsPage() {
+  const router = useRouter();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -41,6 +43,32 @@ export default function AdminNewsPage() {
     if (!confirm("Sei sicuro di voler eliminare questo articolo?")) return;
     await fetch(`/api/news/${id}`, { method: "DELETE" });
     fetchArticles();
+  };
+
+  const handleDuplicate = async (id: string) => {
+    if (!confirm("Duplicare questo articolo? La copia verrà creata come bozza.")) return;
+    const res = await fetch(`/api/news/${id}/duplicate`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      alert(data?.error || "Errore nella duplicazione");
+      return;
+    }
+    fetchArticles();
+  };
+
+  const handleTogglePublish = async (id: string, currentIsActive: boolean) => {
+    // Update ottimistico: aggiorno lo stato locale subito, poi rollback se fail
+    setArticles((arr) => arr.map((a) => a.id === id ? { ...a, isActive: !currentIsActive } : a));
+    const res = await fetch(`/api/news/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !currentIsActive }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      setArticles((arr) => arr.map((a) => a.id === id ? { ...a, isActive: currentIsActive } : a));
+      alert(data?.error || "Errore nel cambio di stato");
+    }
   };
 
   const handleExport = async () => {
@@ -153,7 +181,56 @@ export default function AdminNewsPage() {
             totalCount={articles.length}
             filteredCount={filteredArticles.length}
           />
-          <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
+          {/* Mobile: card list */}
+          <div className="md:hidden space-y-2">
+            {filteredArticles.map((a) => (
+              <div key={a.id} className="bg-white rounded-lg border border-warm-200 p-3">
+                <div className="flex items-start gap-3">
+                  {a.imageUrl ? (
+                    <Link href={`/admin/news/${a.id}`} className="block shrink-0">
+                      <div className="w-14 h-14 relative rounded overflow-hidden bg-warm-100">
+                        <Image src={a.imageUrl} alt="" fill className="object-cover" sizes="56px" />
+                      </div>
+                    </Link>
+                  ) : null}
+                  <Link href={`/admin/news/${a.id}`} className="flex-1 min-w-0 block">
+                    <div className="font-medium text-warm-800 truncate">{a.title}</div>
+                    <div className="text-[11px] text-warm-600 truncate">
+                      {(a.category || "—") + " · " + formatDate(a.publishedAt)}
+                    </div>
+                    <div className="mt-1">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                          a.isActive ? "bg-green-100 text-green-700" : "bg-warm-100 text-warm-500"
+                        }`}
+                      >
+                        {a.isActive ? "Pubblicato" : "Bozza"}
+                      </span>
+                    </div>
+                  </Link>
+                  <button onClick={() => handleDuplicate(a.id)} title="Duplica" className="p-1.5 text-warm-400 hover:text-warm-800 shrink-0">
+                    <Copy size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleTogglePublish(a.id, a.isActive)}
+                    title={a.isActive ? "Metti in bozza" : "Pubblica"}
+                    className={`p-1.5 shrink-0 ${a.isActive ? "text-emerald-600 hover:text-emerald-800" : "text-warm-400 hover:text-warm-800"}`}
+                  >
+                    {a.isActive ? <Eye size={14} /> : <EyeOff size={14} />}
+                  </button>
+                  <button onClick={() => handleDelete(a.id)} title="Elimina" className="p-1.5 text-warm-400 hover:text-red-600 shrink-0">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {filteredArticles.length === 0 && (
+              <div className="text-center py-12 text-warm-400 bg-white rounded-lg border border-warm-200">Nessun articolo trovato</div>
+            )}
+          </div>
+
+          {/* Desktop: tabella */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-warm-50 border-b border-warm-200">
                 <tr>
@@ -167,7 +244,15 @@ export default function AdminNewsPage() {
               </thead>
               <tbody className="divide-y divide-warm-100">
                 {filteredArticles.map((a) => (
-                  <tr key={a.id} className="hover:bg-warm-50 transition-colors">
+                  <tr
+                    key={a.id}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.closest("a, button")) return;
+                      router.push(`/admin/news/${a.id}`);
+                    }}
+                    className="hover:bg-warm-50 transition-colors cursor-pointer"
+                  >
                     <td className="px-6 py-3">
                       {a.imageUrl && (
                         <div className="w-10 h-10 relative rounded overflow-hidden bg-warm-100 flex-shrink-0">
@@ -184,15 +269,25 @@ export default function AdminNewsPage() {
                           a.isActive ? "bg-green-100 text-green-700" : "bg-warm-100 text-warm-500"
                         }`}
                       >
-                        {a.isActive ? "Attivo" : "Bozza"}
+                        {a.isActive ? "Pubblicato" : "Bozza"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Link href={`/admin/news/${a.id}`} className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors">
+                        <Link href={`/admin/news/${a.id}`} title="Modifica" className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors">
                           <Pencil size={16} />
                         </Link>
-                        <button onClick={() => handleDelete(a.id)} className="p-1.5 text-warm-400 hover:text-red-600 transition-colors">
+                        <button onClick={() => handleDuplicate(a.id)} title="Duplica" className="p-1.5 text-warm-400 hover:text-warm-800 transition-colors">
+                          <Copy size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleTogglePublish(a.id, a.isActive)}
+                          title={a.isActive ? "In linea — clicca per metterlo in bozza" : "In bozza — clicca per pubblicare"}
+                          className={`p-1.5 transition-colors ${a.isActive ? "text-emerald-600 hover:text-emerald-800" : "text-warm-400 hover:text-warm-800"}`}
+                        >
+                          {a.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
+                        </button>
+                        <button onClick={() => handleDelete(a.id)} title="Elimina" className="p-1.5 text-warm-400 hover:text-red-600 transition-colors">
                           <Trash2 size={16} />
                         </button>
                       </div>
