@@ -162,25 +162,26 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {blocks.map((b, i) => {
         const isC = collapsed.has(b.id);
         const menuItem = MENU.find((m) => m.type === b.type);
         const Icon = menuItem?.icon;
         return (
-          <div key={b.id} className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-warm-100 bg-warm-50/50">
-              <GripVertical size={16} className="text-warm-400 flex-shrink-0" />
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-100 text-warm-700 text-xs font-medium rounded-full">
+          <div key={b.id} className="bg-white rounded-xl shadow-md border-l-4 border-l-warm-800 border-t border-r border-b border-warm-200 overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-warm-200 bg-warm-100">
+              <GripVertical size={16} className="text-warm-500 flex-shrink-0" />
+              <span className="text-xs font-mono text-warm-500 mr-1">#{String(i + 1).padStart(2, "0")}</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-800 text-white text-xs font-medium rounded-full">
                 {Icon && <Icon size={12} />}
                 {LABELS[b.type]}
               </span>
               <div className="flex-1" />
-              <button type="button" onClick={() => move(i, "up")} disabled={i === 0} className="p-1.5 rounded text-warm-400 hover:text-warm-700 hover:bg-warm-100 disabled:opacity-30" title="Sposta su"><ArrowUp size={14} /></button>
-              <button type="button" onClick={() => move(i, "down")} disabled={i === blocks.length - 1} className="p-1.5 rounded text-warm-400 hover:text-warm-700 hover:bg-warm-100 disabled:opacity-30" title="Sposta giù"><ArrowDown size={14} /></button>
-              <button type="button" onClick={() => duplicate(i)} className="p-1.5 rounded text-warm-400 hover:text-warm-700 hover:bg-warm-100" title="Duplica sezione"><Copy size={14} /></button>
-              <button type="button" onClick={() => toggle(b.id)} className="p-1.5 rounded text-warm-400 hover:text-warm-700 hover:bg-warm-100" title={isC ? "Espandi" : "Comprimi"}>{isC ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</button>
-              <button type="button" onClick={() => del(b.id)} className="p-1.5 rounded text-warm-400 hover:text-red-600 hover:bg-red-50" title="Elimina sezione"><Trash2 size={14} /></button>
+              <button type="button" onClick={() => move(i, "up")} disabled={i === 0} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white disabled:opacity-30" title="Sposta su"><ArrowUp size={14} /></button>
+              <button type="button" onClick={() => move(i, "down")} disabled={i === blocks.length - 1} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white disabled:opacity-30" title="Sposta giù"><ArrowDown size={14} /></button>
+              <button type="button" onClick={() => duplicate(i)} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white" title="Duplica sezione"><Copy size={14} /></button>
+              <button type="button" onClick={() => toggle(b.id)} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white" title={isC ? "Espandi" : "Comprimi"}>{isC ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</button>
+              <button type="button" onClick={() => del(b.id)} className="p-1.5 rounded text-warm-500 hover:text-red-600 hover:bg-red-50" title="Elimina sezione"><Trash2 size={14} /></button>
             </div>
             {!isC && <div className="px-4 py-4">{render(b)}</div>}
           </div>

@@ -25,7 +25,7 @@ export default async function UfficioStampaPage() {
       {/* ── Titolo — stile pagina Prodotti ───────────────────── */}
       <section className="pt-20 md:pt-28 pb-16 md:pb-20">
         <div className="gtv-container">
-          <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
+          <h1 className="font-serif text-[40px] md:text-[58px] text-black tracking-normal text-center">
             {T["ufficio-stampa.title"]}
           </h1>
         </div>

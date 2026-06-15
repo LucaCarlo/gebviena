@@ -131,7 +131,7 @@ export default function ProjectDetailPage() {
           transition={{ duration: 1, delay: 0.5 }}
           className="absolute inset-0 flex flex-col items-center justify-center text-center"
         >
-          <h1 className="font-serif text-[58px] text-white tracking-wide">
+          <h1 className="font-serif text-[40px] md:text-[58px] text-white tracking-wide">
             {project.name}
           </h1>
           {project.type && (

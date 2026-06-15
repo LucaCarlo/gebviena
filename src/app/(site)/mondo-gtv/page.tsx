@@ -27,7 +27,7 @@ export default async function MondoGTVPage() {
       {/* ── Titolo — stile pagina Prodotti ───────────────────── */}
       <section className="pt-20 md:pt-28 pb-12 md:pb-16">
         <div className="gtv-container">
-          <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
+          <h1 className="font-serif text-[40px] md:text-[58px] text-black tracking-normal text-center">
             {T["mondo-gtv.title"]}
           </h1>
         </div>

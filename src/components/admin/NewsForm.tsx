@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { X, Sparkles, Loader2, ChevronDown, Check, Info, Calendar, Tag, ExternalLink as ExternalLinkIcon, FileText } from "lucide-react";
+import { X, Sparkles, Loader2, Check, FileText } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
 import SeoPanel from "./SeoPanel";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
@@ -11,29 +11,13 @@ import NewsBlockBuilder from "./news/NewsBlockBuilder";
 import { slugify } from "@/lib/utils";
 import type { NewsBlockV2 } from "@/types";
 
-/* Sezione collassabile, intestazione cliccabile. Aperta di default. */
-function Collapsible({ title, subtitle, icon: Icon, children, defaultOpen = true }: { title: string; subtitle?: string; icon?: React.ElementType; children: React.ReactNode; defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-warm-200 overflow-hidden">
-      <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center gap-3 px-6 py-4 hover:bg-warm-50 transition-colors">
-        {Icon && <Icon size={16} className="text-warm-500 flex-shrink-0" />}
-        <div className="flex-1 text-left">
-          <div className="text-sm font-semibold text-warm-800">{title}</div>
-          {subtitle && <div className="text-[11px] text-warm-400 mt-0.5">{subtitle}</div>}
-        </div>
-        <ChevronDown size={18} className={`text-warm-400 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && <div className="px-6 pb-6 pt-2 space-y-5 border-t border-warm-100">{children}</div>}
-    </div>
-  );
-}
 
 interface NewsFormProps {
   articleId?: string;
   category?: string;
 }
 
+// Label fallback solo per le 4 categorie di default; le altre (custom) usano la label DB.
 const CATEGORY_LABELS: Record<string, string> = {
   exhibition: "Exhibition",
   news: "News",
@@ -41,7 +25,19 @@ const CATEGORY_LABELS: Record<string, string> = {
   storia: "Storia",
 };
 
+interface CategoryOption { id: string; value: string; label: string }
+
 export default function NewsForm({ articleId, category: categoryProp }: NewsFormProps) {
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  useEffect(() => {
+    fetch("/api/categories?contentType=news")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.data)) {
+          setCategories((d.data as Array<{ id: string; value: string; label: string }>).map((c) => ({ id: c.id, value: c.value, label: c.label })));
+        }
+      }).catch(() => {});
+  }, []);
   const tCtx = useTranslationCtx();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -305,16 +301,27 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">{error}</div>
         )}
 
-        {/* Category badge (read-only) */}
-        <div className="flex items-center gap-2">
+        {/* Category select (editable) */}
+        <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs text-warm-400 uppercase tracking-wider">Categoria:</span>
-          <span className="px-3 py-1 bg-warm-100 text-warm-700 text-xs font-semibold uppercase tracking-wider rounded-full">
-            {CATEGORY_LABELS[form.category] || form.category}
-          </span>
+          <select
+            value={form.category}
+            onChange={(e) => updateField("category", e.target.value)}
+            className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          >
+            {/* fallback se la categoria attuale non è nella lista (cat. rimossa o non ancora caricata) */}
+            {form.category && !categories.find((c) => c.value === form.category) && (
+              <option value={form.category}>{CATEGORY_LABELS[form.category] || form.category}</option>
+            )}
+            {categories.length === 0 && !form.category && <option value="">— seleziona categoria —</option>}
+            {categories.map((c) => (
+              <option key={c.id} value={c.value}>{c.label}</option>
+            ))}
+          </select>
         </div>
 
-        {/* ── INFORMAZIONI PRINCIPALI ──────────────────────────── */}
-        <Collapsible title="Informazioni principali" subtitle="Titolo, sottotitolo, immagine di copertina, slug" icon={Info} defaultOpen={true}>
+        {/* ── COMMON FIELDS ────────────────────────────────────── */}
+        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo *</label>
             <TInput fieldKey="title" defaultValue={form.title} onDefaultChange={handleTitleChange} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
@@ -323,16 +330,11 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Sottotitolo</label>
             <TInput fieldKey="subtitle" defaultValue={form.subtitle} onDefaultChange={(v) => updateField("subtitle", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="Mostrato sotto il titolo in stile categoria" />
           </div>
-          <ImageUploadField label="Immagine di copertina (usata nelle anteprime)" value={form.imageUrl} onChange={(url) => updateField("imageUrl", url)} onRemove={() => updateField("imageUrl", "")} purpose="cover" folder="news" aspectRatio={1} />
           <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Slug URL</label>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Slug</label>
             <TInput fieldKey="slug" defaultValue={form.slug} onDefaultChange={(v) => updateField("slug", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
-            <p className="text-[10px] text-warm-400 mt-1">Generato in automatico dal titolo. Modificalo solo se serve.</p>
           </div>
-        </Collapsible>
-
-        {/* ── PUBBLICAZIONE ────────────────────────────────────── */}
-        <Collapsible title="Pubblicazione" subtitle="Stato, data, tag" icon={Calendar} defaultOpen={false}>
+          <ImageUploadField label="Immagine di copertina (usata nelle anteprime)" value={form.imageUrl} onChange={(url) => updateField("imageUrl", url)} onRemove={() => updateField("imageUrl", "")} purpose="cover" folder="news" aspectRatio={1} />
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Data pubblicazione</label>
@@ -346,7 +348,7 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><Tag size={12} /> Tags</label>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Tags</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {tags.map((tag) => (
                 <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 bg-warm-100 text-warm-700 text-xs rounded-full">
@@ -360,10 +362,6 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
               <button type="button" onClick={addTag} className="px-4 py-2 text-sm bg-warm-100 text-warm-700 rounded hover:bg-warm-200 transition-colors">Aggiungi</button>
             </div>
           </div>
-        </Collapsible>
-
-        {/* ── FONTE ESTERNA ────────────────────────────────────── */}
-        <Collapsible title="Fonte esterna (opzionale)" subtitle="Se l'articolo è una rassegna stampa o cita un'altra fonte" icon={ExternalLinkIcon} defaultOpen={false}>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Fonte</label>
@@ -374,9 +372,8 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
               <input type="text" value={form.sourceUrl} onChange={(e) => updateField("sourceUrl", e.target.value)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="https://..." />
             </div>
           </div>
-        </Collapsible>
-
-        <input type="hidden" name="sortOrder" value={form.sortOrder} />
+          <input type="hidden" name="sortOrder" value={form.sortOrder} />
+        </div>
 
         {/* Sezioni dinamiche — il pezzo principale dell'editor (sempre aperto) */}
         <div className="bg-white rounded-xl shadow-sm border-2 border-warm-300 p-6 space-y-4">

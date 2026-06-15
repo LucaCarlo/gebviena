@@ -7,7 +7,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import type { Product, Designer, Project } from "@/types";
-import { buildPconUrl } from "@/lib/pcon";
+import { buildPconUrl, withPconLang } from "@/lib/pcon";
 import { useLang, useT } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
 import { localizeHref } from "@/lib/localize-href";
@@ -145,8 +145,9 @@ function InspirationCarousel({ images, productName, id }: { images: string[]; pr
               className="flex-shrink-0 snap-start"
             >
               <div
-                className="relative overflow-hidden w-[85vw] max-w-[360px] sm:w-[calc(50vw-24px)] sm:max-w-[420px] lg:w-[calc((100vw-96px)/3)] lg:max-w-[480px]"
+                className="group relative overflow-hidden w-[85vw] max-w-[360px] sm:w-[calc(50vw-24px)] sm:max-w-[420px] lg:w-[calc((100vw-96px)/3)] lg:max-w-[480px]"
                 style={{ aspectRatio: "2.5 / 4" }}
+                onMouseLeave={() => setActiveTooltip((c) => (c === i ? null : c))}
               >
                 <Image
                   src={url}
@@ -163,8 +164,9 @@ function InspirationCarousel({ images, productName, id }: { images: string[]; pr
                     <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
                   </div>
                 )}
+                {/* Icona info: invisibile, compare solo in hover sulla singola immagine */}
                 <button
-                  className="absolute bottom-4 left-4 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center hover:bg-warm-100 transition-colors shadow-sm"
+                  className="absolute bottom-4 left-4 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center shadow-sm cursor-pointer opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-warm-100"
                   onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === i ? null : i); }}
                 >
                   i
@@ -297,7 +299,7 @@ export default function ProductDetailPage() {
           transition={{ duration: 1, delay: 0.5 }}
           className="absolute inset-0 flex flex-col items-center justify-center text-center"
         >
-          <h1 className="font-serif text-[58px] text-white tracking-wide">
+          <h1 className="font-serif text-[40px] md:text-[58px] text-white tracking-wide">
             {product.name}
           </h1>
           <p className="uppercase text-[20px] tracking-[0.08em] text-white mt-2 font-light">
@@ -649,14 +651,17 @@ export default function ProductDetailPage() {
 
               {/* --- CONFIGURATORE (PCON 3D) — sempre visibile, in fondo --- */}
               {(() => {
-                const pconSrc = product.pconBan
-                  ? buildPconUrl({
-                      moc: product.pconMoc,
-                      ban: product.pconBan,
-                      sid: product.pconSid,
-                      ovc: product.pconOvc,
-                    })
-                  : product.pconUrl || null;
+                const pconSrcRaw = (product.pconUrl && product.pconUrl.trim())
+                  || (product.pconBan
+                    ? buildPconUrl({
+                        moc: product.pconMoc,
+                        ban: product.pconBan,
+                        sid: product.pconSid,
+                        ovc: product.pconOvc,
+                        lang,
+                      })
+                    : null);
+                const pconSrc = pconSrcRaw ? withPconLang(pconSrcRaw, lang) : null;
                 if (!pconSrc) return null;
                 return (
                   <div id="pcon">
