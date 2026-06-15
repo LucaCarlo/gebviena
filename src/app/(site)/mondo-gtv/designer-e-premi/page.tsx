@@ -90,7 +90,7 @@ export default async function DesignerPremiPage() {
       {/* ── Titolo + Intro ─────────────────────────────────────── */}
       <section className="pt-20 md:pt-28 pb-16 md:pb-20">
         <div className="gtv-container">
-          <h1 className="font-serif text-[58px] text-black tracking-normal text-center mb-[200px]">
+          <h1 className="font-serif text-[40px] md:text-[58px] text-black tracking-normal text-center mb-[200px]">
             {T["designer-premi.title"]}
           </h1>
           <p className="text-[20px] text-black leading-snug font-light tracking-normal max-w-[940px] mx-auto">

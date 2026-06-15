@@ -56,7 +56,7 @@ export default function CataloghiPage() {
       {/* ── Titolo ────────────────────────────────────────────── */}
       <section className="pt-16 md:pt-20 pb-8 md:pb-10">
         <div className="gtv-container">
-          <h1 className="font-serif text-[58px] text-black tracking-normal text-center">
+          <h1 className="font-serif text-[40px] md:text-[58px] text-black tracking-normal text-center">
             {t("cataloghi.title")}
           </h1>
         </div>
@@ -91,7 +91,7 @@ export default function CataloghiPage() {
                   transition={{ duration: 0.8 }}
                   className="text-center px-8 max-w-4xl mx-auto"
                 >
-                  <h2 className="font-serif text-[58px] text-black tracking-normal">{cat.label}</h2>
+                  <h2 className="font-serif text-[40px] md:text-[58px] text-black tracking-normal">{cat.label}</h2>
                 </motion.div>
               </section>
             )}

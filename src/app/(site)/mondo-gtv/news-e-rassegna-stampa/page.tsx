@@ -104,7 +104,7 @@ function NewsContent() {
     <>
       {/* ===== TITLE ===== */}
       <section className="gtv-container pt-16 pb-28">
-        <h1 className="font-serif text-[58px] text-black tracking-tight text-center font-light">
+        <h1 className="font-serif text-[40px] md:text-[58px] text-black tracking-tight text-center font-light">
           {t("news.title")}
         </h1>
       </section>
