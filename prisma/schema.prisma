@@ -101,6 +101,7 @@ model Product {
   slug                String               @unique
   designerId          String?
   designerName        String               @db.Text
+  designerCustomText  String?              @db.Text
   category            String
   subcategory         String?
   description         String?              @db.Text

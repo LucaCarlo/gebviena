@@ -149,7 +149,11 @@ export default function ManageClient() {
             )}
 
             {active === "press" && (
-              <PlaceholderTab title="Press kit — in lavorazione" description="Sezione in fase di definizione. Verrà attivata appena decideremo cosa caricare." />
+              <PdfListTab
+                section="press-kit"
+                title="Press kit"
+                description={"Carica qui i PDF che vuoi rendere disponibili nella sezione “Press kit” dell’area professionisti (visibile principalmente al ruolo Stampa)."}
+              />
             )}
 
             {active === "aziendale" && (
