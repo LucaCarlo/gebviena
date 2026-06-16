@@ -464,30 +464,56 @@ export default function ProductDetailPage() {
                 className="flex flex-col justify-center px-5 sm:px-8 md:px-16 lg:px-[150px] py-16 lg:py-24"
               >
                 <p className="uppercase text-[16px] tracking-[0.03em] text-black font-light">{t("prodotti.detail.designer.label")}</p>
-                <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
-                  {product.designer.name}
-                </h2>
                 {(() => {
-                  // Se è valorizzato `designerCustomText` sul prodotto, mostra quello
-                  // al posto della bio standard del designer. Permette di personalizzare
-                  // il racconto del designer per singolo prodotto.
-                  const customText = (product as { designerCustomText?: string | null }).designerCustomText;
-                  const text = customText && customText.trim() ? customText : product.designer.bio;
-                  if (!text) return null;
+                  // Override per singolo prodotto: titolo, testo, label CTA, href CTA.
+                  // Se uno qualunque dei campi `designerCustom*` è valorizzato, sostituisce
+                  // il valore di default (rispettivamente: designer.name, designer.bio,
+                  // "Scopri il designer", /designers/[slug]).
+                  const p = product as {
+                    designerCustomTitle?: string | null;
+                    designerCustomText?: string | null;
+                    designerCustomCtaLabel?: string | null;
+                    designerCustomCtaHref?: string | null;
+                  };
+                  const title = (p.designerCustomTitle && p.designerCustomTitle.trim()) || product.designer!.name;
+                  const text = (p.designerCustomText && p.designerCustomText.trim()) || product.designer!.bio || "";
+                  const ctaLabel = (p.designerCustomCtaLabel && p.designerCustomCtaLabel.trim()) || t("prodotti.detail.designer.cta");
+                  const customHref = p.designerCustomCtaHref && p.designerCustomCtaHref.trim();
+                  const ctaHref = customHref || localizePath(`/designers/${product.designer!.slug || product.designer!.id}`, lang);
+                  const isExternal = customHref ? /^https?:\/\//i.test(customHref) : false;
                   return (
-                    <div
-                      className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none mt-6 [&_p]:m-0"
-                      dangerouslySetInnerHTML={{ __html: text.includes("<") ? text : `<p>${text}</p>` }}
-                    />
+                    <>
+                      <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                        {title}
+                      </h2>
+                      {text && (
+                        <div
+                          className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none mt-6 [&_p]:m-0"
+                          dangerouslySetInnerHTML={{ __html: text.includes("<") ? text : `<p>${text}</p>` }}
+                        />
+                      )}
+                      {isExternal ? (
+                        <a
+                          href={ctaHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"
+                          style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
+                        >
+                          {ctaLabel}
+                        </a>
+                      ) : (
+                        <Link
+                          href={ctaHref}
+                          className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"
+                          style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
+                        >
+                          {ctaLabel}
+                        </Link>
+                      )}
+                    </>
                   );
                 })()}
-                <Link
-                  href={localizePath(`/designers/${product.designer.slug || product.designer.id}`, lang)}
-                  className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"
-                  style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
-                >
-                  {t("prodotti.detail.designer.cta")}
-                </Link>
               </motion.div>
             </div>
           </div>

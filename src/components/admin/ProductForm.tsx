@@ -59,7 +59,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
     slug: "",
     designerName: "",
     designerId: "",
+    designerCustomTitle: "",
     designerCustomText: "",
+    designerCustomCtaLabel: "",
+    designerCustomCtaHref: "",
     category: "",
     subcategory: "",
     description: "",
@@ -120,7 +123,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
         slug: p.slug,
         designerName: p.designerName || "",
         designerId: p.designerId || "",
+        designerCustomTitle: p.designerCustomTitle || "",
         designerCustomText: p.designerCustomText || "",
+        designerCustomCtaLabel: p.designerCustomCtaLabel || "",
+        designerCustomCtaHref: p.designerCustomCtaHref || "",
         category: p.category,
         subcategory: p.subcategory || "",
         description: p.description || "",
@@ -423,19 +429,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
               required
             />
           </div>
-        </div>
-
-        {/* Testo designer personalizzato per questo prodotto */}
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo descrittivo del designer (opzionale)</label>
-          <textarea
-            value={form.designerCustomText || ""}
-            onChange={(e) => updateField("designerCustomText", e.target.value)}
-            rows={4}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm text-warm-900 placeholder:text-warm-400 bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder="Lascia vuoto per usare la bio del designer. Se compilato, sostituisce la bio nella sezione designer di questa pagina prodotto."
-          />
-          <p className="text-[10px] text-warm-400 mt-1">Mostrato a destra della foto del designer nella pagina prodotto, al posto della sua bio standard.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -900,6 +893,57 @@ export default function ProductForm({ productId }: ProductFormProps) {
             }));
           }}
         />
+      </div>
+
+      {/* SEZIONE DESIGNER — override per questo prodotto */}
+      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezione Designer (sostituisce i valori di default)</h3>
+          <p className="text-[11px] text-warm-500 mt-1">Lascia vuoto per usare i dati standard del designer (nome, bio, link al profilo). Compila i campi solo se vuoi personalizzare il riquadro designer in questa pagina prodotto.</p>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (sostituisce il nome designer)</label>
+          <input
+            type="text"
+            value={form.designerCustomTitle || ""}
+            onChange={(e) => updateField("designerCustomTitle", e.target.value)}
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm text-warm-900 placeholder:text-warm-400 bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+            placeholder="Vuoto = usa il nome del designer"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo descrittivo (sostituisce la bio)</label>
+          <textarea
+            value={form.designerCustomText || ""}
+            onChange={(e) => updateField("designerCustomText", e.target.value)}
+            rows={4}
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm text-warm-900 placeholder:text-warm-400 bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+            placeholder="Vuoto = usa la bio del designer"
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Etichetta link (sostituisce &laquo;Scopri il designer&raquo;)</label>
+            <input
+              type="text"
+              value={form.designerCustomCtaLabel || ""}
+              onChange={(e) => updateField("designerCustomCtaLabel", e.target.value)}
+              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm text-warm-900 placeholder:text-warm-400 bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+              placeholder="es. Approfondisci il progetto"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">URL link (sostituisce il link al profilo designer)</label>
+            <input
+              type="text"
+              value={form.designerCustomCtaHref || ""}
+              onChange={(e) => updateField("designerCustomCtaHref", e.target.value)}
+              className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm text-warm-900 placeholder:text-warm-400 bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+              placeholder="https://… oppure /mondo-gtv/heritage"
+            />
+            <p className="text-[10px] text-warm-400 mt-1">URL completo (https://…) o percorso interno (es. /mondo-gtv/heritage).</p>
+          </div>
+        </div>
       </div>
 
       {/* PUBBLICAZIONE & PROGRAMMAZIONE */}

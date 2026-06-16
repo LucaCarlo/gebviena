@@ -135,14 +135,19 @@ export default function BachecaClient() {
                 </div>
                 <h3 className="font-serif text-lg md:text-xl text-warm-900 mb-1">{n.title}</h3>
                 {n.body && <p className="text-sm text-warm-700 leading-relaxed">{n.body}</p>}
-                {n.link && (
-                  <Link
-                    href={n.link}
-                    className="inline-flex items-center gap-1.5 mt-3 text-[12px] uppercase tracking-[0.15em] text-warm-900 hover:text-warm-700 border-b border-warm-300 hover:border-warm-900 pb-0.5"
-                  >
-                    Apri <ArrowRight size={12} />
-                  </Link>
-                )}
+                {n.link && (() => {
+                  const isExternal = /^https?:\/\//i.test(n.link);
+                  const className = "inline-flex items-center gap-1.5 mt-3 text-[12px] uppercase tracking-[0.15em] text-warm-900 hover:text-warm-700 border-b border-warm-300 hover:border-warm-900 pb-0.5";
+                  return isExternal ? (
+                    <a href={n.link} target="_blank" rel="noopener noreferrer" className={className}>
+                      Apri <ArrowRight size={12} />
+                    </a>
+                  ) : (
+                    <Link href={n.link} className={className}>
+                      Apri <ArrowRight size={12} />
+                    </Link>
+                  );
+                })()}
               </div>
             );
           })}
