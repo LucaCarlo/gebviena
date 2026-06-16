@@ -271,6 +271,14 @@ export interface NewsImageTextBgData {
   // false/undefined = controls visibili, l'utente clicca play.
   videoAutoplay?: boolean;
   videoControls?: boolean;
+  // Stile del background della sezione. "warm" è il default storico (warm-50),
+  // "white" è bianco puro, "transparent" eredita dal contesto.
+  background?: "warm" | "white" | "transparent";
+  // Come adatta il media nella colonna: "cover" riempie tutto tagliando se
+  // serve (object-cover, default storico); "contain" mostra l'intero media
+  // con padding/lettering attorno (object-contain), utile per loghi o foto
+  // che non vanno tagliate.
+  mediaFit?: "cover" | "contain";
 }
 
 export interface NewsThreeImagesData {

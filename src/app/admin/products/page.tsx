@@ -54,6 +54,8 @@ function escapeCSV(val: string | null | undefined): string {
   return s;
 }
 
+interface TypologyOption { value: string; label: string }
+
 export default function AdminProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -62,6 +64,9 @@ export default function AdminProductsPage() {
   const importRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  // Tipologie configurate (da /admin/taxonomy/products/typologies) — NON
+  // derivate dalla lista prodotti (per evitare mix di valori storici/legacy).
+  const [typologies, setTypologies] = useState<TypologyOption[]>([]);
 
   const fetchProducts = () => {
     // admin=true → l'API restituisce anche bozze (isActive=false) se sei admin loggato
@@ -70,7 +75,16 @@ export default function AdminProductsPage() {
       .then((data) => { setProducts(data.data || []); setLoading(false); });
   };
 
-  useEffect(() => { fetchProducts(); }, []);
+  useEffect(() => {
+    fetchProducts();
+    fetch("/api/typologies?contentType=products")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && Array.isArray(d.data)) {
+          setTypologies((d.data as Array<{ value: string; label: string }>).map((t) => ({ value: t.value, label: t.label })));
+        }
+      }).catch(() => {});
+  }, []);
 
   const handleDuplicate = async (id: string) => {
     if (!confirm("Duplicare questo prodotto? La copia verrà creata come bozza.")) return;
@@ -233,11 +247,12 @@ export default function AdminProductsPage() {
 
   const filters = useMemo(() => {
     const designers = Array.from(new Set(products.map((p) => p.designerName).filter((v): v is string => !!v))).sort();
-    const categories = Array.from(new Set(products.map((p) => p.category).filter((v): v is string => !!v))).sort();
     const subcategories = Array.from(new Set(products.map((p) => p.subcategory).filter((v): v is string => !!v))).sort();
+    // Tipologie: SOLO quelle configurate nella pagina Tipologie (non derivate
+    // dai prodotti, per evitare di vedere valori legacy o stranezze stortografate).
     return [
       { key: "designer", label: "Tutti i designer", options: designers.map((d) => ({ value: d, label: d })) },
-      { key: "category", label: "Tutte le tipologie", options: categories.map((c) => ({ value: c, label: c })) },
+      { key: "category", label: "Tutte le tipologie", options: typologies },
       { key: "subcategory", label: "Tutte le categorie", options: subcategories.map((s) => ({ value: s, label: s })) },
       {
         key: "techSheet",
@@ -248,7 +263,7 @@ export default function AdminProductsPage() {
         ],
       },
     ];
-  }, [products]);
+  }, [products, typologies]);
 
   const filteredProducts = useMemo(() => {
     let result = products;

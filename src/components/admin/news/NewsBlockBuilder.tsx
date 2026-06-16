@@ -25,7 +25,7 @@ import {
 const MENU: { type: NewsBlockV2Type; icon: React.ElementType; label: string }[] = [
   { type: "caslon_title", icon: Type, label: "Titolo (Caslon)" },
   { type: "paragraph", icon: Type, label: "Paragrafo" },
-  { type: "image_text_bg", icon: LayoutTemplate, label: "Immagine + Testo (sfondo)" },
+  { type: "image_text_bg", icon: LayoutTemplate, label: "Immagine + Testo" },
   { type: "three_images", icon: Grid3x3, label: "Tre immagini" },
   { type: "two_images_inline", icon: Grid3x3, label: "Due foto affiancate" },
   { type: "single_image", icon: ImageIcon, label: "Immagine singola" },
