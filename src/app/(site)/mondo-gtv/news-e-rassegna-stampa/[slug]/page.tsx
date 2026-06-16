@@ -62,7 +62,7 @@ function NewsVideoInline({ src, autoplay = false, controls = true, className = "
 
 /* Renderer "smart" che decide tra YouTube/Vimeo/video locale/immagine in base ai dati.
    Usato dove l'admin può scegliere immagine OPPURE videoUrl esterno. */
-function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillContainer = false, aspectRatio = "3 / 4.2" }: { imageUrl?: string; videoUrl?: string; alt?: string; autoplay?: boolean; controls?: boolean; fillContainer?: boolean; aspectRatio?: string }) {
+function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillContainer = false, aspectRatio = "3 / 4.2", mediaFit = "cover" }: { imageUrl?: string; videoUrl?: string; alt?: string; autoplay?: boolean; controls?: boolean; fillContainer?: boolean; aspectRatio?: string; mediaFit?: "cover" | "contain" }) {
   const ext = (videoUrl || "").trim();
   const yt = ext.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
   const vimeo = ext.match(/vimeo\.com\/(\d+)/);
@@ -93,7 +93,7 @@ function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillConta
     return <NewsVideoFill src={localVid} autoplay={!!autoplay} controls={controls !== false} />;
   }
   if (imageUrl) {
-    return <Image src={imageUrl} alt={alt || ""} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />;
+    return <Image src={imageUrl} alt={alt || ""} fill className={mediaFit === "contain" ? "object-contain" : "object-cover"} sizes="(max-width: 1024px) 100vw, 50vw" />;
   }
   return null;
 }
@@ -202,10 +202,11 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
 
 function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title: string }) {
   const imgLeft = d.imagePosition === "left";
+  const fit = d.mediaFit || "cover";
   const imageEl = (
-    <div className="relative bg-warm-200 overflow-hidden" style={{ aspectRatio: "3 / 4.2" }}>
+    <div className={`relative ${fit === "contain" ? "bg-white" : "bg-warm-200"} overflow-hidden`} style={{ aspectRatio: "3 / 4.2" }}>
       {(d.imageUrl || d.videoUrl) && (
-        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer />
+        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer mediaFit={fit} />
       )}
     </div>
   );
@@ -232,8 +233,9 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
       })()}
     </div>
   );
+  const bgClass = d.background === "white" ? "bg-white" : d.background === "transparent" ? "" : "bg-warm-50";
   return (
-    <section className="w-full bg-warm-50">
+    <section className={`w-full ${bgClass}`}>
       <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
         {imgLeft ? <>{imageEl}{textEl}</> : <>{textEl}{imageEl}</>}
       </div>

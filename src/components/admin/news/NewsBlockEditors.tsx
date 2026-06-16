@@ -147,33 +147,71 @@ export function ParagraphEditor({ data, onChange, sourceData }: { data: NewsPara
 }
 
 export function ImageTextBgEditor({ data, onChange, sourceData }: { data: NewsImageTextBgData; onChange: (d: NewsImageTextBgData) => void; sourceData?: Partial<NewsImageTextBgData> }) {
+  const bg = data.background || "warm";
+  const fit = data.mediaFit || "cover";
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Posizione immagine</label>
+          <div className="flex gap-2">
+            {(["left", "right"] as const).map((pos) => (
+              <button key={pos} type="button" onClick={() => onChange({ ...data, imagePosition: pos })}
+                className={`px-3 py-1.5 rounded text-sm border transition-colors ${data.imagePosition === pos ? "bg-warm-800 text-white border-warm-800" : "bg-white text-warm-600 border-warm-300 hover:bg-warm-50"}`}>
+                {pos === "left" ? "Sinistra" : "Destra"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Sfondo sezione</label>
+          <div className="flex gap-2 flex-wrap">
+            {([
+              { v: "warm", l: "Beige (default)" },
+              { v: "white", l: "Bianco" },
+              { v: "transparent", l: "Trasparente" },
+            ] as const).map((o) => (
+              <button key={o.v} type="button" onClick={() => onChange({ ...data, background: o.v })}
+                className={`px-3 py-1.5 rounded text-sm border transition-colors ${bg === o.v ? "bg-warm-800 text-white border-warm-800" : "bg-white text-warm-600 border-warm-300 hover:bg-warm-50"}`}>
+                {o.l}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div>
-        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Posizione immagine</label>
-        <div className="flex gap-2">
-          {(["left", "right"] as const).map((pos) => (
-            <button
-              key={pos}
-              type="button"
-              onClick={() => onChange({ ...data, imagePosition: pos })}
-              className={`px-4 py-1.5 rounded text-sm border transition-colors ${
-                data.imagePosition === pos ? "bg-warm-800 text-white border-warm-800" : "bg-white text-warm-600 border-warm-300 hover:bg-warm-50"
-              }`}
-            >
-              {pos === "left" ? "Immagine a sinistra" : "Immagine a destra"}
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Adattamento media</label>
+        <div className="flex gap-2 flex-wrap">
+          {([
+            { v: "cover", l: "Riempi tutto (taglia)", h: "Il media riempie l'intera colonna senza margini. Va tagliato per adattarsi." },
+            { v: "contain", l: "Mostra tutto (con margini)", h: "Il media viene mostrato per intero, con margini ai lati se l'aspect non combacia. Utile per loghi o foto da NON tagliare." },
+          ] as const).map((o) => (
+            <button key={o.v} type="button" onClick={() => onChange({ ...data, mediaFit: o.v })} title={o.h}
+              className={`px-3 py-1.5 rounded text-sm border transition-colors ${fit === o.v ? "bg-warm-800 text-white border-warm-800" : "bg-white text-warm-600 border-warm-300 hover:bg-warm-50"}`}>
+              {o.l}
             </button>
           ))}
         </div>
+        <p className="text-[10px] text-warm-400 mt-1">
+          {fit === "cover" ? "Il media riempie tutta la colonna (potrebbe essere tagliato sui lati)." : "Il media viene mostrato per intero, con spazio attorno se necessario."}
+        </p>
       </div>
-      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo />
+
+      <ImageUploadField label="Immagine o video"
+        value={data.imageUrl}
+        onChange={(url) => onChange({ ...data, imageUrl: url })}
+        onRemove={() => onChange({ ...data, imageUrl: "" })}
+        purpose="general" folder="news" acceptVideo
+        helpText="Risoluzione consigliata: 1200x1600px (verticale 3:4) o 1600x1200px (orizzontale 4:3). Min 1000px sul lato lungo."
+      />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
         <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">&hellip;oppure URL video esterno (YouTube, Vimeo)</label>
-        <input type="text" value={data.videoUrl || ""} onChange={(e) => onChange({ ...data, videoUrl: e.target.value })} placeholder="https://www.youtube.com/watch?v=... oppure /uploads/video.mp4" className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
-        <p className="text-[10px] text-warm-400 mt-1">Se compilato, al posto dell&apos;immagine viene mostrato il video.</p>
+        <input type="text" value={data.videoUrl || ""} onChange={(e) => onChange({ ...data, videoUrl: e.target.value })} placeholder="https://www.youtube.com/watch?v=..." className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+        <p className="text-[10px] text-warm-400 mt-1">Se compilato, al posto dell&apos;immagine viene mostrato il video YouTube/Vimeo.</p>
       </div>
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (opzionale)</label>
@@ -198,7 +236,7 @@ export function ThreeImagesEditor({ data, onChange, sourceData }: { data: NewsTh
     <div className="space-y-4">
       {imgs.slice(0, 3).map((im, i) => (
         <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-4 border-b border-warm-100 last:border-b-0">
-          <ImageUploadField label={`Media ${i + 1} (immagine o video)`} value={im.url} onChange={(url) => update(i, { url })} onRemove={() => update(i, { url: "" })} purpose="general" folder="news" aspectRatio={2 / 3} acceptVideo />
+          <ImageUploadField label={`Media ${i + 1} (immagine o video)`} value={im.url} onChange={(url) => update(i, { url })} onRemove={() => update(i, { url: "" })} purpose="general" folder="news" aspectRatio={2 / 3} acceptVideo helpText="Risoluzione consigliata: 800x1200px (verticale 2:3). Min 600px sul lato corto." />
           <div className="space-y-2">
             <div>
               <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Didascalia</label>
@@ -219,7 +257,7 @@ export function ThreeImagesEditor({ data, onChange, sourceData }: { data: NewsTh
 export function SingleImageEditor({ data, onChange, sourceData }: { data: NewsSingleImageData; onChange: (d: NewsSingleImageData) => void; sourceData?: Partial<NewsSingleImageData> }) {
   return (
     <div className="space-y-4">
-      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Puoi caricare un'immagine o un video (MP4, WebM)." />
+      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Risoluzione consigliata: 1600x900px (16:9 orizzontale) o 1200x1200px (quadrato). Min 1000px sul lato lungo. Formati: JPG, PNG, MP4, WebM." />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
         <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
@@ -239,7 +277,7 @@ export function SingleImageEditor({ data, onChange, sourceData }: { data: NewsSi
 export function ImageWithParagraphEditor({ data, onChange, sourceData }: { data: NewsImageWithParagraphData; onChange: (d: NewsImageWithParagraphData) => void; sourceData?: Partial<NewsImageWithParagraphData> }) {
   return (
     <div className="space-y-4">
-      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Puoi caricare un'immagine o un video (MP4, WebM)." />
+      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Risoluzione consigliata: 1200x800px (3:2 orizzontale) o 1200x1200px (quadrato). Min 1000px sul lato lungo." />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
         <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
@@ -263,7 +301,7 @@ export function ImageWithParagraphEditor({ data, onChange, sourceData }: { data:
 export function FullwidthBannerEditor({ data, onChange, sourceData }: { data: NewsFullwidthBannerData; onChange: (d: NewsFullwidthBannerData) => void; sourceData?: Partial<NewsFullwidthBannerData> }) {
   return (
     <div className="space-y-4">
-      <ImageUploadField label="Immagine o video (full-width, scuro)" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="hero" folder="news" aspectRatio={1600 / 900} acceptVideo />
+      <ImageUploadField label="Immagine o video (full-width, scuro)" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="hero" folder="news" aspectRatio={1600 / 900} acceptVideo helpText="Risoluzione consigliata: 1920x1080px (16:9 full-width). Min 1600px di larghezza. Il media viene scurito automaticamente per il testo sovrapposto." />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
         <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
@@ -391,6 +429,7 @@ export function TwoImagesInlineEditor({ data, onChange, sourceData }: { data: Ne
               purpose="general"
               folder="news"
               acceptVideo
+              helpText="Risoluzione consigliata: 800x1067px (verticale 3:4). Min 600px di larghezza. Mantieni aspect uguale tra le due immagini."
             />
             <div>
               <label className="block text-[10px] font-semibold text-warm-600 uppercase tracking-wider mb-1">&hellip;oppure URL YouTube/Vimeo</label>
@@ -457,7 +496,7 @@ export function FeatureToolEditor({ data, onChange, sourceData }: { data: NewsFe
         </div>
       </div>
 
-      <ImageUploadField label="Immagine principale" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo />
+      <ImageUploadField label="Immagine principale" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Risoluzione consigliata: 1200x900px (4:3 orizzontale). Min 1000px di larghezza. JPG/PNG/MP4/WebM." />
       {isUploadedVideo(data.imageUrl) && (
         <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
