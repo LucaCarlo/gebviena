@@ -467,12 +467,20 @@ export default function ProductDetailPage() {
                 <h2 className="font-sans text-[25px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
                   {product.designer.name}
                 </h2>
-                {product.designer.bio && (
-                  <div
-                    className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none mt-6 [&_p]:m-0"
-                    dangerouslySetInnerHTML={{ __html: product.designer.bio.includes("<") ? product.designer.bio : `<p>${product.designer.bio}</p>` }}
-                  />
-                )}
+                {(() => {
+                  // Se è valorizzato `designerCustomText` sul prodotto, mostra quello
+                  // al posto della bio standard del designer. Permette di personalizzare
+                  // il racconto del designer per singolo prodotto.
+                  const customText = (product as { designerCustomText?: string | null }).designerCustomText;
+                  const text = customText && customText.trim() ? customText : product.designer.bio;
+                  if (!text) return null;
+                  return (
+                    <div
+                      className="text-[20px] text-black leading-snug font-light tracking-normal max-w-none mt-6 [&_p]:m-0"
+                      dangerouslySetInnerHTML={{ __html: text.includes("<") ? text : `<p>${text}</p>` }}
+                    />
+                  );
+                })()}
                 <Link
                   href={localizePath(`/designers/${product.designer.slug || product.designer.id}`, lang)}
                   className="inline-block mt-8 uppercase text-[16px] tracking-[0.03em] text-warm-900 font-medium hover:underline"

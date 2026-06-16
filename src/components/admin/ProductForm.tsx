@@ -59,6 +59,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
     slug: "",
     designerName: "",
     designerId: "",
+    designerCustomText: "",
     category: "",
     subcategory: "",
     description: "",
@@ -119,6 +120,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         slug: p.slug,
         designerName: p.designerName || "",
         designerId: p.designerId || "",
+        designerCustomText: p.designerCustomText || "",
         category: p.category,
         subcategory: p.subcategory || "",
         description: p.description || "",
@@ -421,6 +423,19 @@ export default function ProductForm({ productId }: ProductFormProps) {
               required
             />
           </div>
+        </div>
+
+        {/* Testo designer personalizzato per questo prodotto */}
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo descrittivo del designer (opzionale)</label>
+          <textarea
+            value={form.designerCustomText || ""}
+            onChange={(e) => updateField("designerCustomText", e.target.value)}
+            rows={4}
+            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm text-warm-900 placeholder:text-warm-400 bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+            placeholder="Lascia vuoto per usare la bio del designer. Se compilato, sostituisce la bio nella sezione designer di questa pagina prodotto."
+          />
+          <p className="text-[10px] text-warm-400 mt-1">Mostrato a destra della foto del designer nella pagina prodotto, al posto della sua bio standard.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
