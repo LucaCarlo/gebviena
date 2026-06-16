@@ -268,9 +268,12 @@ function NewNotificationForm({ onClose, onCreated }: { onClose: () => void; onCr
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Link (opzionale)</label>
             <input type="text" value={link} onChange={(e) => setLink(e.target.value)}
-              placeholder="Es. /area-professionisti/listino-prezzi"
-              className="w-full px-3 py-2 border border-warm-300 rounded text-sm font-mono" />
-            <p className="text-[10px] text-warm-400 mt-1">Se presente, comparirà come pulsante “Apri” sulla card della bacheca.</p>
+              placeholder="URL completo (https://…) o percorso interno (/area-professionisti/listino-prezzi)"
+              className="w-full px-3 py-2 border border-warm-300 rounded text-sm font-mono text-warm-900 placeholder:text-warm-400" />
+            <p className="text-[10px] text-warm-400 mt-1">
+              Accetta sia URL completi (es. <code className="text-warm-600">https://www.example.com/articolo</code>) sia percorsi interni al sito (es. <code className="text-warm-600">/area-professionisti/listino-prezzi</code>).
+              Se presente, comparirà come pulsante &ldquo;Apri&rdquo; sulla card della bacheca.
+            </p>
           </div>
 
           <div>

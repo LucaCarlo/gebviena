@@ -102,6 +102,9 @@ model Product {
   designerId          String?
   designerName        String               @db.Text
   designerCustomText  String?              @db.Text
+  designerCustomTitle String?              @db.VarChar(255)
+  designerCustomCtaLabel String?           @db.VarChar(255)
+  designerCustomCtaHref String?            @db.Text
   category            String
   subcategory         String?
   description         String?              @db.Text
