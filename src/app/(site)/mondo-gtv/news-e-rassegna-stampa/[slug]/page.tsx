@@ -73,7 +73,6 @@ function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillConta
     : null;
   void wrapper;
   const containerStyle = fillContainer ? undefined : { aspectRatio };
-  const containerClass = fillContainer ? "relative w-full h-full bg-warm-100 overflow-hidden" : "relative w-full bg-warm-100 overflow-hidden";
   // Per gli iframe YouTube/Vimeo l'iframe copre già tutta la superficie del
   // container — un bg-warm-100 sotto fa solo apparire una fascia grigiastra se
   // l'aspect del container non matcha quello del wrapper esterno. Lo togliamo.
