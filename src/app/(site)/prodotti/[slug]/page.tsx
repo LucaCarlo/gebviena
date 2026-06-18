@@ -446,13 +446,19 @@ export default function ProductDetailPage() {
                 className="relative overflow-hidden"
                 style={{ aspectRatio: "3 / 4.2" }}
               >
-                <Image
-                  src={product.designer.imageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1000&fit=crop&crop=face"}
-                  alt={product.designer.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
+                {(() => {
+                  const customImg = (product as { designerCustomImageUrl?: string | null }).designerCustomImageUrl;
+                  const src = (customImg && customImg.trim()) || product.designer!.imageUrl || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1000&fit=crop&crop=face";
+                  return (
+                    <Image
+                      src={src}
+                      alt={product.designer!.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                  );
+                })()}
               </motion.div>
 
               {/* Designer info */}
