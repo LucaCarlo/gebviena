@@ -208,18 +208,12 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
   // Usiamo 16:9 quando rilevato un embed esterno per eliminare il bordo, e
   // limitiamo la larghezza del wrapper centrandolo verticalmente nel grid cell.
   const extVid = /youtu\.?be|vimeo\.com/i.test(d.videoUrl || "");
+  // Per le immagini manteniamo il rapporto ritratto 3/4.2; per i video esterni
+  // (YouTube/Vimeo, iframe nativo 16:9) usiamo 16:9 per evitare le bande
+  // sopra/sotto. Il container è centrato verticalmente nella section.
   const aspectRatio = extVid ? "16 / 9" : "3 / 4.2";
-  const imageEl = extVid ? (
-    // Video esterno: container con max-width quando lo spazio è limitato; centra
-    // orizzontalmente nella colonna e verticalmente nella section grazie a
-    // `lg:items-center` sul grid. Il padding crea respiro intorno al video.
-    <div className="flex items-center justify-center w-full h-full px-6 md:px-10 lg:px-14 py-8 md:py-10">
-      <div className="relative w-full max-w-[820px] overflow-hidden bg-black rounded-sm shadow-sm" style={{ aspectRatio }}>
-        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer mediaFit={fit} />
-      </div>
-    </div>
-  ) : (
-    <div className={`relative ${fit === "contain" ? "bg-white" : "bg-warm-200"} overflow-hidden`} style={{ aspectRatio }}>
+  const imageEl = (
+    <div className={`relative w-full mx-auto self-center ${extVid ? "" : (fit === "contain" ? "bg-white" : "bg-warm-200")} overflow-hidden`} style={{ aspectRatio }}>
       {(d.imageUrl || d.videoUrl) && (
         <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer mediaFit={fit} />
       )}
@@ -251,7 +245,7 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
   const bgClass = d.background === "white" ? "bg-white" : d.background === "transparent" ? "" : "bg-warm-50";
   return (
     <section className={`w-full ${bgClass}`}>
-      <div className="grid grid-cols-1 lg:grid-cols-2 items-stretch gap-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 lg:items-center gap-0">
         {imgLeft ? <>{imageEl}{textEl}</> : <>{textEl}{imageEl}</>}
       </div>
     </section>
