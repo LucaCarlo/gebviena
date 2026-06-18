@@ -74,17 +74,21 @@ function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillConta
   void wrapper;
   const containerStyle = fillContainer ? undefined : { aspectRatio };
   const containerClass = fillContainer ? "relative w-full h-full bg-warm-100 overflow-hidden" : "relative w-full bg-warm-100 overflow-hidden";
+  // Per gli iframe YouTube/Vimeo l'iframe copre già tutta la superficie del
+  // container — un bg-warm-100 sotto fa solo apparire una fascia grigiastra se
+  // l'aspect del container non matcha quello del wrapper esterno. Lo togliamo.
+  const extVidClass = fillContainer ? "relative w-full h-full overflow-hidden" : "relative w-full overflow-hidden";
 
   if (yt) {
     return (
-      <div className={containerClass} style={containerStyle}>
+      <div className={extVidClass} style={containerStyle}>
         <iframe src={`https://www.youtube.com/embed/${yt[1]}${autoplay ? `?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=${controls === false ? 0 : 1}` : `?rel=0&controls=${controls === false ? 0 : 1}`}`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
       </div>
     );
   }
   if (vimeo) {
     return (
-      <div className={containerClass} style={containerStyle}>
+      <div className={extVidClass} style={containerStyle}>
         <iframe src={`https://player.vimeo.com/video/${vimeo[1]}${autoplay ? "?autoplay=1&muted=1&loop=1" : ""}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
       </div>
     );
