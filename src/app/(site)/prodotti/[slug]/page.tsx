@@ -873,6 +873,42 @@ export default function ProductDetailPage() {
         </div>
       </section>
 
+      {/* ===== 8.5 PRODOTTI CORRELATI (stessa tipologia) ===== */}
+      {Array.isArray(product.related) && product.related.length > 0 && (
+        <section className="bg-white pt-20 pb-12 lg:pt-24 lg:pb-16">
+          <div className="gtv-container">
+            <h2 className="font-sans text-[24px] md:text-[32px] text-black uppercase font-light text-center mb-10 md:mb-14 tracking-[inherit]">
+              {t("prodotti.detail.related") || "PRODOTTI CORRELATI"}
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-10 md:gap-x-4 px-2 md:px-3 lg:px-4">
+              {product.related.slice(0, 4).map((rel) => (
+                <Link key={rel.id} href={localizePath(`/prodotti/${rel.slug}`, lang)} className="group block">
+                  <div className="relative bg-[#f6f6f6] overflow-hidden" style={{ aspectRatio: "1/1" }}>
+                    <Image
+                      src={(rel as { coverImage?: string | null }).coverImage || rel.imageUrl || ""}
+                      alt={rel.name}
+                      fill
+                      className="object-cover mix-blend-multiply"
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                    />
+                  </div>
+                  <div className="mt-4">
+                    {rel.designerName && (
+                      <p className="uppercase text-[14px] tracking-[0.01em] text-warm-500 font-light">
+                        {rel.designerName}
+                      </p>
+                    )}
+                    <h3 className="font-sans text-[20px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                      {rel.name}
+                    </h3>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ===== 9. BREADCRUMBS ===== */}
       <div className="gtv-container pt-8 pb-[27px]">
         <div className="flex items-center justify-start gap-2 text-[14px] tracking-normal text-black font-light">

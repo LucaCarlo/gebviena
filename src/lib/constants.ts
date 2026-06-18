@@ -374,6 +374,7 @@ export const NAV_ITEMS = [
     i18nKey: "menu.products",
     href: "/prodotti",
     children: [
+      { label: "NOVITÀ 2026", i18nKey: "menu.products.novita_2026", href: "/prodotti?_tipologia=novita-2026" },
       { label: "TUTTI I PRODOTTI", i18nKey: "menu.products.all", href: "/prodotti" },
       { label: "COMPLEMENTI", i18nKey: "menu.products.complementi", href: "/prodotti?category=COMPLEMENTI" },
       { label: "I CLASSICI", i18nKey: "menu.products.classici", href: "/prodotti?_tipologia=classici" },

@@ -13,6 +13,7 @@ import SeoPanel from "./SeoPanel";
 import PconConfigurator from "./PconConfigurator";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
 import { TInput, TTextarea, TRichText } from "./TranslatableField";
+import RichTextEditor from "./RichTextEditor";
 
 interface ProductFormProps {
   productId?: string;
@@ -924,13 +925,11 @@ export default function ProductForm({ productId }: ProductFormProps) {
         </div>
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo descrittivo (sostituisce la bio)</label>
-          <textarea
+          <RichTextEditor
             value={form.designerCustomText || ""}
-            onChange={(e) => updateField("designerCustomText", e.target.value)}
-            rows={4}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm text-warm-900 placeholder:text-warm-400 bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder="Vuoto = usa la bio del designer"
+            onChange={(html) => updateField("designerCustomText", html)}
           />
+          <p className="text-[10px] text-warm-400 mt-1">Vuoto = usa la bio del designer. Supporta grassetto, corsivo, a capo, allineamento.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
