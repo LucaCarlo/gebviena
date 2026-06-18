@@ -877,9 +877,11 @@ export default function ProductDetailPage() {
       {Array.isArray(product.related) && product.related.length > 0 && (
         <section className="bg-white pt-20 pb-12 lg:pt-24 lg:pb-16">
           <div className="gtv-container">
-            <h2 className="font-sans text-[24px] md:text-[32px] text-black font-light text-center mb-10 md:mb-14 tracking-[inherit]">
-              Prodotti correlati
-            </h2>
+            <div className="text-center mb-12">
+              <h2 className="font-sans text-[38px] text-black leading-[1.15] font-light uppercase tracking-[inherit]">
+                Prodotti correlati
+              </h2>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-10 md:gap-x-4 px-2 md:px-3 lg:px-4">
               {product.related.slice(0, 4).map((rel) => (
                 <Link key={rel.id} href={localizePath(`/prodotti/${rel.slug}`, lang)} className="group block">
