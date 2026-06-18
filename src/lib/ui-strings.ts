@@ -25,6 +25,7 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
     label: "Menu Header (mobile + desktop)",
     strings: [
       { key: "menu.products", defaultValue: "PRODOTTI" },
+      { key: "menu.products.novita_2026", defaultValue: "NOVITÀ 2026" },
       { key: "menu.products.all", defaultValue: "TUTTI I PRODOTTI" },
       { key: "menu.products.complementi", defaultValue: "COMPLEMENTI" },
       { key: "menu.products.classici", defaultValue: "I CLASSICI" },
