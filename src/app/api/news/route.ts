@@ -50,7 +50,9 @@ export async function GET(req: NextRequest) {
         : {}),
       skip: (page - 1) * limit,
       take: limit,
-      orderBy: admin ? { updatedAt: "desc" } : { sortOrder: "asc" },
+      // Lista pubblica: cronologico inverso globale per data di pubblicazione,
+      // con fallback su createdAt per articoli senza publishedAt valorizzato.
+      orderBy: admin ? { updatedAt: "desc" } : [{ publishedAt: "desc" }, { createdAt: "desc" }],
     }),
     prisma.newsArticle.count({ where }),
   ]);

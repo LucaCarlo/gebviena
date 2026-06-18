@@ -103,7 +103,7 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
             style={{ transform: `translateX(-${current * 100}%)` }}
           >
             {images.map((url, i) => (
-              <div key={i} className="relative flex-shrink-0 w-full h-full bg-warm-50">
+              <div key={i} className="relative flex-shrink-0 w-full h-full bg-white">
                 <Image
                   src={url}
                   alt={altMap[url] || `${name} ${i + 1}`}

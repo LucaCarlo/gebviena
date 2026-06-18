@@ -175,6 +175,16 @@ function NewsContent() {
                     />
                   </div>
                   <div className="mt-4">
+                    {(() => {
+                      const d = article.publishedAt || article.createdAt;
+                      if (!d) return null;
+                      const formatted = new Date(d).toLocaleDateString(lang, { month: "long", year: "numeric" });
+                      return (
+                        <p className="uppercase text-[12px] tracking-[0.05em] text-warm-500 font-light mb-1">
+                          {formatted}
+                        </p>
+                      );
+                    })()}
                     {article.category && (
                       <p className="uppercase text-[16px] tracking-[0.01em] text-black font-light">
                         {lookupLabel(categoryLabelMap, article.category)}

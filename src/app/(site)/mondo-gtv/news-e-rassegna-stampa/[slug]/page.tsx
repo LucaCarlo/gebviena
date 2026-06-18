@@ -136,7 +136,7 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
   const vimeo = video?.match(/vimeo\.com\/(\d+)/);
   return (
     <section className="gtv-container">
-      <div className="mx-auto max-w-[940px] px-6 md:px-16 lg:px-24">
+      <div className="mx-auto max-w-[940px] px-5 md:px-16 lg:px-24">
         {(d.imageUrl || video) && (
           <div className="mx-auto max-w-[140px]">
             {video ? (
@@ -159,10 +159,10 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
           </div>
         )}
         {d.title && (
-          <h2 className="font-serif text-[30px] md:text-[38px] text-black tracking-tight font-light leading-[1.2] text-center mt-10" dangerouslySetInnerHTML={{ __html: d.title }} />
+          <h2 className="font-serif text-[24px] md:text-[38px] text-black tracking-tight font-light leading-[1.2] text-center mt-8 md:mt-10" dangerouslySetInnerHTML={{ __html: d.title }} />
         )}
         {d.body && (
-          <div className="text-[20px] text-black leading-snug font-light tracking-normal text-center mt-6 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.body }} />
+          <div className="text-[17px] md:text-[20px] text-black leading-snug font-light tracking-normal text-center mt-5 md:mt-6 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.body }} />
         )}
       </div>
     </section>
@@ -203,20 +203,25 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
 function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title: string }) {
   const imgLeft = d.imagePosition === "left";
   const fit = d.mediaFit || "cover";
+  // Detect video esterno (YouTube/Vimeo): l'iframe ha aspect 16:9 nativo. Con un
+  // container 3/4.2 (verticale) il video appare circondato da bande sopra/sotto.
+  // Usiamo 16:9 quando rilevato un embed esterno per eliminare il bordo.
+  const extVid = /youtu\.?be|vimeo\.com/i.test(d.videoUrl || "");
+  const aspectRatio = extVid ? "16 / 9" : "3 / 4.2";
   const imageEl = (
-    <div className={`relative ${fit === "contain" ? "bg-white" : "bg-warm-200"} overflow-hidden`} style={{ aspectRatio: "3 / 4.2" }}>
+    <div className={`relative ${fit === "contain" ? "bg-white" : "bg-warm-200"} overflow-hidden`} style={{ aspectRatio }}>
       {(d.imageUrl || d.videoUrl) && (
         <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer mediaFit={fit} />
       )}
     </div>
   );
   const textEl = (
-    <div className="flex flex-col justify-center px-8 py-16 md:px-16 md:py-20 lg:px-24 xl:px-[150px] xl:py-[96px]">
+    <div className="flex flex-col justify-center px-6 py-10 md:px-16 md:py-20 lg:px-24 xl:px-[150px] xl:py-[96px]">
       {d.title && (
-        <h2 className="font-sans text-[28px] text-black leading-[1.15] font-light uppercase tracking-[inherit]" dangerouslySetInnerHTML={{ __html: d.title }} />
+        <h2 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.2] font-light uppercase tracking-[inherit]" dangerouslySetInnerHTML={{ __html: d.title }} />
       )}
       {d.text && (
-        <div className="text-[20px] text-black leading-snug font-light tracking-normal mt-8 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.text }} />
+        <div className="text-[17px] md:text-[20px] text-black leading-snug font-light tracking-normal mt-6 md:mt-8 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.text }} />
       )}
       {d.ctaLabel && d.ctaHref && (() => {
         const isPdf = /\.pdf($|\?)/i.test(d.ctaHref);
