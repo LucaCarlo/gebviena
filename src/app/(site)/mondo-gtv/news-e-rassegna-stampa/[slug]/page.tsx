@@ -205,10 +205,20 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
   const fit = d.mediaFit || "cover";
   // Detect video esterno (YouTube/Vimeo): l'iframe ha aspect 16:9 nativo. Con un
   // container 3/4.2 (verticale) il video appare circondato da bande sopra/sotto.
-  // Usiamo 16:9 quando rilevato un embed esterno per eliminare il bordo.
+  // Usiamo 16:9 quando rilevato un embed esterno per eliminare il bordo, e
+  // limitiamo la larghezza del wrapper centrandolo verticalmente nel grid cell.
   const extVid = /youtu\.?be|vimeo\.com/i.test(d.videoUrl || "");
   const aspectRatio = extVid ? "16 / 9" : "3 / 4.2";
-  const imageEl = (
+  const imageEl = extVid ? (
+    // Video esterno: container con max-width quando lo spazio è limitato; centra
+    // orizzontalmente nella colonna e verticalmente nella section grazie a
+    // `lg:items-center` sul grid. Il padding crea respiro intorno al video.
+    <div className="flex items-center justify-center w-full h-full px-6 md:px-10 lg:px-14 py-8 md:py-10">
+      <div className="relative w-full max-w-[820px] overflow-hidden bg-black rounded-sm shadow-sm" style={{ aspectRatio }}>
+        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer mediaFit={fit} />
+      </div>
+    </div>
+  ) : (
     <div className={`relative ${fit === "contain" ? "bg-white" : "bg-warm-200"} overflow-hidden`} style={{ aspectRatio }}>
       {(d.imageUrl || d.videoUrl) && (
         <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer mediaFit={fit} />
@@ -216,7 +226,7 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
     </div>
   );
   const textEl = (
-    <div className="flex flex-col justify-center px-6 py-10 md:px-16 md:py-20 lg:px-24 xl:px-[150px] xl:py-[96px]">
+    <div className="flex flex-col justify-center px-6 py-10 md:px-16 md:py-14 lg:px-24 xl:px-[150px] xl:py-16">
       {d.title && (
         <h2 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.2] font-light uppercase tracking-[inherit]" dangerouslySetInnerHTML={{ __html: d.title }} />
       )}
