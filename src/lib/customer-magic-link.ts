@@ -267,6 +267,7 @@ export async function requestMagicLink(opts: {
   const ok = await sendMail(email, subject, html, {
     fromName: COMPANY_NAME,
     replyTo: COMPANY_EMAIL,
+    context: "store",
   });
   return { sent: ok };
 }
@@ -303,6 +304,7 @@ export async function sendAccessInviteEmail(opts: {
   const ok = await sendMail(email, subject, html, {
     fromName: COMPANY_NAME,
     replyTo: COMPANY_EMAIL,
+    context: "store",
   });
   return { sent: ok };
 }

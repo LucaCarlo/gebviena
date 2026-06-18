@@ -63,6 +63,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
     designerCustomText: "",
     designerCustomCtaLabel: "",
     designerCustomCtaHref: "",
+    designerCustomImageUrl: "",
     category: "",
     subcategory: "",
     description: "",
@@ -127,6 +128,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         designerCustomText: p.designerCustomText || "",
         designerCustomCtaLabel: p.designerCustomCtaLabel || "",
         designerCustomCtaHref: p.designerCustomCtaHref || "",
+        designerCustomImageUrl: p.designerCustomImageUrl || "",
         category: p.category,
         subcategory: p.subcategory || "",
         description: p.description || "",
@@ -899,8 +901,17 @@ export default function ProductForm({ productId }: ProductFormProps) {
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-4">
         <div>
           <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Sezione Designer (sostituisce i valori di default)</h3>
-          <p className="text-[11px] text-warm-500 mt-1">Lascia vuoto per usare i dati standard del designer (nome, bio, link al profilo). Compila i campi solo se vuoi personalizzare il riquadro designer in questa pagina prodotto.</p>
+          <p className="text-[11px] text-warm-500 mt-1">Lascia vuoto per usare i dati standard del designer (foto, nome, bio, link al profilo). Compila i campi solo se vuoi personalizzare il riquadro designer in questa pagina prodotto.</p>
         </div>
+        <ImageUploadField
+          label="Immagine (sostituisce la foto del designer)"
+          value={form.designerCustomImageUrl || ""}
+          onChange={(url) => updateField("designerCustomImageUrl", url)}
+          onRemove={() => updateField("designerCustomImageUrl", "")}
+          folder="designers"
+          recommendedSize="800x1000px (ritratto 4:5)"
+          helpText="Vuoto = usa la foto del designer."
+        />
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (sostituisce il nome designer)</label>
           <input

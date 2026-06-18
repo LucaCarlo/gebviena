@@ -8,7 +8,7 @@
  *   fbTrack("AddToCart", { value: 250, currency: "EUR" });
  */
 
-type FbqFn = ((cmd: string, event: string, params?: Record<string, unknown>) => void) & {
+type FbqFn = ((cmd: string, event: string, params?: Record<string, unknown>, opts?: { eventID?: string }) => void) & {
   queue?: unknown[][];
   callMethod?: unknown;
 };
@@ -21,12 +21,20 @@ declare global {
 }
 
 /** Manda un evento standard Meta. Se il pixel non è ancora caricato, l'evento
- *  viene messo in coda manualmente (stub Meta lo flusha quando fbevents.js arriva). */
-export function fbTrack(event: string, params?: Record<string, unknown>): void {
+ *  viene messo in coda manualmente (stub Meta lo flusha quando fbevents.js arriva).
+ *
+ *  Se passi `eventID`, Meta dedupa contro l'eventuale evento gemello inviato via
+ *  CAPI server-side con lo stesso event_id. Usalo per Purchase (eventID=orderNumber),
+ *  AddPaymentInfo (eventID=orderNumber + ":api"), Lead (eventID=submissionId). */
+export function fbTrack(event: string, params?: Record<string, unknown>, eventID?: string): void {
   if (typeof window === "undefined") return;
   try {
     if (typeof window.fbq === "function") {
-      window.fbq("track", event, params);
+      if (eventID) {
+        window.fbq("track", event, params, { eventID });
+      } else {
+        window.fbq("track", event, params);
+      }
       return;
     }
     // Fallback: pixel non ancora pronto → coda manualmente, lo stub Meta la
@@ -39,7 +47,11 @@ export function fbTrack(event: string, params?: Record<string, unknown>): void {
       stub.queue = [];
       w.fbq = stub;
     }
-    w.fbq!.queue!.push(["track", event, params as unknown]);
+    if (eventID) {
+      w.fbq!.queue!.push(["track", event, params as unknown, { eventID }]);
+    } else {
+      w.fbq!.queue!.push(["track", event, params as unknown]);
+    }
   } catch {
     /* silent */
   }

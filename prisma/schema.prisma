@@ -105,6 +105,7 @@ model Product {
   designerCustomTitle String?              @db.VarChar(255)
   designerCustomCtaLabel String?           @db.VarChar(255)
   designerCustomCtaHref String?            @db.Text
+  designerCustomImageUrl String?           @db.VarChar(500)
   category            String
   subcategory         String?
   description         String?              @db.Text

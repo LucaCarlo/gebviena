@@ -1,10 +1,24 @@
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/prisma";
 
-async function getSmtpConfig() {
-  const settings = await prisma.setting.findMany({ where: { group: "smtp" } });
+async function getSmtpConfig(context: "site" | "store" = "site") {
+  // 1) Sempre carica gli SMTP del sito principale (gruppo "smtp").
+  const siteSettings = await prisma.setting.findMany({ where: { group: "smtp" } });
   const config: Record<string, string> = {};
-  for (const s of settings) config[s.key] = s.value;
+  for (const s of siteSettings) config[s.key] = s.value;
+
+  // 2) Per il contesto "store": carica anche gli store SMTP e fa merge.
+  //    Le chiavi store sono "store.smtp_host", "store.admin_email" ecc.;
+  //    le mappiamo sulle stesse chiavi del sito (senza prefisso "store.").
+  //    I valori store valorizzati VINCONO sul sito; quelli vuoti restano fallback al sito.
+  if (context === "store") {
+    const storeSettings = await prisma.setting.findMany({ where: { group: "store_smtp" } });
+    for (const s of storeSettings) {
+      const core = s.key.startsWith("store.") ? s.key.slice("store.".length) : s.key;
+      const v = (s.value || "").trim();
+      if (v) config[core] = v;
+    }
+  }
   return config;
 }
 
@@ -26,6 +40,9 @@ interface SendMailOptions {
   replyTo?: string;
   /** Allegati. Supportato sia da Brevo HTTP che da nodemailer. */
   attachments?: MailAttachment[];
+  /** Contesto: "store" usa la config SMTP dello store con fallback al sito.
+   *  Default "site". */
+  context?: "site" | "store";
 }
 
 export interface SendMailResult { ok: boolean; error?: string }
@@ -33,7 +50,7 @@ export interface SendMailResult { ok: boolean; error?: string }
 /** Come sendMail ma ritorna l'esito dettagliato (con messaggio d'errore). */
 export async function sendMailResult(to: string, subject: string, html: string, options?: SendMailOptions): Promise<SendMailResult> {
   try {
-    const cfg = await getSmtpConfig();
+    const cfg = await getSmtpConfig(options?.context || "site");
 
     const fromName = options?.fromName || cfg.smtp_from_name || "GTV";
     const fromEmail = options?.fromEmail || cfg.smtp_from_email || cfg.smtp_user || "noreply@localhost";

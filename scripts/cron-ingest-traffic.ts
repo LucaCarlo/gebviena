@@ -27,14 +27,18 @@ async function main() {
   const until = setting?.value || "2026-05-18"; // recupero iniziale copre fino al 18/05
   const today = new Date().toISOString().slice(0, 10);
 
-  // file datati da processare: data > until e data < oggi (giorni completi/rotati)
+  // File datati da processare: data > until e data <= oggi.
+  // Nota sulla convention nginx: il file `access.log-YYYY-MM-DD` viene creato
+  // dalla rotazione di logrotate alle 00:0X di YYYY-MM-DD e contiene i log del
+  // giorno PRECEDENTE. Quindi per processare i log di "ieri" dobbiamo includere
+  // il file con data = oggi (`<= today`, non `< today`).
   const files = readdirSync(LOGDIR);
   const todo: Array<{ file: string; host: "SITO" | "STORE"; date: string }> = [];
   for (const f of files) {
     let m = f.match(/^access\.log-(\d{4}-\d{2}-\d{2})$/);
-    if (m && m[1] > until && m[1] < today) { todo.push({ file: f, host: "SITO", date: m[1] }); continue; }
+    if (m && m[1] > until && m[1] <= today) { todo.push({ file: f, host: "SITO", date: m[1] }); continue; }
     m = f.match(/^store-access\.log-(\d{4}-\d{2}-\d{2})$/);
-    if (m && m[1] > until && m[1] < today) todo.push({ file: f, host: "STORE", date: m[1] });
+    if (m && m[1] > until && m[1] <= today) todo.push({ file: f, host: "STORE", date: m[1] });
   }
   if (!todo.length) { console.log(`[cron-traffic] nulla da fare (until=${until})`); return; }
 
