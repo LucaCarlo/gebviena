@@ -52,17 +52,17 @@ export default function CataloghiClient({ lang, i18n }: { lang?: string; i18n: I
     return categories.filter((c) => usedSlugs.has(c.slug));
   }, [catalogs, categories]);
 
-  const sectionLabel = (sec: string) => categories.find((c) => c.slug === sec)?.label || sec;
-
   if (loading) return <div className="py-20 text-center text-warm-400 text-sm">{i18n.loading}</div>;
   if (catalogs.length === 0) return <div className="py-20 text-center text-warm-400 text-sm">{i18n.empty}</div>;
 
-  const sectionsToRender = filter === "__all__"
-    ? visibleCategories.map((c) => c.slug)
-    : [filter];
+  // Tutti i cataloghi (eventualmente filtrati) in un unico grid, senza
+  // titoletti per sezione — il filtro pill in alto basta a navigare.
+  const visibleCatalogs = filter === "__all__"
+    ? catalogs
+    : catalogs.filter((c) => c.section === filter);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {/* Filtri pill */}
       {visibleCategories.length > 1 && (
         <div className="flex flex-wrap gap-2">
@@ -73,21 +73,10 @@ export default function CataloghiClient({ lang, i18n }: { lang?: string; i18n: I
         </div>
       )}
 
-      <div className="space-y-12">
-        {sectionsToRender.map((sec) => {
-          const items = catalogs.filter((c) => c.section === sec);
-          if (items.length === 0) return null;
-          return (
-            <section key={sec}>
-              <h2 className="text-[12px] uppercase tracking-[0.2em] text-warm-500 mb-4">{sectionLabel(sec)}</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {items.map((c) => (
-                  <CatalogCard key={c.id} c={c} i18n={i18n} />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+        {visibleCatalogs.map((c) => (
+          <CatalogCard key={c.id} c={c} i18n={i18n} />
+        ))}
       </div>
     </div>
   );

@@ -19,11 +19,11 @@ export default async function Page() {
   const t = getProT(lang);
   const section = getSection(SLUG, lang)!;
 
-  // Carica tipologie + foto pro + tutti i prodotti attivi (per estrarre le
-  // immagini del catalogo: cover, gallery, hero, side — visibili anche ai
-  // professionisti, in modo che da li possano scaricare TUTTE le immagini
-  // del prodotto, non solo quelle pro).
-  const [typologies, productImagesRaw, typologyImages, allProducts] = await Promise.all([
+  // Carica tipologie + foto pro + tutti i prodotti attivi + progetti attivi.
+  // Le immagini del catalogo (cover, gallery, hero, side) sono unite alle foto
+  // pro caricate, cosi il professionista da una sola pagina puo scaricare
+  // TUTTE le immagini di ogni prodotto/progetto.
+  const [typologies, productImagesRaw, typologyImages, allProducts, allProjects] = await Promise.all([
     prisma.contentTypology.findMany({
       where: { contentType: "products", isActive: true },
       orderBy: { sortOrder: "asc" },
@@ -32,7 +32,7 @@ export default async function Page() {
     prisma.professionalImage.findMany({
       where: { isActive: true, productId: { not: null } },
       include: {
-        product: { select: { id: true, name: true, slug: true, category: true } },
+        product: { select: { id: true, name: true, slug: true, category: true, coverImage: true, imageUrl: true } },
       },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
@@ -52,6 +52,20 @@ export default async function Page() {
         galleryImages: true,
         heroImage: true,
         sideImage: true,
+      },
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.project.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        imageUrl: true,
+        coverImage: true,
+        heroImage: true,
+        sideImage: true,
+        galleryUrls: true,
       },
       orderBy: { sortOrder: "asc" },
     }),
@@ -107,6 +121,41 @@ export default async function Page() {
     ...catalogItems.filter((c) => !seenUrls.has(c.fileUrl)),
   ];
 
+  // Cover per Product: usata come thumbnail della card grid lato client
+  const productCoverMap: Record<string, string> = {};
+  for (const p of allProducts) {
+    productCoverMap[p.id] = p.coverImage || p.imageUrl || "";
+  }
+
+  // Estrazione immagini progetti (cover, gallery, hero, side) — solo da DB,
+  // non ci sono foto pro caricate per i progetti per ora.
+  const projectImagesData: { id: string; fileUrl: string; fileName: string; projectId: string; projectName: string; projectSlug: string; projectCover: string }[] = [];
+  for (const pr of allProjects) {
+    const urls = new Set<string>();
+    if (pr.coverImage) urls.add(pr.coverImage);
+    if (pr.imageUrl) urls.add(pr.imageUrl);
+    if (pr.heroImage) urls.add(pr.heroImage);
+    if (pr.sideImage) urls.add(pr.sideImage);
+    if (pr.galleryUrls) {
+      try {
+        const arr = JSON.parse(pr.galleryUrls);
+        if (Array.isArray(arr)) for (const u of arr) if (typeof u === "string" && u) urls.add(u);
+      } catch { /* silent */ }
+    }
+    const cover = pr.coverImage || pr.imageUrl || "";
+    Array.from(urls).forEach((u, idx) => {
+      projectImagesData.push({
+        id: `proj-${pr.id}-${idx}`,
+        fileUrl: u,
+        fileName: u.split("/").pop() || "image",
+        projectId: pr.id,
+        projectName: pr.name,
+        projectSlug: pr.slug,
+        projectCover: cover,
+      });
+    });
+  }
+
   return (
     <main className="min-h-screen bg-warm-50 pt-32 pb-24">
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
@@ -118,6 +167,7 @@ export default async function Page() {
 
         <DigitalMediaClient
           typologies={typologiesData}
+          projectImages={projectImagesData}
           productImages={productImages.map((i) => ({
             id: i.id,
             fileUrl: i.fileUrl,
@@ -126,6 +176,7 @@ export default async function Page() {
             productName: i.product?.name || "",
             productSlug: i.product?.slug || "",
             productCategory: i.product?.category || "",
+            productCover: i.productId ? productCoverMap[i.productId] || "" : "",
           }))}
           typologyImages={typologyImages.map((i) => ({
             id: i.id,
