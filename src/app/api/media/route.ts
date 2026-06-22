@@ -18,8 +18,21 @@ export async function GET(req: NextRequest) {
   const sortBy = searchParams.get("sortBy") || "createdAt";
   const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 
+  // Filtro speciale "__pro__": raggruppa cartelle dell'area professionisti
+  // (foto pro + PDF tecnici, listini, press-kit, cataloghi, info tecniche).
+  const PRO_FOLDER_MATCHES = [
+    "professionals", "tech-sheets", "catalogs",
+    "listini-prezzi", "press-kit", "informazioni-tecniche",
+    "pdf-listini-prezzi", "pdf-press-kit", "pdf-informazioni-tecniche",
+  ];
   const where: Record<string, unknown> = {};
-  if (folder) where.folder = folder;
+  if (folder === "__pro__") {
+    where.OR = [
+      ...PRO_FOLDER_MATCHES.map((f) => ({ folder: { startsWith: f } as Record<string, string> })),
+    ];
+  } else if (folder) {
+    where.folder = folder;
+  }
   if (search) {
     where.OR = [
       { originalName: { contains: search } },

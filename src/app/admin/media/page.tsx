@@ -706,67 +706,49 @@ export default function AdminMediaPage() {
         </div>
       )}
 
-      {/* Folder tabs */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        <button
-          onClick={() => setActiveFolder("__all__")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeFolder === "__all__"
-              ? "bg-warm-800 text-white"
-              : "bg-warm-100 text-warm-600 hover:bg-warm-200"
-          }`}
-        >
-          <FolderOpen size={14} />
-          Tutti
-          <span className={`text-xs ml-1 ${activeFolder === "__all__" ? "text-warm-300" : "text-warm-400"}`}>
-            ({allCount})
-          </span>
-        </button>
-        {MEDIA_FOLDERS.map((folder) => {
-          const count = folderCounts[folder.value] || 0;
-          const isActive = activeFolder === folder.value;
-          return (
-            <button
-              key={folder.value}
-              onClick={() => setActiveFolder(folder.value)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-warm-800 text-white"
-                  : "bg-warm-100 text-warm-600 hover:bg-warm-200"
-              }`}
-            >
-              <FolderOpen size={14} />
-              {folder.label}
-              <span className={`text-xs ml-1 ${isActive ? "text-warm-300" : "text-warm-400"}`}>
-                ({count})
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Search box */}
+      {/* Folder dropdown + search box (compatto su una sola riga) */}
       <div className="mb-4 bg-white rounded-lg shadow-sm border border-warm-200 px-4 py-2.5">
-        <div className="relative max-w-md">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.5 10a7.5 7.5 0 0013.15 6.65z" />
-          </svg>
-          <input
-            type="text"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Cerca per nome file, URL o alt text…"
-            className="w-full pl-9 pr-8 py-2 text-sm border border-warm-200 rounded-md bg-white focus:outline-none focus:border-warm-500"
-          />
-          {searchInput && (
-            <button
-              onClick={() => setSearchInput("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-700"
-              aria-label="Pulisci ricerca"
+        <div className="flex flex-col md:flex-row gap-3 md:items-center">
+          {/* Dropdown cartella */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <FolderOpen size={16} className="text-warm-500" />
+            <select
+              value={activeFolder}
+              onChange={(e) => setActiveFolder(e.target.value)}
+              className="text-sm border border-warm-200 rounded-md bg-white px-3 py-2 pr-8 focus:outline-none focus:border-warm-500 min-w-[200px]"
             >
-              <X size={14} />
-            </button>
-          )}
+              <option value="__all__">Tutti ({allCount})</option>
+              <option value="__pro__">Professionisti ({folderCounts["__pro__"] || 0})</option>
+              <option disabled>──────────</option>
+              {MEDIA_FOLDERS.map((folder) => (
+                <option key={folder.value} value={folder.value}>
+                  {folder.label} ({folderCounts[folder.value] || 0})
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Search */}
+          <div className="relative flex-1 min-w-0">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.5 10a7.5 7.5 0 0013.15 6.65z" />
+            </svg>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Cerca per nome file, URL o alt text…"
+              className="w-full pl-9 pr-8 py-2 text-sm border border-warm-200 rounded-md bg-white focus:outline-none focus:border-warm-500"
+            />
+            {searchInput && (
+              <button
+                onClick={() => setSearchInput("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-700"
+                aria-label="Pulisci ricerca"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
         {search && (
           <div className="text-xs text-warm-500 mt-1.5">
