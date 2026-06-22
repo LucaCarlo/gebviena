@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
-import { isS3Configured, uploadToS3 } from "@/lib/s3";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 export async function GET(req: NextRequest) {
   const result = await requirePermission("products", "view");
@@ -12,8 +9,6 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const productId = searchParams.get("productId");
   const typology = searchParams.get("typology");
-  // Modalità "summary": ritorna conteggi aggregati per typology o productId
-  // — utile per la dashboard tab Media (badge counter per tipologia/prodotto).
   const summary = searchParams.get("summary");
 
   if (summary === "typology") {
@@ -44,7 +39,6 @@ export async function GET(req: NextRequest) {
   const where: any = { isActive: true };
   if (productId) where.productId = productId;
   if (typology) where.typology = typology;
-  // Se sia productId che typology sono assenti, ritorna lista completa (max 500)
   const rows = await prisma.professionalImage.findMany({
     where,
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
@@ -53,56 +47,49 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ success: true, data: rows });
 }
 
+interface ProfImageItem {
+  fileUrl: string;
+  fileName: string;
+  size?: number;
+  width?: number;
+  height?: number;
+}
+
+/** Crea record ProfessionalImage per N file gia caricati via /api/upload.
+ *  Il body e JSON, NON multipart. Il client deve prima caricare i file via
+ *  /api/upload (compressione automatica + WebP + record MediaFile globale)
+ *  e poi linkarli qui passando gli URL ottenuti. In questo modo le foto pro
+ *  appaiono ANCHE in /admin/media insieme a tutti gli altri media. */
 export async function POST(req: Request) {
   const result = await requirePermission("products", "edit");
   if (isErrorResponse(result)) return result;
 
   try {
-    const formData = await req.formData();
-    const productId = (formData.get("productId") as string) || null;
-    const typology = (formData.get("typology") as string) || null;
+    const body = await req.json();
+    const productId = body.productId || null;
+    const typology = body.typology || null;
+    const items: ProfImageItem[] = Array.isArray(body.items) ? body.items : [];
+
     if (!productId && !typology) {
-      return NextResponse.json(
-        { success: false, error: "Specificare productId o typology" },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, error: "Specificare productId o typology" }, { status: 400 });
     }
-    const files = formData.getAll("files").filter((f): f is File => f instanceof File);
-    if (files.length === 0) {
+    if (items.length === 0) {
       return NextResponse.json({ success: false, error: "Nessun file" }, { status: 400 });
     }
 
-    const useS3 = await isS3Configured();
     const created = [];
-
-    for (const file of files) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const safeName = file.name.replace(/[^\w.\-]/g, "_");
-      const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const key = `professionals/${productId || `typology-${typology}`}/${stamp}-${safeName}`;
-
-      let fileUrl: string;
-      let storage: string;
-      if (useS3) {
-        fileUrl = await uploadToS3(buffer, key, file.type || "image/jpeg");
-        storage = "wasabi";
-      } else {
-        const localDir = path.join(process.cwd(), "public", "uploads", "professionals", productId || `typology-${typology}`);
-        await mkdir(localDir, { recursive: true });
-        const localName = `${stamp}-${safeName}`;
-        await writeFile(path.join(localDir, localName), buffer);
-        fileUrl = `/uploads/professionals/${productId || `typology-${typology}`}/${localName}`;
-        storage = "local";
-      }
-
+    for (const it of items) {
+      if (!it.fileUrl) continue;
       const rec = await prisma.professionalImage.create({
         data: {
           productId,
           typology,
-          fileUrl,
-          fileName: file.name,
-          storage,
-          size: buffer.length,
+          fileUrl: it.fileUrl,
+          fileName: it.fileName || it.fileUrl.split("/").pop() || "image",
+          storage: it.fileUrl.startsWith("http") ? "wasabi" : "local",
+          size: it.size || null,
+          width: it.width || null,
+          height: it.height || null,
         },
       });
       created.push(rec);

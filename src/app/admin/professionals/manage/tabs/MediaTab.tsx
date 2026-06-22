@@ -106,23 +106,53 @@ export default function MediaTab() {
     const arr = Array.from(files).filter((f) => f.type.startsWith("image/"));
     if (arr.length === 0) return;
     setUploading(true);
-    const fd = new FormData();
-    if (modalKind === "typology") fd.append("typology", modalValue);
-    else fd.append("productId", modalValue);
-    for (const f of arr) fd.append("files", f);
     try {
-      const r = await fetch("/api/admin/professional-images", { method: "POST", body: fd });
-      const j = await r.json();
-      if (j.success) {
-        setModalImages((prev) => [...prev, ...j.data]);
-        // Aggiorna counters
-        if (modalKind === "typology") {
-          setTypologyCounts((prev) => ({ ...prev, [modalValue]: (prev[modalValue] || 0) + j.data.length }));
+      // Step 1: carica i file via /api/upload (compressione automatica + WebP +
+      // registrazione in MediaFile globale). Cosi le foto pro appaiono anche
+      // in /admin/media insieme a tutti gli altri media del sito.
+      const folder = `professionals/${modalKind === "typology" ? `tip-${modalValue}` : `prod-${modalValue}`}`;
+      const items: { fileUrl: string; fileName: string; size?: number; width?: number; height?: number }[] = [];
+      for (const f of arr) {
+        const fd = new FormData();
+        fd.append("file", f);
+        fd.append("folder", folder);
+        fd.append("purpose", "general");
+        const r = await fetch("/api/upload", { method: "POST", body: fd });
+        const j = await r.json();
+        if (j.success) {
+          items.push({
+            fileUrl: j.data.url,
+            fileName: f.name,
+            size: j.data.size,
+            width: j.data.width,
+            height: j.data.height,
+          });
         } else {
-          setProductCounts((prev) => ({ ...prev, [modalValue]: (prev[modalValue] || 0) + j.data.length }));
+          alert(`Errore caricamento di ${f.name}: ${j.error || "?"}`);
+        }
+      }
+      if (items.length === 0) return;
+
+      // Step 2: crea il link ProfessionalImage per ogni file
+      const body: { productId?: string; typology?: string; items: typeof items } = { items };
+      if (modalKind === "typology") body.typology = modalValue;
+      else body.productId = modalValue;
+
+      const r2 = await fetch("/api/admin/professional-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const j2 = await r2.json();
+      if (j2.success) {
+        setModalImages((prev) => [...prev, ...j2.data]);
+        if (modalKind === "typology") {
+          setTypologyCounts((prev) => ({ ...prev, [modalValue]: (prev[modalValue] || 0) + j2.data.length }));
+        } else {
+          setProductCounts((prev) => ({ ...prev, [modalValue]: (prev[modalValue] || 0) + j2.data.length }));
         }
       } else {
-        alert("Errore upload: " + (j.error || "?"));
+        alert("Errore: " + (j2.error || "?"));
       }
     } finally {
       setUploading(false);
