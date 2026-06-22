@@ -156,6 +156,7 @@ model Product {
   @@index([subcategory])
   @@index([slug])
   @@index([designerId])
+  professionalImages ProfessionalImage[]
 }
 
 model ProductDimension {
@@ -1830,4 +1831,25 @@ model StoreStatsDaySnapshot {
   topProductsJson String?  @db.Text
   channelsJson    String?  @db.Text
   computedAt      DateTime @default(now())
+}
+
+model ProfessionalImage {
+  id        String   @id @default(cuid())
+  productId String?
+  typology  String?
+  fileUrl   String   @db.Text
+  fileName  String   @db.VarChar(255)
+  storage   String   @default("local") @db.VarChar(16)
+  size      Int?
+  width     Int?
+  height    Int?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([typology])
+  @@index([sortOrder])
 }
