@@ -23,7 +23,7 @@ export default async function Page() {
   // Le immagini del catalogo (cover, gallery, hero, side) sono unite alle foto
   // pro caricate, cosi il professionista da una sola pagina puo scaricare
   // TUTTE le immagini di ogni prodotto/progetto.
-  const [typologies, productImagesRaw, typologyImages, allProducts, allProjects] = await Promise.all([
+  const [typologies, productImagesRaw, typologyImages, allProducts, allProjects, projectImagesRaw] = await Promise.all([
     prisma.contentTypology.findMany({
       where: { contentType: "products", isActive: true },
       orderBy: { sortOrder: "asc" },
@@ -68,6 +68,13 @@ export default async function Page() {
         galleryUrls: true,
       },
       orderBy: { sortOrder: "asc" },
+    }),
+    prisma.professionalImage.findMany({
+      where: { isActive: true, projectId: { not: null } },
+      include: {
+        project: { select: { id: true, name: true, slug: true, coverImage: true, imageUrl: true } },
+      },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
   ]);
 
@@ -153,6 +160,23 @@ export default async function Page() {
         projectSlug: pr.slug,
         projectCover: cover,
       });
+    });
+  }
+
+  // Aggiungi anche le foto pro caricate via dashboard per i progetti
+  // (ProfessionalImage con projectId valorizzato).
+  const seenProjUrls = new Set(projectImagesData.map((p) => p.fileUrl));
+  for (const pi of projectImagesRaw) {
+    if (!pi.projectId || !pi.project) continue;
+    if (seenProjUrls.has(pi.fileUrl)) continue;
+    projectImagesData.unshift({
+      id: pi.id,
+      fileUrl: pi.fileUrl,
+      fileName: pi.fileName,
+      projectId: pi.projectId,
+      projectName: pi.project.name,
+      projectSlug: pi.project.slug,
+      projectCover: pi.project.coverImage || pi.project.imageUrl || "",
     });
   }
 
