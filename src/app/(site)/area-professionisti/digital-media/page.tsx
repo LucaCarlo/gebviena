@@ -78,8 +78,7 @@ export default async function Page() {
         if (Array.isArray(arr)) for (const u of arr) if (typeof u === "string" && u) urls.add(u);
       } catch { /* silent */ }
     }
-    let idx = 0;
-    for (const u of urls) {
+    Array.from(urls).forEach((u, idx) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       catalogItems.push({
         id: `cat-${p.id}-${idx}`,
@@ -98,8 +97,7 @@ export default async function Page() {
         product: { id: p.id, name: p.name, slug: p.slug, category: p.category },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
-      idx++;
-    }
+    });
   }
 
   // Dedupe pro vs catalog (se per qualche motivo lo stesso URL e in entrambi)
