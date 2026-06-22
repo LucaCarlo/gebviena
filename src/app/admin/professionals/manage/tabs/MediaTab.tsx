@@ -35,7 +35,7 @@ interface Product {
 type View = "typology" | "product";
 
 export default function MediaTab() {
-  const [view, setView] = useState<View>("typology");
+  const [view, setView] = useState<View>("product");
   const [typologies, setTypologies] = useState<Typology[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [typologyCounts, setTypologyCounts] = useState<Record<string, number>>({});
@@ -188,20 +188,20 @@ export default function MediaTab() {
       {/* Sub-tabs */}
       <div className="flex gap-2 border-b border-warm-200 pb-3">
         <button
-          onClick={() => setView("typology")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-            view === "typology" ? "bg-warm-800 text-white" : "text-warm-600 hover:bg-warm-100"
-          }`}
-        >
-          <FolderOpen size={16} /> Per Tipologia
-        </button>
-        <button
           onClick={() => setView("product")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
             view === "product" ? "bg-warm-800 text-white" : "text-warm-600 hover:bg-warm-100"
           }`}
         >
           <Box size={16} /> Per Prodotto
+        </button>
+        <button
+          onClick={() => setView("typology")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+            view === "typology" ? "bg-warm-800 text-white" : "text-warm-600 hover:bg-warm-100"
+          }`}
+        >
+          <FolderOpen size={16} /> Per Tipologia
         </button>
       </div>
 
