@@ -8,16 +8,37 @@ interface ProductImage { id: string; fileUrl: string; fileName: string; productI
 interface ProjectImage { id: string; fileUrl: string; fileName: string; projectId: string; projectName: string; projectSlug: string; projectCover?: string | null }
 interface TypologyImage { id: string; fileUrl: string; fileName: string; typology: string }
 
+interface I18nDM {
+  byProduct: string;
+  byProject: string;
+  byTypology: string;
+  searchProduct: string;
+  searchProject: string;
+  allTypologies: string;
+  downloadAll: string;
+  productsAvailable: string;
+  projectsAvailable: string;
+  noProducts: string;
+  noProjects: string;
+  backToTypologies: string;
+  noPhotos: string;
+  photoAvailable: string;
+  photosAvailable: string;
+  imagesCount: string;
+}
+
 export default function DigitalMediaClient({
   typologies,
   productImages,
   projectImages,
   typologyImages,
+  i18n,
 }: {
   typologies: TypologyOpt[];
   productImages: ProductImage[];
   projectImages: ProjectImage[];
   typologyImages: TypologyImage[];
+  i18n: I18nDM;
 }) {
   const [view, setView] = useState<"product" | "project" | "typology">("product");
   const [selectedTypology, setSelectedTypology] = useState<string>("");
@@ -125,9 +146,9 @@ export default function DigitalMediaClient({
   return (
     <div className="space-y-6">
       <div className="flex gap-2 border-b border-warm-200 pb-3 flex-wrap">
-        <Tab active={view === "product"} onClick={() => setView("product")} icon={<Box size={16} />} label="Per Prodotto" />
-        <Tab active={view === "project"} onClick={() => setView("project")} icon={<Briefcase size={16} />} label="Per Progetto" />
-        <Tab active={view === "typology"} onClick={() => { setView("typology"); setSelectedTypology(""); }} icon={<FolderOpen size={16} />} label="Per Tipologia" />
+        <Tab active={view === "product"} onClick={() => setView("product")} icon={<Box size={16} />} label={i18n.byProduct} />
+        <Tab active={view === "project"} onClick={() => setView("project")} icon={<Briefcase size={16} />} label={i18n.byProject} />
+        <Tab active={view === "typology"} onClick={() => { setView("typology"); setSelectedTypology(""); }} icon={<FolderOpen size={16} />} label={i18n.byTypology} />
       </div>
 
       {view === "product" && (
@@ -135,7 +156,7 @@ export default function DigitalMediaClient({
           <div className="flex gap-3 flex-wrap">
             <input
               type="text"
-              placeholder="Cerca prodotto…"
+              placeholder={i18n.searchProduct}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 min-w-[200px] max-w-md border border-warm-300 rounded-lg px-3 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white"
@@ -145,15 +166,15 @@ export default function DigitalMediaClient({
               onChange={(e) => setProductFilterTypology(e.target.value)}
               className="border border-warm-300 rounded-lg px-3 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white"
             >
-              <option value="">Tutte le tipologie</option>
+              <option value="">{i18n.allTypologies}</option>
               {typologies.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
           </div>
-          <div className="text-xs text-warm-500">{productGroups.length} prodotti disponibili</div>
+          <div className="text-xs text-warm-500">{productGroups.length} {i18n.productsAvailable}</div>
           {productGroups.length === 0 ? (
-            <p className="text-sm text-warm-500 py-8 text-center">Nessun prodotto con immagini disponibili.</p>
+            <p className="text-sm text-warm-500 py-8 text-center">{i18n.noProducts}</p>
           ) : (
             <CardsGrid
               items={productGroups.map((g) => ({ id: g.id, name: g.name, cover: g.cover, count: g.images.length }))}
@@ -170,14 +191,14 @@ export default function DigitalMediaClient({
         <div className="space-y-4">
           <input
             type="text"
-            placeholder="Cerca progetto…"
+            placeholder={i18n.searchProject}
             value={searchProject}
             onChange={(e) => setSearchProject(e.target.value)}
             className="w-full max-w-md border border-warm-300 rounded-lg px-3 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white"
           />
-          <div className="text-xs text-warm-500">{projectGroups.length} progetti disponibili</div>
+          <div className="text-xs text-warm-500">{projectGroups.length} {i18n.projectsAvailable}</div>
           {projectGroups.length === 0 ? (
-            <p className="text-sm text-warm-500 py-8 text-center">Nessun progetto con immagini disponibili.</p>
+            <p className="text-sm text-warm-500 py-8 text-center">{i18n.noProjects}</p>
           ) : (
             <CardsGrid
               items={projectGroups.map((g) => ({ id: g.id, name: g.name, cover: g.cover, count: g.images.length }))}
@@ -206,7 +227,7 @@ export default function DigitalMediaClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-medium text-warm-900 uppercase tracking-wider">{t.label}</div>
-                    <div className="text-xs text-warm-500 mt-1">{count} {count === 1 ? "foto disponibile" : "foto disponibili"}</div>
+                    <div className="text-xs text-warm-500 mt-1">{count} {count === 1 ? i18n.photoAvailable : i18n.photosAvailable}</div>
                   </div>
                   <FolderOpen size={22} className="text-warm-400" />
                 </div>
@@ -219,7 +240,7 @@ export default function DigitalMediaClient({
       {view === "typology" && selectedTypology && (
         <div className="space-y-3">
           <button onClick={() => setSelectedTypology("")} className="text-[11px] uppercase tracking-[0.18em] text-warm-700 hover:text-warm-900">
-            ← Tutte le tipologie
+            {i18n.backToTypologies}
           </button>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <h2 className="text-2xl font-serif text-warm-900">{labelMap[selectedTypology] || selectedTypology}</h2>
@@ -228,12 +249,12 @@ export default function DigitalMediaClient({
                 onClick={() => downloadAll(photosForTypology)}
                 className="inline-flex items-center gap-2 bg-warm-800 text-white text-[12px] uppercase tracking-[0.12em] px-4 py-2 rounded hover:bg-warm-900"
               >
-                <Download size={14} /> Scarica tutte ({photosForTypology.length})
+                <Download size={14} /> {i18n.downloadAll} ({photosForTypology.length})
               </button>
             )}
           </div>
           {photosForTypology.length === 0 ? (
-            <p className="text-sm text-warm-500 py-8 text-center">Nessuna foto.</p>
+            <p className="text-sm text-warm-500 py-8 text-center">{i18n.noPhotos}</p>
           ) : (
             <Gallery items={photosForTypology} onOpen={setLightbox} />
           )}
@@ -248,14 +269,14 @@ export default function DigitalMediaClient({
             <div className="flex items-center justify-between p-5 border-b border-warm-200">
               <div>
                 <h3 className="text-xl font-serif text-warm-900">{galleryOpen.title}</h3>
-                <p className="text-xs text-warm-500 mt-0.5">{galleryOpen.images.length} immagini</p>
+                <p className="text-xs text-warm-500 mt-0.5">{galleryOpen.images.length} {i18n.imagesCount}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => downloadAll(galleryOpen.images)}
                   className="inline-flex items-center gap-2 bg-warm-800 text-white text-[12px] uppercase tracking-[0.12em] px-4 py-2 rounded hover:bg-warm-900"
                 >
-                  <Download size={14} /> Scarica tutte
+                  <Download size={14} /> {i18n.downloadAll}
                 </button>
                 <button onClick={() => setGalleryOpen(null)} className="p-1.5 text-warm-500 hover:text-warm-800">
                   <X size={20} />

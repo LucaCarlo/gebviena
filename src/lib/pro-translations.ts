@@ -267,6 +267,24 @@ const D: Record<string, Dict> = {
   },
   "account.field_required": { it: "Compila tutti i campi.", fr: "Veuillez remplir tous les champs.", en: "Please fill in all fields.", de: "Bitte alle Felder ausfüllen.", es: "Completa todos los campos." },
   "account.network_error": { it: "Errore di rete", fr: "Erreur de réseau", en: "Network error", de: "Netzwerkfehler", es: "Error de red" },
+
+  // ── Digital & Media ──
+  "media.by_product": { it: "Per Prodotto", fr: "Par Produit", en: "By Product", de: "Nach Produkt", es: "Por Producto" },
+  "media.by_project": { it: "Per Progetto", fr: "Par Projet", en: "By Project", de: "Nach Projekt", es: "Por Proyecto" },
+  "media.by_typology": { it: "Per Tipologia", fr: "Par Typologie", en: "By Typology", de: "Nach Typologie", es: "Por Tipología" },
+  "media.search_product": { it: "Cerca prodotto…", fr: "Rechercher un produit…", en: "Search product…", de: "Produkt suchen…", es: "Buscar producto…" },
+  "media.search_project": { it: "Cerca progetto…", fr: "Rechercher un projet…", en: "Search project…", de: "Projekt suchen…", es: "Buscar proyecto…" },
+  "media.all_typologies": { it: "Tutte le tipologie", fr: "Toutes les typologies", en: "All typologies", de: "Alle Typologien", es: "Todas las tipologías" },
+  "media.download_all": { it: "Scarica tutte", fr: "Tout télécharger", en: "Download all", de: "Alle herunterladen", es: "Descargar todas" },
+  "media.products_available": { it: "prodotti disponibili", fr: "produits disponibles", en: "products available", de: "Produkte verfügbar", es: "productos disponibles" },
+  "media.projects_available": { it: "progetti disponibili", fr: "projets disponibles", en: "projects available", de: "Projekte verfügbar", es: "proyectos disponibles" },
+  "media.no_products": { it: "Nessun prodotto con immagini disponibili.", fr: "Aucun produit avec des images disponibles.", en: "No products with available images.", de: "Keine Produkte mit verfügbaren Bildern.", es: "Ningún producto con imágenes disponibles." },
+  "media.no_projects": { it: "Nessun progetto con immagini disponibili.", fr: "Aucun projet avec des images disponibles.", en: "No projects with available images.", de: "Keine Projekte mit verfügbaren Bildern.", es: "Ningún proyecto con imágenes disponibles." },
+  "media.back_to_typologies": { it: "← Tutte le tipologie", fr: "← Toutes les typologies", en: "← All typologies", de: "← Alle Typologien", es: "← Todas las tipologías" },
+  "media.no_photos": { it: "Nessuna foto.", fr: "Aucune photo.", en: "No photos.", de: "Keine Fotos.", es: "Sin fotos." },
+  "media.photo_available": { it: "foto disponibile", fr: "photo disponible", en: "photo available", de: "Foto verfügbar", es: "foto disponible" },
+  "media.photos_available": { it: "foto disponibili", fr: "photos disponibles", en: "photos available", de: "Fotos verfügbar", es: "fotos disponibles" },
+  "media.images_count": { it: "immagini", fr: "images", en: "images", de: "Bilder", es: "imágenes" },
 };
 
 export function tPro(lang: string | null | undefined, key: string): string {
