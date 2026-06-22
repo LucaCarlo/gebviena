@@ -240,9 +240,10 @@ export default function DigitalMediaClient({
         </div>
       )}
 
-      {/* Modal gallery di un prodotto/progetto */}
+      {/* Modal gallery di un prodotto/progetto. z-index sopra al menu fixed
+          del sito (header usa z-50) per non rimanere nascosto sotto. */}
       {galleryOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4" onClick={() => setGalleryOpen(null)}>
+        <div className="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setGalleryOpen(null)}>
           <div className="bg-warm-50 rounded-xl w-full max-w-5xl max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-warm-200">
               <div>
@@ -268,9 +269,9 @@ export default function DigitalMediaClient({
         </div>
       )}
 
-      {/* Lightbox: ingrandimento singola immagine */}
+      {/* Lightbox: ingrandimento singola immagine — z-index sopra alla modal */}
       {lightbox && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-6" onClick={() => setLightbox(null)}>
+        <div className="fixed inset-0 z-[90] bg-black/90 flex items-center justify-center p-6" onClick={() => setLightbox(null)}>
           <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 text-white hover:text-warm-300">
             <X size={28} />
           </button>
