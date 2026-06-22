@@ -166,6 +166,24 @@ export default async function Page() {
         <p className="text-base text-warm-700 leading-relaxed mb-10 max-w-3xl">{section.description}</p>
 
         <DigitalMediaClient
+          i18n={{
+            byProduct: t("media.by_product"),
+            byProject: t("media.by_project"),
+            byTypology: t("media.by_typology"),
+            searchProduct: t("media.search_product"),
+            searchProject: t("media.search_project"),
+            allTypologies: t("media.all_typologies"),
+            downloadAll: t("media.download_all"),
+            productsAvailable: t("media.products_available"),
+            projectsAvailable: t("media.projects_available"),
+            noProducts: t("media.no_products"),
+            noProjects: t("media.no_projects"),
+            backToTypologies: t("media.back_to_typologies"),
+            noPhotos: t("media.no_photos"),
+            photoAvailable: t("media.photo_available"),
+            photosAvailable: t("media.photos_available"),
+            imagesCount: t("media.images_count"),
+          }}
           typologies={typologiesData}
           projectImages={projectImagesData}
           productImages={productImages.map((i) => ({
