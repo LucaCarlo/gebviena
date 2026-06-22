@@ -19,8 +19,11 @@ export default async function Page() {
   const t = getProT(lang);
   const section = getSection(SLUG, lang)!;
 
-  // Carica tipologie (categorie) e prodotti con almeno una foto pro
-  const [typologies, productImages, typologyImages] = await Promise.all([
+  // Carica tipologie + foto pro + tutti i prodotti attivi (per estrarre le
+  // immagini del catalogo: cover, gallery, hero, side — visibili anche ai
+  // professionisti, in modo che da li possano scaricare TUTTE le immagini
+  // del prodotto, non solo quelle pro).
+  const [typologies, productImagesRaw, typologyImages, allProducts] = await Promise.all([
     prisma.contentTypology.findMany({
       where: { contentType: "products", isActive: true },
       orderBy: { sortOrder: "asc" },
@@ -37,12 +40,74 @@ export default async function Page() {
       where: { isActive: true, typology: { not: null }, productId: null },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
+    prisma.product.findMany({
+      where: { isActive: true, excludeFromCatalog: false },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        category: true,
+        imageUrl: true,
+        coverImage: true,
+        galleryImages: true,
+        heroImage: true,
+        sideImage: true,
+      },
+      orderBy: { sortOrder: "asc" },
+    }),
   ]);
 
   const typologiesData = typologies.map((tp) => {
     const tr = tp.translations.find((x) => x.languageCode === lang);
     return { value: tp.value, label: tr?.label || tp.label };
   });
+
+  // Estrae da ogni Product gli URL delle immagini del catalogo + le concatena
+  // alle foto pro. Dedupe by URL per evitare doppioni se la stessa immagine e
+  // sia in coverImage che in galleryImages.
+  const catalogItems: typeof productImagesRaw = [];
+  for (const p of allProducts) {
+    const urls = new Set<string>();
+    if (p.coverImage) urls.add(p.coverImage);
+    if (p.imageUrl) urls.add(p.imageUrl);
+    if (p.heroImage) urls.add(p.heroImage);
+    if (p.sideImage) urls.add(p.sideImage);
+    if (p.galleryImages) {
+      try {
+        const arr = JSON.parse(p.galleryImages);
+        if (Array.isArray(arr)) for (const u of arr) if (typeof u === "string" && u) urls.add(u);
+      } catch { /* silent */ }
+    }
+    let idx = 0;
+    for (const u of urls) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      catalogItems.push({
+        id: `cat-${p.id}-${idx}`,
+        productId: p.id,
+        typology: null,
+        fileUrl: u,
+        fileName: u.split("/").pop() || "image",
+        storage: "local",
+        size: null,
+        width: null,
+        height: null,
+        sortOrder: idx,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        product: { id: p.id, name: p.name, slug: p.slug, category: p.category },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
+      idx++;
+    }
+  }
+
+  // Dedupe pro vs catalog (se per qualche motivo lo stesso URL e in entrambi)
+  const seenUrls = new Set(productImagesRaw.map((i) => i.fileUrl));
+  const productImages = [
+    ...productImagesRaw,
+    ...catalogItems.filter((c) => !seenUrls.has(c.fileUrl)),
+  ];
 
   return (
     <main className="min-h-screen bg-warm-50 pt-32 pb-24">
