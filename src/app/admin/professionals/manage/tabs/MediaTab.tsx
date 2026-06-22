@@ -25,6 +25,9 @@ interface Project {
   city?: string | null;
   imageUrl?: string;
   coverImage?: string | null;
+  heroImage?: string | null;
+  sideImage?: string | null;
+  galleryUrls?: string | null;
 }
 
 interface Typology {
@@ -40,6 +43,48 @@ interface Product {
   category: string;
   imageUrl: string;
   coverImage: string | null;
+  heroImage?: string | null;
+  sideImage?: string | null;
+  galleryImages?: string | null;
+}
+
+interface CatalogImage {
+  url: string;
+  fileName: string;
+}
+
+/** Estrae tutti gli URL immagine dal Product (cover, hero, side, galleria) per
+ *  mostrarli nella modal admin insieme alle foto pro caricate. */
+function extractProductCatalog(p: Product | null | undefined): CatalogImage[] {
+  if (!p) return [];
+  const urls = new Set<string>();
+  if (p.coverImage) urls.add(p.coverImage);
+  if (p.imageUrl) urls.add(p.imageUrl);
+  if (p.heroImage) urls.add(p.heroImage);
+  if (p.sideImage) urls.add(p.sideImage);
+  if (p.galleryImages) {
+    try {
+      const arr = JSON.parse(p.galleryImages);
+      if (Array.isArray(arr)) for (const u of arr) if (typeof u === "string" && u) urls.add(u);
+    } catch { /* silent */ }
+  }
+  return Array.from(urls).map((u) => ({ url: u, fileName: u.split("/").pop() || "image" }));
+}
+
+function extractProjectCatalog(p: Project | null | undefined): CatalogImage[] {
+  if (!p) return [];
+  const urls = new Set<string>();
+  if (p.coverImage) urls.add(p.coverImage);
+  if (p.imageUrl) urls.add(p.imageUrl);
+  if (p.heroImage) urls.add(p.heroImage);
+  if (p.sideImage) urls.add(p.sideImage);
+  if (p.galleryUrls) {
+    try {
+      const arr = JSON.parse(p.galleryUrls);
+      if (Array.isArray(arr)) for (const u of arr) if (typeof u === "string" && u) urls.add(u);
+    } catch { /* silent */ }
+  }
+  return Array.from(urls).map((u) => ({ url: u, fileName: u.split("/").pop() || "image" }));
 }
 
 type View = "product" | "project" | "typology";
@@ -59,6 +104,9 @@ export default function MediaTab() {
   const [modalValue, setModalValue] = useState<string>("");
   const [modalLabel, setModalLabel] = useState<string>("");
   const [modalImages, setModalImages] = useState<ProfessionalImage[]>([]);
+  // Immagini "del catalogo" (cover/gallery/hero del Product o Project) —
+  // visualizzate read-only insieme alle foto pro caricate via dashboard.
+  const [modalCatalog, setModalCatalog] = useState<CatalogImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
@@ -105,6 +153,7 @@ export default function MediaTab() {
     setModalValue(t.value);
     setModalLabel(t.label);
     setModalImages([]);
+    setModalCatalog([]);
     setModalOpen(true);
     const r = await fetch(`/api/admin/professional-images?typology=${encodeURIComponent(t.value)}`);
     const j = await r.json();
@@ -116,6 +165,7 @@ export default function MediaTab() {
     setModalValue(p.id);
     setModalLabel(p.name);
     setModalImages([]);
+    setModalCatalog(extractProductCatalog(p));
     setModalOpen(true);
     const r = await fetch(`/api/admin/professional-images?productId=${encodeURIComponent(p.id)}`);
     const j = await r.json();
@@ -127,6 +177,7 @@ export default function MediaTab() {
     setModalValue(p.id);
     setModalLabel(p.name + (p.city ? ` — ${p.city}` : ""));
     setModalImages([]);
+    setModalCatalog(extractProjectCatalog(p));
     setModalOpen(true);
     const r = await fetch(`/api/admin/professional-images?projectId=${encodeURIComponent(p.id)}`);
     const j = await r.json();
@@ -275,7 +326,9 @@ export default function MediaTab() {
           <div className="text-xs text-warm-500">{filteredProjects.length} progetti</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[600px] overflow-y-auto pr-1">
             {filteredProjects.map((p) => {
-              const count = projectCounts[p.id] || 0;
+              const proCount = projectCounts[p.id] || 0;
+              const catalogCount = extractProjectCatalog(p).length;
+              const total = proCount + catalogCount;
               const thumb = p.coverImage || p.imageUrl;
               return (
                 <button
@@ -288,8 +341,8 @@ export default function MediaTab() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={thumb} alt={p.name} className="w-full h-full object-cover" />
                     )}
-                    {count > 0 && (
-                      <span className="absolute top-1 right-1 bg-warm-800 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">{count}</span>
+                    {total > 0 && (
+                      <span className="absolute top-1 right-1 bg-warm-800 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">{total}</span>
                     )}
                   </div>
                   <div className="text-xs font-medium text-warm-800 truncate">{p.name}</div>
@@ -348,7 +401,9 @@ export default function MediaTab() {
           <div className="text-xs text-warm-500">{filteredProducts.length} prodotti</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[600px] overflow-y-auto pr-1">
             {filteredProducts.map((p) => {
-              const count = productCounts[p.id] || 0;
+              const proCount = productCounts[p.id] || 0;
+              const catalogCount = extractProductCatalog(p).length;
+              const total = proCount + catalogCount;
               const thumb = p.coverImage || p.imageUrl;
               return (
                 <button
@@ -361,8 +416,8 @@ export default function MediaTab() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={thumb} alt={p.name} className="w-full h-full object-contain" />
                     )}
-                    {count > 0 && (
-                      <span className="absolute top-1 right-1 bg-warm-800 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">{count}</span>
+                    {total > 0 && (
+                      <span className="absolute top-1 right-1 bg-warm-800 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">{total}</span>
                     )}
                   </div>
                   <div className="text-xs font-medium text-warm-800 truncate">{p.name}</div>
@@ -418,30 +473,61 @@ export default function MediaTab() {
               <p className="text-[10px] text-warm-400 mt-2">JPG, PNG, WEBP — più file insieme</p>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 pb-5">
-              {modalImages.length === 0 ? (
-                <p className="text-sm text-warm-500 text-center py-8">Nessuna foto caricata.</p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {modalImages.map((img) => (
-                    <div key={img.id} className="relative bg-warm-50 rounded overflow-hidden group">
-                      <div className="aspect-square">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={img.fileUrl} alt={img.fileName} className="w-full h-full object-cover" />
+            <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-5">
+              {/* Foto pro caricate via dashboard (eliminabili) */}
+              {modalImages.length > 0 && (
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.15em] text-warm-500 mb-2">
+                    Foto caricate ({modalImages.length})
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {modalImages.map((img) => (
+                      <div key={img.id} className="relative bg-warm-50 rounded overflow-hidden group">
+                        <div className="aspect-square">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={img.fileUrl} alt={img.fileName} className="w-full h-full object-cover" />
+                        </div>
+                        <button
+                          onClick={() => deleteImage(img.id)}
+                          className="absolute top-1 right-1 bg-white/90 text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Elimina"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent text-white text-[10px] px-2 py-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                          {img.fileName}
+                        </div>
                       </div>
-                      <button
-                        onClick={() => deleteImage(img.id)}
-                        className="absolute top-1 right-1 bg-white/90 text-red-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Elimina"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent text-white text-[10px] px-2 py-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
-                        {img.fileName}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              {/* Immagini dal catalogo Product/Project (read-only) */}
+              {modalCatalog.length > 0 && (
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.15em] text-warm-500 mb-2 flex items-center gap-2">
+                    Dal catalogo {modalKind === "project" ? "progetto" : "prodotto"} ({modalCatalog.length})
+                    <span className="text-[10px] text-warm-400 normal-case tracking-normal">— gestite nella pagina {modalKind === "project" ? "progetto" : "prodotto"}</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {modalCatalog.map((img, i) => (
+                      <div key={i} className="relative bg-warm-50 rounded overflow-hidden border border-warm-200">
+                        <div className="aspect-square">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={img.url} alt={img.fileName} className="w-full h-full object-cover" />
+                        </div>
+                        <span className="absolute top-1 left-1 bg-warm-800/85 text-white text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded">
+                          Catalogo
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {modalImages.length === 0 && modalCatalog.length === 0 && (
+                <p className="text-sm text-warm-500 text-center py-8">Nessuna foto.</p>
               )}
             </div>
           </div>
