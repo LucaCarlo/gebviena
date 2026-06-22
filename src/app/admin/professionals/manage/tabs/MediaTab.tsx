@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Upload, Trash2, X, FolderOpen, Box } from "lucide-react";
+import { Upload, Trash2, X, FolderOpen, Box, Briefcase } from "lucide-react";
 
 /** Foto area professionisti — separate dalle immagini-prodotto del sito.
  *  Si organizzano per Tipologia (foto generiche di categoria) o per Prodotto
@@ -10,11 +10,21 @@ interface ProfessionalImage {
   id: string;
   productId: string | null;
   typology: string | null;
+  projectId: string | null;
   fileUrl: string;
   fileName: string;
   storage: string;
   sortOrder: number;
   createdAt: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  slug: string;
+  city?: string | null;
+  imageUrl?: string;
+  coverImage?: string | null;
 }
 
 interface Typology {
@@ -32,18 +42,20 @@ interface Product {
   coverImage: string | null;
 }
 
-type View = "typology" | "product";
+type View = "product" | "project" | "typology";
 
 export default function MediaTab() {
   const [view, setView] = useState<View>("product");
   const [typologies, setTypologies] = useState<Typology[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [typologyCounts, setTypologyCounts] = useState<Record<string, number>>({});
   const [productCounts, setProductCounts] = useState<Record<string, number>>({});
+  const [projectCounts, setProjectCounts] = useState<Record<string, number>>({});
 
-  // Modal state — un'unica modal usata sia per typology che per product
+  // Modal state — un'unica modal usata per typology/product/project
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalKind, setModalKind] = useState<"typology" | "product">("typology");
+  const [modalKind, setModalKind] = useState<"typology" | "product" | "project">("typology");
   const [modalValue, setModalValue] = useState<string>("");
   const [modalLabel, setModalLabel] = useState<string>("");
   const [modalImages, setModalImages] = useState<ProfessionalImage[]>([]);
@@ -53,24 +65,32 @@ export default function MediaTab() {
   // Filtri vista "per prodotto"
   const [search, setSearch] = useState("");
   const [filterTypology, setFilterTypology] = useState<string>("");
+  // Filtro vista "per progetto"
+  const [searchProject, setSearchProject] = useState("");
 
   // Carica tipologie + prodotti + summary counters
   const loadAll = useCallback(async () => {
     try {
-      const [tRes, pRes, tSum, pSum] = await Promise.all([
+      const [tRes, pRes, prRes, tSum, pSum, prSum] = await Promise.all([
         fetch("/api/typologies?contentType=products").then((r) => r.json()),
         fetch("/api/products?limit=500&admin=true").then((r) => r.json()),
+        fetch("/api/projects?limit=500&admin=true").then((r) => r.json()).catch(() => ({ data: [] })),
         fetch("/api/admin/professional-images?summary=typology").then((r) => r.json()),
         fetch("/api/admin/professional-images?summary=product").then((r) => r.json()),
+        fetch("/api/admin/professional-images?summary=project").then((r) => r.json()),
       ]);
       setTypologies(tRes.data || []);
       setProducts(pRes.data || []);
+      setProjects(prRes.data || []);
       const tc: Record<string, number> = {};
       for (const x of tSum.data || []) tc[x.typology] = x.count;
       setTypologyCounts(tc);
       const pc: Record<string, number> = {};
       for (const x of pSum.data || []) pc[x.productId] = x.count;
       setProductCounts(pc);
+      const prc: Record<string, number> = {};
+      for (const x of prSum.data || []) prc[x.projectId] = x.count;
+      setProjectCounts(prc);
     } catch {
       // silent
     }
@@ -102,6 +122,17 @@ export default function MediaTab() {
     setModalImages(j.data || []);
   };
 
+  const openProject = async (p: Project) => {
+    setModalKind("project");
+    setModalValue(p.id);
+    setModalLabel(p.name + (p.city ? ` — ${p.city}` : ""));
+    setModalImages([]);
+    setModalOpen(true);
+    const r = await fetch(`/api/admin/professional-images?projectId=${encodeURIComponent(p.id)}`);
+    const j = await r.json();
+    setModalImages(j.data || []);
+  };
+
   const handleFiles = async (files: FileList | File[]) => {
     const arr = Array.from(files).filter((f) => f.type.startsWith("image/"));
     if (arr.length === 0) return;
@@ -110,7 +141,11 @@ export default function MediaTab() {
       // Step 1: carica i file via /api/upload (compressione automatica + WebP +
       // registrazione in MediaFile globale). Cosi le foto pro appaiono anche
       // in /admin/media insieme a tutti gli altri media del sito.
-      const folder = `professionals/${modalKind === "typology" ? `tip-${modalValue}` : `prod-${modalValue}`}`;
+      const subfolder =
+        modalKind === "typology" ? `tip-${modalValue}` :
+        modalKind === "project" ? `proj-${modalValue}` :
+        `prod-${modalValue}`;
+      const folder = `professionals/${subfolder}`;
       const items: { fileUrl: string; fileName: string; size?: number; width?: number; height?: number }[] = [];
       for (const f of arr) {
         const fd = new FormData();
@@ -134,8 +169,9 @@ export default function MediaTab() {
       if (items.length === 0) return;
 
       // Step 2: crea il link ProfessionalImage per ogni file
-      const body: { productId?: string; typology?: string; items: typeof items } = { items };
+      const body: { productId?: string; typology?: string; projectId?: string; items: typeof items } = { items };
       if (modalKind === "typology") body.typology = modalValue;
+      else if (modalKind === "project") body.projectId = modalValue;
       else body.productId = modalValue;
 
       const r2 = await fetch("/api/admin/professional-images", {
@@ -148,6 +184,8 @@ export default function MediaTab() {
         setModalImages((prev) => [...prev, ...j2.data]);
         if (modalKind === "typology") {
           setTypologyCounts((prev) => ({ ...prev, [modalValue]: (prev[modalValue] || 0) + j2.data.length }));
+        } else if (modalKind === "project") {
+          setProjectCounts((prev) => ({ ...prev, [modalValue]: (prev[modalValue] || 0) + j2.data.length }));
         } else {
           setProductCounts((prev) => ({ ...prev, [modalValue]: (prev[modalValue] || 0) + j2.data.length }));
         }
@@ -167,11 +205,19 @@ export default function MediaTab() {
       setModalImages((prev) => prev.filter((i) => i.id !== id));
       if (modalKind === "typology") {
         setTypologyCounts((prev) => ({ ...prev, [modalValue]: Math.max(0, (prev[modalValue] || 1) - 1) }));
+      } else if (modalKind === "project") {
+        setProjectCounts((prev) => ({ ...prev, [modalValue]: Math.max(0, (prev[modalValue] || 1) - 1) }));
       } else {
         setProductCounts((prev) => ({ ...prev, [modalValue]: Math.max(0, (prev[modalValue] || 1) - 1) }));
       }
     }
   };
+
+  const filteredProjects = useMemo(() => {
+    if (!searchProject.trim()) return projects;
+    const q = searchProject.trim().toLowerCase();
+    return projects.filter((p) => p.name.toLowerCase().includes(q) || (p.city || "").toLowerCase().includes(q));
+  }, [projects, searchProject]);
 
   const filteredProducts = useMemo(() => {
     let arr = products;
@@ -186,7 +232,7 @@ export default function MediaTab() {
   return (
     <div className="space-y-5">
       {/* Sub-tabs */}
-      <div className="flex gap-2 border-b border-warm-200 pb-3">
+      <div className="flex gap-2 border-b border-warm-200 pb-3 flex-wrap">
         <button
           onClick={() => setView("product")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
@@ -194,6 +240,14 @@ export default function MediaTab() {
           }`}
         >
           <Box size={16} /> Per Prodotto
+        </button>
+        <button
+          onClick={() => setView("project")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+            view === "project" ? "bg-warm-800 text-white" : "text-warm-600 hover:bg-warm-100"
+          }`}
+        >
+          <Briefcase size={16} /> Per Progetto
         </button>
         <button
           onClick={() => setView("typology")}
@@ -208,6 +262,44 @@ export default function MediaTab() {
       <p className="text-sm text-warm-600">
         Foto dedicate all&apos;area professionisti — <strong>separate</strong> dalle immagini-prodotto del sito. Possono essere caricate per <em>tipologia</em> (foto generiche di categoria, es. ambientazioni o ispirazioni) o per <em>prodotto</em> (foto specifiche di un singolo articolo).
       </p>
+
+      {view === "project" && (
+        <div className="space-y-3">
+          <input
+            type="text"
+            placeholder="Cerca progetto…"
+            value={searchProject}
+            onChange={(e) => setSearchProject(e.target.value)}
+            className="w-full max-w-md border border-warm-300 rounded-lg px-3 py-2 text-sm focus:border-warm-800 focus:outline-none"
+          />
+          <div className="text-xs text-warm-500">{filteredProjects.length} progetti</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[600px] overflow-y-auto pr-1">
+            {filteredProjects.map((p) => {
+              const count = projectCounts[p.id] || 0;
+              const thumb = p.coverImage || p.imageUrl;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => openProject(p)}
+                  className="bg-white border border-warm-200 rounded-lg p-2 text-left hover:border-warm-800 hover:shadow-sm transition-all"
+                >
+                  <div className="relative w-full aspect-square bg-warm-50 rounded overflow-hidden mb-2">
+                    {thumb && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={thumb} alt={p.name} className="w-full h-full object-cover" />
+                    )}
+                    {count > 0 && (
+                      <span className="absolute top-1 right-1 bg-warm-800 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">{count}</span>
+                    )}
+                  </div>
+                  <div className="text-xs font-medium text-warm-800 truncate">{p.name}</div>
+                  {p.city && <div className="text-[10px] text-warm-500 truncate">{p.city}</div>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {view === "typology" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -288,7 +380,7 @@ export default function MediaTab() {
             <div className="flex items-center justify-between p-5 border-b border-warm-200">
               <div>
                 <div className="text-xs uppercase tracking-wider text-warm-500">
-                  {modalKind === "typology" ? "Tipologia" : "Prodotto"}
+                  {modalKind === "typology" ? "Tipologia" : modalKind === "project" ? "Progetto" : "Prodotto"}
                 </div>
                 <h3 className="text-lg font-semibold text-warm-800">{modalLabel}</h3>
               </div>

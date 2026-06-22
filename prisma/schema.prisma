@@ -203,6 +203,7 @@ model Project {
   @@index([type])
   @@index([country])
   @@index([slug])
+  professionalImages ProfessionalImage[]
 }
 
 model ProjectProduct {
@@ -1838,6 +1839,7 @@ model ProfessionalImage {
   id        String   @id @default(cuid())
   productId String?
   typology  String?
+  projectId String?
   fileUrl   String   @db.Text
   fileName  String   @db.VarChar(255)
   storage   String   @default("local") @db.VarChar(16)
@@ -1849,9 +1851,11 @@ model ProfessionalImage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([productId])
   @@index([typology])
+  @@index([projectId])
   @@index([sortOrder])
 }
 
