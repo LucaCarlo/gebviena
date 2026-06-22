@@ -4,30 +4,24 @@ import { getAuthProfessional } from "@/lib/professional-auth";
 
 export const dynamic = "force-dynamic";
 
-/**
- * GET /api/area-professionisti/notifications
- *   Lista paginata delle notifiche destinate al professionista loggato, con
- *   stato letto/non-letto. Filtra per audience = NULL o = role del prof.
- *
- * Query: ?limit=50 (default 50, max 200)
- *
- * Risposta:
- *   { success, data: { items: [{...notification, isRead, readAt?}], unreadCount } }
- */
 export async function GET(req: NextRequest) {
   const pro = await getAuthProfessional();
   if (!pro) return NextResponse.json({ success: false, error: "Non autenticato" }, { status: 401 });
 
   const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get("limit") || "50"), 1), 200);
+  const lang = (pro as { language?: string | null }).language || "it";
 
-  // Notifiche visibili a questo professionista (audience NULL OR matching role).
+  // Notifiche per questo professionista + eventuale traduzione nella sua
+  // lingua (fallback su IT se la traduzione non esiste o lang === 'it').
   const items = await prisma.professionalNotification.findMany({
     where: { OR: [{ audience: null }, { audience: pro.role }] },
     orderBy: { createdAt: "desc" },
     take: limit,
+    include: lang !== "it"
+      ? { translations: { where: { languageCode: lang }, take: 1 } }
+      : undefined,
   });
 
-  // Stato letto/non-letto per ognuna
   const reads = items.length
     ? await prisma.professionalNotificationRead.findMany({
         where: { professionalId: pro.id, notificationId: { in: items.map((n) => n.id) } },
@@ -36,11 +30,19 @@ export async function GET(req: NextRequest) {
     : [];
   const readMap = new Map(reads.map((r) => [r.notificationId, r.readAt]));
 
-  const data = items.map((n) => ({
-    ...n,
-    isRead: readMap.has(n.id),
-    readAt: readMap.get(n.id) || null,
-  }));
+  const data = items.map((n) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tr = (n as any).translations?.[0];
+    return {
+      ...n,
+      title: tr?.title || n.title,
+      body: tr?.body ?? n.body,
+      isRead: readMap.has(n.id),
+      readAt: readMap.get(n.id) || null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      translations: undefined as any,
+    };
+  });
   const unreadCount = data.filter((n) => !n.isRead).length;
 
   return NextResponse.json({ success: true, data: { items: data, unreadCount } });

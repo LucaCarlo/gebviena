@@ -1185,6 +1185,7 @@ model ProfessionalNotification {
 
   @@index([createdAt])
   @@index([audience])
+  translations ProfessionalNotificationTranslation[]
 }
 
 model ProfessionalNotificationRead {
@@ -1852,4 +1853,17 @@ model ProfessionalImage {
   @@index([productId])
   @@index([typology])
   @@index([sortOrder])
+}
+
+model ProfessionalNotificationTranslation {
+  id              String   @id @default(cuid())
+  notificationId  String
+  languageCode    String   @db.VarChar(8)
+  title           String   @db.VarChar(255)
+  body            String?  @db.Text
+  createdAt       DateTime @default(now())
+  notification    ProfessionalNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, languageCode])
+  @@index([languageCode])
 }
