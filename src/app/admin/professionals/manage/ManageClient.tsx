@@ -6,10 +6,10 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Bell, FileText, FileCode, FolderOpen, Box, Camera, Image as ImageIcon, Briefcase, AlertTriangle, Shield, ExternalLink } from "lucide-react";
 import BachecaTab from "./tabs/BachecaTab";
 import PdfListTab from "./tabs/PdfListTab";
-import PlaceholderTab from "./tabs/PlaceholderTab";
 import PconConfigTab from "./tabs/PconConfigTab";
 import MaintenanceTab from "./tabs/MaintenanceTab";
 import AreaSettingsTab from "./tabs/AreaSettingsTab";
+import MediaTab from "./tabs/MediaTab";
 
 type TabKey =
   | "bacheca"
@@ -125,9 +125,7 @@ export default function ManageClient() {
               </div>
             )}
 
-            {active === "media" && (
-              <PlaceholderTab title="Digital & Media — in lavorazione" description="Sezione in fase di definizione: gestione foto, render, e altri asset digitali per i professionisti." />
-            )}
+            {active === "media" && <MediaTab />}
 
             {active === "cataloghi" && (
               <RedirectCard
