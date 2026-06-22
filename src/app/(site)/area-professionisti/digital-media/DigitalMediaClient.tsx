@@ -1,27 +1,34 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, X, FolderOpen, Box } from "lucide-react";
+import { Download, X, FolderOpen, Box, Briefcase } from "lucide-react";
 
 interface TypologyOpt { value: string; label: string }
-interface ProductImage { id: string; fileUrl: string; fileName: string; productId: string | null; productName: string; productSlug: string; productCategory: string }
+interface ProductImage { id: string; fileUrl: string; fileName: string; productId: string | null; productName: string; productSlug: string; productCategory: string; productCover?: string | null }
+interface ProjectImage { id: string; fileUrl: string; fileName: string; projectId: string; projectName: string; projectSlug: string; projectCover?: string | null }
 interface TypologyImage { id: string; fileUrl: string; fileName: string; typology: string }
 
 export default function DigitalMediaClient({
   typologies,
   productImages,
+  projectImages,
   typologyImages,
 }: {
   typologies: TypologyOpt[];
   productImages: ProductImage[];
+  projectImages: ProjectImage[];
   typologyImages: TypologyImage[];
 }) {
-  // Default vista "Per Prodotto" — è quello che cerca il professionista
-  // tipicamente; "Per Tipologia" è una vista alternativa di esplorazione.
-  const [view, setView] = useState<"typology" | "product">("product");
+  const [view, setView] = useState<"product" | "project" | "typology">("product");
   const [selectedTypology, setSelectedTypology] = useState<string>("");
   const [productFilterTypology, setProductFilterTypology] = useState<string>("");
   const [search, setSearch] = useState("");
+  const [searchProject, setSearchProject] = useState("");
+  // Modal: gallery di tutte le immagini di un prodotto/progetto
+  const [galleryOpen, setGalleryOpen] = useState<{
+    title: string;
+    images: { id: string; fileUrl: string; fileName: string }[];
+  } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   const labelMap = useMemo(() => {
@@ -30,7 +37,54 @@ export default function DigitalMediaClient({
     return m;
   }, [typologies]);
 
-  // Conteggi per tipologia (foto typology + foto prodotti di quella tipologia)
+  /* ---- Per Prodotto: raggruppa immagini per prodotto, costruisce card ---- */
+  const productGroups = useMemo(() => {
+    const groups: Record<string, { name: string; slug: string; category: string; cover: string; images: { id: string; fileUrl: string; fileName: string }[] }> = {};
+    for (const img of productImages) {
+      if (!img.productId) continue;
+      if (!groups[img.productId]) {
+        groups[img.productId] = {
+          name: img.productName,
+          slug: img.productSlug,
+          category: img.productCategory,
+          cover: img.productCover || img.fileUrl,
+          images: [],
+        };
+      }
+      groups[img.productId].images.push({ id: img.id, fileUrl: img.fileUrl, fileName: img.fileName });
+    }
+    let arr = Object.entries(groups).map(([id, g]) => ({ id, ...g }));
+    if (productFilterTypology) arr = arr.filter((p) => p.category && p.category.split(",").map((s) => s.trim()).includes(productFilterTypology));
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      arr = arr.filter((p) => p.name.toLowerCase().includes(q));
+    }
+    return arr;
+  }, [productImages, productFilterTypology, search]);
+
+  /* ---- Per Progetto ---- */
+  const projectGroups = useMemo(() => {
+    const groups: Record<string, { name: string; slug: string; cover: string; images: { id: string; fileUrl: string; fileName: string }[] }> = {};
+    for (const img of projectImages) {
+      if (!groups[img.projectId]) {
+        groups[img.projectId] = {
+          name: img.projectName,
+          slug: img.projectSlug,
+          cover: img.projectCover || img.fileUrl,
+          images: [],
+        };
+      }
+      groups[img.projectId].images.push({ id: img.id, fileUrl: img.fileUrl, fileName: img.fileName });
+    }
+    let arr = Object.entries(groups).map(([id, g]) => ({ id, ...g }));
+    if (searchProject.trim()) {
+      const q = searchProject.trim().toLowerCase();
+      arr = arr.filter((p) => p.name.toLowerCase().includes(q));
+    }
+    return arr;
+  }, [projectImages, searchProject]);
+
+  /* ---- Per Tipologia ---- */
   const typologyCounts = useMemo(() => {
     const c: Record<string, number> = {};
     for (const t of typologies) c[t.value] = 0;
@@ -38,9 +92,7 @@ export default function DigitalMediaClient({
     for (const img of productImages) {
       if (img.productCategory) {
         const cats = img.productCategory.split(",").map((s) => s.trim());
-        for (const cat of cats) {
-          if (c[cat] !== undefined) c[cat]++;
-        }
+        for (const cat of cats) if (c[cat] !== undefined) c[cat]++;
       }
     }
     return c;
@@ -48,55 +100,95 @@ export default function DigitalMediaClient({
 
   const photosForTypology = useMemo(() => {
     if (!selectedTypology) return [];
-    const fromTypology = typologyImages.filter((i) => i.typology === selectedTypology);
-    const fromProducts = productImages.filter((i) => i.productCategory && i.productCategory.split(",").map((s) => s.trim()).includes(selectedTypology));
-    return [
-      ...fromTypology.map((i) => ({ ...i, label: "" })),
-      ...fromProducts.map((i) => ({ id: i.id, fileUrl: i.fileUrl, fileName: i.fileName, label: i.productName })),
-    ];
+    const fromTypology = typologyImages.filter((i) => i.typology === selectedTypology).map((i) => ({ id: i.id, fileUrl: i.fileUrl, fileName: i.fileName, label: "" }));
+    const fromProducts = productImages
+      .filter((i) => i.productCategory && i.productCategory.split(",").map((s) => s.trim()).includes(selectedTypology))
+      .map((i) => ({ id: i.id, fileUrl: i.fileUrl, fileName: i.fileName, label: i.productName }));
+    return [...fromTypology, ...fromProducts];
   }, [selectedTypology, typologyImages, productImages]);
 
-  // Vista "per prodotto": raggruppa per prodotto
-  const productGroups = useMemo(() => {
-    const groups: Record<string, { name: string; slug: string; category: string; images: ProductImage[] }> = {};
-    for (const img of productImages) {
-      if (!img.productId) continue;
-      if (!groups[img.productId]) {
-        groups[img.productId] = { name: img.productName, slug: img.productSlug, category: img.productCategory, images: [] };
-      }
-      groups[img.productId].images.push(img);
+  /* ---- Scarica tutte le immagini del set: scarica sequenziale via anchor click ---- */
+  const downloadAll = async (items: { fileUrl: string; fileName: string }[]) => {
+    for (const item of items) {
+      const a = document.createElement("a");
+      a.href = item.fileUrl;
+      a.download = item.fileName || "";
+      a.rel = "noopener noreferrer";
+      a.target = "_self";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      await new Promise((r) => setTimeout(r, 300));
     }
-    let arr = Object.entries(groups).map(([id, g]) => ({ id, ...g }));
-    if (productFilterTypology) {
-      arr = arr.filter((p) => p.category && p.category.split(",").map((s) => s.trim()).includes(productFilterTypology));
-    }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      arr = arr.filter((p) => p.name.toLowerCase().includes(q));
-    }
-    return arr;
-  }, [productImages, search, productFilterTypology]);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex gap-2 border-b border-warm-200 pb-3 flex-wrap">
-        <button
-          onClick={() => { setView("typology"); setSelectedTypology(""); }}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-            view === "typology" ? "bg-warm-800 text-white" : "bg-white text-warm-700 hover:bg-warm-100"
-          }`}
-        >
-          <FolderOpen size={16} /> Per Tipologia
-        </button>
-        <button
-          onClick={() => setView("product")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-            view === "product" ? "bg-warm-800 text-white" : "bg-white text-warm-700 hover:bg-warm-100"
-          }`}
-        >
-          <Box size={16} /> Per Prodotto
-        </button>
+        <Tab active={view === "product"} onClick={() => setView("product")} icon={<Box size={16} />} label="Per Prodotto" />
+        <Tab active={view === "project"} onClick={() => setView("project")} icon={<Briefcase size={16} />} label="Per Progetto" />
+        <Tab active={view === "typology"} onClick={() => { setView("typology"); setSelectedTypology(""); }} icon={<FolderOpen size={16} />} label="Per Tipologia" />
       </div>
+
+      {view === "product" && (
+        <div className="space-y-4">
+          <div className="flex gap-3 flex-wrap">
+            <input
+              type="text"
+              placeholder="Cerca prodotto…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 min-w-[200px] max-w-md border border-warm-300 rounded-lg px-3 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white"
+            />
+            <select
+              value={productFilterTypology}
+              onChange={(e) => setProductFilterTypology(e.target.value)}
+              className="border border-warm-300 rounded-lg px-3 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white"
+            >
+              <option value="">Tutte le tipologie</option>
+              {typologies.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="text-xs text-warm-500">{productGroups.length} prodotti disponibili</div>
+          {productGroups.length === 0 ? (
+            <p className="text-sm text-warm-500 py-8 text-center">Nessun prodotto con immagini disponibili.</p>
+          ) : (
+            <CardsGrid
+              items={productGroups.map((g) => ({ id: g.id, name: g.name, cover: g.cover, count: g.images.length }))}
+              onClick={(id) => {
+                const g = productGroups.find((p) => p.id === id);
+                if (g) setGalleryOpen({ title: g.name, images: g.images });
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {view === "project" && (
+        <div className="space-y-4">
+          <input
+            type="text"
+            placeholder="Cerca progetto…"
+            value={searchProject}
+            onChange={(e) => setSearchProject(e.target.value)}
+            className="w-full max-w-md border border-warm-300 rounded-lg px-3 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white"
+          />
+          <div className="text-xs text-warm-500">{projectGroups.length} progetti disponibili</div>
+          {projectGroups.length === 0 ? (
+            <p className="text-sm text-warm-500 py-8 text-center">Nessun progetto con immagini disponibili.</p>
+          ) : (
+            <CardsGrid
+              items={projectGroups.map((g) => ({ id: g.id, name: g.name, cover: g.cover, count: g.images.length }))}
+              onClick={(id) => {
+                const g = projectGroups.find((p) => p.id === id);
+                if (g) setGalleryOpen({ title: g.name, images: g.images });
+              }}
+            />
+          )}
+        </div>
+      )}
 
       {view === "typology" && !selectedTypology && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -126,13 +218,20 @@ export default function DigitalMediaClient({
 
       {view === "typology" && selectedTypology && (
         <div className="space-y-3">
-          <button
-            onClick={() => setSelectedTypology("")}
-            className="text-[11px] uppercase tracking-[0.18em] text-warm-700 hover:text-warm-900"
-          >
+          <button onClick={() => setSelectedTypology("")} className="text-[11px] uppercase tracking-[0.18em] text-warm-700 hover:text-warm-900">
             ← Tutte le tipologie
           </button>
-          <h2 className="text-2xl font-serif text-warm-900">{labelMap[selectedTypology] || selectedTypology}</h2>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="text-2xl font-serif text-warm-900">{labelMap[selectedTypology] || selectedTypology}</h2>
+            {photosForTypology.length > 0 && (
+              <button
+                onClick={() => downloadAll(photosForTypology)}
+                className="inline-flex items-center gap-2 bg-warm-800 text-white text-[12px] uppercase tracking-[0.12em] px-4 py-2 rounded hover:bg-warm-900"
+              >
+                <Download size={14} /> Scarica tutte ({photosForTypology.length})
+              </button>
+            )}
+          </div>
           {photosForTypology.length === 0 ? (
             <p className="text-sm text-warm-500 py-8 text-center">Nessuna foto.</p>
           ) : (
@@ -141,42 +240,35 @@ export default function DigitalMediaClient({
         </div>
       )}
 
-      {view === "product" && (
-        <div className="space-y-4">
-          <div className="flex gap-3 flex-wrap">
-            <input
-              type="text"
-              placeholder="Cerca prodotto…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 min-w-[200px] max-w-md border border-warm-300 rounded-lg px-3 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white"
-            />
-            <select
-              value={productFilterTypology}
-              onChange={(e) => setProductFilterTypology(e.target.value)}
-              className="border border-warm-300 rounded-lg px-3 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white"
-            >
-              <option value="">Tutte le tipologie</option>
-              {typologies.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-          {productGroups.length === 0 ? (
-            <p className="text-sm text-warm-500 py-8 text-center">Nessun prodotto con foto disponibili.</p>
-          ) : (
-            <div className="space-y-8">
-              {productGroups.map((g) => (
-                <div key={g.id}>
-                  <h3 className="text-lg font-serif text-warm-900 mb-3">{g.name}</h3>
-                  <Gallery items={g.images.map((i) => ({ id: i.id, fileUrl: i.fileUrl, fileName: i.fileName, label: "" }))} onOpen={setLightbox} />
-                </div>
-              ))}
+      {/* Modal gallery di un prodotto/progetto */}
+      {galleryOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4" onClick={() => setGalleryOpen(null)}>
+          <div className="bg-warm-50 rounded-xl w-full max-w-5xl max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-warm-200">
+              <div>
+                <h3 className="text-xl font-serif text-warm-900">{galleryOpen.title}</h3>
+                <p className="text-xs text-warm-500 mt-0.5">{galleryOpen.images.length} immagini</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => downloadAll(galleryOpen.images)}
+                  className="inline-flex items-center gap-2 bg-warm-800 text-white text-[12px] uppercase tracking-[0.12em] px-4 py-2 rounded hover:bg-warm-900"
+                >
+                  <Download size={14} /> Scarica tutte
+                </button>
+                <button onClick={() => setGalleryOpen(null)} className="p-1.5 text-warm-500 hover:text-warm-800">
+                  <X size={20} />
+                </button>
+              </div>
             </div>
-          )}
+            <div className="flex-1 overflow-y-auto p-5">
+              <Gallery items={galleryOpen.images.map((i) => ({ ...i, label: "" }))} onOpen={setLightbox} />
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Lightbox: ingrandimento singola immagine */}
       {lightbox && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-6" onClick={() => setLightbox(null)}>
           <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 text-white hover:text-warm-300">
@@ -186,6 +278,42 @@ export default function DigitalMediaClient({
           <img src={lightbox} alt="" className="max-w-full max-h-full object-contain" />
         </div>
       )}
+    </div>
+  );
+}
+
+function Tab({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+        active ? "bg-warm-800 text-white" : "bg-white text-warm-700 hover:bg-warm-100"
+      }`}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+function CardsGrid({ items, onClick }: { items: { id: string; name: string; cover: string; count: number }[]; onClick: (id: string) => void }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+      {items.map((it) => (
+        <button
+          key={it.id}
+          onClick={() => onClick(it.id)}
+          className="text-left bg-white border border-warm-200 rounded-lg overflow-hidden hover:border-warm-800 hover:shadow-sm transition-all group"
+        >
+          <div className="relative aspect-square bg-warm-50 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={it.cover} alt={it.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+            <span className="absolute top-2 right-2 bg-warm-900/90 text-white text-[11px] font-medium px-2 py-0.5 rounded">{it.count}</span>
+          </div>
+          <div className="p-3">
+            <h3 className="text-sm font-medium text-warm-900 leading-snug line-clamp-2 min-h-[2.6em]">{it.name}</h3>
+          </div>
+        </button>
+      ))}
     </div>
   );
 }
