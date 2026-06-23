@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Upload, Trash2, X, FolderOpen, Box, Briefcase, EyeOff, RotateCcw } from "lucide-react";
+import { Upload, Trash2, X, FolderOpen, Box, Briefcase, EyeOff, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 
 /** Foto area professionisti — separate dalle immagini-prodotto del sito.
  *  Si organizzano per Tipologia (foto generiche di categoria) o per Prodotto
@@ -97,6 +97,10 @@ export default function MediaTab() {
   const [typologyCounts, setTypologyCounts] = useState<Record<string, number>>({});
   const [productCounts, setProductCounts] = useState<Record<string, number>>({});
   const [projectCounts, setProjectCounts] = useState<Record<string, number>>({});
+  // Set di URL scartati globalmente (per Product e per Project) — usati per
+  // ridurre il count visibile nella grid card senza doverli aprire.
+  const [hiddenByProduct, setHiddenByProduct] = useState<Record<string, Set<string>>>({});
+  const [hiddenByProject, setHiddenByProject] = useState<Record<string, Set<string>>>({});
 
   // Modal state — un'unica modal usata per typology/product/project
   const [modalOpen, setModalOpen] = useState(false);
@@ -111,6 +115,8 @@ export default function MediaTab() {
   const [modalCatalog, setModalCatalog] = useState<CatalogImage[]>([]);
   // Map fileUrl -> hiddenId (presente = nascosto). Il bottone cambia comportamento.
   const [hiddenMap, setHiddenMap] = useState<Record<string, string>>({});
+  // Toggle: mostra la sezione "Immagini scartate (recupera dal catalogo)"
+  const [showHidden, setShowHidden] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
@@ -123,13 +129,14 @@ export default function MediaTab() {
   // Carica tipologie + prodotti + summary counters
   const loadAll = useCallback(async () => {
     try {
-      const [tRes, pRes, prRes, tSum, pSum, prSum] = await Promise.all([
+      const [tRes, pRes, prRes, tSum, pSum, prSum, hidRes] = await Promise.all([
         fetch("/api/typologies?contentType=products").then((r) => r.json()),
         fetch("/api/products?limit=500&admin=true").then((r) => r.json()),
         fetch("/api/projects?limit=500&admin=true").then((r) => r.json()).catch(() => ({ data: [] })),
         fetch("/api/admin/professional-images?summary=typology").then((r) => r.json()),
         fetch("/api/admin/professional-images?summary=product").then((r) => r.json()),
         fetch("/api/admin/professional-images?summary=project").then((r) => r.json()),
+        fetch("/api/admin/professional-catalog-hidden").then((r) => r.json()).catch(() => ({ data: [] })),
       ]);
       setTypologies(tRes.data || []);
       setProducts(pRes.data || []);
@@ -143,6 +150,21 @@ export default function MediaTab() {
       const prc: Record<string, number> = {};
       for (const x of prSum.data || []) prc[x.projectId] = x.count;
       setProjectCounts(prc);
+      // Mappa hidden urls per product/project
+      const hbp: Record<string, Set<string>> = {};
+      const hbpr: Record<string, Set<string>> = {};
+      for (const h of hidRes.data || []) {
+        if (h.productId) {
+          if (!hbp[h.productId]) hbp[h.productId] = new Set();
+          hbp[h.productId].add(h.fileUrl);
+        }
+        if (h.projectId) {
+          if (!hbpr[h.projectId]) hbpr[h.projectId] = new Set();
+          hbpr[h.projectId].add(h.fileUrl);
+        }
+      }
+      setHiddenByProduct(hbp);
+      setHiddenByProject(hbpr);
     } catch {
       // silent
     }
@@ -171,6 +193,7 @@ export default function MediaTab() {
     setModalImages([]);
     setModalCatalog(extractProductCatalog(p));
     setHiddenMap({});
+    setShowHidden(false);
     setModalOpen(true);
     const [imgRes, hidRes] = await Promise.all([
       fetch(`/api/admin/professional-images?productId=${encodeURIComponent(p.id)}`).then((r) => r.json()),
@@ -189,6 +212,7 @@ export default function MediaTab() {
     setModalImages([]);
     setModalCatalog(extractProjectCatalog(p));
     setHiddenMap({});
+    setShowHidden(false);
     setModalOpen(true);
     const [imgRes, hidRes] = await Promise.all([
       fetch(`/api/admin/professional-images?projectId=${encodeURIComponent(p.id)}`).then((r) => r.json()),
@@ -212,6 +236,23 @@ export default function MediaTab() {
           delete next[fileUrl];
           return next;
         });
+        if (modalKind === "product") {
+          setHiddenByProduct((prev) => {
+            const next = { ...prev };
+            const s = new Set(next[modalValue] || []);
+            s.delete(fileUrl);
+            next[modalValue] = s;
+            return next;
+          });
+        } else if (modalKind === "project") {
+          setHiddenByProject((prev) => {
+            const next = { ...prev };
+            const s = new Set(next[modalValue] || []);
+            s.delete(fileUrl);
+            next[modalValue] = s;
+            return next;
+          });
+        }
       }
     } else {
       // Nascondi
@@ -226,6 +267,23 @@ export default function MediaTab() {
       const j = await r.json();
       if (j.success && j.data) {
         setHiddenMap((prev) => ({ ...prev, [fileUrl]: j.data.id }));
+        if (modalKind === "product") {
+          setHiddenByProduct((prev) => {
+            const next = { ...prev };
+            const s = new Set(next[modalValue] || []);
+            s.add(fileUrl);
+            next[modalValue] = s;
+            return next;
+          });
+        } else if (modalKind === "project") {
+          setHiddenByProject((prev) => {
+            const next = { ...prev };
+            const s = new Set(next[modalValue] || []);
+            s.add(fileUrl);
+            next[modalValue] = s;
+            return next;
+          });
+        }
       }
     }
   };
@@ -373,8 +431,10 @@ export default function MediaTab() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[600px] overflow-y-auto pr-1">
             {filteredProjects.map((p) => {
               const proCount = projectCounts[p.id] || 0;
-              const catalogCount = extractProjectCatalog(p).length;
-              const total = proCount + catalogCount;
+              const allCatalog = extractProjectCatalog(p);
+              const hiddenSet = hiddenByProject[p.id] || new Set<string>();
+              const visibleCatalogCount = allCatalog.filter((c) => !hiddenSet.has(c.url)).length;
+              const total = proCount + visibleCatalogCount;
               const thumb = p.coverImage || p.imageUrl;
               return (
                 <button
@@ -448,8 +508,10 @@ export default function MediaTab() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[600px] overflow-y-auto pr-1">
             {filteredProducts.map((p) => {
               const proCount = productCounts[p.id] || 0;
-              const catalogCount = extractProductCatalog(p).length;
-              const total = proCount + catalogCount;
+              const allCatalog = extractProductCatalog(p);
+              const hiddenSet = hiddenByProduct[p.id] || new Set<string>();
+              const visibleCatalogCount = allCatalog.filter((c) => !hiddenSet.has(c.url)).length;
+              const total = proCount + visibleCatalogCount;
               const thumb = p.coverImage || p.imageUrl;
               return (
                 <button
@@ -549,50 +611,87 @@ export default function MediaTab() {
                 </div>
               )}
 
-              {/* Immagini dal catalogo Product/Project — admin puo nasconderle
-                  dall'area pro col bottone in alto a destra (non tocca il
-                  prodotto nel sito principale). */}
-              {modalCatalog.length > 0 && (modalKind === "product" || modalKind === "project") && (
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.15em] text-warm-500 mb-2 flex items-center gap-2 flex-wrap">
-                    Dal catalogo {modalKind === "project" ? "progetto" : "prodotto"} ({modalCatalog.length})
-                    <span className="text-[10px] text-warm-400 normal-case tracking-normal">
-                      — clicca <EyeOff size={10} className="inline" /> per non mostrarle nell&apos;area pro (l&apos;immagine resta sul sito)
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {modalCatalog.map((img, i) => {
-                      const isHidden = !!hiddenMap[img.url];
-                      return (
-                        <div key={i} className={`relative bg-warm-50 rounded overflow-hidden border border-warm-200 ${isHidden ? "opacity-40" : ""}`}>
-                          <div className="aspect-square">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={img.url} alt={img.fileName} className="w-full h-full object-cover" />
-                          </div>
-                          <span className="absolute top-1 left-1 bg-warm-800/85 text-white text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded">
-                            Catalogo
+              {/* Immagini dal catalogo Product/Project — visibili nell'area
+                  pro. L'admin puo scartarle: spariscono da qui e finiscono
+                  nella sezione "Recupera dal catalogo" in basso. */}
+              {(modalKind === "product" || modalKind === "project") && (() => {
+                const visibleCatalog = modalCatalog.filter((img) => !hiddenMap[img.url]);
+                const hiddenCatalog = modalCatalog.filter((img) => hiddenMap[img.url]);
+                return (
+                  <>
+                    {visibleCatalog.length > 0 && (
+                      <div>
+                        <div className="text-[11px] uppercase tracking-[0.15em] text-warm-500 mb-2 flex items-center gap-2 flex-wrap">
+                          Dal catalogo {modalKind === "project" ? "progetto" : "prodotto"} ({visibleCatalog.length})
+                          <span className="text-[10px] text-warm-400 normal-case tracking-normal">
+                            — clicca <EyeOff size={10} className="inline" /> per non mostrarla nell&apos;area pro (l&apos;immagine resta sul sito)
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => toggleCatalogHidden(img.url)}
-                            title={isHidden ? "Ripristina: mostrare nell'area pro" : "Nascondi dall'area pro"}
-                            className={`absolute top-1 right-1 p-1 rounded shadow-sm transition-colors ${
-                              isHidden ? "bg-warm-800 text-white hover:bg-warm-900" : "bg-white/90 text-warm-700 hover:text-red-600 hover:bg-white"
-                            }`}
-                          >
-                            {isHidden ? <RotateCcw size={13} /> : <EyeOff size={13} />}
-                          </button>
-                          {isHidden && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-amber-100 text-amber-800 text-[10px] uppercase tracking-wider px-2 py-1 text-center">
-                              Nascosta dall&apos;area pro
-                            </div>
-                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                          {visibleCatalog.map((img, i) => (
+                            <div key={i} className="relative bg-warm-50 rounded overflow-hidden border border-warm-200 group">
+                              <div className="aspect-square">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={img.url} alt={img.fileName} className="w-full h-full object-cover" />
+                              </div>
+                              <span className="absolute top-1 left-1 bg-warm-800/85 text-white text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded">
+                                Catalogo
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => toggleCatalogHidden(img.url)}
+                                title="Scarta: non mostrare nell'area pro"
+                                className="absolute top-1 right-1 p-1 rounded shadow-sm bg-white/95 text-warm-700 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <EyeOff size={13} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {hiddenCatalog.length > 0 && (
+                      <div className="border-t border-warm-200 pt-4">
+                        <button
+                          type="button"
+                          onClick={() => setShowHidden((v) => !v)}
+                          className="w-full flex items-center justify-between text-left text-[11px] uppercase tracking-[0.15em] text-warm-600 hover:text-warm-900 mb-2"
+                        >
+                          <span className="flex items-center gap-2">
+                            <RotateCcw size={12} />
+                            Recupera dal catalogo ({hiddenCatalog.length} immagini scartate)
+                          </span>
+                          {showHidden ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+                        {showHidden && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {hiddenCatalog.map((img, i) => (
+                              <div key={i} className="relative bg-warm-50 rounded overflow-hidden border border-amber-300 group">
+                                <div className="aspect-square">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={img.url} alt={img.fileName} className="w-full h-full object-cover" />
+                                </div>
+                                <span className="absolute top-1 left-1 bg-amber-600/90 text-white text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded">
+                                  Scartata
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCatalogHidden(img.url)}
+                                  title="Ripristina: torna visibile nell'area pro"
+                                  className="absolute bottom-1 right-1 left-1 inline-flex items-center justify-center gap-1 bg-warm-800 text-white text-[10px] uppercase tracking-wider py-1.5 rounded hover:bg-warm-900"
+                                >
+                                  <RotateCcw size={11} /> Recupera
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               {modalImages.length === 0 && modalCatalog.length === 0 && (
                 <p className="text-sm text-warm-500 text-center py-8">Nessuna foto.</p>
