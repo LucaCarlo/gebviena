@@ -265,6 +265,8 @@ const D: Record<string, Dict> = {
     de: "Das neue Passwort muss mindestens 8 Zeichen, einen Groß-, einen Kleinbuchstaben und eine Zahl enthalten.",
     es: "La nueva contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.",
   },
+  "pro.field.country": { it: "Paese di provenienza", fr: "Pays d'origine", en: "Country of origin", de: "Herkunftsland", es: "País de origen" },
+  "pro.field.country.placeholder": { it: "Seleziona un paese…", fr: "Sélectionnez un pays…", en: "Select a country…", de: "Land auswählen…", es: "Selecciona un país…" },
   "account.field_required": { it: "Compila tutti i campi.", fr: "Veuillez remplir tous les champs.", en: "Please fill in all fields.", de: "Bitte alle Felder ausfüllen.", es: "Completa todos los campos." },
   "account.network_error": { it: "Errore di rete", fr: "Erreur de réseau", en: "Network error", de: "Netzwerkfehler", es: "Error de red" },
 
