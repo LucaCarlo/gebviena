@@ -250,6 +250,7 @@ export type NewsBlockV2Type =
   | "quote"
   | "timeline"
   | "comparison_table"
+  | "single_cta"
   | "product"
   | "share"
   | "related";
@@ -267,6 +268,10 @@ export interface NewsImageTextBgData {
   imagePosition: "left" | "right";
   ctaLabel?: string;
   ctaHref?: string;
+  // Stile del CTA: "default" = pulsante testuale (com'era); "custom" = sostituisce il
+  // testo del pulsante con un'icona SVG/PNG (ctaIconUrl) — utile per loghi store, app icons.
+  ctaStyle?: CtaButtonStyle;
+  ctaIconUrl?: string;
   // Solo se imageUrl è un file video: true = autoplay muted loop (background),
   // false/undefined = controls visibili, l'utente clicca play.
   videoAutoplay?: boolean;
@@ -347,7 +352,11 @@ export interface NewsFeatureToolData {
   description: string;
   bulletsTitle?: string;  // es. "IDEALE PER"
   bullets: string[];      // elenco bullet
-  ctas: NewsCta[];        // 0-2 pulsanti
+  ctas: NewsCta[];        // 0-4 pulsanti
+  // Stile gruppo CTA: "boxed" = pulsanti rettangolari distinti (default storico);
+  // "icons-divider" = icone affiancate senza sfondo, separate da una stanghetta
+  // verticale (utile per loghi store, app icons, brand icons cliccabili).
+  ctaGroupStyle?: "boxed" | "icons-divider";
   scrollLabel?: string;   // testo sopra il CTA es. "SCARICA PCON.FACTS"
 }
 
@@ -417,6 +426,16 @@ export interface NewsComparisonTableData {
   highlightColumn?: number; // colonna evidenziata (0-based), opzionale
 }
 
+// Sezione "Pulsante CTA" — block standalone con titolo + descrizione opzionali
+// + uno o piu pulsanti centrati. Usa gli stessi NewsCta del Feature/Strumento.
+export interface NewsSingleCtaData {
+  title?: string;
+  body?: string;
+  ctas: NewsCta[];
+  ctaGroupStyle?: "boxed" | "icons-divider";
+  align?: "left" | "center" | "right"; // default center
+}
+
 export type NewsShareData = Record<string, never>;
 export type NewsRelatedData = Record<string, never>;
 
@@ -437,6 +456,7 @@ export interface NewsBlockV2 {
     | NewsCaslonTitleData
     | NewsTwoImagesInlineData
     | NewsFeatureToolData
+    | NewsSingleCtaData
     | NewsCardsRowData
     | NewsFaqData
     | NewsStatsData

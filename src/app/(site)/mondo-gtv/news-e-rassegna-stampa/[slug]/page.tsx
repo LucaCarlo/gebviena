@@ -11,7 +11,7 @@ import type {
   NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
   NewsCaslonTitleData, NewsTwoImagesInlineData,
-  NewsFeatureToolData, NewsCardsRowData, NewsFaqData, NewsStatsData,
+  NewsFeatureToolData, NewsSingleCtaData, NewsCardsRowData, NewsFaqData, NewsStatsData,
   NewsQuoteData, NewsTimelineData, NewsComparisonTableData,
   NewsCta,
 } from "@/types";
@@ -230,12 +230,29 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
       {d.text && (
         <div className="text-[17px] md:text-[20px] text-black leading-snug font-light tracking-normal mt-6 md:mt-8 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.text }} />
       )}
-      {d.ctaLabel && d.ctaHref && (() => {
+      {d.ctaHref && (() => {
         const isPdf = /\.pdf($|\?)/i.test(d.ctaHref);
+        const linkProps = isPdf ? { download: "", target: "_blank", rel: "noopener noreferrer" } : {};
+        // Stile custom con icona SVG/PNG — pulsante nero con icona (+ label opzionale)
+        if (d.ctaStyle === "custom" && d.ctaIconUrl) {
+          return (
+            <a
+              href={d.ctaHref}
+              {...linkProps}
+              className="inline-flex self-start items-center gap-2 mt-8 bg-black text-white px-5 py-2.5 rounded-md hover:bg-warm-900 transition-colors"
+            >
+              <span className="relative w-5 h-5">
+                <Image src={d.ctaIconUrl} alt="" fill className="object-contain invert" sizes="20px" />
+              </span>
+              {d.ctaLabel && <span className="text-[15px] font-medium">{d.ctaLabel}</span>}
+            </a>
+          );
+        }
+        if (!d.ctaLabel) return null;
         return (
           <a
             href={d.ctaHref}
-            {...(isPdf ? { download: "", target: "_blank", rel: "noopener noreferrer" } : {})}
+            {...linkProps}
             className="inline-block self-start mt-8 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
             style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}
           >
@@ -510,6 +527,7 @@ export default function NewsDetailPage() {
                   case "quote": node = <QuoteBlock d={b.data as NewsQuoteData} />; break;
                   case "timeline": node = <TimelineBlock d={b.data as NewsTimelineData} />; break;
                   case "comparison_table": node = <ComparisonTableBlock d={b.data as NewsComparisonTableData} />; break;
+                  case "single_cta": node = <SingleCtaBlock d={b.data as NewsSingleCtaData} />; break;
                   case "product": node = <ProductBlock productId={(b.data as NewsProductData).productId} />; break;
                   case "share": node = <ShareBlock title={article.title} />; break;
                   default: node = null;
@@ -543,6 +561,41 @@ export default function NewsDetailPage() {
 /* ─────────────────────────────────────────────────────────────────────────
    RENDER PUBBLICO DEI NUOVI BLOCK TYPES
    ───────────────────────────────────────────────────────────────────────── */
+
+/** Gruppo di CTA — rendering "boxed" (pulsanti distinti) o "icons-divider"
+ *  (icone affiancate senza sfondo, separate da una stanghetta verticale,
+ *  utile per loghi store o brand icons cliccabili). */
+function CtaGroup({ ctas, groupStyle, align }: { ctas: NewsCta[]; groupStyle?: "boxed" | "icons-divider"; align?: "left" | "center" | "right" }) {
+  if (!ctas || ctas.length === 0) return null;
+  const justify = align === "left" ? "justify-start" : align === "right" ? "justify-end" : "justify-center";
+  if (groupStyle === "icons-divider") {
+    const iconCtas = ctas.filter((c) => c.style === "custom" && c.iconUrl);
+    if (iconCtas.length === 0) return null;
+    return (
+      <div className={`flex items-center gap-5 flex-wrap ${align ? justify : ""}`}>
+        {iconCtas.map((c, i) => {
+          const isExt = /^https?:\/\//i.test(c.href || "");
+          const linkProps = isExt ? { target: "_blank", rel: "noopener noreferrer" } : {};
+          return (
+            <span key={i} className="flex items-center gap-5">
+              {i > 0 && <span className="block w-px h-8 bg-warm-400" aria-hidden="true" />}
+              <a href={c.href || "#"} {...linkProps} className="inline-block hover:opacity-70 transition-opacity" title={c.label || ""}>
+                <span className="relative block w-10 h-10">
+                  <Image src={c.iconUrl!} alt={c.label || ""} fill className="object-contain" sizes="40px" />
+                </span>
+              </a>
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
+  return (
+    <div className={`flex flex-wrap gap-3 ${align ? justify : ""}`}>
+      {ctas.map((c, i) => <CtaButton key={i} cta={c} />)}
+    </div>
+  );
+}
 
 function CtaButton({ cta }: { cta: NewsCta }) {
   const isPdf = /\.pdf($|\?)/i.test(cta.href || "");
@@ -591,11 +644,7 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
       <h3 className="text-[25px] md:text-[28px] font-sans text-black font-light mb-3">{d.title}</h3>
       {d.description && <p className="text-[16px] md:text-[17px] text-black font-light leading-relaxed mb-6 whitespace-pre-line">{d.description}</p>}
       {d.scrollLabel && <div className="text-[13px] uppercase tracking-[0.18em] text-warm-500 mb-2 font-medium">{d.scrollLabel}</div>}
-      {d.ctas && d.ctas.length > 0 && (
-        <div className="flex flex-wrap gap-3">
-          {d.ctas.map((c, i) => <CtaButton key={i} cta={c} />)}
-        </div>
-      )}
+      <CtaGroup ctas={d.ctas || []} groupStyle={d.ctaGroupStyle} align="left" />
     </div>
   );
   const bulletsEl = d.bullets && d.bullets.filter(Boolean).length > 0 ? (
@@ -628,6 +677,29 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
             <div className="md:col-span-5">{imageEl}</div>
           </>
         )}
+      </div>
+    </section>
+  );
+}
+
+function SingleCtaBlock({ d }: { d: NewsSingleCtaData }) {
+  if (!d.ctas || d.ctas.length === 0) return null;
+  const align = d.align || "center";
+  const textAlign = align === "left" ? "text-left" : align === "right" ? "text-right" : "text-center";
+  return (
+    <section className="gtv-container py-10 md:py-14">
+      <div className={`mx-auto max-w-[840px] px-6 md:px-12 ${textAlign}`}>
+        {d.title && (
+          <h2 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.2] font-light uppercase tracking-[inherit] mb-3">
+            {d.title}
+          </h2>
+        )}
+        {d.body && (
+          <p className="text-[16px] md:text-[18px] text-black/80 font-light leading-relaxed mb-6 whitespace-pre-line">
+            {d.body}
+          </p>
+        )}
+        <CtaGroup ctas={d.ctas} groupStyle={d.ctaGroupStyle} align={align} />
       </div>
     </section>
   );
