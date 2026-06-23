@@ -562,27 +562,39 @@ export default function NewsDetailPage() {
    RENDER PUBBLICO DEI NUOVI BLOCK TYPES
    ───────────────────────────────────────────────────────────────────────── */
 
-/** Gruppo di CTA — rendering "boxed" (pulsanti distinti) o "icons-divider"
- *  (icone affiancate senza sfondo, separate da una stanghetta verticale,
- *  utile per loghi store o brand icons cliccabili). */
-function CtaGroup({ ctas, groupStyle, align }: { ctas: NewsCta[]; groupStyle?: "boxed" | "icons-divider"; align?: "left" | "center" | "right" }) {
+/** Gruppo di CTA — 3 stili:
+ *   "boxed"             = pulsanti distinti con sfondo (default storico).
+ *   "icons-text-divider"= icona + label affiancati senza sfondo, separati da stanghetta verticale.
+ *   "icons-only-divider"= solo icona senza testo, separati da stanghetta verticale.
+ *   Legacy: "icons-divider" trattato come alias di "icons-only-divider". */
+type CtaGroupStyle = "boxed" | "icons-text-divider" | "icons-only-divider";
+function CtaGroup({ ctas, groupStyle, align }: { ctas: NewsCta[]; groupStyle?: CtaGroupStyle | "icons-divider"; align?: "left" | "center" | "right" }) {
   if (!ctas || ctas.length === 0) return null;
   const justify = align === "left" ? "justify-start" : align === "right" ? "justify-end" : "justify-center";
-  if (groupStyle === "icons-divider") {
+  // Normalizza legacy value
+  const style: CtaGroupStyle = groupStyle === "icons-divider"
+    ? "icons-only-divider"
+    : (groupStyle as CtaGroupStyle) || "boxed";
+
+  if (style === "icons-only-divider" || style === "icons-text-divider") {
+    const showText = style === "icons-text-divider";
     const iconCtas = ctas.filter((c) => c.style === "custom" && c.iconUrl);
     if (iconCtas.length === 0) return null;
     return (
-      <div className={`flex items-center gap-5 flex-wrap ${align ? justify : ""}`}>
+      <div className={`flex items-center gap-5 flex-wrap ${justify}`}>
         {iconCtas.map((c, i) => {
           const isExt = /^https?:\/\//i.test(c.href || "");
           const linkProps = isExt ? { target: "_blank", rel: "noopener noreferrer" } : {};
           return (
             <span key={i} className="flex items-center gap-5">
               {i > 0 && <span className="block w-px h-8 bg-warm-400" aria-hidden="true" />}
-              <a href={c.href || "#"} {...linkProps} className="inline-block hover:opacity-70 transition-opacity" title={c.label || ""}>
-                <span className="relative block w-10 h-10">
+              <a href={c.href || "#"} {...linkProps} className="inline-flex items-center gap-2 hover:opacity-70 transition-opacity" title={c.label || ""}>
+                <span className="relative block w-10 h-10 flex-shrink-0">
                   <Image src={c.iconUrl!} alt={c.label || ""} fill className="object-contain" sizes="40px" />
                 </span>
+                {showText && c.label && (
+                  <span className="text-[14px] md:text-[15px] font-medium text-black">{c.label}</span>
+                )}
               </a>
             </span>
           );
@@ -591,7 +603,7 @@ function CtaGroup({ ctas, groupStyle, align }: { ctas: NewsCta[]; groupStyle?: "
     );
   }
   return (
-    <div className={`flex flex-wrap gap-3 ${align ? justify : ""}`}>
+    <div className={`flex flex-wrap gap-3 ${justify}`}>
       {ctas.map((c, i) => <CtaButton key={i} cta={c} />)}
     </div>
   );
