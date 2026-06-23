@@ -356,7 +356,12 @@ export interface NewsFeatureToolData {
   // Stile gruppo CTA: "boxed" = pulsanti rettangolari distinti (default storico);
   // "icons-divider" = icone affiancate senza sfondo, separate da una stanghetta
   // verticale (utile per loghi store, app icons, brand icons cliccabili).
-  ctaGroupStyle?: "boxed" | "icons-divider";
+  // "boxed" = pulsanti completi con sfondo (default).
+  // "icons-text-divider" = senza sfondo, icona + testo del pulsante affiancati,
+  //   separati da stanghetta verticale.
+  // "icons-only-divider" = senza sfondo, solo icona (no testo), separati da stanghetta.
+  // (Legacy: "icons-divider" trattato come alias di "icons-only-divider".)
+  ctaGroupStyle?: "boxed" | "icons-text-divider" | "icons-only-divider";
   scrollLabel?: string;   // testo sopra il CTA es. "SCARICA PCON.FACTS"
 }
 
@@ -432,7 +437,12 @@ export interface NewsSingleCtaData {
   title?: string;
   body?: string;
   ctas: NewsCta[];
-  ctaGroupStyle?: "boxed" | "icons-divider";
+  // "boxed" = pulsanti completi con sfondo (default).
+  // "icons-text-divider" = senza sfondo, icona + testo del pulsante affiancati,
+  //   separati da stanghetta verticale.
+  // "icons-only-divider" = senza sfondo, solo icona (no testo), separati da stanghetta.
+  // (Legacy: "icons-divider" trattato come alias di "icons-only-divider".)
+  ctaGroupStyle?: "boxed" | "icons-text-divider" | "icons-only-divider";
   align?: "left" | "center" | "right"; // default center
 }
 

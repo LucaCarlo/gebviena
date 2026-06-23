@@ -573,11 +573,12 @@ export function FeatureToolEditor({ data, onChange, sourceData }: { data: NewsFe
               Stile:
               <select
                 value={data.ctaGroupStyle || "boxed"}
-                onChange={(e) => onChange({ ...data, ctaGroupStyle: e.target.value as "boxed" | "icons-divider" })}
+                onChange={(e) => onChange({ ...data, ctaGroupStyle: e.target.value as "boxed" | "icons-text-divider" | "icons-only-divider" })}
                 className="border border-warm-300 rounded px-2 py-1 text-xs focus:border-warm-800 focus:outline-none bg-white"
               >
                 <option value="boxed">Pulsanti con sfondo</option>
-                <option value="icons-divider">Icone affiancate (separate da stanghetta)</option>
+                <option value="icons-text-divider">Icona + testo, senza sfondo (con stanghetta)</option>
+                <option value="icons-only-divider">Solo icone, senza sfondo (con stanghetta)</option>
               </select>
             </label>
             {(data.ctas || []).length < 4 && (
@@ -585,9 +586,11 @@ export function FeatureToolEditor({ data, onChange, sourceData }: { data: NewsFe
             )}
           </div>
         </div>
-        {data.ctaGroupStyle === "icons-divider" && (
+        {(data.ctaGroupStyle === "icons-only-divider" || data.ctaGroupStyle === "icons-text-divider") && (
           <p className="text-[10px] text-warm-500 -mt-2">
-            Stile <em>Icone affiancate</em>: tutti i pulsanti devono essere &laquo;Personalizzato&raquo; con icona SVG/PNG caricata. Niente sfondo, separati da una stanghetta verticale.
+            {data.ctaGroupStyle === "icons-only-divider"
+              ? "Stile «Solo icone»: tutti i pulsanti devono essere «Personalizzato» con icona SVG/PNG caricata. Niente sfondo né testo, separati da una stanghetta verticale."
+              : "Stile «Icona + testo»: i pulsanti devono essere «Personalizzato» con icona SVG/PNG + label. Mostrati come icona + testo accanto, senza sfondo, separati da una stanghetta verticale."}
           </p>
         )}
         {(data.ctas || []).map((c, i) => (
