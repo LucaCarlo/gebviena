@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Eye, EyeOff, Check, Loader2 } from "lucide-react";
 import { useRecaptcha } from "@/components/providers/RecaptchaProvider";
 import { useT, useLang } from "@/contexts/I18nContext";
+import { COUNTRIES } from "@/lib/countries";
 
 type Mode = "login" | "register";
 type Role = "ARCHITECT_DESIGNER" | "PRESS" | "RESELLER" | "AGENT";
@@ -14,6 +15,7 @@ interface FormState {
   email: string;
   phone: string;
   company: string;
+  country: string;
   password: string;
   passwordConfirm: string;
   role: Role;
@@ -27,6 +29,7 @@ const EMPTY_FORM: FormState = {
   email: "",
   phone: "",
   company: "",
+  country: "",
   password: "",
   passwordConfirm: "",
   role: "ARCHITECT_DESIGNER",
@@ -64,6 +67,10 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
     e.preventDefault();
     setError("");
     if (mode === "register") {
+      if (!form.country) {
+        setError(t("pro.error.missing"));
+        return;
+      }
       if (isRequestOnly) {
         if (!form.firstName || !form.lastName || !form.email || !form.company) {
           setError(t("pro.error.missing"));
@@ -126,6 +133,7 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
           email: form.email,
           phone: form.phone || undefined,
           company: form.company,
+          country: form.country,
           role: form.role,
           language: lang,
           acceptsPrivacy: form.acceptsPrivacy,
@@ -140,6 +148,7 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
           email: form.email,
           phone: form.phone || undefined,
           company: form.company,
+          country: form.country,
           password: form.password,
           role: form.role,
           language: lang,
@@ -334,6 +343,27 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
                 value={form.company}
                 onChange={(v) => update("company", v)}
               />
+            </div>
+
+            {/* Paese di provenienza — obbligatorio per profilazione */}
+            <div>
+              <label className="block text-[11px] uppercase tracking-[0.18em] text-warm-700 mb-2">
+                {t("pro.field.country")} *
+              </label>
+              <select
+                value={form.country}
+                onChange={(e) => update("country", e.target.value)}
+                required
+                className="w-full bg-white border border-warm-300 px-4 py-3 text-sm text-warm-900 focus:border-warm-900 focus:outline-none"
+              >
+                <option value="">{t("pro.field.country.placeholder")}</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {((c.names as any)[lang]) || c.names.it}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {!isRequestOnly && (

@@ -14,13 +14,14 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const q = (sp.get("q") || "").trim();
   const role = (sp.get("role") || "").trim();
+  const country = (sp.get("country") || "").trim().toUpperCase().slice(0, 2);
   const activeParam = sp.get("active");
   const statusParam = sp.get("status"); // "pending" | "approved" | (none)
   const format = (sp.get("format") || "").toLowerCase();
   const isCsv = format === "csv";
   const page = Math.max(parseInt(sp.get("page") || "1", 10) || 1, 1);
   const pageSize = Math.min(Math.max(parseInt(sp.get("pageSize") || "50", 10) || 50, 1), 200);
-  const ALLOWED_SORT = new Set(["createdAt", "email", "firstName", "lastName", "company", "role", "language", "lastLoginAt"]);
+  const ALLOWED_SORT = new Set(["createdAt", "email", "firstName", "lastName", "company", "country", "role", "language", "lastLoginAt"]);
   const sortByParam = sp.get("sortBy") || "";
   const sortBy = ALLOWED_SORT.has(sortByParam) ? sortByParam : "";
   const sortDir: "asc" | "desc" = sp.get("sortDir") === "asc" ? "asc" : "desc";
@@ -37,6 +38,7 @@ export async function GET(req: NextRequest) {
   if (role && ["ARCHITECT_DESIGNER", "PRESS", "RESELLER", "AGENT"].includes(role)) {
     where.role = role as Prisma.EnumProfessionalRoleFilter["equals"];
   }
+  if (country && /^[A-Z]{2}$/.test(country)) where.country = country;
   if (activeParam === "true") where.isActive = true;
   if (activeParam === "false") where.isActive = false;
   if (statusParam === "pending") where.pendingApproval = true;
@@ -52,7 +54,7 @@ export async function GET(req: NextRequest) {
       : [{ pendingApproval: "desc" }, { createdAt: "desc" }],
     select: {
       id: true, email: true, firstName: true, lastName: true, phone: true,
-      company: true, role: true, language: true, marketingOptIn: true,
+      company: true, country: true, role: true, language: true, marketingOptIn: true,
       isActive: true, pendingApproval: true, approvedAt: true,
       createdAt: true, lastLoginAt: true,
     },

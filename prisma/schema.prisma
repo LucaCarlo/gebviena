@@ -1146,6 +1146,7 @@ model Professional {
   company        String           @db.VarChar(255)
   role           ProfessionalRole
   language       String           @default("it") @db.VarChar(16)
+  country        String           @default("") @db.VarChar(2)
   acceptsPrivacy Boolean          @default(true)
   marketingOptIn Boolean          @default(false)
   // true = ha solo fatto richiesta, in attesa di approvazione admin.

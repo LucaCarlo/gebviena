@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { signProfessionalToken, PROFESSIONAL_COOKIE_NAME, professionalCookieOptions } from "@/lib/professional-auth";
 import { verifyRecaptcha } from "@/lib/recaptcha";
 import { normalizeEmail, isLikelyDotSpam, isLikelyGibberishName } from "@/lib/email-spam";
+import { COUNTRIES } from "@/lib/countries";
 import type { ProfessionalRole } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -28,10 +29,14 @@ export async function POST(req: NextRequest) {
       : "it";
     const acceptsPrivacy = body.acceptsPrivacy === true;
     const marketingOptIn = body.marketingOptIn === true;
+    const country = String(body.country || "").toUpperCase().slice(0, 2);
 
     // Validazioni base
     if (!firstName || !lastName || !rawEmail || !company || !role || !password) {
       return NextResponse.json({ success: false, error: "Campi obbligatori mancanti" }, { status: 400 });
+    }
+    if (!country || !COUNTRIES.some((c) => c.code === country)) {
+      return NextResponse.json({ success: false, error: "Paese non valido" }, { status: 400 });
     }
     if (!acceptsPrivacy) {
       return NextResponse.json({ success: false, error: "Devi accettare la privacy policy" }, { status: 400 });
@@ -83,6 +88,7 @@ export async function POST(req: NextRequest) {
         company,
         role: role as ProfessionalRole,
         language,
+        country,
         acceptsPrivacy: true,
         marketingOptIn,
         lastLoginAt: new Date(),

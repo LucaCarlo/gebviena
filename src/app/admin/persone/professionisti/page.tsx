@@ -7,6 +7,7 @@ import BulkEmailModal from "@/components/admin/BulkEmailModal";
 import ImportExportButtons from "@/components/admin/ImportExportButtons";
 import TablePagination from "@/components/admin/TablePagination";
 import SortableTh, { type SortDir } from "@/components/admin/SortableTh";
+import { COUNTRIES, getCountryName } from "@/lib/countries";
 
 interface Professional {
   id: string;
@@ -15,6 +16,7 @@ interface Professional {
   lastName: string;
   phone: string | null;
   company: string;
+  country: string;
   role: "ARCHITECT_DESIGNER" | "PRESS" | "RESELLER" | "AGENT";
   language: string;
   marketingOptIn: boolean;
@@ -52,6 +54,7 @@ export default function AdminProfessionalsPage() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
+  const [country, setCountry] = useState("");
   const [active, setActive] = useState<"" | "true" | "false">("");
   const [status, setStatus] = useState<"" | "pending" | "approved">("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -88,6 +91,7 @@ export default function AdminProfessionalsPage() {
       const sp = new URLSearchParams();
       if (q.trim()) sp.set("q", q.trim());
       if (role) sp.set("role", role);
+      if (country) sp.set("country", country);
       if (active) sp.set("active", active);
       if (status) sp.set("status", status);
       sp.set("page", String(page));
@@ -104,10 +108,10 @@ export default function AdminProfessionalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [q, role, active, status, page, pageSize, sortBy, sortDir]);
+  }, [q, role, country, active, status, page, pageSize, sortBy, sortDir]);
 
   // Reset pagina su cambio filtri
-  useEffect(() => { setPage(1); }, [q, role, active, status, pageSize]);
+  useEffect(() => { setPage(1); }, [q, role, country, active, status, pageSize]);
 
   // Debounce della query di ricerca
   useEffect(() => {
@@ -120,6 +124,7 @@ export default function AdminProfessionalsPage() {
     const sp = new URLSearchParams({ format: "csv" });
     if (q.trim()) sp.set("q", q.trim());
     if (role) sp.set("role", role);
+    if (country) sp.set("country", country);
     if (active) sp.set("active", active);
     if (status) sp.set("status", status);
     return `/api/admin/professionals?${sp}`;
@@ -265,6 +270,15 @@ export default function AdminProfessionalsPage() {
           {ROLE_FILTERS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
         </select>
         <select
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
+          title="Filtra per paese"
+        >
+          <option value="">Tutti i paesi</option>
+          {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.names.it}</option>)}
+        </select>
+        <select
           value={status}
           onChange={(e) => setStatus(e.target.value as "" | "pending" | "approved")}
           className="px-3 py-2 border border-warm-200 rounded text-sm focus:border-warm-700 outline-none bg-white"
@@ -313,6 +327,7 @@ export default function AdminProfessionalsPage() {
                 <SortableTh field="firstName" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Nome</SortableTh>
                 <SortableTh field="email" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Email</SortableTh>
                 <SortableTh field="company" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Azienda</SortableTh>
+                <SortableTh field="country" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Paese</SortableTh>
                 <SortableTh field="role" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Ruolo</SortableTh>
                 <SortableTh field="language" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Lingua</SortableTh>
                 <SortableTh field="createdAt" sortField={sortBy} sortDir={sortDir} onSort={(f, d) => { setSortBy(f); setSortDir(d); }}>Registrato</SortableTh>
@@ -346,6 +361,13 @@ export default function AdminProfessionalsPage() {
                       {p.phone && <div className="text-[11px] text-warm-500 mt-0.5">{p.phone}</div>}
                     </td>
                     <td className="px-4 py-3 text-warm-700">{p.company}</td>
+                    <td className="px-4 py-3 text-warm-700 text-[13px]">
+                      {p.country ? (
+                        <span title={p.country}>{getCountryName(p.country, "it")}</span>
+                      ) : (
+                        <span className="text-warm-400">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span className="inline-block px-2 py-0.5 text-[11px] uppercase tracking-wider bg-warm-100 text-warm-800 rounded">
                         {ROLE_LABELS[p.role]}
