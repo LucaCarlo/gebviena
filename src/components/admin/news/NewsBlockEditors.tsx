@@ -16,6 +16,7 @@ import type {
   NewsTwoImagesInlineData,
   NewsProductData,
   NewsFeatureToolData,
+  NewsSingleCtaData,
   NewsCardsRowData,
   NewsFaqData,
   NewsStatsData,
@@ -222,6 +223,32 @@ export function ImageTextBgEditor({ data, onChange, sourceData }: { data: NewsIm
         <BlockRichText value={data.text || ""} onChange={(html) => onChange({ ...data, text: html })} sourceText={sourceData?.text || ""} multiline minHeight={140} />
       </div>
       <CtaFields label={data.ctaLabel || ""} href={data.ctaHref || ""} sourceLabel={sourceData?.ctaLabel || ""} onLabel={(v) => onChange({ ...data, ctaLabel: v })} onHref={(v) => onChange({ ...data, ctaHref: v })} />
+
+      {/* Stile CTA — possibilita di sostituire il testo del pulsante con un'icona
+          SVG/PNG (utile per loghi store, brand icons cliccabili). */}
+      <div className="border border-warm-200 bg-warm-50/30 rounded p-3 space-y-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-xs font-semibold text-warm-600 uppercase tracking-wider">Stile pulsante</span>
+          <select
+            value={data.ctaStyle || "default"}
+            onChange={(e) => onChange({ ...data, ctaStyle: e.target.value as CtaButtonStyle })}
+            className="border border-warm-300 rounded px-2 py-1 text-xs focus:border-warm-800 focus:outline-none bg-white"
+          >
+            {CTA_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+        {data.ctaStyle === "custom" && (
+          <ImageUploadField
+            label="Icona SVG/PNG"
+            value={data.ctaIconUrl || ""}
+            onChange={(url) => onChange({ ...data, ctaIconUrl: url })}
+            onRemove={() => onChange({ ...data, ctaIconUrl: "" })}
+            purpose="general"
+            folder="news"
+            helpText="SVG quadrato 24x24px o 32x32px, viewBox riempito senza padding. PNG: minimo 64x64px sfondo trasparente."
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -539,12 +566,30 @@ export function FeatureToolEditor({ data, onChange, sourceData }: { data: NewsFe
       </div>
 
       <div className="border border-warm-200 bg-warm-50/30 rounded p-4 space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="text-xs font-semibold text-warm-600 uppercase tracking-wider">Pulsanti CTA</div>
-          {(data.ctas || []).length < 4 && (
-            <button type="button" onClick={addCta} className="text-xs text-warm-700 hover:text-warm-900 underline flex items-center gap-1"><Plus size={12} /> Aggiungi pulsante</button>
-          )}
+          <div className="flex items-center gap-3">
+            <label className="text-[11px] text-warm-600 inline-flex items-center gap-1.5">
+              Stile:
+              <select
+                value={data.ctaGroupStyle || "boxed"}
+                onChange={(e) => onChange({ ...data, ctaGroupStyle: e.target.value as "boxed" | "icons-divider" })}
+                className="border border-warm-300 rounded px-2 py-1 text-xs focus:border-warm-800 focus:outline-none bg-white"
+              >
+                <option value="boxed">Pulsanti con sfondo</option>
+                <option value="icons-divider">Icone affiancate (separate da stanghetta)</option>
+              </select>
+            </label>
+            {(data.ctas || []).length < 4 && (
+              <button type="button" onClick={addCta} className="text-xs text-warm-700 hover:text-warm-900 underline flex items-center gap-1"><Plus size={12} /> Aggiungi pulsante</button>
+            )}
+          </div>
         </div>
+        {data.ctaGroupStyle === "icons-divider" && (
+          <p className="text-[10px] text-warm-500 -mt-2">
+            Stile <em>Icone affiancate</em>: tutti i pulsanti devono essere &laquo;Personalizzato&raquo; con icona SVG/PNG caricata. Niente sfondo, separati da una stanghetta verticale.
+          </p>
+        )}
         {(data.ctas || []).map((c, i) => (
           <div key={i} className="border border-warm-200 bg-white rounded p-3 space-y-2">
             <div className="grid grid-cols-12 gap-2 items-center">
@@ -558,12 +603,79 @@ export function FeatureToolEditor({ data, onChange, sourceData }: { data: NewsFe
             {c.style === "custom" && (
               <div>
                 <label className="block text-[10px] font-semibold text-warm-600 uppercase tracking-wider mb-1">Icona SVG/PNG *</label>
-                <ImageUploadField label="" value={c.iconUrl || ""} onChange={(url) => updCta(i, { iconUrl: url })} onRemove={() => updCta(i, { iconUrl: "" })} purpose="general" folder="news" helpText="Carica un SVG o PNG quadrato (preferito formato vettoriale)." />
+                <ImageUploadField label="" value={c.iconUrl || ""} onChange={(url) => updCta(i, { iconUrl: url })} onRemove={() => updCta(i, { iconUrl: "" })} purpose="general" folder="news" helpText="SVG quadrato 24x24px o 32x32px, viewBox riempito senza padding. PNG: minimo 64x64px sfondo trasparente." />
               </div>
             )}
           </div>
         ))}
         {(data.ctas || []).length === 0 && <div className="text-xs text-warm-400">Nessun pulsante. Clicca &laquo;Aggiungi pulsante&raquo;.</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ── SINGLE CTA — block standalone con titolo + descrizione + 1+ pulsanti ── */
+export function SingleCtaEditor({ data, onChange, sourceData }: { data: NewsSingleCtaData; onChange: (d: NewsSingleCtaData) => void; sourceData?: Partial<NewsSingleCtaData> }) {
+  void sourceData;
+  const setCtas = (next: NewsCta[]) => onChange({ ...data, ctas: next });
+  const addCta = () => setCtas([...(data.ctas || []), { label: "", href: "", style: "default" }]);
+  const updCta = (i: number, patch: Partial<NewsCta>) => setCtas((data.ctas || []).map((c, j) => j === i ? { ...c, ...patch } : c));
+  const delCta = (i: number) => setCtas((data.ctas || []).filter((_, j) => j !== i));
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo (opzionale)</label>
+          <input type="text" value={data.title || ""} onChange={(e) => onChange({ ...data, title: e.target.value })} placeholder="es. Scopri di più" className="w-full border border-warm-300 rounded px-3 py-2 text-sm focus:border-warm-800 focus:outline-none" />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Allineamento</label>
+          <select value={data.align || "center"} onChange={(e) => onChange({ ...data, align: e.target.value as "left" | "center" | "right" })} className="w-full border border-warm-300 rounded px-3 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white">
+            <option value="left">Sinistra</option>
+            <option value="center">Centro</option>
+            <option value="right">Destra</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Descrizione (opzionale)</label>
+        <textarea value={data.body || ""} onChange={(e) => onChange({ ...data, body: e.target.value })} rows={2} placeholder="Breve testo sopra il pulsante." className="w-full border border-warm-300 rounded px-3 py-2 text-sm focus:border-warm-800 focus:outline-none" />
+      </div>
+
+      <div className="border border-warm-200 bg-warm-50/30 rounded p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="text-xs font-semibold text-warm-600 uppercase tracking-wider">Pulsanti</div>
+          <div className="flex items-center gap-3">
+            <label className="text-[11px] text-warm-600 inline-flex items-center gap-1.5">
+              Stile:
+              <select value={data.ctaGroupStyle || "boxed"} onChange={(e) => onChange({ ...data, ctaGroupStyle: e.target.value as "boxed" | "icons-divider" })} className="border border-warm-300 rounded px-2 py-1 text-xs focus:border-warm-800 focus:outline-none bg-white">
+                <option value="boxed">Pulsanti con sfondo</option>
+                <option value="icons-divider">Icone affiancate (separate da stanghetta)</option>
+              </select>
+            </label>
+            {(data.ctas || []).length < 4 && (
+              <button type="button" onClick={addCta} className="text-xs text-warm-700 hover:text-warm-900 underline flex items-center gap-1"><Plus size={12} /> Aggiungi</button>
+            )}
+          </div>
+        </div>
+        {(data.ctas || []).map((c, i) => (
+          <div key={i} className="border border-warm-200 bg-white rounded p-3 space-y-2">
+            <div className="grid grid-cols-12 gap-2 items-center">
+              <input type="text" value={c.label} onChange={(e) => updCta(i, { label: e.target.value })} placeholder="Etichetta" className="col-span-4 border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none" />
+              <input type="text" value={c.href} onChange={(e) => updCta(i, { href: e.target.value })} placeholder="https://… o /percorso" className="col-span-5 border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none" />
+              <select value={c.style || "default"} onChange={(e) => updCta(i, { style: e.target.value as CtaButtonStyle })} className="col-span-2 border border-warm-300 rounded px-2 py-1.5 text-xs focus:border-warm-800 focus:outline-none">
+                {CTA_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <button type="button" onClick={() => delCta(i)} className="col-span-1 p-1.5 text-warm-400 hover:text-red-600" title="Rimuovi"><X size={14} /></button>
+            </div>
+            {c.style === "custom" && (
+              <ImageUploadField label="Icona SVG/PNG" value={c.iconUrl || ""} onChange={(url) => updCta(i, { iconUrl: url })} onRemove={() => updCta(i, { iconUrl: "" })} purpose="general" folder="news" helpText="SVG quadrato 24x24px o 32x32px, viewBox riempito senza padding. PNG: minimo 64x64px sfondo trasparente." />
+            )}
+          </div>
+        ))}
+        {(data.ctas || []).length === 0 && <div className="text-xs text-warm-400">Nessun pulsante. Clicca &laquo;Aggiungi&raquo;.</div>}
       </div>
     </div>
   );

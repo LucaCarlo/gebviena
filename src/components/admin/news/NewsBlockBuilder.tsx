@@ -11,14 +11,14 @@ import type {
   NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
   NewsCaslonTitleData, NewsTwoImagesInlineData,
-  NewsFeatureToolData, NewsCardsRowData, NewsFaqData, NewsStatsData,
+  NewsFeatureToolData, NewsSingleCtaData, NewsCardsRowData, NewsFaqData, NewsStatsData,
   NewsQuoteData, NewsTimelineData, NewsComparisonTableData,
 } from "@/types";
 import {
   ParagraphEditor, ImageTextBgEditor, ThreeImagesEditor, SingleImageEditor,
   ImageWithParagraphEditor, FullwidthBannerEditor, ProductEditor, ShareInfo, RelatedInfo,
   CaslonTitleEditor, TwoImagesInlineEditor,
-  FeatureToolEditor, CardsRowEditor, FaqEditor, StatsEditor,
+  FeatureToolEditor, SingleCtaEditor, CardsRowEditor, FaqEditor, StatsEditor,
   QuoteEditor, TimelineEditor, ComparisonTableEditor,
 } from "./NewsBlockEditors";
 
@@ -38,6 +38,7 @@ const MENU: { type: NewsBlockV2Type; icon: React.ElementType; label: string }[] 
   { type: "quote", icon: QuoteIcon, label: "Citazione" },
   { type: "timeline", icon: Clock, label: "Timeline" },
   { type: "comparison_table", icon: Table, label: "Tabella di confronto" },
+  { type: "single_cta", icon: Type, label: "Pulsante CTA" },
   { type: "product", icon: Package, label: "Prodotto correlato" },
   { type: "share", icon: Share2, label: "Condividi" },
 ];
@@ -63,6 +64,7 @@ function defaultData(t: NewsBlockV2Type): NewsBlockV2["data"] {
     case "quote": return { text: "", author: "", authorRole: "", align: "center" } satisfies NewsQuoteData;
     case "timeline": return { sectionTitle: "", items: [{ date: "", title: "", description: "" }] } satisfies NewsTimelineData;
     case "comparison_table": return { sectionTitle: "", columnHeaders: ["Base", "Pro"], rows: [{ label: "", values: ["", ""] }] } satisfies NewsComparisonTableData;
+    case "single_cta": return { title: "", body: "", ctas: [{ label: "", href: "", style: "default" }], ctaGroupStyle: "boxed", align: "center" } satisfies NewsSingleCtaData;
     case "product": return { productId: "" } satisfies NewsProductData;
     case "share": return {};
     case "related": return {};
@@ -155,6 +157,7 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
       case "quote": return <QuoteEditor data={b.data as NewsQuoteData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsQuoteData> | undefined} />;
       case "timeline": return <TimelineEditor data={b.data as NewsTimelineData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsTimelineData> | undefined} />;
       case "comparison_table": return <ComparisonTableEditor data={b.data as NewsComparisonTableData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsComparisonTableData> | undefined} />;
+      case "single_cta": return <SingleCtaEditor data={b.data as NewsSingleCtaData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsSingleCtaData> | undefined} />;
       case "product": return <ProductEditor data={b.data as NewsProductData} onChange={(d) => upd(b.id, d)} />;
       case "share": return <ShareInfo />;
       case "related": return <RelatedInfo />;
