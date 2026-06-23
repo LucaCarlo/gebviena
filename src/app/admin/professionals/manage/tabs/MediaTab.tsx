@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Upload, Trash2, X, FolderOpen, Box, Briefcase } from "lucide-react";
+import { Upload, Trash2, X, FolderOpen, Box, Briefcase, EyeOff, RotateCcw } from "lucide-react";
 
 /** Foto area professionisti — separate dalle immagini-prodotto del sito.
  *  Si organizzano per Tipologia (foto generiche di categoria) o per Prodotto
@@ -105,8 +105,12 @@ export default function MediaTab() {
   const [modalLabel, setModalLabel] = useState<string>("");
   const [modalImages, setModalImages] = useState<ProfessionalImage[]>([]);
   // Immagini "del catalogo" (cover/gallery/hero del Product o Project) —
-  // visualizzate read-only insieme alle foto pro caricate via dashboard.
+  // visualizzate insieme alle foto pro caricate via dashboard. L'admin puo
+  // nasconderle dall'area pro senza intaccare le immagini del prodotto/progetto
+  // nel sito principale (gestite tramite ProfessionalCatalogHidden).
   const [modalCatalog, setModalCatalog] = useState<CatalogImage[]>([]);
+  // Map fileUrl -> hiddenId (presente = nascosto). Il bottone cambia comportamento.
+  const [hiddenMap, setHiddenMap] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
@@ -166,10 +170,16 @@ export default function MediaTab() {
     setModalLabel(p.name);
     setModalImages([]);
     setModalCatalog(extractProductCatalog(p));
+    setHiddenMap({});
     setModalOpen(true);
-    const r = await fetch(`/api/admin/professional-images?productId=${encodeURIComponent(p.id)}`);
-    const j = await r.json();
-    setModalImages(j.data || []);
+    const [imgRes, hidRes] = await Promise.all([
+      fetch(`/api/admin/professional-images?productId=${encodeURIComponent(p.id)}`).then((r) => r.json()),
+      fetch(`/api/admin/professional-catalog-hidden?productId=${encodeURIComponent(p.id)}`).then((r) => r.json()),
+    ]);
+    setModalImages(imgRes.data || []);
+    const map: Record<string, string> = {};
+    for (const h of hidRes.data || []) map[h.fileUrl] = h.id;
+    setHiddenMap(map);
   };
 
   const openProject = async (p: Project) => {
@@ -178,10 +188,46 @@ export default function MediaTab() {
     setModalLabel(p.name + (p.city ? ` — ${p.city}` : ""));
     setModalImages([]);
     setModalCatalog(extractProjectCatalog(p));
+    setHiddenMap({});
     setModalOpen(true);
-    const r = await fetch(`/api/admin/professional-images?projectId=${encodeURIComponent(p.id)}`);
-    const j = await r.json();
-    setModalImages(j.data || []);
+    const [imgRes, hidRes] = await Promise.all([
+      fetch(`/api/admin/professional-images?projectId=${encodeURIComponent(p.id)}`).then((r) => r.json()),
+      fetch(`/api/admin/professional-catalog-hidden?projectId=${encodeURIComponent(p.id)}`).then((r) => r.json()),
+    ]);
+    setModalImages(imgRes.data || []);
+    const map: Record<string, string> = {};
+    for (const h of hidRes.data || []) map[h.fileUrl] = h.id;
+    setHiddenMap(map);
+  };
+
+  const toggleCatalogHidden = async (fileUrl: string) => {
+    const existingId = hiddenMap[fileUrl];
+    if (existingId) {
+      // Ripristina
+      const r = await fetch(`/api/admin/professional-catalog-hidden/${existingId}`, { method: "DELETE" });
+      const j = await r.json();
+      if (j.success) {
+        setHiddenMap((prev) => {
+          const next = { ...prev };
+          delete next[fileUrl];
+          return next;
+        });
+      }
+    } else {
+      // Nascondi
+      const body: { fileUrl: string; productId?: string; projectId?: string } = { fileUrl };
+      if (modalKind === "product") body.productId = modalValue;
+      else if (modalKind === "project") body.projectId = modalValue;
+      const r = await fetch("/api/admin/professional-catalog-hidden", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const j = await r.json();
+      if (j.success && j.data) {
+        setHiddenMap((prev) => ({ ...prev, [fileUrl]: j.data.id }));
+      }
+    }
   };
 
   const handleFiles = async (files: FileList | File[]) => {
@@ -293,20 +339,20 @@ export default function MediaTab() {
           <Box size={16} /> Per Prodotto
         </button>
         <button
-          onClick={() => setView("project")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-            view === "project" ? "bg-warm-800 text-white" : "text-warm-600 hover:bg-warm-100"
-          }`}
-        >
-          <Briefcase size={16} /> Per Progetto
-        </button>
-        <button
           onClick={() => setView("typology")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
             view === "typology" ? "bg-warm-800 text-white" : "text-warm-600 hover:bg-warm-100"
           }`}
         >
           <FolderOpen size={16} /> Per Tipologia
+        </button>
+        <button
+          onClick={() => setView("project")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+            view === "project" ? "bg-warm-800 text-white" : "text-warm-600 hover:bg-warm-100"
+          }`}
+        >
+          <Briefcase size={16} /> Per Progetto
         </button>
       </div>
 
@@ -503,25 +549,47 @@ export default function MediaTab() {
                 </div>
               )}
 
-              {/* Immagini dal catalogo Product/Project (read-only) */}
-              {modalCatalog.length > 0 && (
+              {/* Immagini dal catalogo Product/Project — admin puo nasconderle
+                  dall'area pro col bottone in alto a destra (non tocca il
+                  prodotto nel sito principale). */}
+              {modalCatalog.length > 0 && (modalKind === "product" || modalKind === "project") && (
                 <div>
-                  <div className="text-[11px] uppercase tracking-[0.15em] text-warm-500 mb-2 flex items-center gap-2">
+                  <div className="text-[11px] uppercase tracking-[0.15em] text-warm-500 mb-2 flex items-center gap-2 flex-wrap">
                     Dal catalogo {modalKind === "project" ? "progetto" : "prodotto"} ({modalCatalog.length})
-                    <span className="text-[10px] text-warm-400 normal-case tracking-normal">— gestite nella pagina {modalKind === "project" ? "progetto" : "prodotto"}</span>
+                    <span className="text-[10px] text-warm-400 normal-case tracking-normal">
+                      — clicca <EyeOff size={10} className="inline" /> per non mostrarle nell&apos;area pro (l&apos;immagine resta sul sito)
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {modalCatalog.map((img, i) => (
-                      <div key={i} className="relative bg-warm-50 rounded overflow-hidden border border-warm-200">
-                        <div className="aspect-square">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={img.url} alt={img.fileName} className="w-full h-full object-cover" />
+                    {modalCatalog.map((img, i) => {
+                      const isHidden = !!hiddenMap[img.url];
+                      return (
+                        <div key={i} className={`relative bg-warm-50 rounded overflow-hidden border border-warm-200 ${isHidden ? "opacity-40" : ""}`}>
+                          <div className="aspect-square">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={img.url} alt={img.fileName} className="w-full h-full object-cover" />
+                          </div>
+                          <span className="absolute top-1 left-1 bg-warm-800/85 text-white text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded">
+                            Catalogo
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => toggleCatalogHidden(img.url)}
+                            title={isHidden ? "Ripristina: mostrare nell'area pro" : "Nascondi dall'area pro"}
+                            className={`absolute top-1 right-1 p-1 rounded shadow-sm transition-colors ${
+                              isHidden ? "bg-warm-800 text-white hover:bg-warm-900" : "bg-white/90 text-warm-700 hover:text-red-600 hover:bg-white"
+                            }`}
+                          >
+                            {isHidden ? <RotateCcw size={13} /> : <EyeOff size={13} />}
+                          </button>
+                          {isHidden && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-amber-100 text-amber-800 text-[10px] uppercase tracking-wider px-2 py-1 text-center">
+                              Nascosta dall&apos;area pro
+                            </div>
+                          )}
                         </div>
-                        <span className="absolute top-1 left-1 bg-warm-800/85 text-white text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded">
-                          Catalogo
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

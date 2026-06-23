@@ -157,6 +157,7 @@ model Product {
   @@index([slug])
   @@index([designerId])
   professionalImages ProfessionalImage[]
+  professionalCatalogHidden ProfessionalCatalogHidden[]
 }
 
 model ProductDimension {
@@ -204,6 +205,7 @@ model Project {
   @@index([country])
   @@index([slug])
   professionalImages ProfessionalImage[]
+  professionalCatalogHidden ProfessionalCatalogHidden[]
 }
 
 model ProjectProduct {
@@ -1870,4 +1872,17 @@ model ProfessionalNotificationTranslation {
 
   @@unique([notificationId, languageCode])
   @@index([languageCode])
+}
+
+model ProfessionalCatalogHidden {
+  id        String   @id @default(cuid())
+  productId String?
+  projectId String?
+  fileUrl   String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([projectId])
 }

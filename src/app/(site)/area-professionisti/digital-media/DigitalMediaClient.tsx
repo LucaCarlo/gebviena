@@ -147,8 +147,8 @@ export default function DigitalMediaClient({
     <div className="space-y-6">
       <div className="flex gap-2 border-b border-warm-200 pb-3 flex-wrap">
         <Tab active={view === "product"} onClick={() => setView("product")} icon={<Box size={16} />} label={i18n.byProduct} />
-        <Tab active={view === "project"} onClick={() => setView("project")} icon={<Briefcase size={16} />} label={i18n.byProject} />
         <Tab active={view === "typology"} onClick={() => { setView("typology"); setSelectedTypology(""); }} icon={<FolderOpen size={16} />} label={i18n.byTypology} />
+        <Tab active={view === "project"} onClick={() => setView("project")} icon={<Briefcase size={16} />} label={i18n.byProject} />
       </div>
 
       {view === "product" && (
