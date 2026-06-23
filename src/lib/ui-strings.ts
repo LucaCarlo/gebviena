@@ -91,6 +91,8 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "pro.field.phone", defaultValue: "Telefono" },
       { key: "pro.field.company", defaultValue: "Azienda" },
       { key: "pro.field.companyExtended", defaultValue: "Azienda / Studio / Testata" },
+      { key: "pro.field.country", defaultValue: "Paese di provenienza" },
+      { key: "pro.field.country.placeholder", defaultValue: "Seleziona un paese…" },
       { key: "pro.field.password", defaultValue: "Password" },
       { key: "pro.field.passwordConfirm", defaultValue: "Conferma password" },
       { key: "pro.field.required", defaultValue: "obbligatorio" },

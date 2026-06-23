@@ -29,7 +29,7 @@ const EMPTY_FORM: FormState = {
   email: "",
   phone: "",
   company: "",
-  country: "",
+  country: "IT",
   password: "",
   passwordConfirm: "",
   role: "ARCHITECT_DESIGNER",
