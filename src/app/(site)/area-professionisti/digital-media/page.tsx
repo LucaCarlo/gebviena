@@ -23,7 +23,7 @@ export default async function Page() {
   // Le immagini del catalogo (cover, gallery, hero, side) sono unite alle foto
   // pro caricate, cosi il professionista da una sola pagina puo scaricare
   // TUTTE le immagini di ogni prodotto/progetto.
-  const [typologies, productImagesRaw, typologyImages, allProducts, allProjects, projectImagesRaw] = await Promise.all([
+  const [typologies, productImagesRaw, typologyImages, allProducts, allProjects, projectImagesRaw, hiddenCatalog] = await Promise.all([
     prisma.contentTypology.findMany({
       where: { contentType: "products", isActive: true },
       orderBy: { sortOrder: "asc" },
@@ -76,7 +76,18 @@ export default async function Page() {
       },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
+    prisma.professionalCatalogHidden.findMany({
+      select: { productId: true, projectId: true, fileUrl: true },
+    }),
   ]);
+
+  // Set di URL nascosti per product/project — esclusi dall'estrazione del catalogo
+  const hiddenProductUrls = new Set<string>();
+  const hiddenProjectUrls = new Set<string>();
+  for (const h of hiddenCatalog) {
+    if (h.productId) hiddenProductUrls.add(`${h.productId}|${h.fileUrl}`);
+    if (h.projectId) hiddenProjectUrls.add(`${h.projectId}|${h.fileUrl}`);
+  }
 
   const typologiesData = typologies.map((tp) => {
     const tr = tp.translations.find((x) => x.languageCode === lang);
@@ -99,7 +110,7 @@ export default async function Page() {
         if (Array.isArray(arr)) for (const u of arr) if (typeof u === "string" && u) urls.add(u);
       } catch { /* silent */ }
     }
-    Array.from(urls).forEach((u, idx) => {
+    Array.from(urls).filter((u) => !hiddenProductUrls.has(`${p.id}|${u}`)).forEach((u, idx) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       catalogItems.push({
         id: `cat-${p.id}-${idx}`,
@@ -150,7 +161,7 @@ export default async function Page() {
       } catch { /* silent */ }
     }
     const cover = pr.coverImage || pr.imageUrl || "";
-    Array.from(urls).forEach((u, idx) => {
+    Array.from(urls).filter((u) => !hiddenProjectUrls.has(`${pr.id}|${u}`)).forEach((u, idx) => {
       projectImagesData.push({
         id: `proj-${pr.id}-${idx}`,
         fileUrl: u,
