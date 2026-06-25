@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { FileText, Package, Image as ImageIcon, KeyRound, Bell, ArrowRight, CheckCheck } from "lucide-react";
+import { useLang } from "@/contexts/I18nContext";
+import { getProT } from "@/lib/pro-translations";
 
 interface Notification {
   id: string;
@@ -24,24 +26,31 @@ const TYPE_ICON: Record<string, React.ElementType> = {
   info: Bell,
   update: Bell,
 };
-const TYPE_LABEL: Record<string, string> = {
-  catalog: "Catalogo",
-  price_list: "Listino prezzi",
-  media: "Media",
-  credentials: "Credenziali",
-  info: "Informazione",
-  update: "Aggiornamento",
+// Etichette tipo notifica per lingua (matchato in base alla lang attiva).
+const TYPE_LABEL_BY_LANG: Record<string, Record<string, string>> = {
+  it: { catalog: "Catalogo", price_list: "Listino prezzi", media: "Media", credentials: "Credenziali", info: "Informazione", update: "Aggiornamento" },
+  en: { catalog: "Catalogue", price_list: "Price list", media: "Media", credentials: "Credentials", info: "Information", update: "Update" },
+  de: { catalog: "Katalog", price_list: "Preisliste", media: "Medien", credentials: "Zugangsdaten", info: "Information", update: "Aktualisierung" },
+  fr: { catalog: "Catalogue", price_list: "Liste de prix", media: "Médias", credentials: "Identifiants", info: "Information", update: "Mise à jour" },
+  es: { catalog: "Catálogo", price_list: "Lista de precios", media: "Medios", credentials: "Credenciales", info: "Información", update: "Actualización" },
 };
+function localeForLang(l: string): string {
+  const m: Record<string, string> = { it: "it-IT", en: "en-GB", de: "de-DE", fr: "fr-FR", es: "es-ES" };
+  return m[l] || "it-IT";
+}
 
-function fmtDateTime(s: string): string {
+function fmtDateTime(s: string, lang: string): string {
   try {
-    return new Date(s).toLocaleString("it-IT", {
+    return new Date(s).toLocaleString(localeForLang(lang), {
       day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
     });
   } catch { return s; }
 }
 
 export default function BachecaClient() {
+  const lang = useLang();
+  const t = getProT(lang);
+  const TYPE_LABEL = TYPE_LABEL_BY_LANG[lang] || TYPE_LABEL_BY_LANG.it;
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
@@ -49,13 +58,13 @@ export default function BachecaClient() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch("/api/area-professionisti/notifications", { cache: "no-store" });
+      const r = await fetch(`/api/area-professionisti/notifications?lang=${encodeURIComponent(lang)}`, { cache: "no-store" });
       const j = await r.json();
       if (j.success) setItems(j.data.items);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     load();
@@ -92,7 +101,11 @@ export default function BachecaClient() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="text-sm text-warm-600">
-          {loading ? "Caricamento…" : items.length === 0 ? "Nessuna novità per ora." : `${items.length} ${items.length === 1 ? "novità" : "novità totali"}${unread > 0 ? ` · ${unread} non ${unread === 1 ? "letta" : "lette"}` : ""}`}
+          {loading
+            ? t("common.loading")
+            : items.length === 0
+              ? t("bacheca.empty")
+              : `${items.length} ${items.length === 1 ? t("bacheca.count.one") : t("bacheca.count.many")}${unread > 0 ? ` · ${unread} ${unread === 1 ? t("bacheca.unread.one") : t("bacheca.unread.many")}` : ""}`}
         </div>
         {unread > 0 && (
           <button
@@ -100,7 +113,7 @@ export default function BachecaClient() {
             disabled={marking}
             className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.15em] text-warm-700 hover:text-warm-900 border border-warm-300 hover:border-warm-900 px-3 py-1.5 disabled:opacity-50"
           >
-            <CheckCheck size={12} /> Segna tutte come lette
+            <CheckCheck size={12} /> {t("bacheca.markAllRead")}
           </button>
         )}
       </div>
@@ -117,7 +130,7 @@ export default function BachecaClient() {
         </div>
       ) : items.length === 0 ? (
         <div className="bg-white border border-warm-200 p-10 text-center text-warm-500">
-          Quando arrivano novità (nuovi cataloghi, listino aggiornato, modifiche alla dashboard, nuovi media) le troverai qui.
+          {t("bacheca.empty.body")}
         </div>
       ) : (
         <div className="space-y-3">
@@ -128,10 +141,10 @@ export default function BachecaClient() {
               <div key={n.id} className={`border border-warm-200 ${cardBg} p-5`}>
                 <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
                   <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.15em] text-warm-500">
-                    <Icon size={12} /> {TYPE_LABEL[n.type] || "Novità"}
+                    <Icon size={12} /> {TYPE_LABEL[n.type] || (TYPE_LABEL_BY_LANG[lang]?.update) || "Novità"}
                     {!n.isRead && <span className="inline-block w-2 h-2 rounded-full bg-red-500" aria-label="Non letta" />}
                   </div>
-                  <span className="text-[11px] text-warm-400">{fmtDateTime(n.createdAt)}</span>
+                  <span className="text-[11px] text-warm-400">{fmtDateTime(n.createdAt, lang)}</span>
                 </div>
                 <h3 className="font-serif text-lg md:text-xl text-warm-900 mb-1">{n.title}</h3>
                 {n.body && <p className="text-sm text-warm-700 leading-relaxed">{n.body}</p>}
@@ -140,11 +153,11 @@ export default function BachecaClient() {
                   const className = "inline-flex items-center gap-1.5 mt-3 text-[12px] uppercase tracking-[0.15em] text-warm-900 hover:text-warm-700 border-b border-warm-300 hover:border-warm-900 pb-0.5";
                   return isExternal ? (
                     <a href={n.link} target="_blank" rel="noopener noreferrer" className={className}>
-                      Apri <ArrowRight size={12} />
+                      {t("bacheca.openLink")} <ArrowRight size={12} />
                     </a>
                   ) : (
                     <Link href={n.link} className={className}>
-                      Apri <ArrowRight size={12} />
+                      {t("bacheca.openLink")} <ArrowRight size={12} />
                     </Link>
                   );
                 })()}

@@ -9,7 +9,18 @@ export async function GET(req: NextRequest) {
   if (!pro) return NextResponse.json({ success: false, error: "Non autenticato" }, { status: 401 });
 
   const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get("limit") || "50"), 1), 200);
-  const lang = (pro as { language?: string | null }).language || "it";
+  // Lingua: prima la lingua attiva del sito (header x-gtv-lang impostato dal
+  // middleware in base a path/cookie/lang-switcher), poi query string,
+  // fallback alla lingua del profilo, infine "it".
+  const qLang = (req.nextUrl.searchParams.get("lang") || "").toLowerCase();
+  const headerLang = (req.headers.get("x-gtv-lang") || "").toLowerCase();
+  const profileLang = ((pro as { language?: string | null }).language || "").toLowerCase();
+  const VALID = ["it", "en", "de", "fr", "es"];
+  const lang =
+    (VALID.includes(qLang) && qLang) ||
+    (VALID.includes(headerLang) && headerLang) ||
+    (VALID.includes(profileLang) && profileLang) ||
+    "it";
 
   // Notifiche per questo professionista + eventuale traduzione nella sua
   // lingua (fallback su IT se la traduzione non esiste o lang === 'it').

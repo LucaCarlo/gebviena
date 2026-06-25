@@ -337,7 +337,9 @@ function NotificationForm({
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Link (opzionale)</label>
+              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+                Link (opzionale) — <span className="normal-case tracking-normal text-warm-500">uguale per tutte le lingue</span>
+              </label>
               <input type="text" value={link} onChange={(e) => setLink(e.target.value)}
                 placeholder="https://… o /area-professionisti/…"
                 className="w-full px-3 py-2 border border-warm-300 rounded text-sm font-mono text-warm-900 placeholder:text-warm-400" />
