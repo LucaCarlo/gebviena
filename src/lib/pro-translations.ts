@@ -266,6 +266,16 @@ const D: Record<string, Dict> = {
     es: "La nueva contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.",
   },
   "pro.field.country": { it: "Paese di provenienza", fr: "Pays d'origine", en: "Country of origin", de: "Herkunftsland", es: "País de origen" },
+
+  // ── Bacheca area pro ──
+  "bacheca.empty": { it: "Nessuna novità per ora.", fr: "Aucune nouveauté pour le moment.", en: "No news yet.", de: "Noch keine Neuigkeiten.", es: "Sin novedades por ahora." },
+  "bacheca.empty.body": { it: "Quando arrivano novità (nuovi cataloghi, listino aggiornato, modifiche alla dashboard, nuovi media) le troverai qui.", fr: "Lorsque des nouveautés arriveront (nouveaux catalogues, liste de prix mise à jour, modifications du tableau de bord, nouveaux médias), vous les trouverez ici.", en: "When news arrives (new catalogues, updated price list, dashboard changes, new media) you will find it here.", de: "Sobald Neuigkeiten eintreffen (neue Kataloge, aktualisierte Preisliste, Dashboard-Änderungen, neue Medien), finden Sie diese hier.", es: "Cuando lleguen novedades (nuevos catálogos, lista de precios actualizada, cambios en el panel, nuevos medios), las encontrarás aquí." },
+  "bacheca.count.one": { it: "novità", fr: "nouveauté", en: "news item", de: "Neuigkeit", es: "novedad" },
+  "bacheca.count.many": { it: "novità totali", fr: "nouveautés au total", en: "news items in total", de: "Neuigkeiten insgesamt", es: "novedades en total" },
+  "bacheca.unread.one": { it: "non letta", fr: "non lue", en: "unread", de: "ungelesen", es: "sin leer" },
+  "bacheca.unread.many": { it: "non lette", fr: "non lues", en: "unread", de: "ungelesen", es: "sin leer" },
+  "bacheca.markAllRead": { it: "Segna tutte come lette", fr: "Marquer tout comme lu", en: "Mark all as read", de: "Alle als gelesen markieren", es: "Marcar todas como leídas" },
+  "bacheca.openLink": { it: "Apri", fr: "Ouvrir", en: "Open", de: "Öffnen", es: "Abrir" },
   "pro.field.country.placeholder": { it: "Seleziona un paese…", fr: "Sélectionnez un pays…", en: "Select a country…", de: "Land auswählen…", es: "Selecciona un país…" },
   "account.field_required": { it: "Compila tutti i campi.", fr: "Veuillez remplir tous les champs.", en: "Please fill in all fields.", de: "Bitte alle Felder ausfüllen.", es: "Completa todos los campos." },
   "account.network_error": { it: "Errore di rete", fr: "Erreur de réseau", en: "Network error", de: "Netzwerkfehler", es: "Error de red" },
