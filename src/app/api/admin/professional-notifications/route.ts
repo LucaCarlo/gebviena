@@ -8,7 +8,7 @@ const TARGET_LANGS = ["en", "de", "fr", "es"];
 
 /** Lancia in background la traduzione delle notifiche appena create. Errori
  *  silenziati: la response admin torna senza aspettare l'AI. */
-function spawnTranslations(notifications: { id: string; title: string; body: string | null }[]) {
+function spawnTranslations(notifications: { id: string; title: string; body: string | null; link: string | null }[]) {
   void (async () => {
     for (const n of notifications) {
       for (const target of TARGET_LANGS) {
@@ -20,8 +20,8 @@ function spawnTranslations(notifications: { id: string; title: string; body: str
           if (!translated.title) continue;
           await prisma.professionalNotificationTranslation.upsert({
             where: { notificationId_languageCode: { notificationId: n.id, languageCode: target } },
-            update: { title: translated.title, body: translated.body || null },
-            create: { notificationId: n.id, languageCode: target, title: translated.title, body: translated.body || null },
+            update: { title: translated.title, body: translated.body || null, link: n.link },
+            create: { notificationId: n.id, languageCode: target, title: translated.title, body: translated.body || null, link: n.link },
           });
         } catch (e) {
           console.error(`[bacheca-translate] notif=${n.id} target=${target}:`, e);
@@ -74,25 +74,27 @@ export async function POST(req: NextRequest) {
   );
 
   // Se l'admin ha gia fornito le traduzioni (4 lingue) nel body, le salviamo
-  // direttamente e saltiamo l'auto-translate AI. Formato: translations: { en: {title, body}, ... }
-  const explicit = body?.translations && typeof body.translations === "object" ? body.translations as Record<string, { title?: string; body?: string }> : null;
+  // direttamente e saltiamo l'auto-translate AI. Formato: translations: { en: {title, body, link?}, ... }
+  const explicit = body?.translations && typeof body.translations === "object" ? body.translations as Record<string, { title?: string; body?: string; link?: string }> : null;
   if (explicit) {
     for (const lang of TARGET_LANGS) {
       const tr = explicit[lang];
       if (!tr || typeof tr.title !== "string" || !tr.title.trim()) continue;
       const tTitle = tr.title.trim().slice(0, 255);
       const tBody = tr.body ? String(tr.body).slice(0, 5000) : null;
+      const tLink = tr.link ? String(tr.link).slice(0, 500) : (link || null);
       for (const c of created) {
         await prisma.professionalNotificationTranslation.upsert({
           where: { notificationId_languageCode: { notificationId: c.id, languageCode: lang } },
-          update: { title: tTitle, body: tBody },
-          create: { notificationId: c.id, languageCode: lang, title: tTitle, body: tBody },
+          update: { title: tTitle, body: tBody, link: tLink },
+          create: { notificationId: c.id, languageCode: lang, title: tTitle, body: tBody, link: tLink },
         });
       }
     }
   } else {
-    // Fire-and-forget: traduzione AI in background, l'admin non aspetta.
-    spawnTranslations(created.map((c) => ({ id: c.id, title: c.title, body: c.body })));
+    // Fire-and-forget: traduzione AI in background. Il link del master viene
+    // copiato in tutte le traduzioni — l'admin puo poi modificarlo per lingua.
+    spawnTranslations(created.map((c) => ({ id: c.id, title: c.title, body: c.body, link: c.link })));
   }
 
   return NextResponse.json({ success: true, data: created, count: created.length });

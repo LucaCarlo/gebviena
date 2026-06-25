@@ -3,6 +3,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { getAuthProfessional } from "@/lib/professional-auth";
 import { getProT } from "@/lib/pro-translations";
+import { localizePath } from "@/lib/path-segments";
 import BachecaClient from "./BachecaClient";
 
 export const dynamic = "force-dynamic";
@@ -22,20 +23,20 @@ export default async function BachecaPage() {
           {t("dashboard.welcome")}, {pro.firstName} {pro.lastName} · {t(`role.${pro.role}`)}
         </div>
         <h1 className="text-3xl md:text-5xl font-serif text-warm-900 mb-4 tracking-tight">
-          Bacheca
+          {t("bacheca.title")}
         </h1>
         <p className="text-base md:text-lg text-warm-700 mb-10 leading-relaxed max-w-2xl">
-          Aggiornamenti e novità per i professionisti: nuovi cataloghi, listino prezzi aggiornato, media, modifiche alle credenziali.
+          {t("bacheca.subtitle")}
         </p>
 
         <BachecaClient />
 
         <div className="mt-12 pt-6 border-t border-warm-200">
           <Link
-            href="/area-professionisti"
+            href={localizePath("/area-professionisti", lang)}
             className="inline-block text-[12px] tracking-[0.18em] uppercase text-warm-700 hover:text-warm-900 border-b border-warm-300 hover:border-warm-900 pb-0.5"
           >
-            ← Torna alla dashboard
+            {t("common.back_to_dashboard")}
           </Link>
         </div>
       </div>
