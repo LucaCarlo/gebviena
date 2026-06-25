@@ -66,6 +66,14 @@ export default async function Page() {
             empty: t("info.empty"),
             sheet: t("info.col.sheet"),
             downloadPdf: t("common.download_pdf"),
+            typology: {
+              SEDUTE: t("typology.SEDUTE"),
+              IMBOTTITI: t("typology.IMBOTTITI"),
+              COMPLEMENTI: t("typology.COMPLEMENTI"),
+              TAVOLI: t("typology.TAVOLI"),
+              OUTDOOR: t("typology.OUTDOOR"),
+              ALTRO: t("typology.ALTRO"),
+            },
           }}
         />
       </div>

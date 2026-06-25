@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { translateSegmentsBackward, translateSegmentsForward } from "@/lib/path-segments";
+import { translateSegmentsBackward } from "@/lib/path-segments";
 
 const KNOWN_PREFIXES = ["en", "de", "fr", "es"];
 const DEFAULT_LANG = "it";
-const LANG_COOKIE = "gtv_lang";
 
 interface RedirectRow {
   fromPath: string;
@@ -102,27 +101,27 @@ export async function middleware(req: NextRequest) {
   const segments = pathname.split("/").filter(Boolean);
   const first = segments[0];
 
+  // La lingua è determinata dal prefisso nell'URL (/fr, /en, …).
+  // Se l'URL NON ha prefisso ma esiste il cookie "gtv_lang" (impostato dal
+  // language switcher quando l'utente sceglie esplicitamente una lingua),
+  // facciamo redirect a /{lang}/... così i link hardcoded in italiano
+  // (es. <Link href="/">) non resettano la lingua attiva.
+  // Cookie="it" → nessun redirect (l'utente ha esplicitamente scelto IT).
   let lang = DEFAULT_LANG;
   let rest = segments;
-  let urlHasPrefix = false;
 
   if (first && KNOWN_PREFIXES.includes(first)) {
     lang = first;
     rest = segments.slice(1);
     rest = translateSegmentsBackward(rest, lang);
-    urlHasPrefix = true;
-  }
-
-  // 2b. If URL has NO prefix but cookie says a different lang, redirect to the localized URL
-  if (!urlHasPrefix) {
-    const cookieLang = req.cookies.get(LANG_COOKIE)?.value;
-    if (cookieLang && KNOWN_PREFIXES.includes(cookieLang)) {
-      const translated = translateSegmentsForward(segments, cookieLang);
-      const targetPath = translated.length
-        ? `/${cookieLang}/${translated.join("/")}`
-        : `/${cookieLang}`;
-      const search = req.nextUrl.search || "";
-      return NextResponse.redirect(new URL(targetPath + search, req.url));
+  } else if (!isStoreHost) {
+    // Solo sul main host. Sullo store il routing è host-based e non vogliamo
+    // forzare prefissi sull'URL della vetrina.
+    const cookieLang = req.cookies.get("gtv_lang")?.value?.toLowerCase() || "";
+    if (KNOWN_PREFIXES.includes(cookieLang)) {
+      const target = req.nextUrl.clone();
+      target.pathname = `/${cookieLang}${pathname === "/" ? "" : pathname}`;
+      return NextResponse.redirect(target);
     }
   }
 
@@ -139,12 +138,23 @@ export async function middleware(req: NextRequest) {
   requestHeaders.set("x-gtv-canonical-path", strippedPath);
   const res = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
   res.headers.set("x-gtv-lang", lang);
-  // Persist lang preference whenever the URL has an explicit prefix
-  if (urlHasPrefix) {
-    res.cookies.set(LANG_COOKIE, lang, { maxAge: 60 * 60 * 24 * 365, path: "/", sameSite: "lax" });
-  } else if (lang === DEFAULT_LANG) {
-    // Explicitly visiting a no-prefix Italian URL clears any stale cookie
-    res.cookies.set(LANG_COOKIE, DEFAULT_LANG, { maxAge: 60 * 60 * 24 * 365, path: "/", sameSite: "lax" });
+
+  // Cookie "gtv_shop_seed": stabile per sessione browser, usato dall'API
+  // /api/store/public/products quando la strategia random è "per-session" per
+  // generare uno shuffle deterministico. Va settato qui in middleware perché
+  // la pagina /store usa un fetch server-side (Server Component) che non
+  // propagherebbe Set-Cookie al browser. Lo settiamo solo su host store.
+  if (isStoreHost && !req.cookies.get("gtv_shop_seed")) {
+    // 8 byte (16 hex char) sufficienti come seed; uso randomUUID per evitare
+    // di pesare l'Edge runtime con node:crypto.
+    const seed = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+    res.cookies.set({
+      name: "gtv_shop_seed",
+      value: seed,
+      path: "/",
+      maxAge: 60 * 60 * 24, // 24h
+      sameSite: "lax",
+    });
   }
   return res;
 }

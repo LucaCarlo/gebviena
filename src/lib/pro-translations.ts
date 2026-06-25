@@ -305,6 +305,44 @@ const D: Record<string, Dict> = {
   "media.photo_available": { it: "foto disponibile", fr: "photo disponible", en: "photo available", de: "Foto verfügbar", es: "foto disponible" },
   "media.photos_available": { it: "foto disponibili", fr: "photos disponibles", en: "photos available", de: "Fotos verfügbar", es: "fotos disponibles" },
   "media.images_count": { it: "immagini", fr: "images", en: "images", de: "Bilder", es: "imágenes" },
+
+  // ── Card Bacheca su dashboard area-pro ──
+  "bacheca.card.subtitle": {
+    it: "Aggiornamenti e novità: cataloghi, listini, media, credenziali.",
+    fr: "Mises à jour et nouveautés : catalogues, listes de prix, médias, identifiants.",
+    en: "Updates and news: catalogues, price lists, media, credentials.",
+    de: "Aktualisierungen und Neuigkeiten: Kataloge, Preislisten, Medien, Zugangsdaten.",
+    es: "Actualizaciones y novedades: catálogos, listas de precios, medios, credenciales.",
+  },
+  "bacheca.card.unread_one": {
+    it: "novità non letta: cataloghi, listini, media e aggiornamenti.",
+    fr: "nouveauté non lue : catalogues, listes de prix, médias et mises à jour.",
+    en: "unread news item: catalogues, price lists, media and updates.",
+    de: "ungelesene Neuigkeit: Kataloge, Preislisten, Medien und Updates.",
+    es: "novedad sin leer: catálogos, listas de precios, medios y actualizaciones.",
+  },
+  "bacheca.card.unread_many": {
+    it: "novità non lette: cataloghi, listini, media e aggiornamenti.",
+    fr: "nouveautés non lues : catalogues, listes de prix, médias et mises à jour.",
+    en: "unread news items: catalogues, price lists, media and updates.",
+    de: "ungelesene Neuigkeiten: Kataloge, Preislisten, Medien und Updates.",
+    es: "novedades sin leer: catálogos, listas de precios, medios y actualizaciones.",
+  },
+  "bacheca.card.cta_unread": {
+    it: "Leggi le novità",
+    fr: "Lire les nouveautés",
+    en: "Read the news",
+    de: "Neuigkeiten lesen",
+    es: "Leer las novedades",
+  },
+
+  // ── Tipologie prodotto (categorie info-tecniche, media, ecc.) ──
+  "typology.SEDUTE": { it: "SEDUTE", fr: "ASSISES", en: "SEATING", de: "SITZMÖBEL", es: "ASIENTOS" },
+  "typology.IMBOTTITI": { it: "IMBOTTITI", fr: "REMBOURRÉS", en: "UPHOLSTERED", de: "POLSTERMÖBEL", es: "TAPIZADOS" },
+  "typology.COMPLEMENTI": { it: "COMPLEMENTI", fr: "COMPLÉMENTS", en: "ACCESSORIES", de: "ACCESSOIRES", es: "COMPLEMENTOS" },
+  "typology.TAVOLI": { it: "TAVOLI", fr: "TABLES", en: "TABLES", de: "TISCHE", es: "MESAS" },
+  "typology.OUTDOOR": { it: "OUTDOOR", fr: "OUTDOOR", en: "OUTDOOR", de: "OUTDOOR", es: "OUTDOOR" },
+  "typology.ALTRO": { it: "ALTRO", fr: "AUTRE", en: "OTHER", de: "SONSTIGES", es: "OTRO" },
 };
 
 export function tPro(lang: string | null | undefined, key: string): string {
