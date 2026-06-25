@@ -17,10 +17,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Email e password obbligatorie" }, { status: 400 });
     }
 
+    // reCAPTCHA in modalità "soft" per il login: lo verifichiamo SOLO per
+    // metterne il risultato nei log (utile per identificare attacchi). NON
+    // blocchiamo l'utente in caso di fallimento — perché la password sbagliata
+    // gia di per se blocca i bot (bcrypt rende brute-force impraticabile) e
+    // utenti reali con adblock/estensioni/network restrittivo non riescono a
+    // generare un token valido e finirebbero bloccati dal login del proprio
+    // account. Per registrazione/contatti il reCAPTCHA resta strict (vedi
+    // request-access/register/route.ts).
     const recaptchaToken = typeof body.recaptchaToken === "string" ? body.recaptchaToken : "";
     const human = await verifyRecaptcha(recaptchaToken, "professional_login");
     if (!human) {
-      return NextResponse.json({ success: false, error: "Verifica anti-bot fallita" }, { status: 400 });
+      console.warn(`[professionals/login] recaptcha FAIL per ${rawEmail} — procedo comunque (modalita soft, password verificata sotto)`);
     }
 
     const email = normalizeEmail(rawEmail);
@@ -50,8 +58,6 @@ export async function POST(req: NextRequest) {
     prisma.professional.update({ where: { id: pro.id }, data: { lastLoginAt: new Date() } }).catch(() => {});
 
     const token = signProfessionalToken({ professionalId: pro.id, email: pro.email, role: pro.role });
-    // Restituisco anche `language` così il client può fare redirect al prefix
-    // di lingua corretto (es. /fr/area-professionisti per lingua francese).
     const res = NextResponse.json({ success: true, language: pro.language || "it" });
     res.cookies.set(PROFESSIONAL_COOKIE_NAME, token, professionalCookieOptions());
     return res;
