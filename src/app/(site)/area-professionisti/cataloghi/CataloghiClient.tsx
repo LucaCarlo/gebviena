@@ -31,21 +31,24 @@ interface I18n {
 }
 
 export default function CataloghiClient({ lang, i18n }: { lang?: string; i18n: I18n }) {
-  void lang;
   const [catalogs, setCatalogs] = useState<Catalog[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("__all__");
 
   useEffect(() => {
+    // Le API /api/* non passano dal middleware, quindi non ricevono
+    // x-gtv-lang. Passiamo la lingua come query param così title/description
+    // e label categoria tornano già tradotti.
+    const langParam = lang && lang !== "it" ? `?lang=${encodeURIComponent(lang)}` : "";
     Promise.all([
-      fetch("/api/catalogs").then((r) => r.json()).catch(() => ({ data: [] })),
-      fetch("/api/catalog-categories").then((r) => r.json()).catch(() => ({ data: [] })),
+      fetch(`/api/catalogs${langParam}`).then((r) => r.json()).catch(() => ({ data: [] })),
+      fetch(`/api/catalog-categories${langParam}`).then((r) => r.json()).catch(() => ({ data: [] })),
     ]).then(([catRes, catgRes]) => {
       setCatalogs(((catRes.data || []) as Catalog[]).filter((c) => c.isActive));
       setCategories((catgRes.data || []) as Category[]);
     }).finally(() => setLoading(false));
-  }, []);
+  }, [lang]);
 
   const visibleCategories = useMemo(() => {
     const usedSlugs = new Set(catalogs.map((c) => c.section));
