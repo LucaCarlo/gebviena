@@ -48,6 +48,9 @@ export async function GET(req: NextRequest) {
       ...n,
       title: tr?.title || n.title,
       body: tr?.body ?? n.body,
+      // Link: usa la versione tradotta se presente, altrimenti fallback al
+      // link del master (impostato dall'admin in lingua sorgente).
+      link: tr?.link ?? n.link,
       isRead: readMap.has(n.id),
       readAt: readMap.get(n.id) || null,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -41,18 +41,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await prisma.professionalNotification.update({ where: { id }, data: update });
   }
 
-  // Traduzioni esplicite: { en: {title, body}, de: {...}, ... }
+  // Traduzioni esplicite: { en: {title, body, link?}, de: {...}, ... }
   if (body.translations && typeof body.translations === "object") {
     for (const lang of TARGET_LANGS) {
       const tr = body.translations[lang];
       if (!tr || typeof tr !== "object") continue;
       const t = typeof tr.title === "string" ? tr.title.trim().slice(0, 255) : "";
       const b = tr.body ? String(tr.body).slice(0, 5000) : null;
+      const l = tr.link ? String(tr.link).slice(0, 500) : null;
       if (!t) continue;
       await prisma.professionalNotificationTranslation.upsert({
         where: { notificationId_languageCode: { notificationId: id, languageCode: lang } },
-        update: { title: t, body: b },
-        create: { notificationId: id, languageCode: lang, title: t, body: b },
+        update: { title: t, body: b, link: l },
+        create: { notificationId: id, languageCode: lang, title: t, body: b, link: l },
       });
     }
   }

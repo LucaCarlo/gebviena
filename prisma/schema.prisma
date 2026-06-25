@@ -1868,6 +1868,7 @@ model ProfessionalNotificationTranslation {
   languageCode    String   @db.VarChar(8)
   title           String   @db.VarChar(255)
   body            String?  @db.Text
+  link            String?  @db.VarChar(500)
   createdAt       DateTime @default(now())
   notification    ProfessionalNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 

@@ -15,17 +15,17 @@ interface NotificationGroup {
 }
 
 interface TranslationsMap {
-  en: { title: string; body: string };
-  de: { title: string; body: string };
-  fr: { title: string; body: string };
-  es: { title: string; body: string };
+  en: { title: string; body: string; link: string };
+  de: { title: string; body: string; link: string };
+  fr: { title: string; body: string; link: string };
+  es: { title: string; body: string; link: string };
 }
 
 const EMPTY_TRANSLATIONS: TranslationsMap = {
-  en: { title: "", body: "" },
-  de: { title: "", body: "" },
-  fr: { title: "", body: "" },
-  es: { title: "", body: "" },
+  en: { title: "", body: "", link: "" },
+  de: { title: "", body: "", link: "" },
+  fr: { title: "", body: "", link: "" },
+  es: { title: "", body: "", link: "" },
 };
 
 const LANG_LABEL: Record<string, string> = {
@@ -236,7 +236,7 @@ function NotificationForm({
         for (const tr of d.data.translations || []) {
           if (tr.languageCode in map) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (map as any)[tr.languageCode] = { title: tr.title || "", body: tr.body || "" };
+            (map as any)[tr.languageCode] = { title: tr.title || "", body: tr.body || "", link: tr.link || "" };
           }
         }
         setTranslations(map);
@@ -336,14 +336,8 @@ function NotificationForm({
                 <option value="update">Aggiornamento</option>
               </select>
             </div>
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                Link (opzionale) — <span className="normal-case tracking-normal text-warm-500">uguale per tutte le lingue</span>
-              </label>
-              <input type="text" value={link} onChange={(e) => setLink(e.target.value)}
-                placeholder="https://… o /area-professionisti/…"
-                className="w-full px-3 py-2 border border-warm-300 rounded text-sm font-mono text-warm-900 placeholder:text-warm-400" />
-            </div>
+            {/* Link IT: si configura nel tab Italiano qui sotto. Le altre lingue
+                hanno un link proprio dentro il rispettivo tab. */}
           </div>
 
           {/* Tabs per lingua + bottone Traduci con AI */}
@@ -389,6 +383,12 @@ function NotificationForm({
                     placeholder="Dettagli o istruzioni per il professionista."
                     className="w-full px-3 py-2 border border-warm-300 rounded text-sm resize-none" />
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Link (italiano, opzionale)</label>
+                  <input type="text" value={link} onChange={(e) => setLink(e.target.value)}
+                    placeholder="https://… o /area-professionisti/…"
+                    className="w-full px-3 py-2 border border-warm-300 rounded text-sm font-mono text-warm-900 placeholder:text-warm-400" />
+                </div>
               </div>
             ) : (
               <div className="space-y-3 bg-warm-50/40 border border-warm-200 rounded p-3">
@@ -412,7 +412,17 @@ function NotificationForm({
                     className="w-full px-3 py-2 border border-warm-300 rounded text-sm resize-none"
                   />
                 </div>
-                <p className="text-[10px] text-warm-400">Lascia vuoto per saltare questa lingua (i professionisti vedranno la versione italiana).</p>
+                <div>
+                  <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Link ({LANG_LABEL[activeLang]}, opzionale)</label>
+                  <input
+                    type="text"
+                    value={translations[activeLang].link}
+                    onChange={(e) => setTranslations((prev) => ({ ...prev, [activeLang]: { ...prev[activeLang], link: e.target.value } }))}
+                    placeholder={`Link specifico per ${LANG_LABEL[activeLang]} (es. /${activeLang}/area-professionisti/…). Se vuoto usa il link italiano.`}
+                    className="w-full px-3 py-2 border border-warm-300 rounded text-sm font-mono text-warm-900 placeholder:text-warm-400"
+                  />
+                </div>
+                <p className="text-[10px] text-warm-400">Lascia titolo vuoto per saltare questa lingua (i professionisti vedranno la versione italiana).</p>
               </div>
             )}
           </div>
