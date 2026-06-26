@@ -203,7 +203,7 @@ export function ImageTextBgEditor({ data, onChange, sourceData }: { data: NewsIm
         value={data.imageUrl}
         onChange={(url) => onChange({ ...data, imageUrl: url })}
         onRemove={() => onChange({ ...data, imageUrl: "" })}
-        purpose="general" folder="news" acceptVideo
+        purpose="news" folder="news" acceptVideo
         helpText="Risoluzione consigliata: 1200x1600px (verticale 3:4) o 1600x1200px (orizzontale 4:3). Min 1000px sul lato lungo."
       />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
@@ -263,7 +263,7 @@ export function ThreeImagesEditor({ data, onChange, sourceData }: { data: NewsTh
     <div className="space-y-4">
       {imgs.slice(0, 3).map((im, i) => (
         <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-4 border-b border-warm-100 last:border-b-0">
-          <ImageUploadField label={`Media ${i + 1} (immagine o video)`} value={im.url} onChange={(url) => update(i, { url })} onRemove={() => update(i, { url: "" })} purpose="general" folder="news" aspectRatio={2 / 3} acceptVideo helpText="Risoluzione consigliata: 800x1200px (verticale 2:3). Min 600px sul lato corto." />
+          <ImageUploadField label={`Media ${i + 1} (immagine o video)`} value={im.url} onChange={(url) => update(i, { url })} onRemove={() => update(i, { url: "" })} purpose="news" folder="news" aspectRatio={2 / 3} acceptVideo helpText="Risoluzione consigliata: 800x1200px (verticale 2:3). Min 600px sul lato corto." />
           <div className="space-y-2">
             <div>
               <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Didascalia</label>
@@ -284,7 +284,7 @@ export function ThreeImagesEditor({ data, onChange, sourceData }: { data: NewsTh
 export function SingleImageEditor({ data, onChange, sourceData }: { data: NewsSingleImageData; onChange: (d: NewsSingleImageData) => void; sourceData?: Partial<NewsSingleImageData> }) {
   return (
     <div className="space-y-4">
-      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Risoluzione consigliata: 1600x900px (16:9 orizzontale) o 1200x1200px (quadrato). Min 1000px sul lato lungo. Formati: JPG, PNG, MP4, WebM." />
+      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="news" folder="news" acceptVideo helpText="Risoluzione consigliata: 1600x900px (16:9 orizzontale) o 1200x1200px (quadrato). Min 1000px sul lato lungo. Formati: JPG, PNG, MP4, WebM." />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
         <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
@@ -304,7 +304,7 @@ export function SingleImageEditor({ data, onChange, sourceData }: { data: NewsSi
 export function ImageWithParagraphEditor({ data, onChange, sourceData }: { data: NewsImageWithParagraphData; onChange: (d: NewsImageWithParagraphData) => void; sourceData?: Partial<NewsImageWithParagraphData> }) {
   return (
     <div className="space-y-4">
-      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Risoluzione consigliata: 1200x800px (3:2 orizzontale) o 1200x1200px (quadrato). Min 1000px sul lato lungo." />
+      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="news" folder="news" acceptVideo helpText="Risoluzione consigliata: 1200x800px (3:2 orizzontale) o 1200x1200px (quadrato). Min 1000px sul lato lungo." />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
         <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
@@ -453,7 +453,7 @@ export function TwoImagesInlineEditor({ data, onChange, sourceData }: { data: Ne
               value={imgs[i]?.url || ""}
               onChange={(url) => updateImg(i, { url })}
               onRemove={() => updateImg(i, { url: "" })}
-              purpose="general"
+              purpose="news"
               folder="news"
               acceptVideo
               helpText="Risoluzione consigliata: 800x1067px (verticale 3:4). Min 600px di larghezza. Mantieni aspect uguale tra le due immagini."
@@ -523,7 +523,7 @@ export function FeatureToolEditor({ data, onChange, sourceData }: { data: NewsFe
         </div>
       </div>
 
-      <ImageUploadField label="Immagine principale" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Risoluzione consigliata: 1200x900px (4:3 orizzontale). Min 1000px di larghezza. JPG/PNG/MP4/WebM." />
+      <ImageUploadField label="Immagine principale" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="news" folder="news" acceptVideo helpText="Risoluzione consigliata: 1200x900px (4:3 orizzontale). Min 1000px di larghezza. JPG/PNG/MP4/WebM." />
       {isUploadedVideo(data.imageUrl) && (
         <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
       )}
