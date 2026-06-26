@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, Facebook, Link as LinkIcon } from "lucide-react";
+import { ChevronRight, ChevronLeft, Facebook, Link as LinkIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import type {
   NewsArticle, NewsBlockV2,
@@ -343,7 +343,8 @@ function ThreeImages({ d }: { d: NewsThreeImagesData }) {
   if (!imgs.length) return null;
   return (
     <section className="px-2 md:px-3 lg:px-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-3 md:gap-x-4 gap-y-8">
+      {/* Desktop: grid 3 colonne come sempre */}
+      <div className="hidden md:grid grid-cols-3 gap-x-4 gap-y-8">
         {imgs.map((img, i) => (
           <div key={i}>
             <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
@@ -353,7 +354,87 @@ function ThreeImages({ d }: { d: NewsThreeImagesData }) {
           </div>
         ))}
       </div>
+      {/* Mobile: carousel orizzontale con frecce e indicatori a puntini */}
+      <div className="md:hidden">
+        <ThreeImagesMobileCarousel imgs={imgs} />
+      </div>
     </section>
+  );
+}
+
+function ThreeImagesMobileCarousel({ imgs }: { imgs: NewsThreeImagesData["images"] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = useState(0);
+  const items = imgs || [];
+  const scrollTo = (i: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const target = el.children[i] as HTMLElement | undefined;
+    if (!target) return;
+    // offsetLeft del child è relativo all'offsetParent, che qui è il container
+    // con position:relative del wrapper. Sommiamo lo scroll attuale + delta.
+    const delta = target.getBoundingClientRect().left - el.getBoundingClientRect().left;
+    el.scrollTo({ left: el.scrollLeft + delta, behavior: "smooth" });
+  };
+  const onScroll = () => {
+    const el = ref.current;
+    if (!el) return;
+    // Indice = round(scrollLeft / larghezza slide). Larghezza slide ≈ 90% container.
+    const slideW = el.clientWidth * 0.88;
+    const i = Math.round(el.scrollLeft / slideW);
+    setIdx(Math.max(0, Math.min(items.length - 1, i)));
+  };
+  return (
+    <div className="relative">
+      <div
+        ref={ref}
+        onScroll={onScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory gap-3 scrollbar-hidden pb-1"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {items.map((img, i) => (
+          <div key={i} className="flex-shrink-0 w-[88%] snap-start">
+            <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
+              <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer />
+            </div>
+            {img.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>}
+          </div>
+        ))}
+      </div>
+      {items.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={() => scrollTo(Math.max(0, idx - 1))}
+            disabled={idx === 0}
+            className="absolute left-1 top-1/3 -translate-y-1/2 w-10 h-10 bg-black/55 text-white rounded-full flex items-center justify-center backdrop-blur-sm disabled:opacity-0 transition-opacity"
+            aria-label="Immagine precedente"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollTo(Math.min(items.length - 1, idx + 1))}
+            disabled={idx >= items.length - 1}
+            className="absolute right-1 top-1/3 -translate-y-1/2 w-10 h-10 bg-black/55 text-white rounded-full flex items-center justify-center backdrop-blur-sm disabled:opacity-0 transition-opacity"
+            aria-label="Immagine successiva"
+          >
+            <ChevronRight size={20} />
+          </button>
+          <div className="flex justify-center gap-1.5 mt-3">
+            {items.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => scrollTo(i)}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${i === idx ? "bg-black" : "bg-warm-300"}`}
+                aria-label={`Vai all'immagine ${i + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
