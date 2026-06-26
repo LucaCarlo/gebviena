@@ -5,7 +5,7 @@ import {
   GripVertical, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Plus, Copy, X,
   Type, LayoutTemplate, Grid3x3, Image as ImageIcon, Share2, Package, AlignCenter, Maximize2,
   Wrench, ListOrdered, HelpCircle, BarChart3, Quote as QuoteIcon, Clock, Table, Search,
-  Sliders, RotateCcw,
+  Sliders, RotateCcw, Columns3,
 } from "lucide-react";
 import type {
   NewsBlockV2, NewsBlockV2Type, NewsBlockStyle, NewsBlockSpacing, NewsBlockBackground,
@@ -14,7 +14,9 @@ import type {
   NewsCaslonTitleData, NewsTwoImagesInlineData,
   NewsFeatureToolData, NewsSingleCtaData, NewsCardsRowData, NewsFaqData, NewsStatsData,
   NewsQuoteData, NewsTimelineData, NewsComparisonTableData,
+  NewsColumnsData, NewsColumnsCount,
 } from "@/types";
+import { ColumnsEditor } from "./NewsBlockEditors";
 
 // Etichette per i select del pannello Stile (step 4)
 const SPACING_OPTIONS: { value: NewsBlockSpacing | ""; label: string }[] = [
@@ -75,6 +77,9 @@ const MENU: MenuItem[] = [
   { type: "timeline", icon: Clock, label: "Timeline", category: "template", keywords: "storia date" },
   { type: "comparison_table", icon: Table, label: "Tabella di confronto", category: "template", keywords: "tabella pricing" },
   { type: "product", icon: Package, label: "Prodotto correlato", category: "template", keywords: "shop prodotto" },
+
+  // Layout
+  { type: "columns", icon: Columns3, label: "Colonne", category: "layout", keywords: "grid 2 3 4 cols layout" },
 ];
 const LABELS: Record<NewsBlockV2Type, string> = {
   ...(Object.fromEntries(MENU.map((m) => [m.type, m.label])) as Record<NewsBlockV2Type, string>),
@@ -102,6 +107,12 @@ function defaultData(t: NewsBlockV2Type): NewsBlockV2["data"] {
     case "product": return { productId: "" } satisfies NewsProductData;
     case "share": return {};
     case "related": return {};
+    case "columns": return {
+      columns: 2 as NewsColumnsCount,
+      gap: "md",
+      verticalAlign: "top",
+      children: [[], []], // 2 colonne vuote
+    } satisfies NewsColumnsData;
   }
 }
 
@@ -251,6 +262,7 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
       case "product": return <ProductEditor data={b.data as NewsProductData} onChange={(d) => upd(b.id, d)} />;
       case "share": return <ShareInfo />;
       case "related": return <RelatedInfo />;
+      case "columns": return <ColumnsEditor data={b.data as NewsColumnsData} onChange={(d) => upd(b.id, d)} />;
     }
   };
 

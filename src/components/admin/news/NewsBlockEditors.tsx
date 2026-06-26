@@ -26,6 +26,11 @@ import type {
   NewsCardItem,
   NewsCta,
   CtaButtonStyle,
+  NewsColumnsData,
+  NewsColumnsChild,
+  NewsColumnsCount,
+  NewsColumnsGap,
+  NewsColumnsAlign,
 } from "@/types";
 
 // Helper: l'URL punta a un file video (mp4/webm/...) tra quelli caricabili dal
@@ -926,6 +931,168 @@ export function ComparisonTableEditor({ data, onChange, sourceData }: { data: Ne
         </table>
       </div>
       <button type="button" onClick={addRow} className="w-full py-2 border border-dashed border-warm-300 rounded text-sm text-warm-600 hover:bg-warm-50 flex items-center justify-center gap-1.5"><Plus size={14} /> Aggiungi riga</button>
+    </div>
+  );
+}
+
+/* ── Columns Editor (step 5 editor news) ────────────────────────────
+   Layout container con N colonne (2/3/4). Ogni colonna è una lista di
+   "child" widget atomici. Niente template / niente nested columns
+   (l'editor non li offre nemmeno) per evitare layout incomprensibili.
+   ─────────────────────────────────────────────────────────────────── */
+
+interface AllowedChildType {
+  type: NewsColumnsChild["type"];
+  label: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  defaultData: () => any;
+}
+const ALLOWED_CHILD_TYPES: AllowedChildType[] = [
+  { type: "caslon_title", label: "Titolo", defaultData: () => ({ text: "", align: "center" }) },
+  { type: "paragraph", label: "Paragrafo", defaultData: () => ({ title: "", body: "" }) },
+  { type: "single_image", label: "Immagine", defaultData: () => ({ imageUrl: "", caption: "" }) },
+  { type: "single_cta", label: "Pulsante", defaultData: () => ({ title: "", body: "", ctas: [{ label: "", href: "", style: "default" }], ctaGroupStyle: "boxed", align: "center" }) },
+  { type: "quote", label: "Citazione", defaultData: () => ({ text: "", author: "", authorRole: "", align: "center" }) },
+];
+
+export function ColumnsEditor({ data, onChange }: { data: NewsColumnsData; onChange: (d: NewsColumnsData) => void }) {
+  const cols = data.children || [];
+  const setCol = (idx: number, items: NewsColumnsChild[]) => {
+    const next = [...cols];
+    next[idx] = items;
+    onChange({ ...data, children: next });
+  };
+  const setColumnsCount = (n: NewsColumnsCount) => {
+    const next: NewsColumnsChild[][] = [];
+    for (let i = 0; i < n; i++) next.push(cols[i] || []);
+    onChange({ ...data, columns: n, children: next });
+  };
+  const addChild = (colIdx: number, type: NewsColumnsChild["type"]) => {
+    const def = ALLOWED_CHILD_TYPES.find((t) => t.type === type);
+    if (!def) return;
+    const child: NewsColumnsChild = { id: crypto.randomUUID(), type, data: def.defaultData() };
+    setCol(colIdx, [...(cols[colIdx] || []), child]);
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updChild = (colIdx: number, childIdx: number, newData: any) => {
+    setCol(colIdx, (cols[colIdx] || []).map((c, i) => i === childIdx ? { ...c, data: newData } : c));
+  };
+  const delChild = (colIdx: number, childIdx: number) => {
+    setCol(colIdx, (cols[colIdx] || []).filter((_, i) => i !== childIdx));
+  };
+  const moveChild = (colIdx: number, childIdx: number, dir: "up" | "down") => {
+    const list = [...(cols[colIdx] || [])];
+    const j = dir === "up" ? childIdx - 1 : childIdx + 1;
+    if (j < 0 || j >= list.length) return;
+    [list[childIdx], list[j]] = [list[j], list[childIdx]];
+    setCol(colIdx, list);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-4 pb-3 border-b border-warm-200">
+        <label className="flex items-center gap-2 text-xs text-warm-600">
+          <span className="font-semibold uppercase tracking-wider">Colonne</span>
+          <select value={data.columns} onChange={(e) => setColumnsCount(parseInt(e.target.value, 10) as NewsColumnsCount)} className="border border-warm-300 rounded px-2 py-1 text-xs bg-white">
+            <option value={2}>2</option>
+            <option value={3}>3</option>
+            <option value={4}>4</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-xs text-warm-600">
+          <span className="font-semibold uppercase tracking-wider">Spazio</span>
+          <select value={data.gap || "md"} onChange={(e) => onChange({ ...data, gap: e.target.value as NewsColumnsGap })} className="border border-warm-300 rounded px-2 py-1 text-xs bg-white">
+            <option value="sm">Piccolo</option>
+            <option value="md">Medio</option>
+            <option value="lg">Grande</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-xs text-warm-600">
+          <span className="font-semibold uppercase tracking-wider">Allineamento</span>
+          <select value={data.verticalAlign || "top"} onChange={(e) => onChange({ ...data, verticalAlign: e.target.value as NewsColumnsAlign })} className="border border-warm-300 rounded px-2 py-1 text-xs bg-white">
+            <option value="top">In alto</option>
+            <option value="center">Al centro</option>
+            <option value="bottom">In basso</option>
+          </select>
+        </label>
+      </div>
+      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${data.columns}, minmax(0, 1fr))` }}>
+        {Array.from({ length: data.columns }).map((_, colIdx) => {
+          const items = cols[colIdx] || [];
+          return (
+            <div key={colIdx} className="border-2 border-dashed border-warm-300 rounded-lg p-3 min-h-[200px] bg-warm-50/30 space-y-2">
+              <div className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-1">Colonna {colIdx + 1}</div>
+              {items.map((child, childIdx) => (
+                <ChildBlockEditor
+                  key={child.id}
+                  child={child}
+                  index={childIdx}
+                  total={items.length}
+                  onChange={(d) => updChild(colIdx, childIdx, d)}
+                  onDelete={() => delChild(colIdx, childIdx)}
+                  onMove={(dir) => moveChild(colIdx, childIdx, dir)}
+                />
+              ))}
+              <ChildAddButton onAdd={(t) => addChild(colIdx, t)} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ChildBlockEditor({ child, index, total, onChange, onDelete, onMove }: {
+  child: NewsColumnsChild;
+  index: number;
+  total: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onChange: (d: any) => void;
+  onDelete: () => void;
+  onMove: (dir: "up" | "down") => void;
+}) {
+  const def = ALLOWED_CHILD_TYPES.find((t) => t.type === child.type);
+  return (
+    <div className="bg-white border border-warm-200 rounded overflow-hidden">
+      <div className="flex items-center gap-1 px-2 py-1 bg-warm-100 text-xs">
+        <span className="text-warm-700 font-medium">{def?.label || child.type}</span>
+        <div className="flex-1" />
+        <button type="button" onClick={() => onMove("up")} disabled={index === 0} className="p-1 text-warm-500 hover:text-warm-800 disabled:opacity-30" title="Su"><ArrowUp size={11} /></button>
+        <button type="button" onClick={() => onMove("down")} disabled={index === total - 1} className="p-1 text-warm-500 hover:text-warm-800 disabled:opacity-30" title="Giù"><ArrowDown size={11} /></button>
+        <button type="button" onClick={onDelete} className="p-1 text-warm-500 hover:text-red-600" title="Rimuovi"><X size={12} /></button>
+      </div>
+      <div className="p-2">
+        {child.type === "caslon_title" && <CaslonTitleEditor data={child.data as NewsCaslonTitleData} onChange={onChange} />}
+        {child.type === "paragraph" && <ParagraphEditor data={child.data as NewsParagraphData} onChange={onChange} />}
+        {child.type === "single_image" && <SingleImageEditor data={child.data as NewsSingleImageData} onChange={onChange} />}
+        {child.type === "single_cta" && <SingleCtaEditor data={child.data as NewsSingleCtaData} onChange={onChange} />}
+        {child.type === "quote" && <QuoteEditor data={child.data as NewsQuoteData} onChange={onChange} />}
+      </div>
+    </div>
+  );
+}
+
+function ChildAddButton({ onAdd }: { onAdd: (type: NewsColumnsChild["type"]) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen((v) => !v)} className="w-full py-1.5 text-[11px] uppercase tracking-wider text-warm-500 border border-dashed border-warm-300 rounded hover:bg-warm-100 hover:text-warm-800 flex items-center justify-center gap-1">
+        <Plus size={12} /> Widget
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 mt-1 bg-white border border-warm-300 rounded shadow-md z-10 py-1">
+          {ALLOWED_CHILD_TYPES.map((t) => (
+            <button
+              key={t.type}
+              type="button"
+              onClick={() => { onAdd(t.type); setOpen(false); }}
+              className="block w-full text-left px-3 py-1.5 text-xs text-warm-700 hover:bg-warm-100"
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

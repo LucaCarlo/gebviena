@@ -253,7 +253,8 @@ export type NewsBlockV2Type =
   | "single_cta"
   | "product"
   | "share"
-  | "related";
+  | "related"
+  | "columns";
 
 export interface NewsParagraphData {
   title?: string;
@@ -454,6 +455,30 @@ export interface NewsProductData {
 }
 
 /**
+ * Layout colonne (step 5 editor news). Ogni colonna è una lista lineare di
+ * widget atomici (titolo, paragrafo, immagine, CTA, citazione, condividi).
+ * Niente template / colonne dentro colonne — l'editor lo enforce a UI.
+ * Usiamo `unknown` per i child al posto di NewsBlockV2 ricorsivo perché TS
+ * non gestisce bene il self-reference e il payload è validato lato UI.
+ */
+export type NewsColumnsCount = 2 | 3 | 4;
+export type NewsColumnsGap = "sm" | "md" | "lg";
+export type NewsColumnsAlign = "top" | "center" | "bottom";
+export interface NewsColumnsChild {
+  id: string;
+  type: NewsBlockV2Type;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any;
+  style?: NewsBlockStyle;
+}
+export interface NewsColumnsData {
+  columns: NewsColumnsCount;
+  gap?: NewsColumnsGap;
+  verticalAlign?: NewsColumnsAlign;
+  children: NewsColumnsChild[][]; // children[colIdx][childIdx]
+}
+
+/**
  * Override di stile per singolo blocco news. Tutto opzionale → block esistenti
  * senza `style` continuano a renderizzare identici (default code-driven).
  * Valori semantici "none/sm/md/lg/xl" mappati a classi Tailwind statiche nel
@@ -491,7 +516,8 @@ export interface NewsBlockV2 {
     | NewsComparisonTableData
     | NewsProductData
     | NewsShareData
-    | NewsRelatedData;
+    | NewsRelatedData
+    | NewsColumnsData;
   /** Override di stile opzionale — vedi NewsBlockStyle. Default: niente override. */
   style?: NewsBlockStyle;
 }

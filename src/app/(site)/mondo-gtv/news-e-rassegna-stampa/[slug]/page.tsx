@@ -13,7 +13,7 @@ import type {
   NewsCaslonTitleData, NewsTwoImagesInlineData,
   NewsFeatureToolData, NewsSingleCtaData, NewsCardsRowData, NewsFaqData, NewsStatsData,
   NewsQuoteData, NewsTimelineData, NewsComparisonTableData,
-  NewsCta,
+  NewsCta, NewsColumnsData, NewsColumnsChild,
 } from "@/types";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
@@ -580,6 +580,7 @@ export default function NewsDetailPage() {
                   case "timeline": node = <TimelineBlock d={b.data as NewsTimelineData} />; break;
                   case "comparison_table": node = <ComparisonTableBlock d={b.data as NewsComparisonTableData} />; break;
                   case "single_cta": node = <SingleCtaBlock d={b.data as NewsSingleCtaData} />; break;
+                  case "columns": node = <ColumnsBlock d={b.data as NewsColumnsData} />; break;
                   case "product": node = <ProductBlock productId={(b.data as NewsProductData).productId} />; break;
                   case "share": node = <ShareBlock title={article.title} />; break;
                   default: node = null;
@@ -741,6 +742,44 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
             <div className="md:col-span-5">{imageEl}</div>
           </>
         )}
+      </div>
+    </section>
+  );
+}
+
+/* ── Columns block (step 5 editor news) ────────────────────────────
+   Layout grid 2/3/4 colonne con widget atomici dentro ognuna. */
+function ColumnsChildRenderer({ child }: { child: NewsColumnsChild }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data = child.data as any;
+  switch (child.type) {
+    case "caslon_title": return <CaslonTitle d={data as NewsCaslonTitleData} />;
+    case "paragraph": return <ParagraphBlock d={data as NewsParagraphData} />;
+    case "single_image": return <SingleImage d={data as NewsSingleImageData} />;
+    case "single_cta": return <SingleCtaBlock d={data as NewsSingleCtaData} />;
+    case "quote": return <QuoteBlock d={data as NewsQuoteData} />;
+    default: return null;
+  }
+}
+function ColumnsBlock({ d }: { d: NewsColumnsData }) {
+  const n = d.columns || 2;
+  const cols = d.children || [];
+  const colsClass = n === 2 ? "md:grid-cols-2" : n === 4 ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3";
+  const gapClass = d.gap === "sm" ? "gap-4 md:gap-6" : d.gap === "lg" ? "gap-10 md:gap-14" : "gap-6 md:gap-10";
+  const alignClass = d.verticalAlign === "center" ? "items-center" : d.verticalAlign === "bottom" ? "items-end" : "items-start";
+  return (
+    <section className="gtv-container">
+      <div className={`grid grid-cols-1 ${colsClass} ${gapClass} ${alignClass}`}>
+        {Array.from({ length: n }).map((_, colIdx) => {
+          const items = cols[colIdx] || [];
+          return (
+            <div key={colIdx} className="space-y-6">
+              {items.map((child) => (
+                <ColumnsChildRenderer key={child.id} child={child} />
+              ))}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
