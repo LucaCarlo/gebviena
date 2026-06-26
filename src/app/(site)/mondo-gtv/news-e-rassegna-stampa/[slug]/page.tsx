@@ -143,17 +143,31 @@ function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillConta
   // sopra/sotto la striscia 16:9). Controlli nativi: play/pause, scrubber,
   // tre puntini impostazioni, fullscreen.
 
+  // Cover-fit per iframe esterni: altezza piena del container, aspect 16:9
+  // nativo + min-width 100% così se il container è portrait l'iframe sborda
+  // lateralmente e crop sui lati invece di lasciare fasce nere sopra/sotto.
+  // Tradeoff accettato: controlli laterali del player parzialmente nascosti.
+  const coverIframeStyle: React.CSSProperties = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    height: "100%",
+    aspectRatio: "16 / 9",
+    minWidth: "100%",
+    transform: "translate(-50%, -50%)",
+    border: 0,
+  };
   if (yt) {
     return (
       <div className={extVidClass} style={containerStyle}>
-        <iframe src={`https://www.youtube.com/embed/${yt[1]}${autoplay ? `?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=${controls === false ? 0 : 1}` : `?rel=0&controls=${controls === false ? 0 : 1}`}`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+        <iframe src={`https://www.youtube.com/embed/${yt[1]}${autoplay ? `?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=${controls === false ? 0 : 1}` : `?rel=0&controls=${controls === false ? 0 : 1}`}`} style={coverIframeStyle} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
       </div>
     );
   }
   if (vimeo) {
     return (
       <div className={extVidClass} style={containerStyle}>
-        <iframe src={`https://player.vimeo.com/video/${vimeo[1]}${autoplay ? "?autoplay=1&muted=1&loop=1" : ""}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+        <iframe src={`https://player.vimeo.com/video/${vimeo[1]}${autoplay ? "?autoplay=1&muted=1&loop=1" : ""}`} style={coverIframeStyle} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
       </div>
     );
   }
