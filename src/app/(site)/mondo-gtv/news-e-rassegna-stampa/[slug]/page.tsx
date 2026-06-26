@@ -78,17 +78,39 @@ function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillConta
   // l'aspect del container non matcha quello del wrapper esterno. Lo togliamo.
   const extVidClass = fillContainer ? "relative w-full h-full overflow-hidden" : "relative w-full overflow-hidden";
 
+  // L'iframe ha aspect nativo 16/9. Per coprire un container con aspect diverso
+  // (es. 3/4.2 portrait di image_text_bg) lo posizioniamo absolute al centro
+  // con altezza piena, aspect 16/9 e min-width 100%: se il container è più
+  // stretto del video, l'iframe sborda e crop laterale. Se il container è
+  // 16/9 esatto, l'iframe combacia. Comportamento simile a object-fit: cover.
+  const coverIframeStyle: React.CSSProperties = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    height: "100%",
+    aspectRatio: "16 / 9",
+    minWidth: "100%",
+    transform: "translate(-50%, -50%)",
+    border: 0,
+  };
+
   if (yt) {
     return (
       <div className={extVidClass} style={containerStyle}>
-        <iframe src={`https://www.youtube.com/embed/${yt[1]}${autoplay ? `?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=${controls === false ? 0 : 1}` : `?rel=0&controls=${controls === false ? 0 : 1}`}`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+        <iframe src={`https://www.youtube.com/embed/${yt[1]}${autoplay ? `?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=${controls === false ? 0 : 1}` : `?rel=0&controls=${controls === false ? 0 : 1}`}`} style={coverIframeStyle} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
       </div>
     );
   }
   if (vimeo) {
+    // Quando autoplay è richiesto usiamo `background=1`: Vimeo nasconde i
+    // controlli E scala il video col cover-fit nativo del player (no bande
+    // nere). Per i video senza autoplay manteniamo i controlli e applichiamo
+    // la cover-trick CSS sull'iframe (può produrre fasce a seconda
+    // dell'aspect del container, ma copre la colonna).
+    const vimeoParams = autoplay ? "?background=1" : "";
     return (
       <div className={extVidClass} style={containerStyle}>
-        <iframe src={`https://player.vimeo.com/video/${vimeo[1]}${autoplay ? "?autoplay=1&muted=1&loop=1" : ""}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+        <iframe src={`https://player.vimeo.com/video/${vimeo[1]}${vimeoParams}`} style={coverIframeStyle} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
       </div>
     );
   }
@@ -206,17 +228,14 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
 function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title: string }) {
   const imgLeft = d.imagePosition === "left";
   const fit = d.mediaFit || "cover";
-  // Detect video esterno (YouTube/Vimeo): l'iframe ha aspect 16:9 nativo. Con un
-  // container 3/4.2 (verticale) il video appare circondato da bande sopra/sotto.
-  // Usiamo 16:9 quando rilevato un embed esterno per eliminare il bordo, e
-  // limitiamo la larghezza del wrapper centrandolo verticalmente nel grid cell.
-  const extVid = /youtu\.?be|vimeo\.com/i.test(d.videoUrl || "");
-  // Per le immagini manteniamo il rapporto ritratto 3/4.2; per i video esterni
-  // (YouTube/Vimeo, iframe nativo 16:9) usiamo 16:9 per evitare le bande
-  // sopra/sotto. Il container è centrato verticalmente nella section.
-  const aspectRatio = extVid ? "16 / 9" : "3 / 4.2";
+  // Aspect portrait 3/4.2 uniforme per immagini e video (YT/Vimeo/locali) così
+  // che il media-side riempia sempre la stessa altezza del testo-side e
+  // matchi le altre sezioni image_text_bg (es. tra video Continuum e foto C 5501).
+  // Per gli iframe esterni il player applica un cover-fit (Vimeo background=1)
+  // oppure CSS crop laterale, vedi NewsMediaSmart.
+  const aspectRatio = "3 / 4.2";
   const imageEl = (
-    <div className={`relative w-full mx-auto self-center ${extVid ? "" : (fit === "contain" ? "bg-white" : "bg-warm-200")} overflow-hidden`} style={{ aspectRatio }}>
+    <div className={`relative w-full mx-auto self-center ${fit === "contain" ? "bg-white" : "bg-warm-200"} overflow-hidden`} style={{ aspectRatio }}>
       {(d.imageUrl || d.videoUrl) && (
         <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer mediaFit={fit} />
       )}
