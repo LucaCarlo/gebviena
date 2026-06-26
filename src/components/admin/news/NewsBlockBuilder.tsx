@@ -2,13 +2,12 @@
 
 import { useState, useCallback, useEffect } from "react";
 import {
-  GripVertical, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Plus, Copy, X,
+  GripVertical, Trash2, ArrowUp, ArrowDown, Plus, Copy, X,
   Type, LayoutTemplate, Grid3x3, Image as ImageIcon, Share2, Package, AlignCenter, Maximize2,
-  Wrench, ListOrdered, HelpCircle, BarChart3, Quote as QuoteIcon, Clock, Table, Search,
-  Sliders, RotateCcw, Columns3,
+  Wrench, ListOrdered, HelpCircle, BarChart3, Quote as QuoteIcon, Clock, Table, Search, Columns3,
 } from "lucide-react";
 import type {
-  NewsBlockV2, NewsBlockV2Type, NewsBlockStyle, NewsBlockSpacing, NewsBlockBackground, NewsBlockFont, NewsBlockAnimation,
+  NewsBlockV2, NewsBlockV2Type,
   NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
   NewsCaslonTitleData, NewsTwoImagesInlineData,
@@ -16,69 +15,9 @@ import type {
   NewsQuoteData, NewsTimelineData, NewsComparisonTableData,
   NewsColumnsData, NewsColumnsCount,
 } from "@/types";
-import { ColumnsEditor } from "./NewsBlockEditors";
 
-// Etichette per i select del pannello Stile (step 4)
-const SPACING_OPTIONS: { value: NewsBlockSpacing | ""; label: string }[] = [
-  { value: "", label: "Default" },
-  { value: "none", label: "Nessuno" },
-  { value: "sm", label: "Piccolo" },
-  { value: "md", label: "Medio" },
-  { value: "lg", label: "Grande" },
-  { value: "xl", label: "Extra grande" },
-];
-const BG_OPTIONS: { value: NewsBlockBackground | ""; label: string }[] = [
-  { value: "", label: "Default" },
-  { value: "transparent", label: "Trasparente" },
-  { value: "white", label: "Bianco" },
-  { value: "warm-50", label: "Crema (warm-50)" },
-  { value: "warm-100", label: "Crema scuro (warm-100)" },
-  { value: "warm-900", label: "Scuro (warm-900)" },
-];
-
-// Font picker (step 6) — mappato a CSS variables esposte dal layout root.
-const FONT_OPTIONS: { value: NewsBlockFont | ""; label: string }[] = [
-  { value: "", label: "Default (Work Sans)" },
-  { value: "caslon", label: "Libre Caslon (sito)" },
-  { value: "work-sans", label: "Work Sans (sito)" },
-  { value: "inter", label: "Inter" },
-  { value: "playfair", label: "Playfair Display" },
-  { value: "lora", label: "Lora" },
-  { value: "montserrat", label: "Montserrat" },
-  { value: "roboto", label: "Roboto" },
-  { value: "poppins", label: "Poppins" },
-];
-
-// Color picker (step 7) — preset rapidi. Per altri colori c'è l'input hex.
-const TEXT_COLOR_PRESETS: { value: string; label: string; hex: string }[] = [
-  { value: "", label: "Default", hex: "" },
-  { value: "black", label: "Nero", hex: "#000000" },
-  { value: "white", label: "Bianco", hex: "#ffffff" },
-  { value: "warm-900", label: "Scuro (warm-900)", hex: "#1a1410" },
-  { value: "warm-700", label: "Antracite", hex: "#3a312b" },
-  { value: "warm-500", label: "Grigio", hex: "#736a63" },
-];
-
-// Animazioni di entrata (step 8) — labels per i select.
-const ANIMATION_OPTIONS: { value: NewsBlockAnimation | ""; label: string }[] = [
-  { value: "", label: "Nessuna" },
-  { value: "fade-in", label: "Dissolvenza" },
-  { value: "slide-up", label: "Sale dal basso" },
-  { value: "slide-down", label: "Scende dall'alto" },
-  { value: "slide-left", label: "Scivola da destra" },
-  { value: "slide-right", label: "Scivola da sinistra" },
-  { value: "zoom-in", label: "Zoom in" },
-];
-import {
-  ParagraphEditor, ImageTextBgEditor, ThreeImagesEditor, SingleImageEditor,
-  ImageWithParagraphEditor, FullwidthBannerEditor, ProductEditor, ShareInfo, RelatedInfo,
-  CaslonTitleEditor, TwoImagesInlineEditor,
-  FeatureToolEditor, SingleCtaEditor, CardsRowEditor, FaqEditor, StatsEditor,
-  QuoteEditor, TimelineEditor, ComparisonTableEditor,
-} from "./NewsBlockEditors";
-
-// Categorie del picker (step 2 dell'editor): widget atomici, layout (colonne
-// in arrivo), template compositi gia pronti dalle sezioni esistenti.
+// Categorie del picker (step 2 dell'editor): widget atomici, layout (colonne),
+// template compositi gia pronti dalle sezioni esistenti.
 type PickerCategory = "widget" | "layout" | "template";
 
 interface MenuItem {
@@ -90,7 +29,7 @@ interface MenuItem {
 }
 
 const MENU: MenuItem[] = [
-  // Widget = blocchi atomici (titolo, paragrafo, immagine singola, ecc.)
+  // Widget atomici
   { type: "caslon_title", icon: Type, label: "Titolo (Caslon)", category: "widget", keywords: "heading h1 h2 hero" },
   { type: "paragraph", icon: Type, label: "Paragrafo", category: "widget", keywords: "text testo" },
   { type: "single_image", icon: ImageIcon, label: "Immagine singola", category: "widget", keywords: "foto picture media" },
@@ -145,34 +84,27 @@ function defaultData(t: NewsBlockV2Type): NewsBlockV2["data"] {
       columns: 2 as NewsColumnsCount,
       gap: "md",
       verticalAlign: "top",
-      children: [[], []], // 2 colonne vuote
+      children: [[], []],
     } satisfies NewsColumnsData;
   }
 }
 
-interface Props { value: string; onChange: (json: string) => void; sourceValue?: string }
+interface Props {
+  value: string;
+  onChange: (json: string) => void;
+  sourceValue?: string;
+  selectedId?: string | null;
+  onSelect?: (id: string | null) => void;
+}
 
-export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props) {
-  const sourceBlocks: NewsBlockV2[] = (() => {
-    if (!sourceValue) return [];
-    try {
-      const p = JSON.parse(sourceValue);
-      return Array.isArray(p) ? (p as NewsBlockV2[]) : [];
-    } catch { return []; }
-  })();
-  const sourceById = new Map(sourceBlocks.map((b) => [b.id, b]));
+export default function NewsBlockBuilder({ value, onChange, sourceValue, selectedId, onSelect }: Props) {
+  void sourceValue; // sourceBlock viene gestito dal RightPanel
   const [blocks, setBlocks] = useState<NewsBlockV2[]>(() => {
     try {
       const parsed = value ? JSON.parse(value) : [];
       return Array.isArray(parsed) ? parsed : [];
     } catch { return []; }
   });
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  // Pannello "Stile" (step 4): apertura per-blocco; quando aperto mostra
-  // i select per padding/margin/sfondo override.
-  const [styleOpen, setStyleOpen] = useState<Set<string>>(new Set());
-  // Picker (step 1 + 2 + 3): modal centrato con search, tab di categoria,
-  // posizione di inserimento (null = append in fondo).
   const [menuOpen, setMenuOpen] = useState(false);
   const [insertAt, setInsertAt] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -192,7 +124,6 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  // Chiusura modal con Esc
   useEffect(() => {
     if (!menuOpen) return;
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") closeMenu(); };
@@ -219,39 +150,13 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
     next.splice(idx, 0, block);
     commit(next);
     closeMenu();
+    // Auto-seleziona il blocco appena inserito: l'utente apre subito il pannello dx
+    onSelect?.(block.id);
   };
-  const upd = (id: string, d: NewsBlockV2["data"]) => commit(blocks.map((b) => b.id === id ? { ...b, data: d } : b));
-  // Aggiorna o resetta lo style override di un blocco
-  const updStyle = (id: string, patch: Partial<NewsBlockStyle> | null) => {
-    commit(blocks.map((b) => {
-      if (b.id !== id) return b;
-      if (patch === null) {
-        // Reset completo: rimuovi il campo style
-        const { style: _s, ...rest } = b;
-        void _s;
-        return rest;
-      }
-      const merged: NewsBlockStyle = { ...(b.style || {}), ...patch };
-      // Pulisci chiavi vuote / undefined per non sporcare il JSON
-      const cleaned: NewsBlockStyle = {};
-      (Object.keys(merged) as (keyof NewsBlockStyle)[]).forEach((k) => {
-        const v = merged[k];
-        // Le union dei valori non includono "" (lo StyleSelect manda undefined
-        // se l'utente sceglie Default), quindi basta scartare undefined.
-        if (v !== undefined) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (cleaned as any)[k] = v;
-        }
-      });
-      if (Object.keys(cleaned).length === 0) {
-        const { style: _s, ...rest } = b;
-        void _s;
-        return rest;
-      }
-      return { ...b, style: cleaned };
-    }));
+  const del = (id: string) => {
+    if (selectedId === id) onSelect?.(null);
+    commit(blocks.filter((b) => b.id !== id));
   };
-  const del = (id: string) => commit(blocks.filter((b) => b.id !== id));
   const duplicate = (i: number) => {
     const src = blocks[i];
     if (!src) return;
@@ -259,6 +164,7 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
       id: crypto.randomUUID(),
       type: src.type,
       data: JSON.parse(JSON.stringify(src.data)),
+      style: src.style ? JSON.parse(JSON.stringify(src.style)) : undefined,
     };
     const next = [...blocks];
     next.splice(i + 1, 0, copy);
@@ -271,45 +177,15 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
     [next[i], next[t]] = [next[t], next[i]];
     commit(next);
   };
-  const toggle = (id: string) => setCollapsed((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const toggleStyle = (id: string) => setStyleOpen((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
-  const render = (b: NewsBlockV2) => {
-    const src = sourceById.get(b.id);
-    switch (b.type) {
-      case "paragraph": return <ParagraphEditor data={b.data as NewsParagraphData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsParagraphData> | undefined} />;
-      case "image_text_bg": return <ImageTextBgEditor data={b.data as NewsImageTextBgData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsImageTextBgData> | undefined} />;
-      case "three_images": return <ThreeImagesEditor data={b.data as NewsThreeImagesData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsThreeImagesData> | undefined} />;
-      case "single_image": return <SingleImageEditor data={b.data as NewsSingleImageData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsSingleImageData> | undefined} />;
-      case "image_with_paragraph": return <ImageWithParagraphEditor data={b.data as NewsImageWithParagraphData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsImageWithParagraphData> | undefined} />;
-      case "fullwidth_banner": return <FullwidthBannerEditor data={b.data as NewsFullwidthBannerData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsFullwidthBannerData> | undefined} />;
-      case "caslon_title": return <CaslonTitleEditor data={b.data as NewsCaslonTitleData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsCaslonTitleData> | undefined} />;
-      case "two_images_inline": return <TwoImagesInlineEditor data={b.data as NewsTwoImagesInlineData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsTwoImagesInlineData> | undefined} />;
-      case "feature_tool": return <FeatureToolEditor data={b.data as NewsFeatureToolData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsFeatureToolData> | undefined} />;
-      case "cards_row": return <CardsRowEditor data={b.data as NewsCardsRowData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsCardsRowData> | undefined} />;
-      case "faq": return <FaqEditor data={b.data as NewsFaqData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsFaqData> | undefined} />;
-      case "stats": return <StatsEditor data={b.data as NewsStatsData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsStatsData> | undefined} />;
-      case "quote": return <QuoteEditor data={b.data as NewsQuoteData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsQuoteData> | undefined} />;
-      case "timeline": return <TimelineEditor data={b.data as NewsTimelineData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsTimelineData> | undefined} />;
-      case "comparison_table": return <ComparisonTableEditor data={b.data as NewsComparisonTableData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsComparisonTableData> | undefined} />;
-      case "single_cta": return <SingleCtaEditor data={b.data as NewsSingleCtaData} onChange={(d) => upd(b.id, d)} sourceData={src?.data as Partial<NewsSingleCtaData> | undefined} />;
-      case "product": return <ProductEditor data={b.data as NewsProductData} onChange={(d) => upd(b.id, d)} />;
-      case "share": return <ShareInfo />;
-      case "related": return <RelatedInfo />;
-      case "columns": return <ColumnsEditor data={b.data as NewsColumnsData} onChange={(d) => upd(b.id, d)} />;
-    }
-  };
-
-  // Slot di inserimento hover tra/sopra blocchi: linea tratteggiata + "+"
-  // visibili solo al passaggio mouse. Click → apre il picker pre-impostando
-  // la posizione di inserimento.
+  // Slot "+" hover tra/sopra blocchi
   const HoverInsert = ({ at }: { at: number }) => (
     <div className="group relative h-3 -my-2.5 z-10">
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
         <div className="flex-1 border-t border-dashed border-warm-400" />
         <button
           type="button"
-          onClick={() => openPicker(at)}
+          onClick={(e) => { e.stopPropagation(); openPicker(at); }}
           className="pointer-events-auto inline-flex items-center justify-center w-7 h-7 rounded-full bg-warm-800 text-white shadow-md hover:bg-warm-900"
           title="Aggiungi sezione qui"
           aria-label="Aggiungi sezione qui"
@@ -321,116 +197,50 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
     </div>
   );
 
-  // Filtra le voci visibili nel picker: se c'è una query di ricerca, ignora i
-  // tab e cerca per label + keywords. Altrimenti mostra solo la categoria attiva.
   const q = search.trim().toLowerCase();
   const visibleItems = q
     ? MENU.filter((m) => `${m.label} ${m.keywords || ""}`.toLowerCase().includes(q))
     : MENU.filter((m) => m.category === activeTab);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {blocks.length > 0 && <HoverInsert at={0} />}
       {blocks.map((b, i) => {
-        const isC = collapsed.has(b.id);
         const menuItem = MENU.find((m) => m.type === b.type);
         const Icon = menuItem?.icon;
+        const isSelected = selectedId === b.id;
+        const hasStyleOverride = b.style && Object.keys(b.style).length > 0;
         return (
           <div key={b.id}>
-            <div className="bg-white rounded-xl shadow-md border-l-4 border-l-warm-800 border-t border-r border-b border-warm-200 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-warm-200 bg-warm-100">
-                <GripVertical size={16} className="text-warm-500 flex-shrink-0" />
-                <span className="text-xs font-mono text-warm-500 mr-1">#{String(i + 1).padStart(2, "0")}</span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-warm-800 text-white text-xs font-medium rounded-full">
-                  {Icon && <Icon size={12} />}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onSelect?.(b.id)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect?.(b.id); } }}
+              className={`bg-white rounded-lg cursor-pointer transition-all border ${
+                isSelected
+                  ? "border-blue-500 shadow-md ring-2 ring-blue-200"
+                  : "border-warm-200 hover:border-warm-400 hover:shadow"
+              }`}
+            >
+              <div className="flex items-center gap-2 px-3 py-2.5">
+                <GripVertical size={14} className="text-warm-400 flex-shrink-0" />
+                <span className="text-[10px] font-mono text-warm-500 mr-0.5">#{String(i + 1).padStart(2, "0")}</span>
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full ${
+                  isSelected ? "bg-blue-600 text-white" : "bg-warm-800 text-white"
+                }`}>
+                  {Icon && <Icon size={11} />}
                   {LABELS[b.type]}
                 </span>
+                {hasStyleOverride && (
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" title="Stile personalizzato" />
+                )}
                 <div className="flex-1" />
-                <button type="button" onClick={() => move(i, "up")} disabled={i === 0} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white disabled:opacity-30" title="Sposta su"><ArrowUp size={14} /></button>
-                <button type="button" onClick={() => move(i, "down")} disabled={i === blocks.length - 1} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white disabled:opacity-30" title="Sposta giù"><ArrowDown size={14} /></button>
-                <button type="button" onClick={() => duplicate(i)} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white" title="Duplica sezione"><Copy size={14} /></button>
-                <button
-                  type="button"
-                  onClick={() => toggleStyle(b.id)}
-                  className={`p-1.5 rounded hover:bg-white ${styleOpen.has(b.id) || b.style ? "text-warm-900" : "text-warm-500 hover:text-warm-800"}`}
-                  title="Stile (padding, margine, sfondo)"
-                >
-                  <Sliders size={14} />
-                  {b.style && Object.keys(b.style).length > 0 && (
-                    <span className="absolute -mt-3 -ml-1 inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  )}
-                </button>
-                <button type="button" onClick={() => toggle(b.id)} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white" title={isC ? "Espandi" : "Comprimi"}>{isC ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</button>
-                <button type="button" onClick={() => del(b.id)} className="p-1.5 rounded text-warm-500 hover:text-red-600 hover:bg-red-50" title="Elimina sezione"><Trash2 size={14} /></button>
+                <button type="button" onClick={(e) => { e.stopPropagation(); move(i, "up"); }} disabled={i === 0} className="p-1 rounded text-warm-500 hover:text-warm-800 hover:bg-warm-100 disabled:opacity-30" title="Sposta su"><ArrowUp size={13} /></button>
+                <button type="button" onClick={(e) => { e.stopPropagation(); move(i, "down"); }} disabled={i === blocks.length - 1} className="p-1 rounded text-warm-500 hover:text-warm-800 hover:bg-warm-100 disabled:opacity-30" title="Sposta giù"><ArrowDown size={13} /></button>
+                <button type="button" onClick={(e) => { e.stopPropagation(); duplicate(i); }} className="p-1 rounded text-warm-500 hover:text-warm-800 hover:bg-warm-100" title="Duplica"><Copy size={13} /></button>
+                <button type="button" onClick={(e) => { e.stopPropagation(); del(b.id); }} className="p-1 rounded text-warm-500 hover:text-red-600 hover:bg-red-50" title="Elimina"><Trash2 size={13} /></button>
               </div>
-              {styleOpen.has(b.id) && (
-                <div className="px-4 py-3 bg-warm-50 border-b border-warm-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] uppercase tracking-wider text-warm-600 font-semibold">Stile sezione</span>
-                    {b.style && Object.keys(b.style).length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => updStyle(b.id, null)}
-                        className="inline-flex items-center gap-1 text-[11px] text-warm-500 hover:text-warm-800"
-                        title="Ripristina default"
-                      >
-                        <RotateCcw size={11} /> Reset
-                      </button>
-                    )}
-                  </div>
-                  <div className="space-y-3">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-warm-500 font-medium mb-1.5">Spaziatura & sfondo</div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                        <StyleSelect label="Margine sopra" value={b.style?.marginTop} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { marginTop: v as NewsBlockSpacing | undefined })} />
-                        <StyleSelect label="Margine sotto" value={b.style?.marginBottom} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { marginBottom: v as NewsBlockSpacing | undefined })} />
-                        <StyleSelect label="Padding sopra" value={b.style?.paddingTop} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { paddingTop: v as NewsBlockSpacing | undefined })} />
-                        <StyleSelect label="Padding sotto" value={b.style?.paddingBottom} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { paddingBottom: v as NewsBlockSpacing | undefined })} />
-                        <StyleSelect label="Sfondo preset" value={b.style?.background} options={BG_OPTIONS} onChange={(v) => updStyle(b.id, { background: v as NewsBlockBackground | undefined })} />
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-2">
-                        <StyleColorInput label="Sfondo (hex)" value={b.style?.backgroundCustom} onChange={(v) => updStyle(b.id, { backgroundCustom: v || undefined })} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-warm-500 font-medium mb-1.5">Tipografia</div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                        <StyleSelect label="Font" value={b.style?.textFont} options={FONT_OPTIONS} onChange={(v) => updStyle(b.id, { textFont: v as NewsBlockFont | undefined })} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-warm-500 font-medium mb-1.5">Colore testo</div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                        <StyleSelect label="Preset" value={b.style?.textColor} options={TEXT_COLOR_PRESETS.map((o) => ({ value: o.value, label: o.label }))} onChange={(v) => updStyle(b.id, { textColor: v || undefined })} />
-                        <StyleColorInput label="Colore (hex)" value={b.style?.textColorCustom} onChange={(v) => updStyle(b.id, { textColorCustom: v || undefined })} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-warm-500 font-medium mb-1.5">Animazione di entrata</div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                        <StyleSelect label="Tipo" value={b.style?.animation} options={ANIMATION_OPTIONS} onChange={(v) => updStyle(b.id, { animation: v as NewsBlockAnimation | undefined })} />
-                        <label className="block">
-                          <span className="block text-[10px] uppercase tracking-wider text-warm-500 mb-1">Ritardo (ms)</span>
-                          <input
-                            type="number"
-                            min={0}
-                            max={3000}
-                            step={50}
-                            value={b.style?.animationDelay ?? ""}
-                            onChange={(e) => {
-                              const n = e.target.value === "" ? undefined : Math.max(0, Math.min(3000, parseInt(e.target.value, 10) || 0));
-                              updStyle(b.id, { animationDelay: n });
-                            }}
-                            placeholder="0"
-                            className="w-full border border-warm-300 rounded px-2 py-1.5 text-xs bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {!isC && <div className="px-4 py-4">{render(b)}</div>}
             </div>
             <HoverInsert at={i + 1} />
           </div>
@@ -445,9 +255,6 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
         <Plus size={16} />Aggiungi sezione
       </button>
 
-      {/* Style select component dichiarato inline sotto via funzione locale,
-          ma React vuole component dichiarati fuori dal render — lo abbiamo
-          come function statement in fondo al modulo (vedi sotto). */}
       {menuOpen && (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16"
@@ -459,7 +266,6 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
             className="bg-white rounded-xl shadow-2xl border border-warm-200 w-full max-w-3xl max-h-[80vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header: titolo + ricerca + tabs */}
             <div className="px-5 pt-4 pb-3 border-b border-warm-200">
               <div className="flex items-center gap-3">
                 <h3 className="text-sm font-semibold text-warm-800">
@@ -502,16 +308,9 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
                 </div>
               )}
             </div>
-            {/* Grid risultati */}
             <div className="overflow-y-auto p-3 flex-1">
               {visibleItems.length === 0 ? (
-                !q && activeTab === "layout" ? (
-                  <div className="py-12 text-center text-warm-400 text-sm">
-                    Colonne e spaziatori in arrivo nel prossimo step.
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-warm-400 text-sm">Nessun risultato.</div>
-                )
+                <div className="py-12 text-center text-warm-400 text-sm">Nessun risultato.</div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                   {visibleItems.map((m) => {
@@ -535,75 +334,5 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
         </div>
       )}
     </div>
-  );
-}
-
-function StyleSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string | undefined;
-  options: { value: string; label: string }[];
-  onChange: (v: string | undefined) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="block text-[10px] uppercase tracking-wider text-warm-500 mb-1">{label}</span>
-      <select
-        value={value || ""}
-        onChange={(e) => onChange(e.target.value || undefined)}
-        className="w-full border border-warm-300 rounded px-2 py-1.5 text-xs bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function StyleColorInput({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string | undefined;
-  onChange: (v: string | undefined) => void;
-}) {
-  const v = value || "";
-  return (
-    <label className="block">
-      <span className="block text-[10px] uppercase tracking-wider text-warm-500 mb-1">{label}</span>
-      <div className="flex items-center gap-1">
-        <input
-          type="color"
-          value={/^#[0-9a-f]{6}$/i.test(v) ? v : "#000000"}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-8 h-8 border border-warm-300 rounded cursor-pointer p-0.5 bg-white"
-          aria-label={label}
-        />
-        <input
-          type="text"
-          value={v}
-          onChange={(e) => onChange(e.target.value || undefined)}
-          placeholder="#hex"
-          className="flex-1 min-w-0 border border-warm-300 rounded px-2 py-1.5 text-xs bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-        />
-        {v && (
-          <button
-            type="button"
-            onClick={() => onChange(undefined)}
-            className="p-1 text-warm-400 hover:text-warm-800"
-            title="Rimuovi colore"
-          >
-            <X size={12} />
-          </button>
-        )}
-      </div>
-    </label>
   );
 }
