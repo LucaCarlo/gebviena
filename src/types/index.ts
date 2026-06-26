@@ -453,6 +453,22 @@ export interface NewsProductData {
   productId: string;
 }
 
+/**
+ * Override di stile per singolo blocco news. Tutto opzionale → block esistenti
+ * senza `style` continuano a renderizzare identici (default code-driven).
+ * Valori semantici "none/sm/md/lg/xl" mappati a classi Tailwind statiche nel
+ * renderer per restare nel safelist e non rompere il purge CSS.
+ */
+export type NewsBlockSpacing = "none" | "sm" | "md" | "lg" | "xl";
+export type NewsBlockBackground = "default" | "white" | "warm-50" | "warm-100" | "warm-900" | "transparent";
+export interface NewsBlockStyle {
+  marginTop?: NewsBlockSpacing;
+  marginBottom?: NewsBlockSpacing;
+  paddingTop?: NewsBlockSpacing;
+  paddingBottom?: NewsBlockSpacing;
+  background?: NewsBlockBackground;
+}
+
 export interface NewsBlockV2 {
   id: string;
   type: NewsBlockV2Type;
@@ -476,6 +492,8 @@ export interface NewsBlockV2 {
     | NewsProductData
     | NewsShareData
     | NewsRelatedData;
+  /** Override di stile opzionale — vedi NewsBlockStyle. Default: niente override. */
+  style?: NewsBlockStyle;
 }
 
 export interface TextBlockData {

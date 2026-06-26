@@ -5,15 +5,34 @@ import {
   GripVertical, ChevronDown, ChevronUp, Trash2, ArrowUp, ArrowDown, Plus, Copy, X,
   Type, LayoutTemplate, Grid3x3, Image as ImageIcon, Share2, Package, AlignCenter, Maximize2,
   Wrench, ListOrdered, HelpCircle, BarChart3, Quote as QuoteIcon, Clock, Table, Search,
+  Sliders, RotateCcw,
 } from "lucide-react";
 import type {
-  NewsBlockV2, NewsBlockV2Type,
+  NewsBlockV2, NewsBlockV2Type, NewsBlockStyle, NewsBlockSpacing, NewsBlockBackground,
   NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
   NewsCaslonTitleData, NewsTwoImagesInlineData,
   NewsFeatureToolData, NewsSingleCtaData, NewsCardsRowData, NewsFaqData, NewsStatsData,
   NewsQuoteData, NewsTimelineData, NewsComparisonTableData,
 } from "@/types";
+
+// Etichette per i select del pannello Stile (step 4)
+const SPACING_OPTIONS: { value: NewsBlockSpacing | ""; label: string }[] = [
+  { value: "", label: "Default" },
+  { value: "none", label: "Nessuno" },
+  { value: "sm", label: "Piccolo" },
+  { value: "md", label: "Medio" },
+  { value: "lg", label: "Grande" },
+  { value: "xl", label: "Extra grande" },
+];
+const BG_OPTIONS: { value: NewsBlockBackground | ""; label: string }[] = [
+  { value: "", label: "Default" },
+  { value: "transparent", label: "Trasparente" },
+  { value: "white", label: "Bianco" },
+  { value: "warm-50", label: "Crema (warm-50)" },
+  { value: "warm-100", label: "Crema scuro (warm-100)" },
+  { value: "warm-900", label: "Scuro (warm-900)" },
+];
 import {
   ParagraphEditor, ImageTextBgEditor, ThreeImagesEditor, SingleImageEditor,
   ImageWithParagraphEditor, FullwidthBannerEditor, ProductEditor, ShareInfo, RelatedInfo,
@@ -104,6 +123,9 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
     } catch { return []; }
   });
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // Pannello "Stile" (step 4): apertura per-blocco; quando aperto mostra
+  // i select per padding/margin/sfondo override.
+  const [styleOpen, setStyleOpen] = useState<Set<string>>(new Set());
   // Picker (step 1 + 2 + 3): modal centrato con search, tab di categoria,
   // posizione di inserimento (null = append in fondo).
   const [menuOpen, setMenuOpen] = useState(false);
@@ -154,6 +176,36 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
     closeMenu();
   };
   const upd = (id: string, d: NewsBlockV2["data"]) => commit(blocks.map((b) => b.id === id ? { ...b, data: d } : b));
+  // Aggiorna o resetta lo style override di un blocco
+  const updStyle = (id: string, patch: Partial<NewsBlockStyle> | null) => {
+    commit(blocks.map((b) => {
+      if (b.id !== id) return b;
+      if (patch === null) {
+        // Reset completo: rimuovi il campo style
+        const { style: _s, ...rest } = b;
+        void _s;
+        return rest;
+      }
+      const merged: NewsBlockStyle = { ...(b.style || {}), ...patch };
+      // Pulisci chiavi vuote / undefined per non sporcare il JSON
+      const cleaned: NewsBlockStyle = {};
+      (Object.keys(merged) as (keyof NewsBlockStyle)[]).forEach((k) => {
+        const v = merged[k];
+        // Le union dei valori non includono "" (lo StyleSelect manda undefined
+        // se l'utente sceglie Default), quindi basta scartare undefined.
+        if (v !== undefined) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (cleaned as any)[k] = v;
+        }
+      });
+      if (Object.keys(cleaned).length === 0) {
+        const { style: _s, ...rest } = b;
+        void _s;
+        return rest;
+      }
+      return { ...b, style: cleaned };
+    }));
+  };
   const del = (id: string) => commit(blocks.filter((b) => b.id !== id));
   const duplicate = (i: number) => {
     const src = blocks[i];
@@ -175,6 +227,7 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
     commit(next);
   };
   const toggle = (id: string) => setCollapsed((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const toggleStyle = (id: string) => setStyleOpen((p) => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   const render = (b: NewsBlockV2) => {
     const src = sourceById.get(b.id);
@@ -250,9 +303,44 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
                 <button type="button" onClick={() => move(i, "up")} disabled={i === 0} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white disabled:opacity-30" title="Sposta su"><ArrowUp size={14} /></button>
                 <button type="button" onClick={() => move(i, "down")} disabled={i === blocks.length - 1} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white disabled:opacity-30" title="Sposta giù"><ArrowDown size={14} /></button>
                 <button type="button" onClick={() => duplicate(i)} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white" title="Duplica sezione"><Copy size={14} /></button>
+                <button
+                  type="button"
+                  onClick={() => toggleStyle(b.id)}
+                  className={`p-1.5 rounded hover:bg-white ${styleOpen.has(b.id) || b.style ? "text-warm-900" : "text-warm-500 hover:text-warm-800"}`}
+                  title="Stile (padding, margine, sfondo)"
+                >
+                  <Sliders size={14} />
+                  {b.style && Object.keys(b.style).length > 0 && (
+                    <span className="absolute -mt-3 -ml-1 inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  )}
+                </button>
                 <button type="button" onClick={() => toggle(b.id)} className="p-1.5 rounded text-warm-500 hover:text-warm-800 hover:bg-white" title={isC ? "Espandi" : "Comprimi"}>{isC ? <ChevronDown size={14} /> : <ChevronUp size={14} />}</button>
                 <button type="button" onClick={() => del(b.id)} className="p-1.5 rounded text-warm-500 hover:text-red-600 hover:bg-red-50" title="Elimina sezione"><Trash2 size={14} /></button>
               </div>
+              {styleOpen.has(b.id) && (
+                <div className="px-4 py-3 bg-warm-50 border-b border-warm-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] uppercase tracking-wider text-warm-600 font-semibold">Stile sezione</span>
+                    {b.style && Object.keys(b.style).length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => updStyle(b.id, null)}
+                        className="inline-flex items-center gap-1 text-[11px] text-warm-500 hover:text-warm-800"
+                        title="Ripristina default"
+                      >
+                        <RotateCcw size={11} /> Reset
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    <StyleSelect label="Margine sopra" value={b.style?.marginTop} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { marginTop: v as NewsBlockSpacing | undefined })} />
+                    <StyleSelect label="Margine sotto" value={b.style?.marginBottom} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { marginBottom: v as NewsBlockSpacing | undefined })} />
+                    <StyleSelect label="Padding sopra" value={b.style?.paddingTop} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { paddingTop: v as NewsBlockSpacing | undefined })} />
+                    <StyleSelect label="Padding sotto" value={b.style?.paddingBottom} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { paddingBottom: v as NewsBlockSpacing | undefined })} />
+                    <StyleSelect label="Sfondo" value={b.style?.background} options={BG_OPTIONS} onChange={(v) => updStyle(b.id, { background: v as NewsBlockBackground | undefined })} />
+                  </div>
+                </div>
+              )}
               {!isC && <div className="px-4 py-4">{render(b)}</div>}
             </div>
             <HoverInsert at={i + 1} />
@@ -268,6 +356,9 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
         <Plus size={16} />Aggiungi sezione
       </button>
 
+      {/* Style select component dichiarato inline sotto via funzione locale,
+          ma React vuole component dichiarati fuori dal render — lo abbiamo
+          come function statement in fondo al modulo (vedi sotto). */}
       {menuOpen && (
         <div
           className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16"
@@ -355,5 +446,32 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
         </div>
       )}
     </div>
+  );
+}
+
+function StyleSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string | undefined;
+  options: { value: string; label: string }[];
+  onChange: (v: string | undefined) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="block text-[10px] uppercase tracking-wider text-warm-500 mb-1">{label}</span>
+      <select
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value || undefined)}
+        className="w-full border border-warm-300 rounded px-2 py-1.5 text-xs bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </label>
   );
 }

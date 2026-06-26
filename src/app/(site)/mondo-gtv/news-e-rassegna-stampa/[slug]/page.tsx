@@ -23,6 +23,26 @@ function isVideoFile(url: string | undefined | null): boolean {
   return !!url && /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url);
 }
 
+// ── Style override per blocchi V2 (step 4 editor news) ───────────────
+// Classi STATICHE: il purge di Tailwind richiede stringhe complete nel
+// sorgente. Niente costruzioni dinamiche tipo `mt-${size}`.
+const NEWS_MT_MAP: Record<string, string> = {
+  none: "mt-0", sm: "mt-4 md:mt-6", md: "mt-10 md:mt-14", lg: "mt-16 md:mt-20", xl: "mt-24 md:mt-32",
+};
+const NEWS_MB_MAP: Record<string, string> = {
+  none: "mb-0", sm: "mb-4 md:mb-6", md: "mb-10 md:mb-14", lg: "mb-16 md:mb-20", xl: "mb-24 md:mb-32",
+};
+const NEWS_PT_MAP: Record<string, string> = {
+  none: "pt-0", sm: "pt-4 md:pt-6", md: "pt-10 md:pt-14", lg: "pt-16 md:pt-20", xl: "pt-24 md:pt-32",
+};
+const NEWS_PB_MAP: Record<string, string> = {
+  none: "pb-0", sm: "pb-4 md:pb-6", md: "pb-10 md:pb-14", lg: "pb-16 md:pb-20", xl: "pb-24 md:pb-32",
+};
+const NEWS_BG_MAP: Record<string, string> = {
+  white: "bg-white", "warm-50": "bg-warm-50", "warm-100": "bg-warm-100", "warm-900": "bg-warm-900",
+  transparent: "bg-transparent",
+};
+
 /* Video player per news. Le due opzioni (autoplay e controls) sono indipendenti:
    - autoplay solo → background muto in loop
    - controls solo → click-to-play con barra
@@ -519,13 +539,29 @@ export default function NewsDetailPage() {
                 // riduciamo drasticamente.
                 const ctaData = b.type === "single_cta" ? (b.data as NewsSingleCtaData) : null;
                 const isMinimalCta = !!(ctaData && !ctaData.title && !ctaData.body);
-                const spacing = idx === 0
+                // Style override per-blocco (step 4 editor). Se l'admin ha
+                // impostato marginTop manualmente quello vince sul default
+                // automatico (regola "primo blocco / grey-adjacent / minimal CTA").
+                const bStyle = b.style;
+                const mtOverride = bStyle?.marginTop ? NEWS_MT_MAP[bStyle.marginTop] : null;
+                const mbOverride = bStyle?.marginBottom ? NEWS_MB_MAP[bStyle.marginBottom] : "";
+                const ptOverride = bStyle?.paddingTop ? NEWS_PT_MAP[bStyle.paddingTop] : "";
+                const pbOverride = bStyle?.paddingBottom ? NEWS_PB_MAP[bStyle.paddingBottom] : "";
+                const bgOverride = bStyle?.background && bStyle.background !== "default" ? NEWS_BG_MAP[bStyle.background] || "" : "";
+                const defaultMt = idx === 0
                   ? ""
                   : greyAdjacent
                     ? ""
                     : isMinimalCta
                       ? "mt-2 md:mt-3"
                       : "mt-20 md:mt-28";
+                const spacing = [
+                  mtOverride !== null ? mtOverride : defaultMt,
+                  mbOverride,
+                  ptOverride,
+                  pbOverride,
+                  bgOverride,
+                ].filter(Boolean).join(" ");
                 let node: React.ReactNode = null;
                 switch (b.type) {
                   case "paragraph": node = <ParagraphBlock d={b.data as NewsParagraphData} />; break;
