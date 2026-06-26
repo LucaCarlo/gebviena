@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Plus, X, ArrowUp, ArrowDown } from "lucide-react";
 import ImageUploadField from "../ImageUploadField";
 import { BlockTextInput, BlockRichText } from "./BlockAIField";
+import IconPicker from "./IconPicker";
 import type {
   NewsParagraphData,
   NewsImageTextBgData,
@@ -26,6 +27,7 @@ import type {
   NewsCardItem,
   NewsCta,
   CtaButtonStyle,
+  CtaHoverEffect,
   NewsColumnsData,
   NewsColumnsChild,
   NewsColumnsCount,
@@ -614,6 +616,7 @@ export function FeatureToolEditor({ data, onChange, sourceData }: { data: NewsFe
                 <ImageUploadField label="" value={c.iconUrl || ""} onChange={(url) => updCta(i, { iconUrl: url })} onRemove={() => updCta(i, { iconUrl: "" })} purpose="general" folder="news" helpText="SVG quadrato 24x24px o 32x32px, viewBox riempito senza padding. PNG: minimo 64x64px sfondo trasparente." />
               </div>
             )}
+            <CtaExtraControls cta={c} onChange={(patch) => updCta(i, patch)} />
           </div>
         ))}
         {(data.ctas || []).length === 0 && <div className="text-xs text-warm-400">Nessun pulsante. Clicca &laquo;Aggiungi pulsante&raquo;.</div>}
@@ -682,6 +685,7 @@ export function SingleCtaEditor({ data, onChange, sourceData }: { data: NewsSing
             {c.style === "custom" && (
               <ImageUploadField label="Icona SVG/PNG" value={c.iconUrl || ""} onChange={(url) => updCta(i, { iconUrl: url })} onRemove={() => updCta(i, { iconUrl: "" })} purpose="general" folder="news" helpText="SVG quadrato 24x24px o 32x32px, viewBox riempito senza padding. PNG: minimo 64x64px sfondo trasparente." />
             )}
+            <CtaExtraControls cta={c} onChange={(patch) => updCta(i, patch)} />
           </div>
         ))}
         {(data.ctas || []).length === 0 && <div className="text-xs text-warm-400">Nessun pulsante. Clicca &laquo;Aggiungi&raquo;.</div>}
@@ -931,6 +935,45 @@ export function ComparisonTableEditor({ data, onChange, sourceData }: { data: Ne
         </table>
       </div>
       <button type="button" onClick={addRow} className="w-full py-2 border border-dashed border-warm-300 rounded text-sm text-warm-600 hover:bg-warm-50 flex items-center justify-center gap-1.5"><Plus size={14} /> Aggiungi riga</button>
+    </div>
+  );
+}
+
+/* ── Helper CTA: picker icona lucide + select hover (step 9) ──
+   Usato sia da FeatureToolEditor che da SingleCtaEditor per non
+   duplicare la stessa UI in due punti. */
+function CtaExtraControls({
+  cta,
+  onChange,
+}: {
+  cta: NewsCta;
+  onChange: (patch: Partial<NewsCta>) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 pt-2 border-t border-warm-100">
+      <div>
+        <label className="block text-[10px] font-semibold text-warm-600 uppercase tracking-wider mb-1">Icona libreria</label>
+        <IconPicker
+          value={cta.iconName}
+          onChange={(name) => onChange({ iconName: name })}
+        />
+        <p className="text-[10px] text-warm-400 mt-1">Se settata, vince sull&apos;icona SVG caricata.</p>
+      </div>
+      <div>
+        <label className="block text-[10px] font-semibold text-warm-600 uppercase tracking-wider mb-1">Effetto hover</label>
+        <select
+          value={cta.hoverEffect || "none"}
+          onChange={(e) => onChange({ hoverEffect: e.target.value as CtaHoverEffect })}
+          className="w-full border border-warm-300 rounded px-2 py-1.5 text-xs bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+        >
+          <option value="none">Nessuno</option>
+          <option value="scale">Ingrandimento</option>
+          <option value="lift">Sollevamento + ombra</option>
+          <option value="underline-grow">Sottolineatura crescente</option>
+          <option value="color-swap">Inversione colori</option>
+          <option value="glow">Bagliore</option>
+        </select>
+      </div>
     </div>
   );
 }

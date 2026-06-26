@@ -8,7 +8,7 @@ import {
   Sliders, RotateCcw, Columns3,
 } from "lucide-react";
 import type {
-  NewsBlockV2, NewsBlockV2Type, NewsBlockStyle, NewsBlockSpacing, NewsBlockBackground, NewsBlockFont,
+  NewsBlockV2, NewsBlockV2Type, NewsBlockStyle, NewsBlockSpacing, NewsBlockBackground, NewsBlockFont, NewsBlockAnimation,
   NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
   NewsCaslonTitleData, NewsTwoImagesInlineData,
@@ -57,6 +57,17 @@ const TEXT_COLOR_PRESETS: { value: string; label: string; hex: string }[] = [
   { value: "warm-900", label: "Scuro (warm-900)", hex: "#1a1410" },
   { value: "warm-700", label: "Antracite", hex: "#3a312b" },
   { value: "warm-500", label: "Grigio", hex: "#736a63" },
+];
+
+// Animazioni di entrata (step 8) — labels per i select.
+const ANIMATION_OPTIONS: { value: NewsBlockAnimation | ""; label: string }[] = [
+  { value: "", label: "Nessuna" },
+  { value: "fade-in", label: "Dissolvenza" },
+  { value: "slide-up", label: "Sale dal basso" },
+  { value: "slide-down", label: "Scende dall'alto" },
+  { value: "slide-left", label: "Scivola da destra" },
+  { value: "slide-right", label: "Scivola da sinistra" },
+  { value: "zoom-in", label: "Zoom in" },
 ];
 import {
   ParagraphEditor, ImageTextBgEditor, ThreeImagesEditor, SingleImageEditor,
@@ -392,6 +403,28 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                         <StyleSelect label="Preset" value={b.style?.textColor} options={TEXT_COLOR_PRESETS.map((o) => ({ value: o.value, label: o.label }))} onChange={(v) => updStyle(b.id, { textColor: v || undefined })} />
                         <StyleColorInput label="Colore (hex)" value={b.style?.textColorCustom} onChange={(v) => updStyle(b.id, { textColorCustom: v || undefined })} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-warm-500 font-medium mb-1.5">Animazione di entrata</div>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        <StyleSelect label="Tipo" value={b.style?.animation} options={ANIMATION_OPTIONS} onChange={(v) => updStyle(b.id, { animation: v as NewsBlockAnimation | undefined })} />
+                        <label className="block">
+                          <span className="block text-[10px] uppercase tracking-wider text-warm-500 mb-1">Ritardo (ms)</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={3000}
+                            step={50}
+                            value={b.style?.animationDelay ?? ""}
+                            onChange={(e) => {
+                              const n = e.target.value === "" ? undefined : Math.max(0, Math.min(3000, parseInt(e.target.value, 10) || 0));
+                              updStyle(b.id, { animationDelay: n });
+                            }}
+                            placeholder="0"
+                            className="w-full border border-warm-300 rounded px-2 py-1.5 text-xs bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+                          />
+                        </label>
                       </div>
                     </div>
                   </div>

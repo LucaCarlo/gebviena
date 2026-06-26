@@ -68,6 +68,50 @@
   color: var(--news-block-color, inherit);
 }
 
+/* ── Hover preset per CTA news (step 9 editor) ──
+   Applicati via classe news-cta-hover-{kind} sul tag <a>. */
+.news-cta-hover-scale {
+  transition: transform 0.25s ease-out;
+}
+.news-cta-hover-scale:hover { transform: scale(1.05); }
+
+.news-cta-hover-lift {
+  transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
+}
+.news-cta-hover-lift:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.18); }
+
+.news-cta-hover-underline-grow {
+  position: relative;
+}
+.news-cta-hover-underline-grow::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -3px;
+  height: 1.5px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease-out;
+}
+.news-cta-hover-underline-grow:hover::after { transform: scaleX(1); }
+
+.news-cta-hover-color-swap {
+  transition: background-color 0.2s ease-out, color 0.2s ease-out, border-color 0.2s ease-out;
+}
+/* color-swap inverte bg e text: nero→bianco e bianco→nero */
+.news-cta-hover-color-swap:hover {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000;
+}
+
+.news-cta-hover-glow {
+  transition: box-shadow 0.3s ease-out;
+}
+.news-cta-hover-glow:hover {
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.6), 0 0 18px rgba(255,255,255,0.4);
+}
+
 @layer components {
   /* GTV container — matches original max-widths */
   .gtv-container {

@@ -14,7 +14,9 @@ import type {
   NewsFeatureToolData, NewsSingleCtaData, NewsCardsRowData, NewsFaqData, NewsStatsData,
   NewsQuoteData, NewsTimelineData, NewsComparisonTableData,
   NewsCta, NewsColumnsData, NewsColumnsChild,
+  CtaHoverEffect,
 } from "@/types";
+import { ICON_LIBRARY } from "@/components/admin/news/IconPicker";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
 import { localizePath } from "@/lib/path-segments";
@@ -61,6 +63,23 @@ const NEWS_TEXT_COLOR_MAP: Record<string, string> = {
   "warm-700": "#3a312b",
   "warm-500": "#736a63",
 };
+// Animazioni di entrata (step 8) — coppia initial/whileInView per framer-motion.
+// Tipi any perché framer-motion ha union complesse per `ease` che non si
+// soddisfano facilmente con un literal string "easeOut".
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getAnimationProps(kind: string | undefined, delaySec: number): any {
+  if (!kind || kind === "none") return null;
+  const base = { viewport: { once: true, amount: 0.2 }, transition: { duration: 0.6, ease: "easeOut", delay: delaySec } };
+  switch (kind) {
+    case "fade-in":     return { initial: { opacity: 0 }, whileInView: { opacity: 1 }, ...base };
+    case "slide-up":    return { initial: { opacity: 0, y: 40 }, whileInView: { opacity: 1, y: 0 }, ...base };
+    case "slide-down":  return { initial: { opacity: 0, y: -40 }, whileInView: { opacity: 1, y: 0 }, ...base };
+    case "slide-left":  return { initial: { opacity: 0, x: 40 }, whileInView: { opacity: 1, x: 0 }, ...base };
+    case "slide-right": return { initial: { opacity: 0, x: -40 }, whileInView: { opacity: 1, x: 0 }, ...base };
+    case "zoom-in":     return { initial: { opacity: 0, scale: 0.92 }, whileInView: { opacity: 1, scale: 1 }, ...base };
+    default: return null;
+  }
+}
 
 /* Video player per news. Le due opzioni (autoplay e controls) sono indipendenti:
    - autoplay solo → background muto in loop
@@ -600,6 +619,7 @@ export default function NewsDetailPage() {
                   (wrapperInline as Record<string, string>)["backgroundColor"] = customBg;
                 }
                 const hasStyleData = !!(fontKey || colorValue);
+                const animProps = getAnimationProps(bStyle?.animation, (bStyle?.animationDelay || 0) / 1000);
                 let node: React.ReactNode = null;
                 switch (b.type) {
                   case "paragraph": node = <ParagraphBlock d={b.data as NewsParagraphData} />; break;
@@ -623,11 +643,25 @@ export default function NewsDetailPage() {
                   case "share": node = <ShareBlock title={article.title} />; break;
                   default: node = null;
                 }
+                const wrapperStyle = Object.keys(wrapperInline).length ? wrapperInline : undefined;
+                if (animProps) {
+                  return (
+                    <motion.div
+                      key={b.id}
+                      className={spacing}
+                      style={wrapperStyle}
+                      data-news-style={hasStyleData ? "" : undefined}
+                      {...animProps}
+                    >
+                      {node}
+                    </motion.div>
+                  );
+                }
                 return (
                   <div
                     key={b.id}
                     className={spacing}
-                    style={Object.keys(wrapperInline).length ? wrapperInline : undefined}
+                    style={wrapperStyle}
                     data-news-style={hasStyleData ? "" : undefined}
                   >
                     {node}
@@ -668,6 +702,29 @@ export default function NewsDetailPage() {
  *   "icons-only-divider"= solo icona senza testo, separati da stanghetta verticale.
  *   Legacy: "icons-divider" trattato come alias di "icons-only-divider". */
 type CtaGroupStyle = "boxed" | "icons-text-divider" | "icons-only-divider";
+// Hover preset CTA (step 9): mappa l'effetto preset alla classe CSS in
+// globals.css. "none" o assente → stringa vuota.
+function getCtaHoverClass(effect?: CtaHoverEffect): string {
+  if (!effect || effect === "none") return "";
+  return `news-cta-hover-${effect}`;
+}
+
+// Renderer icona CTA: la libreria lucide vince sull'upload SVG.
+function CtaIcon({ cta, sizePx = 20, invert = false }: { cta: NewsCta; sizePx?: number; invert?: boolean }) {
+  if (cta.iconName && ICON_LIBRARY[cta.iconName]) {
+    const Icon = ICON_LIBRARY[cta.iconName];
+    return <Icon size={sizePx} className={invert ? "text-white" : ""} />;
+  }
+  if (cta.iconUrl) {
+    return (
+      <span className="relative inline-block flex-shrink-0" style={{ width: sizePx, height: sizePx }}>
+        <Image src={cta.iconUrl} alt="" fill className={`object-contain ${invert ? "invert" : ""}`} sizes={`${sizePx}px`} />
+      </span>
+    );
+  }
+  return null;
+}
+
 function CtaGroup({ ctas, groupStyle, align }: { ctas: NewsCta[]; groupStyle?: CtaGroupStyle | "icons-divider"; align?: "left" | "center" | "right" }) {
   if (!ctas || ctas.length === 0) return null;
   const justify = align === "left" ? "justify-start" : align === "right" ? "justify-end" : "justify-center";
@@ -678,19 +735,21 @@ function CtaGroup({ ctas, groupStyle, align }: { ctas: NewsCta[]; groupStyle?: C
 
   if (style === "icons-only-divider" || style === "icons-text-divider") {
     const showText = style === "icons-text-divider";
-    const iconCtas = ctas.filter((c) => c.style === "custom" && c.iconUrl);
+    // Include CTA con icona da libreria OPPURE icona uploadata.
+    const iconCtas = ctas.filter((c) => c.style === "custom" && (c.iconUrl || c.iconName));
     if (iconCtas.length === 0) return null;
     return (
       <div className={`flex items-center gap-5 flex-wrap ${justify}`}>
         {iconCtas.map((c, i) => {
           const isExt = /^https?:\/\//i.test(c.href || "");
           const linkProps = isExt ? { target: "_blank", rel: "noopener noreferrer" } : {};
+          const hoverCls = getCtaHoverClass(c.hoverEffect);
           return (
             <span key={i} className="flex items-center gap-5">
               {i > 0 && <span className="block w-px h-8 bg-warm-400" aria-hidden="true" />}
-              <a href={c.href || "#"} {...linkProps} className="inline-flex items-center gap-2 hover:opacity-70 transition-opacity" title={c.label || ""}>
-                <span className="relative block w-10 h-10 flex-shrink-0">
-                  <Image src={c.iconUrl!} alt={c.label || ""} fill className="object-contain" sizes="40px" />
+              <a href={c.href || "#"} {...linkProps} className={`inline-flex items-center gap-2 hover:opacity-70 transition-opacity ${hoverCls}`} title={c.label || ""}>
+                <span className="block w-10 h-10 flex-shrink-0 flex items-center justify-center">
+                  <CtaIcon cta={c} sizePx={40} />
                 </span>
                 {showText && c.label && (
                   <span className="text-[14px] md:text-[15px] font-medium text-black">{c.label}</span>
@@ -715,20 +774,20 @@ function CtaButton({ cta }: { cta: NewsCta }) {
   const linkProps = isPdf
     ? { download: "", target: "_blank", rel: "noopener noreferrer" }
     : ext ? { target: "_blank", rel: "noopener noreferrer" } : {};
-  // Personalizzato con icona uploadata → pulsante nero con icona
-  if (cta.style === "custom" && cta.iconUrl) {
+  const hoverCls = getCtaHoverClass(cta.hoverEffect);
+  const hasIcon = !!(cta.iconUrl || cta.iconName);
+  // Personalizzato con icona (libreria o uploadata) → pulsante nero con icona
+  if (cta.style === "custom" && hasIcon) {
     return (
-      <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-md hover:bg-warm-900 transition-colors">
-        <span className="relative w-5 h-5">
-          <Image src={cta.iconUrl} alt="" fill className="object-contain invert" sizes="20px" />
-        </span>
+      <a href={cta.href || "#"} {...linkProps} className={`inline-flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-md hover:bg-warm-900 transition-colors ${hoverCls}`}>
+        <CtaIcon cta={cta} sizePx={20} invert />
         <span className="text-[15px] font-medium">{cta.label || ""}</span>
       </a>
     );
   }
   // Default: link minimal con freccia
   return (
-    <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-1 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
+    <a href={cta.href || "#"} {...linkProps} className={`inline-flex items-center gap-1 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline ${hoverCls}`} style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
       {cta.label || "Scopri"} &rarr;
     </a>
   );

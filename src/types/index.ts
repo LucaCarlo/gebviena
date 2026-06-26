@@ -336,11 +336,18 @@ export interface NewsTwoImagesInlineData {
 // Block "Strumento / Feature" — immagine + card laterale con logo, paragrafo,
 // lista "ideale per" e fino a 2 CTA (anche badge store).
 export type CtaButtonStyle = "default" | "custom";
+// Effetti hover preset (step 9) — applicati sul tag <a> tramite classi CSS.
+export type CtaHoverEffect =
+  | "none" | "scale" | "lift" | "underline-grow" | "color-swap" | "glow";
 export interface NewsCta {
   label: string;
   href: string;
   style?: CtaButtonStyle;
   iconUrl?: string;   // SVG/PNG custom — se compilato, sostituisce il badge predefinito
+  /** Nome icona dalla libreria curata (lucide-react) — vince su iconUrl se settato. */
+  iconName?: string;
+  /** Effetto hover preset. Default "none". */
+  hoverEffect?: CtaHoverEffect;
 }
 export interface NewsFeatureToolData {
   imageUrl: string;
@@ -491,6 +498,10 @@ export type NewsBlockBackground = "default" | "white" | "warm-50" | "warm-100" |
 export type NewsBlockFont =
   | "default" | "caslon" | "work-sans"
   | "inter" | "playfair" | "lora" | "montserrat" | "roboto" | "poppins";
+// Animazioni di entrata (step 8) — applicate al wrapper del blocco quando
+// entra nel viewport. "none" = nessuna animazione.
+export type NewsBlockAnimation =
+  | "none" | "fade-in" | "slide-up" | "slide-down" | "slide-left" | "slide-right" | "zoom-in";
 export interface NewsBlockStyle {
   marginTop?: NewsBlockSpacing;
   marginBottom?: NewsBlockSpacing;
@@ -504,6 +515,10 @@ export interface NewsBlockStyle {
   textColor?: string;
   /** Colore testo custom hex — vince su `textColor` se presente. */
   textColorCustom?: string;
+  /** Animazione di entrata viewport — vedi NewsBlockAnimation. */
+  animation?: NewsBlockAnimation;
+  /** Delay in ms prima che parta l'animazione. Default 0. */
+  animationDelay?: number;
 }
 
 export interface NewsBlockV2 {
