@@ -17,6 +17,7 @@ import type {
   CtaHoverEffect,
 } from "@/types";
 import { ICON_LIBRARY } from "@/components/admin/news/IconPicker";
+import NewsVimeoCoverPlayer from "@/components/site/NewsVimeoCoverPlayer";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
 import { localizePath } from "@/lib/path-segments";
@@ -167,7 +168,7 @@ function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillConta
   if (vimeo) {
     return (
       <div className={extVidClass} style={containerStyle}>
-        <iframe src={`https://player.vimeo.com/video/${vimeo[1]}${autoplay ? "?autoplay=1&muted=1&loop=1" : ""}`} style={coverIframeStyle} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+        <NewsVimeoCoverPlayer vimeoId={vimeo[1]} autoplay={autoplay} />
       </div>
     );
   }
