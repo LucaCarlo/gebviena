@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { X, Sparkles, Loader2, Check, FileText } from "lucide-react";
+import { X, Sparkles, Loader2, Check, FileText, Search } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
 import SeoPanel from "./SeoPanel";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
@@ -44,6 +44,9 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
   const [error, setError] = useState("");
   const [newTag, setNewTag] = useState("");
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  // SEO sidebar: chiusa di default, contenuto principale full-width finché
+  // l'utente non clicca "SEO" nella riga categoria.
+  const [seoOpen, setSeoOpen] = useState(false);
   useEffect(() => {
     if (!savedAt) return;
     const id = setTimeout(() => setSavedAt(null), 3500);
@@ -301,23 +304,38 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">{error}</div>
         )}
 
-        {/* Category select (editable) */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs text-warm-400 uppercase tracking-wider">Categoria:</span>
-          <select
-            value={form.category}
-            onChange={(e) => updateField("category", e.target.value)}
-            className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+        {/* Category select (editable) + toggle SEO sidebar */}
+        <div className="flex items-center gap-3 flex-wrap justify-between">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs text-warm-400 uppercase tracking-wider">Categoria:</span>
+            <select
+              value={form.category}
+              onChange={(e) => updateField("category", e.target.value)}
+              className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+            >
+              {/* fallback se la categoria attuale non è nella lista (cat. rimossa o non ancora caricata) */}
+              {form.category && !categories.find((c) => c.value === form.category) && (
+                <option value={form.category}>{CATEGORY_LABELS[form.category] || form.category}</option>
+              )}
+              {categories.length === 0 && !form.category && <option value="">— seleziona categoria —</option>}
+              {categories.map((c) => (
+                <option key={c.id} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSeoOpen((v) => !v)}
+            className={`inline-flex items-center gap-1.5 text-xs uppercase tracking-wider px-3 py-1.5 rounded border transition-colors ${
+              seoOpen
+                ? "bg-warm-900 text-white border-warm-900 hover:bg-warm-800"
+                : "bg-white text-warm-700 border-warm-300 hover:bg-warm-100"
+            }`}
+            title={seoOpen ? "Chiudi SEO" : "Apri impostazioni SEO"}
           >
-            {/* fallback se la categoria attuale non è nella lista (cat. rimossa o non ancora caricata) */}
-            {form.category && !categories.find((c) => c.value === form.category) && (
-              <option value={form.category}>{CATEGORY_LABELS[form.category] || form.category}</option>
-            )}
-            {categories.length === 0 && !form.category && <option value="">— seleziona categoria —</option>}
-            {categories.map((c) => (
-              <option key={c.id} value={c.value}>{c.label}</option>
-            ))}
-          </select>
+            <Search size={13} />
+            SEO {seoOpen && <X size={13} className="-mr-1" />}
+          </button>
         </div>
 
         {/* ── COMMON FIELDS ────────────────────────────────────── */}
@@ -429,23 +447,26 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
 
       </div>
 
-      {/* Right: SEO sidebar */}
-      <div className="w-80 flex-shrink-0 hidden lg:block sticky top-6">
-        <SeoPanel
-          seoTitle={form.seoTitle}
-          seoDescription={form.seoDescription}
-          seoKeywords={(() => { try { return JSON.parse(form.seoKeywords); } catch { return []; } })()}
-          slug={form.slug}
-          content={form.content || ""}
-          onChange={(field, value) => {
-            if (field === "seoKeywords") {
-              updateField("seoKeywords", JSON.stringify(value));
-            } else {
-              updateField(field, value as string);
-            }
-          }}
-        />
-      </div>
+      {/* Right: SEO sidebar — visibile solo quando seoOpen=true. Quando chiusa,
+          il main occupa tutto lo spazio (è flex-1 min-w-0). */}
+      {seoOpen && (
+        <div className="w-80 flex-shrink-0 hidden lg:block sticky top-6">
+          <SeoPanel
+            seoTitle={form.seoTitle}
+            seoDescription={form.seoDescription}
+            seoKeywords={(() => { try { return JSON.parse(form.seoKeywords); } catch { return []; } })()}
+            slug={form.slug}
+            content={form.content || ""}
+            onChange={(field, value) => {
+              if (field === "seoKeywords") {
+                updateField("seoKeywords", JSON.stringify(value));
+              } else {
+                updateField(field, value as string);
+              }
+            }}
+          />
+        </div>
+      )}
     </form>
   );
 }
