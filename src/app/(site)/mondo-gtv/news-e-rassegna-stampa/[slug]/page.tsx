@@ -703,10 +703,11 @@ function SingleCtaBlock({ d }: { d: NewsSingleCtaData }) {
   const align = d.align || "center";
   const textAlign = align === "left" ? "text-left" : align === "right" ? "text-right" : "text-center";
   // Quando nel blocco non c'è né titolo né testo (solo il pulsante), il padding
-  // verticale grande lascia troppo spazio attorno al CTA. Lo riduciamo molto
-  // così il pulsante sta più vicino ai blocchi adiacenti.
+  // verticale grande lascia troppo spazio attorno al CTA. I blocchi adiacenti
+  // hanno già il loro padding inferiore, quindi togliamo del tutto il padding-top
+  // del CTA e lasciamo solo un po' di spazio sotto.
   const hasContent = !!(d.title || d.body);
-  const sectionPadding = hasContent ? "py-10 md:py-14" : "py-3 md:py-4";
+  const sectionPadding = hasContent ? "py-10 md:py-14" : "pt-0 pb-4 md:pb-6";
   return (
     <section className={`gtv-container ${sectionPadding}`}>
       <div className={`mx-auto max-w-[840px] px-6 md:px-12 ${textAlign}`}>
