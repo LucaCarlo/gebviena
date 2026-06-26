@@ -325,10 +325,14 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
     </div>
   );
   const bgClass = d.background === "white" ? "bg-white" : d.background === "transparent" ? "" : "bg-warm-50";
+  // Mobile: SEMPRE immagine prima del testo (richiesta UX dell'admin —
+  // su telefono due testi adiacenti senza media in mezzo erano confusi).
+  // Desktop: rispetta imagePosition (lg:order-* sui due wrapper).
   return (
     <section className={`w-full ${bgClass}`}>
       <div className="grid grid-cols-1 lg:grid-cols-2 lg:items-center gap-0">
-        {imgLeft ? <>{imageEl}{textEl}</> : <>{textEl}{imageEl}</>}
+        <div className={imgLeft ? "lg:order-1" : "lg:order-2"}>{imageEl}</div>
+        <div className={imgLeft ? "lg:order-2" : "lg:order-1"}>{textEl}</div>
       </div>
     </section>
   );
@@ -832,22 +836,14 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
     </div>
   ) : null;
 
+  // Mobile: SEMPRE immagine prima del testo. Su desktop (md+) ordine
+  // controllato da imagePosition via classi md:order-* sui wrapper.
   return (
     <section className="w-full bg-warm-50/40 my-3">
       <div className="grid grid-cols-1 md:grid-cols-12 items-stretch">
-        {imgLeft ? (
-          <>
-            <div className="md:col-span-5">{imageEl}</div>
-            <div className={bulletsEl ? "md:col-span-4" : "md:col-span-7"}>{contentEl}</div>
-            {bulletsEl && <div className="md:col-span-3">{bulletsEl}</div>}
-          </>
-        ) : (
-          <>
-            {bulletsEl && <div className="md:col-span-3">{bulletsEl}</div>}
-            <div className={bulletsEl ? "md:col-span-4" : "md:col-span-7"}>{contentEl}</div>
-            <div className="md:col-span-5">{imageEl}</div>
-          </>
-        )}
+        <div className={`md:col-span-5 ${imgLeft ? "md:order-1" : "md:order-3"}`}>{imageEl}</div>
+        <div className={`${bulletsEl ? "md:col-span-4" : "md:col-span-7"} md:order-2`}>{contentEl}</div>
+        {bulletsEl && <div className={`md:col-span-3 ${imgLeft ? "md:order-3" : "md:order-1"}`}>{bulletsEl}</div>}
       </div>
     </section>
   );
