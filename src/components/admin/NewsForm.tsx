@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Loader2, Check, FileText } from "lucide-react";
-import NewsBlockBuilder from "./news/NewsBlockBuilder";
-import NewsRightPanel from "./news/NewsRightPanel";
+import { X, Sparkles, Loader2, Check, FileText } from "lucide-react";
+import ImageUploadField from "./ImageUploadField";
+import NewsRightStyle from "./news/NewsRightStyle";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
+import { TInput } from "./TranslatableField";
+import NewsBlockBuilder from "./news/NewsBlockBuilder";
 import { slugify } from "@/lib/utils";
 import type { NewsBlockV2, NewsBlockStyle } from "@/types";
 
@@ -42,8 +44,9 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
   const [error, setError] = useState("");
   const [newTag, setNewTag] = useState("");
   const [savedAt, setSavedAt] = useState<number | null>(null);
-  // Selezione blocco nel canvas — null = nessun blocco selezionato → pannello dx mostra impostazioni pagina.
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  // Selezione blocco nel canvas per il pannello Stile a destra.
+  // null = nessun blocco selezionato → il pannello mostra impostazioni SEO.
+  const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null);
   useEffect(() => {
     if (!savedAt) return;
     const id = setTimeout(() => setSavedAt(null), 3500);
@@ -135,41 +138,6 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
     updateField("tags", JSON.stringify(tags.filter((tt) => tt !== tag)));
   };
 
-  /* ── Blocchi derivati dal JSON + mutazioni per il pannello dx ── */
-  const blocksJson = tCtx?.isTranslating ? (tCtx.getValue("blocks", "") || form.blocksV2) : form.blocksV2;
-  const sourceJson = tCtx?.isTranslating ? form.blocksV2 : undefined;
-  const blocks: NewsBlockV2[] = useMemo(() => {
-    try { const p = JSON.parse(blocksJson || "[]"); return Array.isArray(p) ? p : []; } catch { return []; }
-  }, [blocksJson]);
-  const sourceBlocks: NewsBlockV2[] = useMemo(() => {
-    if (!sourceJson) return [];
-    try { const p = JSON.parse(sourceJson); return Array.isArray(p) ? p : []; } catch { return []; }
-  }, [sourceJson]);
-  const selectedBlock = useMemo(() => blocks.find((b) => b.id === selectedBlockId) || null, [blocks, selectedBlockId]);
-  const sourceBlock = useMemo(() => sourceBlocks.find((b) => b.id === selectedBlockId) || undefined, [sourceBlocks, selectedBlockId]);
-
-  const commitBlocks = (next: NewsBlockV2[]) => {
-    const json = JSON.stringify(next);
-    if (tCtx?.isTranslating) tCtx.setValue("blocks", json);
-    else updateField("blocksV2", json);
-  };
-  const handleBlockDataChange = (data: NewsBlockV2["data"]) => {
-    if (!selectedBlockId) return;
-    commitBlocks(blocks.map((b) => b.id === selectedBlockId ? { ...b, data } : b));
-  };
-  const handleBlockStyleChange = (style: NewsBlockStyle | null) => {
-    if (!selectedBlockId) return;
-    commitBlocks(blocks.map((b) => {
-      if (b.id !== selectedBlockId) return b;
-      if (style === null) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { style: _s, ...rest } = b;
-        return rest as NewsBlockV2;
-      }
-      return { ...b, style };
-    }));
-  };
-
   /* ── Translate all block texts with AI ──────────────────── */
   const [translatingBlocks, setTranslatingBlocks] = useState(false);
 
@@ -243,19 +211,19 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
 
   const handleTranslateBlocks = async () => {
     if (!tCtx?.isTranslating) return;
-    let sourceBlocksLocal: NewsBlockV2[];
+    let sourceBlocks: NewsBlockV2[];
     try {
       const parsed = JSON.parse(form.blocksV2 || "[]");
       if (!Array.isArray(parsed) || parsed.length === 0) {
         setError("Nessun blocco da tradurre nella lingua di default");
         return;
       }
-      sourceBlocksLocal = parsed as NewsBlockV2[];
+      sourceBlocks = parsed as NewsBlockV2[];
     } catch {
       setError("JSON dei blocchi non valido");
       return;
     }
-    const fields = collectBlockTexts(sourceBlocksLocal);
+    const fields = collectBlockTexts(sourceBlocks);
     if (Object.keys(fields).length === 0) {
       setError("Nessun testo da tradurre nei blocchi");
       return;
@@ -273,7 +241,7 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
         setError(data.error || "Errore traduzione");
         return;
       }
-      const translatedBlocks = applyBlockTexts(sourceBlocksLocal, data.translations || {});
+      const translatedBlocks = applyBlockTexts(sourceBlocks, data.translations || {});
       tCtx.setValue("blocks", JSON.stringify(translatedBlocks));
     } catch {
       setError("Errore di connessione");
@@ -307,11 +275,15 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
       const data = await res.json();
       if (data.success) {
         if (articleId) {
+          // Update: resta sulla pagina + mostra toast "Salvato"
           setSavedAt(Date.now());
+          // Aggiorna slug locale se il server l'ha rigenerato
           if (data.data?.slug && data.data.slug !== form.slug) {
             setForm((prev) => ({ ...prev, slug: data.data.slug }));
           }
         } else {
+          // Nuova creazione: vai alla pagina di edit del nuovo articolo (così
+          // puoi continuare a modificare e vedere l'anteprima).
           router.push(`/admin/news/${data.data.id}`);
         }
       } else {
@@ -325,55 +297,126 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-start min-h-[calc(100vh-80px)] -mr-4 lg:-mr-8">
-      {/* CANVAS — sinistra, scroll naturale della pagina */}
-      <div className="flex-1 min-w-0 pr-6 space-y-4">
+    <form onSubmit={handleSubmit} className="flex gap-6 items-start">
+      {/* Left: main form */}
+      <div className="flex-1 min-w-0 space-y-6">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded">{error}</div>
         )}
 
-        {/* Header canvas: nome articolo + traduci AI */}
-        <div className="flex items-start justify-between gap-3 pb-2 border-b border-warm-200">
-          <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-wider text-warm-500">Articolo</div>
-            <h1 className="text-base font-semibold text-warm-900 truncate flex items-center gap-2">
-              <FileText size={14} /> {form.title || "Senza titolo"}
-            </h1>
-          </div>
-          {tCtx?.isTranslating && (
-            <button
-              type="button"
-              onClick={handleTranslateBlocks}
-              disabled={translatingBlocks}
-              title="Traduce con AI tutti i testi (titoli, paragrafi, didascalie, CTA) dalla lingua di default"
-              className="flex-shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 hover:text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded disabled:opacity-50"
-            >
-              {translatingBlocks ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-              {translatingBlocks ? "Traduzione in corso..." : "Traduci sezioni con AI"}
-            </button>
-          )}
+        {/* Category select (editable) */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-xs text-warm-400 uppercase tracking-wider">Categoria:</span>
+          <select
+            value={form.category}
+            onChange={(e) => updateField("category", e.target.value)}
+            className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+          >
+            {form.category && !categories.find((c) => c.value === form.category) && (
+              <option value={form.category}>{CATEGORY_LABELS[form.category] || form.category}</option>
+            )}
+            {categories.length === 0 && !form.category && <option value="">— seleziona categoria —</option>}
+            {categories.map((c) => (
+              <option key={c.id} value={c.value}>{c.label}</option>
+            ))}
+          </select>
         </div>
 
-        {/* Blocchi della pagina */}
-        <div
-          // Click sul vuoto (non su una card) deseleziona il blocco corrente.
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setSelectedBlockId(null);
-          }}
-        >
+        {/* ── COMMON FIELDS ────────────────────────────────────── */}
+        <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Titolo *</label>
+            <TInput fieldKey="title" defaultValue={form.title} onDefaultChange={handleTitleChange} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Sottotitolo</label>
+            <TInput fieldKey="subtitle" defaultValue={form.subtitle} onDefaultChange={(v) => updateField("subtitle", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="Mostrato sotto il titolo in stile categoria" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Slug</label>
+            <TInput fieldKey="slug" defaultValue={form.slug} onDefaultChange={(v) => updateField("slug", v)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm bg-warm-50 focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+          </div>
+          <ImageUploadField label="Immagine di copertina (usata nelle anteprime)" value={form.imageUrl} onChange={(url) => updateField("imageUrl", url)} onRemove={() => updateField("imageUrl", "")} purpose="cover" folder="news" aspectRatio={1} />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Data pubblicazione</label>
+              <input type="datetime-local" value={form.publishedAt} onChange={(e) => updateField("publishedAt", e.target.value)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+            </div>
+            <div className="flex items-end pb-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.isActive} onChange={(e) => updateField("isActive", e.target.checked)} className="w-4 h-4 rounded border-warm-300 text-warm-800 focus:ring-warm-800" />
+                <span className="text-sm text-warm-700">Attivo (visibile sul sito)</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Tags</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {tags.map((tag) => (
+                <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 bg-warm-100 text-warm-700 text-xs rounded-full">
+                  {tag}
+                  <button type="button" onClick={() => removeTag(tag)} className="hover:text-red-600"><X size={12} /></button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input type="text" value={newTag} onChange={(e) => setNewTag(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }} placeholder="Aggiungi tag..." className="flex-1 border border-warm-300 rounded px-4 py-2 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" />
+              <button type="button" onClick={addTag} className="px-4 py-2 text-sm bg-warm-100 text-warm-700 rounded hover:bg-warm-200 transition-colors">Aggiungi</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Fonte</label>
+              <input type="text" value={form.source} onChange={(e) => updateField("source", e.target.value)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="es. Corriere della Sera" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">URL Fonte</label>
+              <input type="text" value={form.sourceUrl} onChange={(e) => updateField("sourceUrl", e.target.value)} className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800" placeholder="https://..." />
+            </div>
+          </div>
+          <input type="hidden" name="sortOrder" value={form.sortOrder} />
+        </div>
+
+        {/* Sezioni dinamiche — il pezzo principale dell'editor (sempre aperto) */}
+        <div className="bg-white rounded-xl shadow-sm border-2 border-warm-300 p-6 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-warm-800 flex items-center gap-2"><FileText size={16} /> Sezioni della pagina</h2>
+              <p className="text-[12px] text-warm-500 mt-1">
+                {tCtx?.isTranslating
+                  ? `Stai modificando le sezioni in ${tCtx.lang.toUpperCase()}. Usa "Traduci sezioni con AI" per tradurre tutti i testi automaticamente, poi premi Aggiorna per salvare.`
+                  : "Costruisci l'articolo aggiungendo e ordinando le sezioni come preferisci."}
+              </p>
+            </div>
+            {tCtx?.isTranslating && (
+              <button
+                type="button"
+                onClick={handleTranslateBlocks}
+                disabled={translatingBlocks}
+                title="Traduce con AI tutti i testi (titoli, paragrafi, didascalie, CTA) di tutti i blocchi dalla lingua di default"
+                className="flex-shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 hover:text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded disabled:opacity-50"
+              >
+                {translatingBlocks ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                {translatingBlocks ? "Traduzione in corso..." : "Traduci sezioni con AI"}
+              </button>
+            )}
+          </div>
           <NewsBlockBuilder
-            value={blocksJson}
-            sourceValue={sourceJson}
-            selectedId={selectedBlockId}
-            onSelect={setSelectedBlockId}
+            value={tCtx?.isTranslating ? (tCtx.getValue("blocks", "") || form.blocksV2) : form.blocksV2}
+            sourceValue={tCtx?.isTranslating ? form.blocksV2 : undefined}
+            selectedStyleId={selectedStyleId}
+            onSelectStyle={setSelectedStyleId}
             onChange={(json) => {
-              if (tCtx?.isTranslating) tCtx.setValue("blocks", json);
-              else updateField("blocksV2", json);
+              if (tCtx?.isTranslating) {
+                tCtx.setValue("blocks", json);
+              } else {
+                updateField("blocksV2", json);
+              }
             }}
           />
         </div>
 
-        {/* Submit — sticky bottom */}
+        {/* Submit — sticky bottom: sempre visibile senza scorrere */}
         <div className="sticky bottom-0 -mx-4 lg:-mx-8 px-4 lg:px-8 py-3 bg-warm-50 border-t border-warm-200 flex items-center gap-3 z-10">
           <button type="submit" disabled={loading} className="bg-warm-800 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-warm-900 disabled:opacity-50 transition-colors">
             {loading ? "Salvataggio..." : articleId ? "Aggiorna" : "Crea articolo"}
@@ -387,25 +430,48 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
             </span>
           )}
         </div>
+
       </div>
 
-      {/* RIGHT PANEL — fisso 360px, sticky top, h-screen */}
-      <aside className="hidden lg:block w-[360px] flex-shrink-0 sticky top-0 h-screen border-l border-warm-200 bg-warm-50 overflow-hidden">
-        <NewsRightPanel
-          selectedBlock={selectedBlock}
-          sourceBlock={sourceBlock}
-          onCloseSelection={() => setSelectedBlockId(null)}
-          onBlockDataChange={handleBlockDataChange}
-          onBlockStyleChange={handleBlockStyleChange}
-          form={form}
-          updateField={updateField}
-          handleTitleChange={handleTitleChange}
-          categories={categories}
-          CATEGORY_LABELS={CATEGORY_LABELS}
-          newTag={newTag}
-          setNewTag={setNewTag}
-          addTag={addTag}
-          removeTag={removeTag}
+      {/* Right: Pannello Stile (per blocco selezionato) o SEO (default). Sempre
+          visibile su desktop, sticky lungo l'altezza viewport. */}
+      <aside className="hidden lg:block w-[340px] flex-shrink-0 sticky top-0 self-start h-screen border-l border-warm-200 bg-warm-50 overflow-hidden">
+        <NewsRightStyle
+          selectedBlock={(() => {
+            if (!selectedStyleId) return null;
+            try {
+              const blocks = JSON.parse(tCtx?.isTranslating ? (tCtx.getValue("blocks", "") || form.blocksV2) : form.blocksV2) as NewsBlockV2[];
+              return blocks.find((b) => b.id === selectedStyleId) || null;
+            } catch { return null; }
+          })()}
+          onCloseSelection={() => setSelectedStyleId(null)}
+          onBlockStyleChange={(style: NewsBlockStyle | null) => {
+            if (!selectedStyleId) return;
+            const json = tCtx?.isTranslating ? (tCtx.getValue("blocks", "") || form.blocksV2) : form.blocksV2;
+            let blocks: NewsBlockV2[];
+            try { blocks = JSON.parse(json) as NewsBlockV2[]; } catch { return; }
+            const next = blocks.map((b) => {
+              if (b.id !== selectedStyleId) return b;
+              if (style === null) {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { style: _s, ...rest } = b;
+                return rest as NewsBlockV2;
+              }
+              return { ...b, style };
+            });
+            const nextJson = JSON.stringify(next);
+            if (tCtx?.isTranslating) tCtx.setValue("blocks", nextJson);
+            else updateField("blocksV2", nextJson);
+          }}
+          seoTitle={form.seoTitle}
+          seoDescription={form.seoDescription}
+          seoKeywords={(() => { try { return JSON.parse(form.seoKeywords); } catch { return []; } })()}
+          slug={form.slug}
+          content={form.content || ""}
+          onSeoChange={(field, value) => {
+            if (field === "seoKeywords") updateField("seoKeywords", JSON.stringify(value));
+            else updateField(field, value as string);
+          }}
         />
       </aside>
     </form>
