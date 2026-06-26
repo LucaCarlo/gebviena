@@ -53,6 +53,21 @@
   cursor: pointer;
 }
 
+/* ── Font + color override per blocchi news (step 6 + 7 editor) ──
+   Quando un blocco news ha NewsBlockStyle.textFont o textColor
+   impostati, il renderer aggiunge `data-news-style` al wrapper e
+   espone le CSS variables --news-block-font / --news-block-color.
+   Doppio attributo `[data-news-style][data-news-style]` per aumentare
+   la specificità (0,2,0) e vincere classi Tailwind tipo `text-black`. */
+[data-news-style][data-news-style] {
+  font-family: var(--news-block-font, inherit);
+  color: var(--news-block-color, inherit);
+}
+[data-news-style][data-news-style] :is(h1, h2, h3, h4, h5, h6, p, blockquote, span, li, a, em, i, strong, div) {
+  font-family: var(--news-block-font, inherit);
+  color: var(--news-block-color, inherit);
+}
+
 @layer components {
   /* GTV container — matches original max-widths */
   .gtv-container {

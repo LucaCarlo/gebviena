@@ -42,6 +42,25 @@ const NEWS_BG_MAP: Record<string, string> = {
   white: "bg-white", "warm-50": "bg-warm-50", "warm-100": "bg-warm-100", "warm-900": "bg-warm-900",
   transparent: "bg-transparent",
 };
+// Font key → CSS variable esposta dal layout root (next/font/google).
+const NEWS_FONT_MAP: Record<string, string> = {
+  "caslon": "var(--font-caslon)",
+  "work-sans": "var(--font-work-sans)",
+  "inter": "var(--font-inter)",
+  "playfair": "var(--font-playfair)",
+  "lora": "var(--font-lora)",
+  "montserrat": "var(--font-montserrat)",
+  "roboto": "var(--font-roboto)",
+  "poppins": "var(--font-poppins)",
+};
+// Preset colore testo → valore CSS color.
+const NEWS_TEXT_COLOR_MAP: Record<string, string> = {
+  black: "#000000",
+  white: "#ffffff",
+  "warm-900": "#1a1410",
+  "warm-700": "#3a312b",
+  "warm-500": "#736a63",
+};
 
 /* Video player per news. Le due opzioni (autoplay e controls) sono indipendenti:
    - autoplay solo → background muto in loop
@@ -562,6 +581,25 @@ export default function NewsDetailPage() {
                   pbOverride,
                   bgOverride,
                 ].filter(Boolean).join(" ");
+                // Style inline + data-news-style per font/colore/sfondo custom
+                // (step 6+7). Le CSS variables sono lette dalle regole in
+                // globals.css con specificità maggiore di Tailwind text-*.
+                const wrapperInline: React.CSSProperties = {};
+                const fontKey = bStyle?.textFont;
+                if (fontKey && NEWS_FONT_MAP[fontKey]) {
+                  (wrapperInline as Record<string, string>)["--news-block-font"] = NEWS_FONT_MAP[fontKey];
+                }
+                const customColor = bStyle?.textColorCustom?.trim();
+                const presetColor = bStyle?.textColor && NEWS_TEXT_COLOR_MAP[bStyle.textColor];
+                const colorValue = customColor || presetColor;
+                if (colorValue) {
+                  (wrapperInline as Record<string, string>)["--news-block-color"] = colorValue;
+                }
+                const customBg = bStyle?.backgroundCustom?.trim();
+                if (customBg) {
+                  (wrapperInline as Record<string, string>)["backgroundColor"] = customBg;
+                }
+                const hasStyleData = !!(fontKey || colorValue);
                 let node: React.ReactNode = null;
                 switch (b.type) {
                   case "paragraph": node = <ParagraphBlock d={b.data as NewsParagraphData} />; break;
@@ -585,7 +623,16 @@ export default function NewsDetailPage() {
                   case "share": node = <ShareBlock title={article.title} />; break;
                   default: node = null;
                 }
-                return <div key={b.id} className={spacing}>{node}</div>;
+                return (
+                  <div
+                    key={b.id}
+                    className={spacing}
+                    style={Object.keys(wrapperInline).length ? wrapperInline : undefined}
+                    data-news-style={hasStyleData ? "" : undefined}
+                  >
+                    {node}
+                  </div>
+                );
               })}
               {hasRelated && <RelatedBlock related={article.related!} categoryLabelMap={categoryLabelMap} title={t("news.detail.continue")} />}
             </div>

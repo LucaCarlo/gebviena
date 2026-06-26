@@ -8,7 +8,7 @@ import {
   Sliders, RotateCcw, Columns3,
 } from "lucide-react";
 import type {
-  NewsBlockV2, NewsBlockV2Type, NewsBlockStyle, NewsBlockSpacing, NewsBlockBackground,
+  NewsBlockV2, NewsBlockV2Type, NewsBlockStyle, NewsBlockSpacing, NewsBlockBackground, NewsBlockFont,
   NewsParagraphData, NewsImageTextBgData, NewsThreeImagesData, NewsSingleImageData,
   NewsImageWithParagraphData, NewsFullwidthBannerData, NewsProductData,
   NewsCaslonTitleData, NewsTwoImagesInlineData,
@@ -34,6 +34,29 @@ const BG_OPTIONS: { value: NewsBlockBackground | ""; label: string }[] = [
   { value: "warm-50", label: "Crema (warm-50)" },
   { value: "warm-100", label: "Crema scuro (warm-100)" },
   { value: "warm-900", label: "Scuro (warm-900)" },
+];
+
+// Font picker (step 6) — mappato a CSS variables esposte dal layout root.
+const FONT_OPTIONS: { value: NewsBlockFont | ""; label: string }[] = [
+  { value: "", label: "Default (Work Sans)" },
+  { value: "caslon", label: "Libre Caslon (sito)" },
+  { value: "work-sans", label: "Work Sans (sito)" },
+  { value: "inter", label: "Inter" },
+  { value: "playfair", label: "Playfair Display" },
+  { value: "lora", label: "Lora" },
+  { value: "montserrat", label: "Montserrat" },
+  { value: "roboto", label: "Roboto" },
+  { value: "poppins", label: "Poppins" },
+];
+
+// Color picker (step 7) — preset rapidi. Per altri colori c'è l'input hex.
+const TEXT_COLOR_PRESETS: { value: string; label: string; hex: string }[] = [
+  { value: "", label: "Default", hex: "" },
+  { value: "black", label: "Nero", hex: "#000000" },
+  { value: "white", label: "Bianco", hex: "#ffffff" },
+  { value: "warm-900", label: "Scuro (warm-900)", hex: "#1a1410" },
+  { value: "warm-700", label: "Antracite", hex: "#3a312b" },
+  { value: "warm-500", label: "Grigio", hex: "#736a63" },
 ];
 import {
   ParagraphEditor, ImageTextBgEditor, ThreeImagesEditor, SingleImageEditor,
@@ -344,12 +367,33 @@ export default function NewsBlockBuilder({ value, onChange, sourceValue }: Props
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    <StyleSelect label="Margine sopra" value={b.style?.marginTop} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { marginTop: v as NewsBlockSpacing | undefined })} />
-                    <StyleSelect label="Margine sotto" value={b.style?.marginBottom} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { marginBottom: v as NewsBlockSpacing | undefined })} />
-                    <StyleSelect label="Padding sopra" value={b.style?.paddingTop} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { paddingTop: v as NewsBlockSpacing | undefined })} />
-                    <StyleSelect label="Padding sotto" value={b.style?.paddingBottom} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { paddingBottom: v as NewsBlockSpacing | undefined })} />
-                    <StyleSelect label="Sfondo" value={b.style?.background} options={BG_OPTIONS} onChange={(v) => updStyle(b.id, { background: v as NewsBlockBackground | undefined })} />
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-warm-500 font-medium mb-1.5">Spaziatura & sfondo</div>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        <StyleSelect label="Margine sopra" value={b.style?.marginTop} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { marginTop: v as NewsBlockSpacing | undefined })} />
+                        <StyleSelect label="Margine sotto" value={b.style?.marginBottom} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { marginBottom: v as NewsBlockSpacing | undefined })} />
+                        <StyleSelect label="Padding sopra" value={b.style?.paddingTop} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { paddingTop: v as NewsBlockSpacing | undefined })} />
+                        <StyleSelect label="Padding sotto" value={b.style?.paddingBottom} options={SPACING_OPTIONS} onChange={(v) => updStyle(b.id, { paddingBottom: v as NewsBlockSpacing | undefined })} />
+                        <StyleSelect label="Sfondo preset" value={b.style?.background} options={BG_OPTIONS} onChange={(v) => updStyle(b.id, { background: v as NewsBlockBackground | undefined })} />
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-2">
+                        <StyleColorInput label="Sfondo (hex)" value={b.style?.backgroundCustom} onChange={(v) => updStyle(b.id, { backgroundCustom: v || undefined })} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-warm-500 font-medium mb-1.5">Tipografia</div>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        <StyleSelect label="Font" value={b.style?.textFont} options={FONT_OPTIONS} onChange={(v) => updStyle(b.id, { textFont: v as NewsBlockFont | undefined })} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-warm-500 font-medium mb-1.5">Colore testo</div>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        <StyleSelect label="Preset" value={b.style?.textColor} options={TEXT_COLOR_PRESETS.map((o) => ({ value: o.value, label: o.label }))} onChange={(v) => updStyle(b.id, { textColor: v || undefined })} />
+                        <StyleColorInput label="Colore (hex)" value={b.style?.textColorCustom} onChange={(v) => updStyle(b.id, { textColorCustom: v || undefined })} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -484,6 +528,49 @@ function StyleSelect({
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
+    </label>
+  );
+}
+
+function StyleColorInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string | undefined;
+  onChange: (v: string | undefined) => void;
+}) {
+  const v = value || "";
+  return (
+    <label className="block">
+      <span className="block text-[10px] uppercase tracking-wider text-warm-500 mb-1">{label}</span>
+      <div className="flex items-center gap-1">
+        <input
+          type="color"
+          value={/^#[0-9a-f]{6}$/i.test(v) ? v : "#000000"}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-8 h-8 border border-warm-300 rounded cursor-pointer p-0.5 bg-white"
+          aria-label={label}
+        />
+        <input
+          type="text"
+          value={v}
+          onChange={(e) => onChange(e.target.value || undefined)}
+          placeholder="#hex"
+          className="flex-1 min-w-0 border border-warm-300 rounded px-2 py-1.5 text-xs bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+        />
+        {v && (
+          <button
+            type="button"
+            onClick={() => onChange(undefined)}
+            className="p-1 text-warm-400 hover:text-warm-800"
+            title="Rimuovi colore"
+          >
+            <X size={12} />
+          </button>
+        )}
+      </div>
     </label>
   );
 }

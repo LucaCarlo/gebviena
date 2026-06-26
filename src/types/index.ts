@@ -486,12 +486,24 @@ export interface NewsColumnsData {
  */
 export type NewsBlockSpacing = "none" | "sm" | "md" | "lg" | "xl";
 export type NewsBlockBackground = "default" | "white" | "warm-50" | "warm-100" | "warm-900" | "transparent";
+// Font del blocco — chiavi mappate a CSS variables del layout root.
+// "default" = inherit dal sito (Work Sans).
+export type NewsBlockFont =
+  | "default" | "caslon" | "work-sans"
+  | "inter" | "playfair" | "lora" | "montserrat" | "roboto" | "poppins";
 export interface NewsBlockStyle {
   marginTop?: NewsBlockSpacing;
   marginBottom?: NewsBlockSpacing;
   paddingTop?: NewsBlockSpacing;
   paddingBottom?: NewsBlockSpacing;
   background?: NewsBlockBackground;
+  /** Sfondo custom (es. "#ff00aa") — vince su `background` se presente. */
+  backgroundCustom?: string;
+  textFont?: NewsBlockFont;
+  /** Colore testo preset slug (es. "black") — applicato via CSS var. */
+  textColor?: string;
+  /** Colore testo custom hex — vince su `textColor` se presente. */
+  textColorCustom?: string;
 }
 
 export interface NewsBlockV2 {
