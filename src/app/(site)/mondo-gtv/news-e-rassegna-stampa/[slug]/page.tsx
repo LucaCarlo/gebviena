@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -93,24 +93,56 @@ function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillConta
     transform: "translate(-50%, -50%)",
     border: 0,
   };
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const goFullscreen = () => {
+    const el = iframeRef.current;
+    if (!el) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyEl = el as any;
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    else if (anyEl.webkitRequestFullscreen) anyEl.webkitRequestFullscreen();
+    else if (anyEl.mozRequestFullScreen) anyEl.mozRequestFullScreen();
+  };
+  // Pulsante "Schermo intero" overlay: serve quando il container porta a un
+  // cover-crop sull'iframe (i controlli laterali del player si vedono
+  // tagliati) oppure quando si usa Vimeo `background=1` (nessuna UI nativa).
+  // Mostrato solo per iframe esterni (YouTube/Vimeo), non per <video> locali
+  // che hanno già i loro controlli nativi.
+  const fullscreenButton = (
+    <button
+      type="button"
+      onClick={goFullscreen}
+      className="absolute bottom-3 right-3 z-10 bg-black/55 hover:bg-black/85 text-white text-[11px] uppercase tracking-[0.08em] px-2.5 py-1.5 backdrop-blur-sm transition-colors inline-flex items-center gap-1.5"
+      aria-label="Schermo intero"
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+        <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+        <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+        <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+      </svg>
+      Schermo intero
+    </button>
+  );
 
   if (yt) {
     return (
       <div className={extVidClass} style={containerStyle}>
-        <iframe src={`https://www.youtube.com/embed/${yt[1]}${autoplay ? `?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=${controls === false ? 0 : 1}` : `?rel=0&controls=${controls === false ? 0 : 1}`}`} style={coverIframeStyle} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+        <iframe ref={iframeRef} src={`https://www.youtube.com/embed/${yt[1]}${autoplay ? `?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=${controls === false ? 0 : 1}` : `?rel=0&controls=${controls === false ? 0 : 1}`}`} style={coverIframeStyle} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+        {fullscreenButton}
       </div>
     );
   }
   if (vimeo) {
     // Quando autoplay è richiesto usiamo `background=1`: Vimeo nasconde i
-    // controlli E scala il video col cover-fit nativo del player (no bande
-    // nere). Per i video senza autoplay manteniamo i controlli e applichiamo
-    // la cover-trick CSS sull'iframe (può produrre fasce a seconda
-    // dell'aspect del container, ma copre la colonna).
+    // controlli nativi E scala il video col cover-fit nativo del player
+    // (no bande nere). Per dare comunque all'utente l'opzione "fullscreen"
+    // mostriamo il pulsante overlay che chiama requestFullscreen() sull'iframe.
     const vimeoParams = autoplay ? "?background=1" : "";
     return (
       <div className={extVidClass} style={containerStyle}>
-        <iframe src={`https://player.vimeo.com/video/${vimeo[1]}${vimeoParams}`} style={coverIframeStyle} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+        <iframe ref={iframeRef} src={`https://player.vimeo.com/video/${vimeo[1]}${vimeoParams}`} style={coverIframeStyle} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+        {fullscreenButton}
       </div>
     );
   }
