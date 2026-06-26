@@ -513,7 +513,19 @@ export default function NewsDetailPage() {
               {rendered.map((b, idx) => {
                 const prev = idx > 0 ? rendered[idx - 1] : null;
                 const greyAdjacent = prev?.type === "image_text_bg" && b.type === "image_text_bg";
-                const spacing = idx === 0 ? "" : greyAdjacent ? "" : "mt-20 md:mt-28";
+                // Quando il blocco è un single_cta senza titolo/testo (solo
+                // pulsante), il classico mt-20/28 lascia troppo spazio dato
+                // che il blocco prima ha già il suo padding-bottom. Lo
+                // riduciamo drasticamente.
+                const ctaData = b.type === "single_cta" ? (b.data as NewsSingleCtaData) : null;
+                const isMinimalCta = !!(ctaData && !ctaData.title && !ctaData.body);
+                const spacing = idx === 0
+                  ? ""
+                  : greyAdjacent
+                    ? ""
+                    : isMinimalCta
+                      ? "mt-2 md:mt-3"
+                      : "mt-20 md:mt-28";
                 let node: React.ReactNode = null;
                 switch (b.type) {
                   case "paragraph": node = <ParagraphBlock d={b.data as NewsParagraphData} />; break;
