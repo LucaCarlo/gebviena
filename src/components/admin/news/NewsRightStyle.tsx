@@ -168,6 +168,18 @@ function StyleEditor({ style, onChange }: { style: NewsBlockStyle | undefined; o
           />
         </label>
       </Section>
+      <Section title="Immagine">
+        <StyleSelect
+          label="Adattamento"
+          value={style?.imageFit}
+          options={[
+            { value: "", label: "Default (Cover)" },
+            { value: "cover", label: "Riempi (taglia)" },
+            { value: "contain", label: "Adatta (intera)" },
+          ]}
+          onChange={(v) => patch({ imageFit: (v as "cover" | "contain" | undefined) })}
+        />
+      </Section>
     </div>
   );
 }

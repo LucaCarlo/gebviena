@@ -519,6 +519,13 @@ export interface NewsBlockStyle {
   animation?: NewsBlockAnimation;
   /** Delay in ms prima che parta l'animazione. Default 0. */
   animationDelay?: number;
+  /** Come l'immagine si adatta al suo contenitore (per blocchi con immagini:
+   *  three_images, single_image, image_text_bg, ecc.).
+   *  - "cover" (default): l'immagine riempie il box, viene tagliata se l'aspect
+   *    non combacia col contenitore.
+   *  - "contain": l'immagine si vede tutta dentro il box, può lasciare margini
+   *    (bg crema). Buono per foto orizzontali in container portrait. */
+  imageFit?: "cover" | "contain";
 }
 
 export interface NewsBlockV2 {

@@ -283,9 +283,10 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
   );
 }
 
-function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title: string }) {
+function ImageTextBg({ d, title: articleTitle, fitOverride }: { d: NewsImageTextBgData; title: string; fitOverride?: "cover" | "contain" }) {
   const imgLeft = d.imagePosition === "left";
-  const fit = d.mediaFit || "cover";
+  // fitOverride (dal pannello Stile dx) vince sul mediaFit storico salvato nel data.
+  const fit = fitOverride || d.mediaFit || "cover";
   // Aspect portrait 3/4.2 uniforme per immagini e video (YT/Vimeo/locali) così
   // che il media-side riempia sempre la stessa altezza del testo-side e
   // matchi le altre sezioni image_text_bg (es. tra video Continuum e foto C 5501).
@@ -353,17 +354,22 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
   );
 }
 
-function ThreeImages({ d }: { d: NewsThreeImagesData }) {
+function ThreeImages({ d, fit }: { d: NewsThreeImagesData; fit?: "cover" | "contain" }) {
   const imgs = (d.images || []).filter((i) => i.url || i.videoUrl);
   if (!imgs.length) return null;
+  const mediaFit = fit || "cover";
+  // Quando l'admin sceglie "contain" usiamo uno sfondo chiaro per separare i
+  // bordi dell'immagine dal frame del blocco; con "cover" il bg si vede solo
+  // mentre carica.
+  const bgClass = mediaFit === "contain" ? "bg-warm-50" : "bg-warm-100";
   return (
     <section className="px-2 md:px-3 lg:px-4">
       {/* Desktop: grid 3 colonne come sempre */}
       <div className="hidden md:grid grid-cols-3 gap-x-4 gap-y-8">
         {imgs.map((img, i) => (
           <div key={i}>
-            <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
-              <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer />
+            <div className={`relative aspect-[2/3] ${bgClass} overflow-hidden`}>
+              <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer mediaFit={mediaFit} />
             </div>
             {img.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>}
           </div>
@@ -371,13 +377,13 @@ function ThreeImages({ d }: { d: NewsThreeImagesData }) {
       </div>
       {/* Mobile: carousel orizzontale con frecce e indicatori a puntini */}
       <div className="md:hidden">
-        <ThreeImagesMobileCarousel imgs={imgs} />
+        <ThreeImagesMobileCarousel imgs={imgs} fit={mediaFit} />
       </div>
     </section>
   );
 }
 
-function ThreeImagesMobileCarousel({ imgs }: { imgs: NewsThreeImagesData["images"] }) {
+function ThreeImagesMobileCarousel({ imgs, fit = "cover" }: { imgs: NewsThreeImagesData["images"]; fit?: "cover" | "contain" }) {
   const ref = useRef<HTMLDivElement>(null);
   const [idx, setIdx] = useState(0);
   const items = imgs || [];
@@ -409,8 +415,8 @@ function ThreeImagesMobileCarousel({ imgs }: { imgs: NewsThreeImagesData["images
       >
         {items.map((img, i) => (
           <div key={i} className="flex-shrink-0 w-[88%] snap-start">
-            <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
-              <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer />
+            <div className={`relative aspect-[2/3] overflow-hidden ${fit === "contain" ? "bg-warm-50" : "bg-warm-100"}`}>
+              <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer mediaFit={fit} />
             </div>
             {img.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>}
           </div>
@@ -723,8 +729,8 @@ export default function NewsDetailPage() {
                 let node: React.ReactNode = null;
                 switch (b.type) {
                   case "paragraph": node = <ParagraphBlock d={b.data as NewsParagraphData} />; break;
-                  case "image_text_bg": node = <ImageTextBg d={b.data as NewsImageTextBgData} title={article.title} />; break;
-                  case "three_images": node = <ThreeImages d={b.data as NewsThreeImagesData} />; break;
+                  case "image_text_bg": node = <ImageTextBg d={b.data as NewsImageTextBgData} title={article.title} fitOverride={b.style?.imageFit} />; break;
+                  case "three_images": node = <ThreeImages d={b.data as NewsThreeImagesData} fit={b.style?.imageFit} />; break;
                   case "single_image": node = <SingleImage d={b.data as NewsSingleImageData} />; break;
                   case "image_with_paragraph": node = <ImageWithParagraph d={b.data as NewsImageWithParagraphData} />; break;
                   case "fullwidth_banner": node = <FullwidthBanner d={b.data as NewsFullwidthBannerData} />; break;
