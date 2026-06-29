@@ -179,6 +179,15 @@ function StyleEditor({ style, onChange }: { style: NewsBlockStyle | undefined; o
           ]}
           onChange={(v) => patch({ imageFit: (v as "cover" | "contain" | undefined) })}
         />
+        <StyleSelect
+          label="Sfondo immagine"
+          value={style?.imageBg}
+          options={[
+            { value: "", label: "Default" },
+            { value: "none", label: "Nessuno" },
+          ]}
+          onChange={(v) => patch({ imageBg: (v as "default" | "none" | undefined) })}
+        />
       </Section>
     </div>
   );

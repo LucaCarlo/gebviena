@@ -354,36 +354,47 @@ function ImageTextBg({ d, title: articleTitle, fitOverride }: { d: NewsImageText
   );
 }
 
-function ThreeImages({ d, fit }: { d: NewsThreeImagesData; fit?: "cover" | "contain" }) {
+function ThreeImages({ d, fit, bg }: { d: NewsThreeImagesData; fit?: "cover" | "contain"; bg?: "default" | "none" }) {
   const imgs = (d.images || []).filter((i) => i.url || i.videoUrl);
   if (!imgs.length) return null;
   const mediaFit = fit || "cover";
-  // Quando l'admin sceglie "contain" usiamo uno sfondo chiaro per separare i
-  // bordi dell'immagine dal frame del blocco; con "cover" il bg si vede solo
-  // mentre carica.
-  const bgClass = mediaFit === "contain" ? "bg-warm-50" : "bg-warm-100";
+  const noBg = bg === "none";
   return (
     <section className="px-2 md:px-3 lg:px-4">
       {/* Desktop: grid 3 colonne come sempre */}
-      <div className="hidden md:grid grid-cols-3 gap-x-4 gap-y-8">
+      <div className="hidden md:grid grid-cols-3 gap-x-4 gap-y-8 items-start">
         {imgs.map((img, i) => (
           <div key={i}>
-            <div className={`relative aspect-[2/3] ${bgClass} overflow-hidden`}>
-              <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer mediaFit={mediaFit} />
-            </div>
+            <ThreeImagesMedia img={img} fit={mediaFit} noBg={noBg} />
             {img.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>}
           </div>
         ))}
       </div>
       {/* Mobile: carousel orizzontale con frecce e indicatori a puntini */}
       <div className="md:hidden">
-        <ThreeImagesMobileCarousel imgs={imgs} fit={mediaFit} />
+        <ThreeImagesMobileCarousel imgs={imgs} fit={mediaFit} noBg={noBg} />
       </div>
     </section>
   );
 }
 
-function ThreeImagesMobileCarousel({ imgs, fit = "cover" }: { imgs: NewsThreeImagesData["images"]; fit?: "cover" | "contain" }) {
+// Renderer media singolo per ThreeImages: in "contain" mostra l'immagine in
+// dimensioni naturali (no box, no bg grigio); in "cover" usa container portrait
+// 2/3 con NewsMediaSmart. Per i video, sempre cover (iframe richiede aspect fisso).
+function ThreeImagesMedia({ img, fit, noBg }: { img: { url: string; videoUrl?: string; caption?: string }; fit: "cover" | "contain"; noBg?: boolean }) {
+  const isPlainImage = !!img.url && !img.videoUrl;
+  if (fit === "contain" && isPlainImage) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={img.url} alt={img.caption || ""} className="block w-full h-auto" loading="lazy" />;
+  }
+  return (
+    <div className={`relative aspect-[2/3] overflow-hidden ${noBg ? "" : "bg-warm-100"}`}>
+      <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer mediaFit={fit} />
+    </div>
+  );
+}
+
+function ThreeImagesMobileCarousel({ imgs, fit = "cover", noBg }: { imgs: NewsThreeImagesData["images"]; fit?: "cover" | "contain"; noBg?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [idx, setIdx] = useState(0);
   const items = imgs || [];
@@ -415,9 +426,7 @@ function ThreeImagesMobileCarousel({ imgs, fit = "cover" }: { imgs: NewsThreeIma
       >
         {items.map((img, i) => (
           <div key={i} className="flex-shrink-0 w-[88%] snap-start">
-            <div className={`relative aspect-[2/3] overflow-hidden ${fit === "contain" ? "bg-warm-50" : "bg-warm-100"}`}>
-              <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer mediaFit={fit} />
-            </div>
+            <ThreeImagesMedia img={img} fit={fit} noBg={noBg} />
             {img.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>}
           </div>
         ))}
@@ -730,7 +739,7 @@ export default function NewsDetailPage() {
                 switch (b.type) {
                   case "paragraph": node = <ParagraphBlock d={b.data as NewsParagraphData} />; break;
                   case "image_text_bg": node = <ImageTextBg d={b.data as NewsImageTextBgData} title={article.title} fitOverride={b.style?.imageFit} />; break;
-                  case "three_images": node = <ThreeImages d={b.data as NewsThreeImagesData} fit={b.style?.imageFit} />; break;
+                  case "three_images": node = <ThreeImages d={b.data as NewsThreeImagesData} fit={b.style?.imageFit} bg={b.style?.imageBg} />; break;
                   case "single_image": node = <SingleImage d={b.data as NewsSingleImageData} />; break;
                   case "image_with_paragraph": node = <ImageWithParagraph d={b.data as NewsImageWithParagraphData} />; break;
                   case "fullwidth_banner": node = <FullwidthBanner d={b.data as NewsFullwidthBannerData} />; break;

@@ -526,6 +526,11 @@ export interface NewsBlockStyle {
    *  - "contain": l'immagine si vede tutta dentro il box, può lasciare margini
    *    (bg crema). Buono per foto orizzontali in container portrait. */
   imageFit?: "cover" | "contain";
+  /** Sfondo del box immagine (rilevante in modalità cover).
+   *  "default" = bg-warm-100 chiaro. "none" = nessuno sfondo, l'immagine ha
+   *  solo se stessa e i bordi del proprio box (utile quando hai immagini con
+   *  fondo trasparente PNG o vuoi che ci sia il colore della sezione dietro). */
+  imageBg?: "default" | "none";
 }
 
 export interface NewsBlockV2 {
