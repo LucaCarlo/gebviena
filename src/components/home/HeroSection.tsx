@@ -91,7 +91,9 @@ export default function HeroSection() {
     slide.position === "right" ? "items-end text-right pr-8 md:pr-20" :
     "items-center text-center";
 
-  const textAlignV = "bottom-[calc(12.5vh-30px)]";
+  // Su mobile il testo va leggermente piu in basso e piu compatto per lasciare
+  // piu spazio all'immagine sopra (soprattutto quando entra intera).
+  const textAlignV = "max-md:bottom-[calc(6vh-18px)] md:bottom-[calc(12.5vh-30px)]";
 
   // Height della section:
   //  - Desktop: sempre h-[min(118vh,1107px)]
@@ -162,27 +164,15 @@ export default function HeroSection() {
 
 
 
-      {/* Slight baseline darkening for legibility — solo dove il testo è sopra
-          l'immagine. Sul mobile senza mobileImageUrl il testo va sotto → niente
-          overlay (l'overlay copre solo la zona media). */}
-      {slide.mobileImageUrl ? (
-        <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: 0.10 }} />
-      ) : (
-        <div className="hidden md:block absolute inset-0 bg-black pointer-events-none" style={{ opacity: 0.10 }} />
-      )}
+      {/* Slight baseline darkening for legibility */}
+      <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: 0.10 }} />
       {slide.darkOverlay && (
-        slide.mobileImageUrl ? (
-          <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
-        ) : (
-          <div className="hidden md:block absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
-        )
+        <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
       )}
 
-      {/* Text content — overlay assoluto sopra l'immagine.
-          Su mobile senza mobileImageUrl viene nascosto (max-md:hidden) perche
-          l'immagine intera potrebbe essere molto orizzontale e le scritte
-          resterebbero illeggibili sull'immagine stessa; in quel caso il testo
-          e' renderizzato in-flow SOTTO l'immagine (vedi blocco successivo). */}
+      {/* Text content — overlay assoluto sopra l'immagine. Anche su mobile:
+          font piu piccolo, leading piu stretto, righe piu compatte per
+          leggibilita' quando l'hero e' bassa (immagine orizzontale). */}
       <AnimatePresence mode="wait">
         <motion.div
           key={`text-${slide.id}`}
@@ -190,20 +180,20 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 1, delay: 0.3 }}
-          className={`${slide.mobileImageUrl ? "" : "max-md:hidden"} absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
+          className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className={`font-sans text-2xl md:text-3xl lg:text-[38px] ${slide.textColor === "black" ? "text-black" : "text-white"} leading-snug font-light uppercase tracking-[inherit] whitespace-nowrap`} style={{ marginTop: "-5px" }}>
+          <h1 className={`font-sans text-[19px] md:text-3xl lg:text-[38px] ${slide.textColor === "black" ? "text-black" : "text-white"} max-md:leading-tight md:leading-snug font-light uppercase tracking-[inherit] max-md:whitespace-normal md:whitespace-nowrap max-md:max-w-[85%]`} style={{ marginTop: "-5px" }}>
             {slide.title}
           </h1>
           {slide.subtitle && (
-            <p className={`text-[16px] ${slide.textColor === "black" ? "text-black/60" : "text-white/60"} mt-2 max-w-2xl`}>
+            <p className={`text-[13px] md:text-[16px] ${slide.textColor === "black" ? "text-black/60" : "text-white/60"} max-md:mt-0.5 md:mt-2 max-w-2xl max-md:leading-tight`}>
               {slide.subtitle}
             </p>
           )}
           {slide.ctaText && slide.ctaLink && (
             <Link
               href={slide.ctaLink}
-              className={`inline-block mt-4 uppercase text-[16px] tracking-[0.03em] ${slide.textColor === "black" ? "text-black hover:text-black/70" : "text-white hover:text-white/80"} font-medium transition-colors duration-300 hover:underline`}
+              className={`inline-block max-md:mt-1.5 md:mt-4 uppercase text-[13px] md:text-[16px] tracking-[0.03em] ${slide.textColor === "black" ? "text-black hover:text-black/70" : "text-white hover:text-white/80"} font-medium transition-colors duration-300 hover:underline`}
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
               {slide.ctaText} &rarr;
@@ -211,40 +201,6 @@ export default function HeroSection() {
           )}
         </motion.div>
       </AnimatePresence>
-
-      {/* Text content — versione mobile SENZA mobileImageUrl: in-flow sotto
-          l'immagine su fondo bianco/crema, testo nero (leggibile su immagine
-          orizzontale bassa). Nascosto in tutti gli altri casi. */}
-      {!slide.mobileImageUrl && (
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`text-below-${slide.id}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="md:hidden px-6 py-6 bg-warm-50"
-          >
-            <h1 className="font-sans text-2xl text-black leading-snug font-light uppercase tracking-[inherit]">
-              {slide.title}
-            </h1>
-            {slide.subtitle && (
-              <p className="text-[16px] text-black/60 mt-2">
-                {slide.subtitle}
-              </p>
-            )}
-            {slide.ctaText && slide.ctaLink && (
-              <Link
-                href={slide.ctaLink}
-                className="inline-block mt-4 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
-                style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
-              >
-                {slide.ctaText} &rarr;
-              </Link>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      )}
 
       {/* Navigation arrows */}
       {slides.length > 1 && (

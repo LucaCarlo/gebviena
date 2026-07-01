@@ -101,17 +101,18 @@ export default function Header() {
               </div>
             </button>
 
-            {/* Logo centered — switches between white and dark */}
-            <div className="absolute left-1/2 -translate-x-1/2">
+            {/* Logo centered — switches between white and dark.
+                Mobile: leggermente piu piccolo e staccato dal bordo alto
+                (era attaccato al top del device). */}
+            <div className="absolute left-1/2 -translate-x-1/2 max-md:top-3 md:top-auto">
               <Link href="/">
                 <Image
                   src={isScrolled ? "/logo.webp" : "/logo-white.svg"}
                   alt="Wiener GTV Design"
                   width={97}
                   height={79}
-                  style={{ marginTop: "-2px" }}
                   priority
-                  className=""
+                  className="max-md:w-[78px] max-md:h-auto md:-mt-0.5"
                 />
               </Link>
             </div>
