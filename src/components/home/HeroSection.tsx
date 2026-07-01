@@ -93,8 +93,18 @@ export default function HeroSection() {
 
   const textAlignV = "bottom-[calc(12.5vh-30px)]";
 
+  // Height della section:
+  //  - Desktop: sempre h-[min(118vh,1107px)]
+  //  - Mobile con mobileImageUrl: h-[55vh] (cover, come prima)
+  //  - Mobile SENZA mobileImageUrl: altezza dinamica = quella dell'immagine
+  //    orizzontale scalata a w-full (l'immagine entra intera, niente crop).
+  //    L'hero risulta piu bassa ma si vede tutta.
+  const sectionHeightClass = slide.mobileImageUrl
+    ? "h-[min(118vh,1107px)] max-md:h-[55vh]"
+    : "md:h-[min(118vh,1107px)]";
+
   return (
-    <section className="relative w-full overflow-hidden h-[min(118vh,1107px)] max-md:h-[55vh]">
+    <section className={`relative w-full overflow-hidden ${sectionHeightClass}`}>
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
@@ -102,45 +112,51 @@ export default function HeroSection() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8 }}
-          className="absolute inset-0"
         >
-          {/* Mobile <=767px: usa mobileImageUrl se presente, altrimenti fallback
-              alla desktop imageUrl. Su schermi verticali una hero orizzontale
-              con object-cover viene tagliata troppo, quindi permettiamo
-              all'admin di caricare una versione portrait/quadrata dedicata. */}
-          {slide.mobileImageUrl ? (
-            <Image
-              src={slide.mobileImageUrl}
-              alt={slide.title}
-              fill
-              className="object-cover md:hidden"
-              priority={current === 0}
-              sizes="100vw"
-              quality={90}
-              style={{ objectPosition: slide.imagePosition || "center center" }}
-            />
-          ) : (
+          {/* Mobile SENZA mobileImageUrl: immagine in-flow, w-full h-auto.
+              Determina l'altezza della section (adattiva). */}
+          {!slide.mobileImageUrl && (
+            <div className="md:hidden">
+              <Image
+                src={slide.imageUrl}
+                alt={slide.title}
+                width={1920}
+                height={1080}
+                className="w-full h-auto"
+                priority={current === 0}
+                sizes="100vw"
+                quality={90}
+              />
+            </div>
+          )}
+          {/* Mobile CON mobileImageUrl: fill cover a 55vh */}
+          {slide.mobileImageUrl && (
+            <div className="md:hidden absolute inset-0">
+              <Image
+                src={slide.mobileImageUrl}
+                alt={slide.title}
+                fill
+                className="object-cover"
+                priority={current === 0}
+                sizes="100vw"
+                quality={90}
+                style={{ objectPosition: slide.imagePosition || "center center" }}
+              />
+            </div>
+          )}
+          {/* Desktop (>=md): sempre fill cover come prima */}
+          <div className="hidden md:block absolute inset-0">
             <Image
               src={slide.imageUrl}
               alt={slide.title}
               fill
-              className="object-cover md:hidden"
+              className="object-cover"
               priority={current === 0}
               sizes="100vw"
               quality={90}
               style={{ objectPosition: slide.imagePosition || "center center" }}
             />
-          )}
-          <Image
-            src={slide.imageUrl}
-            alt={slide.title}
-            fill
-            className="object-cover hidden md:block"
-            priority={current === 0}
-            sizes="100vw"
-            quality={90}
-            style={{ objectPosition: slide.imagePosition || "center center" }}
-          />
+          </div>
         </motion.div>
       </AnimatePresence>
 
