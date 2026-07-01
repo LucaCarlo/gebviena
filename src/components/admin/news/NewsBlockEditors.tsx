@@ -157,6 +157,27 @@ export function ParagraphEditor({ data, onChange, sourceData }: { data: NewsPara
 export function ImageTextBgEditor({ data, onChange, sourceData }: { data: NewsImageTextBgData; onChange: (d: NewsImageTextBgData) => void; sourceData?: Partial<NewsImageTextBgData> }) {
   const bg = data.background || "warm";
   const fit = data.mediaFit || "cover";
+
+  // Migrazione one-shot dei vecchi campi ctaLabel/ctaHref/ctaStyle/ctaIconUrl
+  // nel nuovo array ctas[]. Fatta al primo mount se rileva legacy senza ctas.
+  useEffect(() => {
+    if ((!data.ctas || data.ctas.length === 0) && (data.ctaLabel || data.ctaHref || data.ctaStyle || data.ctaIconUrl)) {
+      const migrated: NewsCta = {
+        label: data.ctaLabel || "",
+        href: data.ctaHref || "",
+        style: data.ctaStyle || "default",
+        ...(data.ctaIconUrl ? { iconUrl: data.ctaIconUrl } : {}),
+      };
+      onChange({ ...data, ctas: [migrated], ctaGroupStyle: data.ctaGroupStyle || "boxed" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setCtas = (next: NewsCta[]) => onChange({ ...data, ctas: next });
+  const addCta = () => setCtas([...(data.ctas || []), { label: "", href: "", style: "default" }]);
+  const updCta = (i: number, patch: Partial<NewsCta>) => setCtas((data.ctas || []).map((c, j) => j === i ? { ...c, ...patch } : c));
+  const delCta = (i: number) => setCtas((data.ctas || []).filter((_, j) => j !== i));
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -229,31 +250,48 @@ export function ImageTextBgEditor({ data, onChange, sourceData }: { data: NewsIm
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo</label>
         <BlockRichText value={data.text || ""} onChange={(html) => onChange({ ...data, text: html })} sourceText={sourceData?.text || ""} multiline minHeight={140} />
       </div>
-      <CtaFields label={data.ctaLabel || ""} href={data.ctaHref || ""} sourceLabel={sourceData?.ctaLabel || ""} onLabel={(v) => onChange({ ...data, ctaLabel: v })} onHref={(v) => onChange({ ...data, ctaHref: v })} />
-
-      {/* Stile CTA — possibilita di sostituire il testo del pulsante con un'icona
-          SVG/PNG (utile per loghi store, brand icons cliccabili). */}
-      <div className="border border-warm-200 bg-warm-50/30 rounded p-3 space-y-2">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-semibold text-warm-600 uppercase tracking-wider">Stile pulsante</span>
-          <select
-            value={data.ctaStyle || "default"}
-            onChange={(e) => onChange({ ...data, ctaStyle: e.target.value as CtaButtonStyle })}
-            className="border border-warm-300 rounded px-2 py-1 text-xs focus:border-warm-800 focus:outline-none bg-white"
-          >
-            {CTA_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+      {/* Pulsanti CTA — stessa UX del blocco "Pulsante CTA" standalone:
+          multi-pulsante, stile gruppo (con/senza sfondo), icone da libreria o
+          upload SVG, effetti hover. */}
+      <div className="border border-warm-200 bg-warm-50/30 rounded p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="text-xs font-semibold text-warm-600 uppercase tracking-wider">Pulsanti</div>
+          <div className="flex items-center gap-3">
+            <label className="text-[11px] text-warm-600 inline-flex items-center gap-1.5">
+              Stile:
+              <select value={data.ctaGroupStyle || "boxed"} onChange={(e) => onChange({ ...data, ctaGroupStyle: e.target.value as "boxed" | "icons-text-divider" | "icons-only-divider" })} className="border border-warm-300 rounded px-2 py-1 text-xs focus:border-warm-800 focus:outline-none bg-white">
+                <option value="boxed">Pulsanti con sfondo</option>
+                <option value="icons-text-divider">Icona + testo, senza sfondo (con stanghetta)</option>
+                <option value="icons-only-divider">Solo icone, senza sfondo (con stanghetta)</option>
+              </select>
+            </label>
+            {(data.ctas || []).length < 4 && (
+              <button type="button" onClick={addCta} className="text-xs text-warm-700 hover:text-warm-900 underline flex items-center gap-1"><Plus size={12} /> Aggiungi</button>
+            )}
+          </div>
         </div>
-        {data.ctaStyle === "custom" && (
-          <ImageUploadField
-            label="Icona SVG/PNG"
-            value={data.ctaIconUrl || ""}
-            onChange={(url) => onChange({ ...data, ctaIconUrl: url })}
-            onRemove={() => onChange({ ...data, ctaIconUrl: "" })}
-            purpose="general"
-            folder="news"
-            helpText="SVG quadrato 24x24px o 32x32px, viewBox riempito senza padding. PNG: minimo 64x64px sfondo trasparente."
-          />
+        {(data.ctas || []).map((c, i) => (
+          <div key={i} className="border border-warm-200 bg-white rounded p-3 space-y-2">
+            <div className="grid grid-cols-12 gap-2 items-center">
+              <input type="text" value={c.label} onChange={(e) => updCta(i, { label: e.target.value })} placeholder="Etichetta" className="col-span-4 border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none" />
+              <input type="text" value={c.href} onChange={(e) => updCta(i, { href: e.target.value })} placeholder="https://… o /percorso" className="col-span-5 border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none" />
+              <select value={c.style || "default"} onChange={(e) => updCta(i, { style: e.target.value as CtaButtonStyle })} className="col-span-2 border border-warm-300 rounded px-2 py-1.5 text-xs focus:border-warm-800 focus:outline-none">
+                {CTA_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <button type="button" onClick={() => delCta(i)} className="col-span-1 p-1.5 text-warm-400 hover:text-red-600" title="Rimuovi"><X size={14} /></button>
+            </div>
+            {c.style === "custom" && (
+              <ImageUploadField label="Icona SVG/PNG" value={c.iconUrl || ""} onChange={(url) => updCta(i, { iconUrl: url })} onRemove={() => updCta(i, { iconUrl: "" })} purpose="general" folder="news" helpText="SVG quadrato 24x24px o 32x32px, viewBox riempito senza padding. PNG: minimo 64x64px sfondo trasparente." />
+            )}
+            <CtaExtraControls cta={c} onChange={(patch) => updCta(i, patch)} />
+          </div>
+        ))}
+        {(data.ctas || []).length === 0 && <div className="text-xs text-warm-400">Nessun pulsante. Clicca &laquo;Aggiungi&raquo;.</div>}
+        {/* Compat: non serve mostrare i campi legacy — se erano compilati sono
+            stati migrati automaticamente al mount del componente. sourceData
+            è comunque tracciato per pattern d'uso futuri. */}
+        {sourceData?.ctaLabel && !data.ctas?.length && (
+          <div className="text-[10px] text-warm-400">Vecchio CTA in traduzione (originale): {sourceData.ctaLabel}</div>
         )}
       </div>
     </div>

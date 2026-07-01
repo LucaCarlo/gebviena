@@ -121,7 +121,7 @@ function NewsVideoInline({ src, autoplay = false, controls = true, className = "
 
 /* Renderer "smart" che decide tra YouTube/Vimeo/video locale/immagine in base ai dati.
    Usato dove l'admin può scegliere immagine OPPURE videoUrl esterno. */
-function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillContainer = false, aspectRatio = "3 / 4.2", mediaFit = "cover" }: { imageUrl?: string; videoUrl?: string; alt?: string; autoplay?: boolean; controls?: boolean; fillContainer?: boolean; aspectRatio?: string; mediaFit?: "cover" | "contain" }) {
+function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillContainer = false, aspectRatio = "3 / 4.2", mediaFit = "cover", sizes: sizesProp, quality: qualityProp }: { imageUrl?: string; videoUrl?: string; alt?: string; autoplay?: boolean; controls?: boolean; fillContainer?: boolean; aspectRatio?: string; mediaFit?: "cover" | "contain"; sizes?: string; quality?: number }) {
   const ext = (videoUrl || "").trim();
   const yt = ext.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
   const vimeo = ext.match(/vimeo\.com\/(\d+)/);
@@ -176,7 +176,14 @@ function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillConta
     return <NewsVideoFill src={localVid} autoplay={!!autoplay} controls={controls !== false} />;
   }
   if (imageUrl) {
-    return <Image src={imageUrl} alt={alt || ""} fill className={mediaFit === "contain" ? "object-contain" : "object-cover"} sizes="(max-width: 1024px) 100vw, 50vw" />;
+    // sizesProp: full-width sections (fullwidth_banner) devono passare "100vw" così
+    // next/image sceglie una variante ~2560px invece di 1280px (che a schermo
+    // pieno sembrerebbe sgranata). Default: 50vw da lg in su (image_text_bg).
+    const sizes = sizesProp || "(max-width: 1024px) 100vw, 50vw";
+    // qualityProp: banner grandi ~92 per non far apparire artefatti da compressione;
+    // default 75 (=default next/image) sul resto.
+    const quality = qualityProp;
+    return <Image src={imageUrl} alt={alt || ""} fill className={mediaFit === "contain" ? "object-contain" : "object-cover"} sizes={sizes} {...(quality ? { quality } : {})} />;
   }
   return null;
 }
@@ -257,7 +264,9 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
   return (
     <section className="relative w-full" style={{ height: "85vh" }}>
       <div className={`absolute inset-0 ${d.videoAutoplay ? "brightness-[0.6]" : "brightness-[0.85]"}`}>
-        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || ""} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer />
+        {/* sizes 100vw + quality 92: banner full-width, evita che next/image serva
+            una variante piccola facendola apparire sgranata su desktop retina. */}
+        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || ""} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer sizes="100vw" quality={92} />
       </div>
       <div className="absolute top-14 md:top-18 lg:top-22 left-0 right-0 px-7 md:px-12 lg:px-16 text-left">
         {d.title && (
@@ -308,10 +317,17 @@ function ImageTextBg({ d, title: articleTitle, fitOverride }: { d: NewsImageText
       {d.text && (
         <div className="text-[17px] md:text-[20px] text-black leading-snug font-light tracking-normal mt-6 md:mt-8 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.text }} />
       )}
-      {d.ctaHref && (() => {
+      {/* Multi-CTA nuovo modello (come SingleCta): stile modificabile con
+          hover, icone libreria, opzione "senza sfondo" via ctaGroupStyle. */}
+      {d.ctas && d.ctas.length > 0 && (
+        <div className="mt-8">
+          <CtaGroup ctas={d.ctas} groupStyle={d.ctaGroupStyle} align="left" />
+        </div>
+      )}
+      {/* Legacy single-CTA — usato solo se ctas[] non è compilato (retro-compat). */}
+      {(!d.ctas || d.ctas.length === 0) && d.ctaHref && (() => {
         const isPdf = /\.pdf($|\?)/i.test(d.ctaHref);
         const linkProps = isPdf ? { download: "", target: "_blank", rel: "noopener noreferrer" } : {};
-        // Stile custom con icona SVG/PNG — pulsante nero con icona (+ label opzionale)
         if (d.ctaStyle === "custom" && d.ctaIconUrl) {
           return (
             <a

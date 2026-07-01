@@ -23,6 +23,7 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
     ctaText: "",
     ctaLink: "",
     imageUrl: "",
+    mobileImageUrl: "",
     coverImage: "",
     videoUrl: "",
     position: "center",
@@ -48,6 +49,7 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
         ctaText: s.ctaText || "",
         ctaLink: s.ctaLink || "",
         imageUrl: s.imageUrl || "",
+        mobileImageUrl: s.mobileImageUrl || "",
         coverImage: s.coverImage || "",
         videoUrl: s.videoUrl || "",
         position: s.position || "center",
@@ -157,13 +159,27 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
 
         {/* Image upload using ImageUploadField */}
         <ImageUploadField
-          label="Immagine Hero"
+          label="Immagine Hero (desktop)"
           value={form.imageUrl}
           onChange={(url) => updateField("imageUrl", url)}
           onRemove={() => updateField("imageUrl", "")}
           purpose="hero"
           folder="hero"
-          helpText="Immagine di sfondo per lo slide hero"
+          helpText="Immagine di sfondo desktop. Consigliata orizzontale, min 2560px sul lato lungo."
+        />
+
+        {/* Immagine mobile opzionale: quando l'hero desktop è orizzontale e su
+            uno schermo verticale (55vh mobile) verrebbe cropato troppo, l'admin
+            può caricare qui una versione portrait/quadrata. Se vuoto, mobile
+            mostra la stessa Immagine Hero desktop. */}
+        <ImageUploadField
+          label="Immagine Hero (mobile) — opzionale"
+          value={form.mobileImageUrl}
+          onChange={(url) => updateField("mobileImageUrl", url)}
+          onRemove={() => updateField("mobileImageUrl", "")}
+          purpose="hero"
+          folder="hero"
+          helpText="Versione dedicata mobile (verticale o quadrata, es. 1080x1350px). Se vuota, viene usata l'immagine desktop."
         />
 
         {/* Image crop position selector */}

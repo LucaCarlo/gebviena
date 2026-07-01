@@ -267,10 +267,14 @@ export interface NewsImageTextBgData {
   imageUrl: string;
   videoUrl?: string;       // URL video esterno (YouTube/Vimeo) opzionale
   imagePosition: "left" | "right";
+  // NUOVO modello (multi-CTA, come SingleCta / Feature/Strumento). Se presente
+  // e non vuoto, sostituisce completamente i vecchi campi ctaLabel/ctaHref/ctaStyle/ctaIconUrl.
+  ctas?: NewsCta[];
+  ctaGroupStyle?: "boxed" | "icons-text-divider" | "icons-only-divider";
+  // Legacy single-CTA (mantenuti per retro-compat sugli articoli esistenti).
+  // Se ctas[] esiste con almeno un elemento vengono ignorati in render/editor.
   ctaLabel?: string;
   ctaHref?: string;
-  // Stile del CTA: "default" = pulsante testuale (com'era); "custom" = sostituisce il
-  // testo del pulsante con un'icona SVG/PNG (ctaIconUrl) — utile per loghi store, app icons.
   ctaStyle?: CtaButtonStyle;
   ctaIconUrl?: string;
   // Solo se imageUrl è un file video: true = autoplay muted loop (background),
@@ -642,6 +646,7 @@ export interface HeroSlide {
   ctaText: string | null;
   ctaLink: string | null;
   imageUrl: string;
+  mobileImageUrl?: string | null;
   coverImage: string | null;
   videoUrl: string | null;
   position: string;

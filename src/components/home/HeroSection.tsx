@@ -17,6 +17,7 @@ const FALLBACK_SLIDE: HeroSlide = {
   ctaText: "Kipferl by Antenna",
   ctaLink: "/prodotti",
   imageUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=2560&h=1707&fit=crop&q=90",
+  mobileImageUrl: null,
   coverImage: null,
   videoUrl: null,
   position: "center",
@@ -103,14 +104,42 @@ export default function HeroSection() {
           transition={{ duration: 0.8 }}
           className="absolute inset-0"
         >
+          {/* Mobile <=767px: usa mobileImageUrl se presente, altrimenti fallback
+              alla desktop imageUrl. Su schermi verticali una hero orizzontale
+              con object-cover viene tagliata troppo, quindi permettiamo
+              all'admin di caricare una versione portrait/quadrata dedicata. */}
+          {slide.mobileImageUrl ? (
+            <Image
+              src={slide.mobileImageUrl}
+              alt={slide.title}
+              fill
+              className="object-cover md:hidden"
+              priority={current === 0}
+              sizes="100vw"
+              quality={90}
+              style={{ objectPosition: slide.imagePosition || "center center" }}
+            />
+          ) : (
+            <Image
+              src={slide.imageUrl}
+              alt={slide.title}
+              fill
+              className="object-cover md:hidden"
+              priority={current === 0}
+              sizes="100vw"
+              quality={90}
+              style={{ objectPosition: slide.imagePosition || "center center" }}
+            />
+          )}
           <Image
             src={slide.imageUrl}
             alt={slide.title}
             fill
-            className="object-cover"
+            className="object-cover hidden md:block"
             priority={current === 0}
             sizes="100vw"
             quality={90}
+            style={{ objectPosition: slide.imagePosition || "center center" }}
           />
         </motion.div>
       </AnimatePresence>
