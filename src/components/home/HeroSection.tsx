@@ -162,13 +162,27 @@ export default function HeroSection() {
 
 
 
-      {/* Slight baseline darkening for legibility */}
-      <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: 0.10 }} />
+      {/* Slight baseline darkening for legibility — solo dove il testo è sopra
+          l'immagine. Sul mobile senza mobileImageUrl il testo va sotto → niente
+          overlay (l'overlay copre solo la zona media). */}
+      {slide.mobileImageUrl ? (
+        <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: 0.10 }} />
+      ) : (
+        <div className="hidden md:block absolute inset-0 bg-black pointer-events-none" style={{ opacity: 0.10 }} />
+      )}
       {slide.darkOverlay && (
-        <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
+        slide.mobileImageUrl ? (
+          <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
+        ) : (
+          <div className="hidden md:block absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
+        )
       )}
 
-      {/* Text content */}
+      {/* Text content — overlay assoluto sopra l'immagine.
+          Su mobile senza mobileImageUrl viene nascosto (max-md:hidden) perche
+          l'immagine intera potrebbe essere molto orizzontale e le scritte
+          resterebbero illeggibili sull'immagine stessa; in quel caso il testo
+          e' renderizzato in-flow SOTTO l'immagine (vedi blocco successivo). */}
       <AnimatePresence mode="wait">
         <motion.div
           key={`text-${slide.id}`}
@@ -176,7 +190,7 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 1, delay: 0.3 }}
-          className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
+          className={`${slide.mobileImageUrl ? "" : "max-md:hidden"} absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
           <h1 className={`font-sans text-2xl md:text-3xl lg:text-[38px] ${slide.textColor === "black" ? "text-black" : "text-white"} leading-snug font-light uppercase tracking-[inherit] whitespace-nowrap`} style={{ marginTop: "-5px" }}>
             {slide.title}
@@ -197,6 +211,40 @@ export default function HeroSection() {
           )}
         </motion.div>
       </AnimatePresence>
+
+      {/* Text content — versione mobile SENZA mobileImageUrl: in-flow sotto
+          l'immagine su fondo bianco/crema, testo nero (leggibile su immagine
+          orizzontale bassa). Nascosto in tutti gli altri casi. */}
+      {!slide.mobileImageUrl && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`text-below-${slide.id}`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="md:hidden px-6 py-6 bg-warm-50"
+          >
+            <h1 className="font-sans text-2xl text-black leading-snug font-light uppercase tracking-[inherit]">
+              {slide.title}
+            </h1>
+            {slide.subtitle && (
+              <p className="text-[16px] text-black/60 mt-2">
+                {slide.subtitle}
+              </p>
+            )}
+            {slide.ctaText && slide.ctaLink && (
+              <Link
+                href={slide.ctaLink}
+                className="inline-block mt-4 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline"
+                style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+              >
+                {slide.ctaText} &rarr;
+              </Link>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      )}
 
       {/* Navigation arrows */}
       {slides.length > 1 && (
