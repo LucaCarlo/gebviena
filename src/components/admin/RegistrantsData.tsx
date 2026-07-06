@@ -7,6 +7,7 @@ interface Row {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  profile?: string | null;
   ipAddress?: string | null;
   geoCity?: string | null;
   geoRegion?: string | null;
@@ -101,10 +102,10 @@ export default function RegistrantsData() {
 
   const exportCsv = () => {
     const e = (s: unknown) => `"${String(s ?? "").replace(/"/g, '""')}"`;
-    const head = ["Nome", "Cognome", "Email", "Stato email", "Errore email", "Email inviata", "IP", "Città", "Regione", "Paese", "Data e ora"].map(e).join(";");
+    const head = ["Nome", "Cognome", "Email", "Profilo", "Stato email", "Errore email", "Email inviata", "IP", "Città", "Regione", "Paese", "Data e ora"].map(e).join(";");
     const st = (s?: string | null) => s === "sent" ? "Inviata" : s === "error" ? "Errore" : "In attesa";
     const lines = filtered.map((r) =>
-      [r.firstName, r.lastName, r.email, st(r.emailStatus), r.emailError || "", r.emailSentAt ? fmt(r.emailSentAt) : "",
+      [r.firstName, r.lastName, r.email, r.profile || "", st(r.emailStatus), r.emailError || "", r.emailSentAt ? fmt(r.emailSentAt) : "",
        r.ipAddress, r.geoCity, r.geoRegion, r.geoCountry, fmt(r.createdAt)].map(e).join(";"));
     const csv = "﻿" + [head, ...lines].join("\r\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
