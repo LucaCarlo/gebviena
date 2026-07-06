@@ -71,13 +71,20 @@ export default function RegistrantsData({ landingPageId }: Props = {}) {
             firstName: r.firstName || null,
             lastName: r.lastName || null,
             profile: r.profile || null,
+            // EventRegistration non traccia l'IP (mai salvato nel DB) → colonna vuota.
             ipAddress: null,
             geoCity: r.city || null,
             geoRegion: r.state || null,
             geoCountry: r.country || null,
-            emailStatus: null,
+            // Il POST /api/event-registrations invia l'email di conferma
+            // in fire-and-forget subito dopo la create. Non c'e' un vero
+            // tracking di stato/errore/data invio — quindi il default e'
+            // "Inviata" con emailSentAt approssimato a createdAt. Non "In
+            // attesa" (che era fuorviante: l'email non e' in coda, era gia'
+            // stata mandata al momento della registrazione).
+            emailStatus: "sent",
             emailError: null,
-            emailSentAt: null,
+            emailSentAt: r.createdAt,
             createdAt: r.createdAt,
           }));
           setRows(mapped);
