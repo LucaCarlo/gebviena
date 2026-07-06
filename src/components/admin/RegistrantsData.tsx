@@ -39,7 +39,15 @@ function tally(rows: Row[], key: (r: Row) => string | null | undefined) {
   return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
 }
 
-export default function RegistrantsData() {
+interface Props {
+  /** Se passato, il tab Dati mostra i registrati EventRegistration di questa
+   *  landing (es. MDW 2026, che salva i form su EventRegistration con campo
+   *  profile compilato). Se assente, si ricade sui NewsletterSubscriber globali
+   *  (footer newsletter, form contatti generici). */
+  landingPageId?: string;
+}
+
+export default function RegistrantsData({ landingPageId }: Props = {}) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
@@ -50,15 +58,42 @@ export default function RegistrantsData() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/newsletter/subscribers", { cache: "no-store" });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setRows(data.data as Row[]);
-        setUpdatedAt(new Date());
+      // Landing con form event-registrations (es. MDW 2026): shape diverso —
+      // country/state/city al posto di geoCountry/geoRegion/geoCity, e i campi
+      // email* non esistono (li lasciamo null → colonne CSV vuote per queste landing).
+      if (landingPageId) {
+        const res = await fetch(`/api/event-registrations?landingPageId=${encodeURIComponent(landingPageId)}`, { cache: "no-store" });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const mapped: Row[] = (data.data as any[]).map((r) => ({
+            email: r.email,
+            firstName: r.firstName || null,
+            lastName: r.lastName || null,
+            profile: r.profile || null,
+            ipAddress: null,
+            geoCity: r.city || null,
+            geoRegion: r.state || null,
+            geoCountry: r.country || null,
+            emailStatus: null,
+            emailError: null,
+            emailSentAt: null,
+            createdAt: r.createdAt,
+          }));
+          setRows(mapped);
+          setUpdatedAt(new Date());
+        }
+      } else {
+        const res = await fetch("/api/newsletter/subscribers", { cache: "no-store" });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setRows(data.data as Row[]);
+          setUpdatedAt(new Date());
+        }
       }
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, []);
+  }, [landingPageId]);
 
   useEffect(() => {
     load();
