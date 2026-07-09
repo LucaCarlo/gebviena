@@ -416,6 +416,10 @@ export const NAV_ITEMS = [
     i18nKey: "menu.professionals",
     href: "/professionisti",
     children: [
+      { label: "PCON", i18nKey: "menu.professionals.pcon", href: "/mondo-gtv/news-e-rassegna-stampa/pcon", children: [
+        { label: "PERCHE PCON", i18nKey: "menu.professionals.pcon.article", href: "/mondo-gtv/news-e-rassegna-stampa/pcon" },
+        { label: "APRI PCON", i18nKey: "menu.professionals.pcon.link", href: "https://pcon-solutions.com", external: true },
+      ] },
       { label: "REALIZZAZIONI CUSTOM", i18nKey: "menu.professionals.custom", href: "/professionisti/realizzazioni-custom" },
       { label: "PROGETTI", i18nKey: "menu.projects", href: "/progetti" },
       { label: "CATALOGHI", i18nKey: "menu.professionals.catalogs", href: "/professionisti/cataloghi" },

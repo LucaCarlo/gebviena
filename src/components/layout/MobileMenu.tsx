@@ -25,11 +25,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   // get correctly translated by localizeHref once the DB labels are fetched.
   useFilterSlugs();
   const [activeItem, setActiveItem] = useState<string | null>(null);
+  const [activeChild, setActiveChild] = useState<string | null>(null);
   const [featuredImage, setFeaturedImage] = useState<string>(DEFAULT_FEATURED_IMAGE);
 
   useEffect(() => {
     if (!isOpen) {
       setActiveItem(null);
+      setActiveChild(null);
     }
   }, [isOpen]);
 
@@ -184,18 +186,74 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                       transition={{ type: "tween", duration: 0.25, delay: 0.15 }}
                       className="space-y-6 md:space-y-7 pl-16 pr-8 md:px-0 pt-10 md:pt-32 md:pl-[30%]"
                     >
-                      {activeNav.children.map((child) => (
-                        <li key={child.label}>
-                          <Link
-                            href={localizeHref(child.href, lang)}
-                            onClick={onClose}
-                            className="block font-sans text-sm md:text-base uppercase tracking-wider font-light transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap"
-                            style={{ color: "#000000" }}
-                          >
-                            {t(child.i18nKey)}
-                          </Link>
-                        </li>
-                      ))}
+                      {activeNav.children.map((child) => {
+                        const grandchildren = "children" in child && Array.isArray((child as unknown as { children?: unknown[] }).children)
+                          ? (child as unknown as { children: readonly { label: string; i18nKey: string; href: string; external?: boolean }[] }).children
+                          : null;
+                        if (grandchildren && grandchildren.length > 0) {
+                          const expanded = activeChild === child.label;
+                          return (
+                            <li key={child.label}>
+                              <button
+                                onClick={() => setActiveChild(expanded ? null : child.label)}
+                                style={{ color: "#000000" }}
+                                className="block font-sans text-sm md:text-base uppercase tracking-wider font-light transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap w-full text-left"
+                              >
+                                {t(child.i18nKey)}
+                              </button>
+                              <AnimatePresence initial={false}>
+                                {expanded && (
+                                  <motion.ul
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.25 }}
+                                    className="overflow-hidden pl-4 mt-3 space-y-3"
+                                  >
+                                    {grandchildren.map((gc) => (
+                                      <li key={gc.label}>
+                                        {gc.external ? (
+                                          <a
+                                            href={gc.href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={onClose}
+                                            style={{ color: "#000000" }}
+                                            className="block font-sans text-xs md:text-sm uppercase tracking-wider font-light hover:underline hover:underline-offset-[6px] hover:decoration-[0.5px] whitespace-nowrap"
+                                          >
+                                            {t(gc.i18nKey)}
+                                          </a>
+                                        ) : (
+                                          <Link
+                                            href={localizeHref(gc.href, lang)}
+                                            onClick={onClose}
+                                            style={{ color: "#000000" }}
+                                            className="block font-sans text-xs md:text-sm uppercase tracking-wider font-light hover:underline hover:underline-offset-[6px] hover:decoration-[0.5px] whitespace-nowrap"
+                                          >
+                                            {t(gc.i18nKey)}
+                                          </Link>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </motion.ul>
+                                )}
+                              </AnimatePresence>
+                            </li>
+                          );
+                        }
+                        return (
+                          <li key={child.label}>
+                            <Link
+                              href={localizeHref(child.href, lang)}
+                              onClick={onClose}
+                              className="block font-sans text-sm md:text-base uppercase tracking-wider font-light transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap"
+                              style={{ color: "#000000" }}
+                            >
+                              {t(child.i18nKey)}
+                            </Link>
+                          </li>
+                        );
+                      })}
                     </motion.ul>
                   </AnimatePresence>
                 </motion.div>

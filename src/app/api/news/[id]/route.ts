@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { slugify } from "@/lib/utils";
+import { syncBlocks, safeParseBlocks } from "@/lib/news-block-sync";
 
 async function ensureUniqueSlug(base: string, excludeId?: string): Promise<string> {
   const root = base || `news-${Date.now()}`;
@@ -39,6 +40,35 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       }
     }
     const data = await prisma.newsArticle.update({ where: { id: params.id }, data: body });
+
+    // Se abbiamo aggiornato i blocks del master, sincronizza i campi non-linguistici
+    // in tutte le traduzioni (mantiene testi tradotti, aggiorna config/immagini/ctas/etc).
+    if (typeof body.blocks === "string" && body.blocks.length > 0) {
+      try {
+        const masterBlocks = safeParseBlocks(body.blocks);
+        if (masterBlocks && masterBlocks.length > 0) {
+          const translations = await prisma.newsArticleTranslation.findMany({
+            where: { newsArticleId: params.id },
+            select: { id: true, blocks: true },
+          });
+          for (const tr of translations) {
+            const transBlocks = safeParseBlocks(tr.blocks);
+            if (!transBlocks || transBlocks.length === 0) continue;
+            const synced = syncBlocks(masterBlocks, transBlocks);
+            const syncedStr = JSON.stringify(synced);
+            if (syncedStr !== tr.blocks) {
+              await prisma.newsArticleTranslation.update({
+                where: { id: tr.id },
+                data: { blocks: syncedStr },
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.error("[news-block-sync] hook error:", e);
+      }
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (e) {
     return NextResponse.json({ success: false, error: String(e) }, { status: 400 });
