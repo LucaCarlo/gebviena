@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, Facebook, Link as LinkIcon } from "lucide-react";
+import { ChevronRight, ChevronLeft, Facebook, Link as LinkIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import type {
   NewsArticle, NewsBlockV2,
@@ -13,14 +13,73 @@ import type {
   NewsCaslonTitleData, NewsTwoImagesInlineData,
   NewsFeatureToolData, NewsSingleCtaData, NewsCardsRowData, NewsFaqData, NewsStatsData,
   NewsQuoteData, NewsTimelineData, NewsComparisonTableData,
-  NewsCta,
+  NewsCta, NewsColumnsData, NewsColumnsChild,
+  CtaHoverEffect,
 } from "@/types";
+import { ICON_LIBRARY } from "@/components/admin/news/IconPicker";
+import NewsVimeoCoverPlayer from "@/components/site/NewsVimeoCoverPlayer";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { buildLabelLookup, lookupLabel } from "@/lib/category-lookup";
 import { localizePath } from "@/lib/path-segments";
 
 function isVideoFile(url: string | undefined | null): boolean {
   return !!url && /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url);
+}
+
+// ── Style override per blocchi V2 (step 4 editor news) ───────────────
+// Classi STATICHE: il purge di Tailwind richiede stringhe complete nel
+// sorgente. Niente costruzioni dinamiche tipo `mt-${size}`.
+const NEWS_MT_MAP: Record<string, string> = {
+  none: "mt-0", sm: "mt-4 md:mt-6", md: "mt-10 md:mt-14", lg: "mt-16 md:mt-20", xl: "mt-24 md:mt-32",
+};
+const NEWS_MB_MAP: Record<string, string> = {
+  none: "mb-0", sm: "mb-4 md:mb-6", md: "mb-10 md:mb-14", lg: "mb-16 md:mb-20", xl: "mb-24 md:mb-32",
+};
+const NEWS_PT_MAP: Record<string, string> = {
+  none: "pt-0", sm: "pt-4 md:pt-6", md: "pt-10 md:pt-14", lg: "pt-16 md:pt-20", xl: "pt-24 md:pt-32",
+};
+const NEWS_PB_MAP: Record<string, string> = {
+  none: "pb-0", sm: "pb-4 md:pb-6", md: "pb-10 md:pb-14", lg: "pb-16 md:pb-20", xl: "pb-24 md:pb-32",
+};
+const NEWS_BG_MAP: Record<string, string> = {
+  white: "bg-white", "warm-50": "bg-warm-50", "warm-100": "bg-warm-100", "warm-900": "bg-warm-900",
+  transparent: "bg-transparent",
+};
+// Font key → CSS variable esposta dal layout root (next/font/google).
+const NEWS_FONT_MAP: Record<string, string> = {
+  "caslon": "var(--font-caslon)",
+  "work-sans": "var(--font-work-sans)",
+  "inter": "var(--font-inter)",
+  "playfair": "var(--font-playfair)",
+  "lora": "var(--font-lora)",
+  "montserrat": "var(--font-montserrat)",
+  "roboto": "var(--font-roboto)",
+  "poppins": "var(--font-poppins)",
+};
+// Preset colore testo → valore CSS color.
+const NEWS_TEXT_COLOR_MAP: Record<string, string> = {
+  black: "#000000",
+  white: "#ffffff",
+  "warm-900": "#1a1410",
+  "warm-700": "#3a312b",
+  "warm-500": "#736a63",
+};
+// Animazioni di entrata (step 8) — coppia initial/whileInView per framer-motion.
+// Tipi any perché framer-motion ha union complesse per `ease` che non si
+// soddisfano facilmente con un literal string "easeOut".
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getAnimationProps(kind: string | undefined, delaySec: number): any {
+  if (!kind || kind === "none") return null;
+  const base = { viewport: { once: true, amount: 0.2 }, transition: { duration: 0.6, ease: "easeOut", delay: delaySec } };
+  switch (kind) {
+    case "fade-in":     return { initial: { opacity: 0 }, whileInView: { opacity: 1 }, ...base };
+    case "slide-up":    return { initial: { opacity: 0, y: 40 }, whileInView: { opacity: 1, y: 0 }, ...base };
+    case "slide-down":  return { initial: { opacity: 0, y: -40 }, whileInView: { opacity: 1, y: 0 }, ...base };
+    case "slide-left":  return { initial: { opacity: 0, x: 40 }, whileInView: { opacity: 1, x: 0 }, ...base };
+    case "slide-right": return { initial: { opacity: 0, x: -40 }, whileInView: { opacity: 1, x: 0 }, ...base };
+    case "zoom-in":     return { initial: { opacity: 0, scale: 0.92 }, whileInView: { opacity: 1, scale: 1 }, ...base };
+    default: return null;
+  }
 }
 
 /* Video player per news. Le due opzioni (autoplay e controls) sono indipendenti:
@@ -45,13 +104,23 @@ function NewsVideoFill({ src, autoplay = false, controls = true, className = "" 
 }
 
 /* Variante inline (w-full h-auto) per i blocchi che mostrano video nel flusso. */
-function NewsVideoInline({ src, autoplay = false, controls = true, className = "w-full h-auto bg-warm-100" }: { src: string; autoplay?: boolean; controls?: boolean; className?: string }) {
+function NewsVideoInline({ src, autoplay = false, controls = true, fullscreenOnPlay = false, className = "w-full h-auto bg-warm-100" }: { src: string; autoplay?: boolean; controls?: boolean; fullscreenOnPlay?: boolean; className?: string }) {
+  const handlePlay = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    if (!fullscreenOnPlay || autoplay) return;
+    const el = e.currentTarget as HTMLVideoElement & { webkitRequestFullscreen?: () => Promise<void>; webkitEnterFullscreen?: () => void };
+    try {
+      if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.webkitEnterFullscreen) el.webkitEnterFullscreen();
+    } catch { /* silent */ }
+  };
   return (
     <video
       src={src}
       autoPlay={autoplay || undefined}
       muted={autoplay || undefined}
       loop={autoplay || undefined}
+      onPlay={fullscreenOnPlay ? handlePlay : undefined}
       controls={controls || undefined}
       playsInline
       preload={autoplay ? undefined : "metadata"}
@@ -62,7 +131,7 @@ function NewsVideoInline({ src, autoplay = false, controls = true, className = "
 
 /* Renderer "smart" che decide tra YouTube/Vimeo/video locale/immagine in base ai dati.
    Usato dove l'admin può scegliere immagine OPPURE videoUrl esterno. */
-function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillContainer = false, aspectRatio = "3 / 4.2", mediaFit = "cover" }: { imageUrl?: string; videoUrl?: string; alt?: string; autoplay?: boolean; controls?: boolean; fillContainer?: boolean; aspectRatio?: string; mediaFit?: "cover" | "contain" }) {
+function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillContainer = false, aspectRatio = "3 / 4.2", mediaFit = "cover", sizes: sizesProp, quality: qualityProp }: { imageUrl?: string; videoUrl?: string; alt?: string; autoplay?: boolean; controls?: boolean; fillContainer?: boolean; aspectRatio?: string; mediaFit?: "cover" | "contain"; sizes?: string; quality?: number }) {
   const ext = (videoUrl || "").trim();
   const yt = ext.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
   const vimeo = ext.match(/vimeo\.com\/(\d+)/);
@@ -78,17 +147,38 @@ function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillConta
   // l'aspect del container non matcha quello del wrapper esterno. Lo togliamo.
   const extVidClass = fillContainer ? "relative w-full h-full overflow-hidden" : "relative w-full overflow-hidden";
 
+  // Iframe esterni (YT/Vimeo) renderizzati a piena dimensione del container
+  // con barra di controlli nativa visibile. Il player applicherà letterbox
+  // automatico se l'aspect del container non combacia col 16:9 nativo del
+  // video (es. nel wrapper 3/4.2 di image_text_bg si vedono fasce nere
+  // sopra/sotto la striscia 16:9). Controlli nativi: play/pause, scrubber,
+  // tre puntini impostazioni, fullscreen.
+
+  // Cover-fit per iframe esterni: altezza piena del container, aspect 16:9
+  // nativo + min-width 100% così se il container è portrait l'iframe sborda
+  // lateralmente e crop sui lati invece di lasciare fasce nere sopra/sotto.
+  // Tradeoff accettato: controlli laterali del player parzialmente nascosti.
+  const coverIframeStyle: React.CSSProperties = {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    height: "100%",
+    aspectRatio: "16 / 9",
+    minWidth: "100%",
+    transform: "translate(-50%, -50%)",
+    border: 0,
+  };
   if (yt) {
     return (
       <div className={extVidClass} style={containerStyle}>
-        <iframe src={`https://www.youtube.com/embed/${yt[1]}${autoplay ? `?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=${controls === false ? 0 : 1}` : `?rel=0&controls=${controls === false ? 0 : 1}`}`} className="absolute inset-0 w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+        <iframe src={`https://www.youtube.com/embed/${yt[1]}${autoplay ? `?autoplay=1&mute=1&loop=1&playlist=${yt[1]}&controls=${controls === false ? 0 : 1}` : `?rel=0&controls=${controls === false ? 0 : 1}`}`} style={coverIframeStyle} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
       </div>
     );
   }
   if (vimeo) {
     return (
       <div className={extVidClass} style={containerStyle}>
-        <iframe src={`https://player.vimeo.com/video/${vimeo[1]}${autoplay ? "?autoplay=1&muted=1&loop=1" : ""}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+        <NewsVimeoCoverPlayer vimeoId={vimeo[1]} autoplay={autoplay} />
       </div>
     );
   }
@@ -96,7 +186,14 @@ function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillConta
     return <NewsVideoFill src={localVid} autoplay={!!autoplay} controls={controls !== false} />;
   }
   if (imageUrl) {
-    return <Image src={imageUrl} alt={alt || ""} fill className={mediaFit === "contain" ? "object-contain" : "object-cover"} sizes="(max-width: 1024px) 100vw, 50vw" />;
+    // sizesProp: full-width sections (fullwidth_banner) devono passare "100vw" così
+    // next/image sceglie una variante ~2560px invece di 1280px (che a schermo
+    // pieno sembrerebbe sgranata). Default: 50vw da lg in su (image_text_bg).
+    const sizes = sizesProp || "(max-width: 1024px) 100vw, 50vw";
+    // qualityProp: banner grandi ~92 per non far apparire artefatti da compressione;
+    // default 75 (=default next/image) sul resto.
+    const quality = qualityProp;
+    return <Image src={imageUrl} alt={alt || ""} fill className={mediaFit === "contain" ? "object-contain" : "object-cover"} sizes={sizes} {...(quality ? { quality } : {})} />;
   }
   return null;
 }
@@ -152,10 +249,10 @@ function ImageWithParagraph({ d }: { d: NewsImageWithParagraphData }) {
                   <iframe src={`https://player.vimeo.com/video/${vimeo[1]}`} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
                 </div>
               ) : (
-                <NewsVideoInline src={video} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} />
+                <NewsVideoInline src={video} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fullscreenOnPlay={!!d.videoFullscreenOnPlay} />
               )
             ) : imageIsVideo ? (
-              <NewsVideoInline src={d.imageUrl} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} />
+              <NewsVideoInline src={d.imageUrl} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fullscreenOnPlay={!!d.videoFullscreenOnPlay} />
             ) : (
               <Image src={d.imageUrl} alt="" width={400} height={400} className="w-full h-auto" sizes="140px" />
             )}
@@ -177,7 +274,9 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
   return (
     <section className="relative w-full" style={{ height: "85vh" }}>
       <div className={`absolute inset-0 ${d.videoAutoplay ? "brightness-[0.6]" : "brightness-[0.85]"}`}>
-        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || ""} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer />
+        {/* sizes 100vw + quality 92: banner full-width, evita che next/image serva
+            una variante piccola facendola apparire sgranata su desktop retina. */}
+        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || ""} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer sizes="100vw" quality={92} />
       </div>
       <div className="absolute top-14 md:top-18 lg:top-22 left-0 right-0 px-7 md:px-12 lg:px-16 text-left">
         {d.title && (
@@ -203,20 +302,18 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
   );
 }
 
-function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title: string }) {
+function ImageTextBg({ d, title: articleTitle, fitOverride }: { d: NewsImageTextBgData; title: string; fitOverride?: "cover" | "contain" }) {
   const imgLeft = d.imagePosition === "left";
-  const fit = d.mediaFit || "cover";
-  // Detect video esterno (YouTube/Vimeo): l'iframe ha aspect 16:9 nativo. Con un
-  // container 3/4.2 (verticale) il video appare circondato da bande sopra/sotto.
-  // Usiamo 16:9 quando rilevato un embed esterno per eliminare il bordo, e
-  // limitiamo la larghezza del wrapper centrandolo verticalmente nel grid cell.
-  const extVid = /youtu\.?be|vimeo\.com/i.test(d.videoUrl || "");
-  // Per le immagini manteniamo il rapporto ritratto 3/4.2; per i video esterni
-  // (YouTube/Vimeo, iframe nativo 16:9) usiamo 16:9 per evitare le bande
-  // sopra/sotto. Il container è centrato verticalmente nella section.
-  const aspectRatio = extVid ? "16 / 9" : "3 / 4.2";
+  // fitOverride (dal pannello Stile dx) vince sul mediaFit storico salvato nel data.
+  const fit = fitOverride || d.mediaFit || "cover";
+  // Aspect portrait 3/4.2 uniforme per immagini e video (YT/Vimeo/locali) così
+  // che il media-side riempia sempre la stessa altezza del testo-side e
+  // matchi le altre sezioni image_text_bg (es. tra video Continuum e foto C 5501).
+  // Per gli iframe esterni il player applica un cover-fit (Vimeo background=1)
+  // oppure CSS crop laterale, vedi NewsMediaSmart.
+  const aspectRatio = "3 / 4.2";
   const imageEl = (
-    <div className={`relative w-full mx-auto self-center ${extVid ? "" : (fit === "contain" ? "bg-white" : "bg-warm-200")} overflow-hidden`} style={{ aspectRatio }}>
+    <div className={`relative w-full mx-auto self-center ${fit === "contain" ? "bg-white" : "bg-warm-200"} overflow-hidden`} style={{ aspectRatio }}>
       {(d.imageUrl || d.videoUrl) && (
         <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer mediaFit={fit} />
       )}
@@ -230,10 +327,17 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
       {d.text && (
         <div className="text-[17px] md:text-[20px] text-black leading-snug font-light tracking-normal mt-6 md:mt-8 [&_p]:mb-4 [&_p:last-child]:mb-0 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: d.text }} />
       )}
-      {d.ctaHref && (() => {
+      {/* Multi-CTA nuovo modello (come SingleCta): stile modificabile con
+          hover, icone libreria, opzione "senza sfondo" via ctaGroupStyle. */}
+      {d.ctas && d.ctas.length > 0 && (
+        <div className="mt-8">
+          <CtaGroup ctas={d.ctas} groupStyle={d.ctaGroupStyle} align="left" />
+        </div>
+      )}
+      {/* Legacy single-CTA — usato solo se ctas[] non è compilato (retro-compat). */}
+      {(!d.ctas || d.ctas.length === 0) && d.ctaHref && (() => {
         const isPdf = /\.pdf($|\?)/i.test(d.ctaHref);
         const linkProps = isPdf ? { download: "", target: "_blank", rel: "noopener noreferrer" } : {};
-        // Stile custom con icona SVG/PNG — pulsante nero con icona (+ label opzionale)
         if (d.ctaStyle === "custom" && d.ctaIconUrl) {
           return (
             <a
@@ -263,31 +367,130 @@ function ImageTextBg({ d, title: articleTitle }: { d: NewsImageTextBgData; title
     </div>
   );
   const bgClass = d.background === "white" ? "bg-white" : d.background === "transparent" ? "" : "bg-warm-50";
+  // Mobile: SEMPRE immagine prima del testo (richiesta UX dell'admin —
+  // su telefono due testi adiacenti senza media in mezzo erano confusi).
+  // Desktop: rispetta imagePosition (lg:order-* sui due wrapper).
   return (
     <section className={`w-full ${bgClass}`}>
       <div className="grid grid-cols-1 lg:grid-cols-2 lg:items-center gap-0">
-        {imgLeft ? <>{imageEl}{textEl}</> : <>{textEl}{imageEl}</>}
+        <div className={imgLeft ? "lg:order-1" : "lg:order-2"}>{imageEl}</div>
+        <div className={imgLeft ? "lg:order-2" : "lg:order-1"}>{textEl}</div>
       </div>
     </section>
   );
 }
 
-function ThreeImages({ d }: { d: NewsThreeImagesData }) {
+function ThreeImages({ d, fit, bg }: { d: NewsThreeImagesData; fit?: "cover" | "contain"; bg?: "default" | "none" }) {
   const imgs = (d.images || []).filter((i) => i.url || i.videoUrl);
   if (!imgs.length) return null;
+  const mediaFit = fit || "cover";
+  const noBg = bg === "none";
   return (
     <section className="px-2 md:px-3 lg:px-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-3 md:gap-x-4 gap-y-8">
+      {/* Desktop: grid 3 colonne come sempre */}
+      <div className="hidden md:grid grid-cols-3 gap-x-4 gap-y-8 items-start">
         {imgs.map((img, i) => (
           <div key={i}>
-            <div className="relative aspect-[2/3] bg-warm-100 overflow-hidden">
-              <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer />
-            </div>
+            <ThreeImagesMedia img={img} fit={mediaFit} noBg={noBg} />
             {img.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>}
           </div>
         ))}
       </div>
+      {/* Mobile: carousel orizzontale con frecce e indicatori a puntini */}
+      <div className="md:hidden">
+        <ThreeImagesMobileCarousel imgs={imgs} fit={mediaFit} noBg={noBg} />
+      </div>
     </section>
+  );
+}
+
+// Renderer media singolo per ThreeImages: in "contain" mostra l'immagine in
+// dimensioni naturali (no box, no bg grigio); in "cover" usa container portrait
+// 2/3 con NewsMediaSmart. Per i video, sempre cover (iframe richiede aspect fisso).
+function ThreeImagesMedia({ img, fit, noBg }: { img: { url: string; videoUrl?: string; caption?: string }; fit: "cover" | "contain"; noBg?: boolean }) {
+  const isPlainImage = !!img.url && !img.videoUrl;
+  if (fit === "contain" && isPlainImage) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={img.url} alt={img.caption || ""} className="block w-full h-auto" loading="lazy" />;
+  }
+  return (
+    <div className={`relative aspect-[2/3] overflow-hidden ${noBg ? "" : "bg-warm-100"}`}>
+      <NewsMediaSmart imageUrl={img.url} videoUrl={img.videoUrl} alt={img.caption || ""} fillContainer mediaFit={fit} />
+    </div>
+  );
+}
+
+function ThreeImagesMobileCarousel({ imgs, fit = "cover", noBg }: { imgs: NewsThreeImagesData["images"]; fit?: "cover" | "contain"; noBg?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = useState(0);
+  const items = imgs || [];
+  const scrollTo = (i: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const target = el.children[i] as HTMLElement | undefined;
+    if (!target) return;
+    // offsetLeft del child è relativo all'offsetParent, che qui è il container
+    // con position:relative del wrapper. Sommiamo lo scroll attuale + delta.
+    const delta = target.getBoundingClientRect().left - el.getBoundingClientRect().left;
+    el.scrollTo({ left: el.scrollLeft + delta, behavior: "smooth" });
+  };
+  const onScroll = () => {
+    const el = ref.current;
+    if (!el) return;
+    // Indice = round(scrollLeft / larghezza slide). Larghezza slide ≈ 90% container.
+    const slideW = el.clientWidth * 0.88;
+    const i = Math.round(el.scrollLeft / slideW);
+    setIdx(Math.max(0, Math.min(items.length - 1, i)));
+  };
+  return (
+    <div className="relative">
+      <div
+        ref={ref}
+        onScroll={onScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory gap-3 scrollbar-hidden pb-1"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {items.map((img, i) => (
+          <div key={i} className="flex-shrink-0 w-[88%] snap-start">
+            <ThreeImagesMedia img={img} fit={fit} noBg={noBg} />
+            {img.caption && <p className="text-[14px] text-black mt-3 font-light text-center">{img.caption}</p>}
+          </div>
+        ))}
+      </div>
+      {items.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={() => scrollTo(Math.max(0, idx - 1))}
+            disabled={idx === 0}
+            className="absolute left-1 top-1/3 -translate-y-1/2 w-10 h-10 bg-black/55 text-white rounded-full flex items-center justify-center backdrop-blur-sm disabled:opacity-0 transition-opacity"
+            aria-label="Immagine precedente"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollTo(Math.min(items.length - 1, idx + 1))}
+            disabled={idx >= items.length - 1}
+            className="absolute right-1 top-1/3 -translate-y-1/2 w-10 h-10 bg-black/55 text-white rounded-full flex items-center justify-center backdrop-blur-sm disabled:opacity-0 transition-opacity"
+            aria-label="Immagine successiva"
+          >
+            <ChevronRight size={20} />
+          </button>
+          <div className="flex justify-center gap-1.5 mt-3">
+            {items.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => scrollTo(i)}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${i === idx ? "bg-black" : "bg-warm-300"}`}
+                aria-label={`Vai all'immagine ${i + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -509,12 +712,60 @@ export default function NewsDetailPage() {
               {rendered.map((b, idx) => {
                 const prev = idx > 0 ? rendered[idx - 1] : null;
                 const greyAdjacent = prev?.type === "image_text_bg" && b.type === "image_text_bg";
-                const spacing = idx === 0 ? "" : greyAdjacent ? "" : "mt-20 md:mt-28";
+                // Quando il blocco è un single_cta senza titolo/testo (solo
+                // pulsante), il classico mt-20/28 lascia troppo spazio dato
+                // che il blocco prima ha già il suo padding-bottom. Lo
+                // riduciamo drasticamente.
+                const ctaData = b.type === "single_cta" ? (b.data as NewsSingleCtaData) : null;
+                const isMinimalCta = !!(ctaData && !ctaData.title && !ctaData.body);
+                // Style override per-blocco (step 4 editor). Se l'admin ha
+                // impostato marginTop manualmente quello vince sul default
+                // automatico (regola "primo blocco / grey-adjacent / minimal CTA").
+                const bStyle = b.style;
+                const mtOverride = bStyle?.marginTop ? NEWS_MT_MAP[bStyle.marginTop] : null;
+                const mbOverride = bStyle?.marginBottom ? NEWS_MB_MAP[bStyle.marginBottom] : "";
+                const ptOverride = bStyle?.paddingTop ? NEWS_PT_MAP[bStyle.paddingTop] : "";
+                const pbOverride = bStyle?.paddingBottom ? NEWS_PB_MAP[bStyle.paddingBottom] : "";
+                const bgOverride = bStyle?.background && bStyle.background !== "default" ? NEWS_BG_MAP[bStyle.background] || "" : "";
+                const defaultMt = idx === 0
+                  ? ""
+                  : greyAdjacent
+                    ? ""
+                    : isMinimalCta
+                      ? "mt-2 md:mt-3"
+                      : "mt-20 md:mt-28";
+                const spacing = [
+                  mtOverride !== null ? mtOverride : defaultMt,
+                  mbOverride,
+                  ptOverride,
+                  pbOverride,
+                  bgOverride,
+                ].filter(Boolean).join(" ");
+                // Style inline + data-news-style per font/colore/sfondo custom
+                // (step 6+7). Le CSS variables sono lette dalle regole in
+                // globals.css con specificità maggiore di Tailwind text-*.
+                const wrapperInline: React.CSSProperties = {};
+                const fontKey = bStyle?.textFont;
+                if (fontKey && NEWS_FONT_MAP[fontKey]) {
+                  (wrapperInline as Record<string, string>)["--news-block-font"] = NEWS_FONT_MAP[fontKey];
+                }
+                const customColor = bStyle?.textColorCustom?.trim();
+                const presetColor = bStyle?.textColor && NEWS_TEXT_COLOR_MAP[bStyle.textColor];
+                const colorValue = customColor || presetColor;
+                if (colorValue) {
+                  (wrapperInline as Record<string, string>)["--news-block-color"] = colorValue;
+                }
+                const customBg = bStyle?.backgroundCustom?.trim();
+                if (customBg) {
+                  (wrapperInline as Record<string, string>)["backgroundColor"] = customBg;
+                }
+                const hasStyleData = !!(fontKey || colorValue);
+                const animProps = getAnimationProps(bStyle?.animation, (bStyle?.animationDelay || 0) / 1000);
                 let node: React.ReactNode = null;
                 switch (b.type) {
                   case "paragraph": node = <ParagraphBlock d={b.data as NewsParagraphData} />; break;
-                  case "image_text_bg": node = <ImageTextBg d={b.data as NewsImageTextBgData} title={article.title} />; break;
-                  case "three_images": node = <ThreeImages d={b.data as NewsThreeImagesData} />; break;
+                  case "image_text_bg": node = <ImageTextBg d={b.data as NewsImageTextBgData} title={article.title} fitOverride={b.style?.imageFit} />; break;
+                  case "three_images": node = <ThreeImages d={b.data as NewsThreeImagesData} fit={b.style?.imageFit} bg={b.style?.imageBg} />; break;
                   case "single_image": node = <SingleImage d={b.data as NewsSingleImageData} />; break;
                   case "image_with_paragraph": node = <ImageWithParagraph d={b.data as NewsImageWithParagraphData} />; break;
                   case "fullwidth_banner": node = <FullwidthBanner d={b.data as NewsFullwidthBannerData} />; break;
@@ -528,11 +779,35 @@ export default function NewsDetailPage() {
                   case "timeline": node = <TimelineBlock d={b.data as NewsTimelineData} />; break;
                   case "comparison_table": node = <ComparisonTableBlock d={b.data as NewsComparisonTableData} />; break;
                   case "single_cta": node = <SingleCtaBlock d={b.data as NewsSingleCtaData} />; break;
+                  case "columns": node = <ColumnsBlock d={b.data as NewsColumnsData} />; break;
                   case "product": node = <ProductBlock productId={(b.data as NewsProductData).productId} />; break;
                   case "share": node = <ShareBlock title={article.title} />; break;
                   default: node = null;
                 }
-                return <div key={b.id} className={spacing}>{node}</div>;
+                const wrapperStyle = Object.keys(wrapperInline).length ? wrapperInline : undefined;
+                if (animProps) {
+                  return (
+                    <motion.div
+                      key={b.id}
+                      className={spacing}
+                      style={wrapperStyle}
+                      data-news-style={hasStyleData ? "" : undefined}
+                      {...animProps}
+                    >
+                      {node}
+                    </motion.div>
+                  );
+                }
+                return (
+                  <div
+                    key={b.id}
+                    className={spacing}
+                    style={wrapperStyle}
+                    data-news-style={hasStyleData ? "" : undefined}
+                  >
+                    {node}
+                  </div>
+                );
               })}
               {hasRelated && <RelatedBlock related={article.related!} categoryLabelMap={categoryLabelMap} title={t("news.detail.continue")} />}
             </div>
@@ -568,6 +843,29 @@ export default function NewsDetailPage() {
  *   "icons-only-divider"= solo icona senza testo, separati da stanghetta verticale.
  *   Legacy: "icons-divider" trattato come alias di "icons-only-divider". */
 type CtaGroupStyle = "boxed" | "icons-text-divider" | "icons-only-divider";
+// Hover preset CTA (step 9): mappa l'effetto preset alla classe CSS in
+// globals.css. "none" o assente → stringa vuota.
+function getCtaHoverClass(effect?: CtaHoverEffect): string {
+  if (!effect || effect === "none") return "";
+  return `news-cta-hover-${effect}`;
+}
+
+// Renderer icona CTA: la libreria lucide vince sull'upload SVG.
+function CtaIcon({ cta, sizePx = 20, invert = false }: { cta: NewsCta; sizePx?: number; invert?: boolean }) {
+  if (cta.iconName && ICON_LIBRARY[cta.iconName]) {
+    const Icon = ICON_LIBRARY[cta.iconName];
+    return <Icon size={sizePx} className={invert ? "text-white" : ""} />;
+  }
+  if (cta.iconUrl) {
+    return (
+      <span className="relative inline-block flex-shrink-0" style={{ width: sizePx, height: sizePx }}>
+        <Image src={cta.iconUrl} alt="" fill className={`object-contain ${invert ? "invert" : ""}`} sizes={`${sizePx}px`} />
+      </span>
+    );
+  }
+  return null;
+}
+
 function CtaGroup({ ctas, groupStyle, align }: { ctas: NewsCta[]; groupStyle?: CtaGroupStyle | "icons-divider"; align?: "left" | "center" | "right" }) {
   if (!ctas || ctas.length === 0) return null;
   const justify = align === "left" ? "justify-start" : align === "right" ? "justify-end" : "justify-center";
@@ -578,19 +876,21 @@ function CtaGroup({ ctas, groupStyle, align }: { ctas: NewsCta[]; groupStyle?: C
 
   if (style === "icons-only-divider" || style === "icons-text-divider") {
     const showText = style === "icons-text-divider";
-    const iconCtas = ctas.filter((c) => c.style === "custom" && c.iconUrl);
+    // Include CTA con icona da libreria OPPURE icona uploadata.
+    const iconCtas = ctas.filter((c) => c.style === "custom" && (c.iconUrl || c.iconName));
     if (iconCtas.length === 0) return null;
     return (
       <div className={`flex items-center gap-5 flex-wrap ${justify}`}>
         {iconCtas.map((c, i) => {
           const isExt = /^https?:\/\//i.test(c.href || "");
           const linkProps = isExt ? { target: "_blank", rel: "noopener noreferrer" } : {};
+          const hoverCls = getCtaHoverClass(c.hoverEffect);
           return (
             <span key={i} className="flex items-center gap-5">
               {i > 0 && <span className="block w-px h-8 bg-warm-400" aria-hidden="true" />}
-              <a href={c.href || "#"} {...linkProps} className="inline-flex items-center gap-2 hover:opacity-70 transition-opacity" title={c.label || ""}>
-                <span className="relative block w-10 h-10 flex-shrink-0">
-                  <Image src={c.iconUrl!} alt={c.label || ""} fill className="object-contain" sizes="40px" />
+              <a href={c.href || "#"} {...linkProps} className={`inline-flex items-center gap-2 hover:opacity-70 transition-opacity ${hoverCls}`} title={c.label || ""}>
+                <span className="block w-10 h-10 flex-shrink-0 flex items-center justify-center">
+                  <CtaIcon cta={c} sizePx={40} />
                 </span>
                 {showText && c.label && (
                   <span className="text-[14px] md:text-[15px] font-medium text-black">{c.label}</span>
@@ -615,20 +915,20 @@ function CtaButton({ cta }: { cta: NewsCta }) {
   const linkProps = isPdf
     ? { download: "", target: "_blank", rel: "noopener noreferrer" }
     : ext ? { target: "_blank", rel: "noopener noreferrer" } : {};
-  // Personalizzato con icona uploadata → pulsante nero con icona
-  if (cta.style === "custom" && cta.iconUrl) {
+  const hoverCls = getCtaHoverClass(cta.hoverEffect);
+  const hasIcon = !!(cta.iconUrl || cta.iconName);
+  // Personalizzato con icona (libreria o uploadata) → pulsante nero con icona
+  if (cta.style === "custom" && hasIcon) {
     return (
-      <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-md hover:bg-warm-900 transition-colors">
-        <span className="relative w-5 h-5">
-          <Image src={cta.iconUrl} alt="" fill className="object-contain invert" sizes="20px" />
-        </span>
+      <a href={cta.href || "#"} {...linkProps} className={`inline-flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-md hover:bg-warm-900 transition-colors ${hoverCls}`}>
+        <CtaIcon cta={cta} sizePx={20} invert />
         <span className="text-[15px] font-medium">{cta.label || ""}</span>
       </a>
     );
   }
   // Default: link minimal con freccia
   return (
-    <a href={cta.href || "#"} {...linkProps} className="inline-flex items-center gap-1 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline" style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
+    <a href={cta.href || "#"} {...linkProps} className={`inline-flex items-center gap-1 uppercase text-[16px] tracking-[0.03em] text-black font-medium hover:underline ${hoverCls}`} style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
       {cta.label || "Scopri"} &rarr;
     </a>
   );
@@ -673,22 +973,52 @@ function FeatureTool({ d }: { d: NewsFeatureToolData }) {
     </div>
   ) : null;
 
+  // Mobile: SEMPRE immagine prima del testo. Su desktop (md+) ordine
+  // controllato da imagePosition via classi md:order-* sui wrapper.
   return (
     <section className="w-full bg-warm-50/40 my-3">
       <div className="grid grid-cols-1 md:grid-cols-12 items-stretch">
-        {imgLeft ? (
-          <>
-            <div className="md:col-span-5">{imageEl}</div>
-            <div className={bulletsEl ? "md:col-span-4" : "md:col-span-7"}>{contentEl}</div>
-            {bulletsEl && <div className="md:col-span-3">{bulletsEl}</div>}
-          </>
-        ) : (
-          <>
-            {bulletsEl && <div className="md:col-span-3">{bulletsEl}</div>}
-            <div className={bulletsEl ? "md:col-span-4" : "md:col-span-7"}>{contentEl}</div>
-            <div className="md:col-span-5">{imageEl}</div>
-          </>
-        )}
+        <div className={`md:col-span-5 ${imgLeft ? "md:order-1" : "md:order-3"}`}>{imageEl}</div>
+        <div className={`${bulletsEl ? "md:col-span-4" : "md:col-span-7"} md:order-2`}>{contentEl}</div>
+        {bulletsEl && <div className={`md:col-span-3 ${imgLeft ? "md:order-3" : "md:order-1"}`}>{bulletsEl}</div>}
+      </div>
+    </section>
+  );
+}
+
+/* ── Columns block (step 5 editor news) ────────────────────────────
+   Layout grid 2/3/4 colonne con widget atomici dentro ognuna. */
+function ColumnsChildRenderer({ child }: { child: NewsColumnsChild }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data = child.data as any;
+  switch (child.type) {
+    case "caslon_title": return <CaslonTitle d={data as NewsCaslonTitleData} />;
+    case "paragraph": return <ParagraphBlock d={data as NewsParagraphData} />;
+    case "single_image": return <SingleImage d={data as NewsSingleImageData} />;
+    case "single_cta": return <SingleCtaBlock d={data as NewsSingleCtaData} />;
+    case "quote": return <QuoteBlock d={data as NewsQuoteData} />;
+    default: return null;
+  }
+}
+function ColumnsBlock({ d }: { d: NewsColumnsData }) {
+  const n = d.columns || 2;
+  const cols = d.children || [];
+  const colsClass = n === 2 ? "md:grid-cols-2" : n === 4 ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3";
+  const gapClass = d.gap === "sm" ? "gap-4 md:gap-6" : d.gap === "lg" ? "gap-10 md:gap-14" : "gap-6 md:gap-10";
+  const alignClass = d.verticalAlign === "center" ? "items-center" : d.verticalAlign === "bottom" ? "items-end" : "items-start";
+  return (
+    <section className="gtv-container">
+      <div className={`grid grid-cols-1 ${colsClass} ${gapClass} ${alignClass}`}>
+        {Array.from({ length: n }).map((_, colIdx) => {
+          const items = cols[colIdx] || [];
+          return (
+            <div key={colIdx} className="space-y-6">
+              {items.map((child) => (
+                <ColumnsChildRenderer key={child.id} child={child} />
+              ))}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -698,8 +1028,14 @@ function SingleCtaBlock({ d }: { d: NewsSingleCtaData }) {
   if (!d.ctas || d.ctas.length === 0) return null;
   const align = d.align || "center";
   const textAlign = align === "left" ? "text-left" : align === "right" ? "text-right" : "text-center";
+  // Quando nel blocco non c'è né titolo né testo (solo il pulsante), il padding
+  // verticale grande lascia troppo spazio attorno al CTA. I blocchi adiacenti
+  // hanno già il loro padding inferiore, quindi togliamo del tutto il padding-top
+  // del CTA e lasciamo solo un po' di spazio sotto.
+  const hasContent = !!(d.title || d.body);
+  const sectionPadding = hasContent ? "py-10 md:py-14" : "pt-0 pb-4 md:pb-6";
   return (
-    <section className="gtv-container py-10 md:py-14">
+    <section className={`gtv-container ${sectionPadding}`}>
       <div className={`mx-auto max-w-[840px] px-6 md:px-12 ${textAlign}`}>
         {d.title && (
           <h2 className="font-sans text-[22px] md:text-[28px] text-black leading-[1.2] font-light uppercase tracking-[inherit] mb-3">

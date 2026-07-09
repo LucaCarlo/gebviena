@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Plus, X, ArrowUp, ArrowDown } from "lucide-react";
 import ImageUploadField from "../ImageUploadField";
 import { BlockTextInput, BlockRichText } from "./BlockAIField";
+import IconPicker from "./IconPicker";
 import type {
   NewsParagraphData,
   NewsImageTextBgData,
@@ -26,6 +27,12 @@ import type {
   NewsCardItem,
   NewsCta,
   CtaButtonStyle,
+  CtaHoverEffect,
+  NewsColumnsData,
+  NewsColumnsChild,
+  NewsColumnsCount,
+  NewsColumnsGap,
+  NewsColumnsAlign,
 } from "@/types";
 
 // Helper: l'URL punta a un file video (mp4/webm/...) tra quelli caricabili dal
@@ -37,11 +44,13 @@ function isUploadedVideo(url: string | undefined | null): boolean {
 interface VideoToggleProps {
   autoplay: boolean;
   controls: boolean;
+  fullscreenOnPlay?: boolean;
   onAutoplay: (v: boolean) => void;
   onControls: (v: boolean) => void;
+  onFullscreenOnPlay?: (v: boolean) => void;
 }
 
-function VideoPlaybackToggle({ autoplay, controls, onAutoplay, onControls }: VideoToggleProps) {
+function VideoPlaybackToggle({ autoplay, controls, fullscreenOnPlay, onAutoplay, onControls, onFullscreenOnPlay }: VideoToggleProps) {
   return (
     <div className="p-3 border border-warm-200 rounded bg-warm-50/50 space-y-2">
       <div className="text-[11px] font-semibold text-warm-600 uppercase tracking-wider">Opzioni video</div>
@@ -75,6 +84,23 @@ function VideoPlaybackToggle({ autoplay, controls, onAutoplay, onControls }: Vid
           </div>
         </div>
       </label>
+
+      {onFullscreenOnPlay && (
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={!!fullscreenOnPlay}
+            onChange={(e) => onFullscreenOnPlay(e.target.checked)}
+            className="mt-0.5 w-4 h-4 accent-warm-800"
+          />
+          <div>
+            <div className="text-sm font-medium text-warm-800">Fullscreen al play</div>
+            <div className="text-[11px] text-warm-500 mt-0.5">
+              Al click su play il video parte a schermo intero.
+            </div>
+          </div>
+        </label>
+      )}
     </div>
   );
 }
@@ -150,6 +176,27 @@ export function ParagraphEditor({ data, onChange, sourceData }: { data: NewsPara
 export function ImageTextBgEditor({ data, onChange, sourceData }: { data: NewsImageTextBgData; onChange: (d: NewsImageTextBgData) => void; sourceData?: Partial<NewsImageTextBgData> }) {
   const bg = data.background || "warm";
   const fit = data.mediaFit || "cover";
+
+  // Migrazione one-shot dei vecchi campi ctaLabel/ctaHref/ctaStyle/ctaIconUrl
+  // nel nuovo array ctas[]. Fatta al primo mount se rileva legacy senza ctas.
+  useEffect(() => {
+    if ((!data.ctas || data.ctas.length === 0) && (data.ctaLabel || data.ctaHref || data.ctaStyle || data.ctaIconUrl)) {
+      const migrated: NewsCta = {
+        label: data.ctaLabel || "",
+        href: data.ctaHref || "",
+        style: data.ctaStyle || "default",
+        ...(data.ctaIconUrl ? { iconUrl: data.ctaIconUrl } : {}),
+      };
+      onChange({ ...data, ctas: [migrated], ctaGroupStyle: data.ctaGroupStyle || "boxed" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setCtas = (next: NewsCta[]) => onChange({ ...data, ctas: next });
+  const addCta = () => setCtas([...(data.ctas || []), { label: "", href: "", style: "default" }]);
+  const updCta = (i: number, patch: Partial<NewsCta>) => setCtas((data.ctas || []).map((c, j) => j === i ? { ...c, ...patch } : c));
+  const delCta = (i: number) => setCtas((data.ctas || []).filter((_, j) => j !== i));
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -203,11 +250,11 @@ export function ImageTextBgEditor({ data, onChange, sourceData }: { data: NewsIm
         value={data.imageUrl}
         onChange={(url) => onChange({ ...data, imageUrl: url })}
         onRemove={() => onChange({ ...data, imageUrl: "" })}
-        purpose="general" folder="news" acceptVideo
+        purpose="news" folder="news" acceptVideo
         helpText="Risoluzione consigliata: 1200x1600px (verticale 3:4) o 1600x1200px (orizzontale 4:3). Min 1000px sul lato lungo."
       />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
-        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
+        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} fullscreenOnPlay={!!(data as { videoFullscreenOnPlay?: boolean }).videoFullscreenOnPlay} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} onFullscreenOnPlay={(v) => onChange({ ...(data as object), videoFullscreenOnPlay: v } as typeof data)} />
       )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">&hellip;oppure URL video esterno (YouTube, Vimeo)</label>
@@ -222,31 +269,48 @@ export function ImageTextBgEditor({ data, onChange, sourceData }: { data: NewsIm
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Testo</label>
         <BlockRichText value={data.text || ""} onChange={(html) => onChange({ ...data, text: html })} sourceText={sourceData?.text || ""} multiline minHeight={140} />
       </div>
-      <CtaFields label={data.ctaLabel || ""} href={data.ctaHref || ""} sourceLabel={sourceData?.ctaLabel || ""} onLabel={(v) => onChange({ ...data, ctaLabel: v })} onHref={(v) => onChange({ ...data, ctaHref: v })} />
-
-      {/* Stile CTA — possibilita di sostituire il testo del pulsante con un'icona
-          SVG/PNG (utile per loghi store, brand icons cliccabili). */}
-      <div className="border border-warm-200 bg-warm-50/30 rounded p-3 space-y-2">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-semibold text-warm-600 uppercase tracking-wider">Stile pulsante</span>
-          <select
-            value={data.ctaStyle || "default"}
-            onChange={(e) => onChange({ ...data, ctaStyle: e.target.value as CtaButtonStyle })}
-            className="border border-warm-300 rounded px-2 py-1 text-xs focus:border-warm-800 focus:outline-none bg-white"
-          >
-            {CTA_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+      {/* Pulsanti CTA — stessa UX del blocco "Pulsante CTA" standalone:
+          multi-pulsante, stile gruppo (con/senza sfondo), icone da libreria o
+          upload SVG, effetti hover. */}
+      <div className="border border-warm-200 bg-warm-50/30 rounded p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="text-xs font-semibold text-warm-600 uppercase tracking-wider">Pulsanti</div>
+          <div className="flex items-center gap-3">
+            <label className="text-[11px] text-warm-600 inline-flex items-center gap-1.5">
+              Stile:
+              <select value={data.ctaGroupStyle || "boxed"} onChange={(e) => onChange({ ...data, ctaGroupStyle: e.target.value as "boxed" | "icons-text-divider" | "icons-only-divider" })} className="border border-warm-300 rounded px-2 py-1 text-xs focus:border-warm-800 focus:outline-none bg-white">
+                <option value="boxed">Pulsanti con sfondo</option>
+                <option value="icons-text-divider">Icona + testo, senza sfondo (con stanghetta)</option>
+                <option value="icons-only-divider">Solo icone, senza sfondo (con stanghetta)</option>
+              </select>
+            </label>
+            {(data.ctas || []).length < 4 && (
+              <button type="button" onClick={addCta} className="text-xs text-warm-700 hover:text-warm-900 underline flex items-center gap-1"><Plus size={12} /> Aggiungi</button>
+            )}
+          </div>
         </div>
-        {data.ctaStyle === "custom" && (
-          <ImageUploadField
-            label="Icona SVG/PNG"
-            value={data.ctaIconUrl || ""}
-            onChange={(url) => onChange({ ...data, ctaIconUrl: url })}
-            onRemove={() => onChange({ ...data, ctaIconUrl: "" })}
-            purpose="general"
-            folder="news"
-            helpText="SVG quadrato 24x24px o 32x32px, viewBox riempito senza padding. PNG: minimo 64x64px sfondo trasparente."
-          />
+        {(data.ctas || []).map((c, i) => (
+          <div key={i} className="border border-warm-200 bg-white rounded p-3 space-y-2">
+            <div className="grid grid-cols-12 gap-2 items-center">
+              <input type="text" value={c.label} onChange={(e) => updCta(i, { label: e.target.value })} placeholder="Etichetta" className="col-span-4 border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none" />
+              <input type="text" value={c.href} onChange={(e) => updCta(i, { href: e.target.value })} placeholder="https://… o /percorso" className="col-span-5 border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none" />
+              <select value={c.style || "default"} onChange={(e) => updCta(i, { style: e.target.value as CtaButtonStyle })} className="col-span-2 border border-warm-300 rounded px-2 py-1.5 text-xs focus:border-warm-800 focus:outline-none">
+                {CTA_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <button type="button" onClick={() => delCta(i)} className="col-span-1 p-1.5 text-warm-400 hover:text-red-600" title="Rimuovi"><X size={14} /></button>
+            </div>
+            {c.style === "custom" && (
+              <ImageUploadField label="Icona SVG/PNG" value={c.iconUrl || ""} onChange={(url) => updCta(i, { iconUrl: url })} onRemove={() => updCta(i, { iconUrl: "" })} purpose="general" folder="news" helpText="SVG quadrato 24x24px o 32x32px, viewBox riempito senza padding. PNG: minimo 64x64px sfondo trasparente." />
+            )}
+            <CtaExtraControls cta={c} onChange={(patch) => updCta(i, patch)} />
+          </div>
+        ))}
+        {(data.ctas || []).length === 0 && <div className="text-xs text-warm-400">Nessun pulsante. Clicca &laquo;Aggiungi&raquo;.</div>}
+        {/* Compat: non serve mostrare i campi legacy — se erano compilati sono
+            stati migrati automaticamente al mount del componente. sourceData
+            è comunque tracciato per pattern d'uso futuri. */}
+        {sourceData?.ctaLabel && !data.ctas?.length && (
+          <div className="text-[10px] text-warm-400">Vecchio CTA in traduzione (originale): {sourceData.ctaLabel}</div>
         )}
       </div>
     </div>
@@ -263,7 +327,7 @@ export function ThreeImagesEditor({ data, onChange, sourceData }: { data: NewsTh
     <div className="space-y-4">
       {imgs.slice(0, 3).map((im, i) => (
         <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-4 border-b border-warm-100 last:border-b-0">
-          <ImageUploadField label={`Media ${i + 1} (immagine o video)`} value={im.url} onChange={(url) => update(i, { url })} onRemove={() => update(i, { url: "" })} purpose="general" folder="news" aspectRatio={2 / 3} acceptVideo helpText="Risoluzione consigliata: 800x1200px (verticale 2:3). Min 600px sul lato corto." />
+          <ImageUploadField label={`Media ${i + 1} (immagine o video)`} value={im.url} onChange={(url) => update(i, { url })} onRemove={() => update(i, { url: "" })} purpose="news" folder="news" aspectRatio={2 / 3} acceptVideo helpText="Risoluzione consigliata: 800x1200px (verticale 2:3). Min 600px sul lato corto." />
           <div className="space-y-2">
             <div>
               <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Didascalia</label>
@@ -284,9 +348,9 @@ export function ThreeImagesEditor({ data, onChange, sourceData }: { data: NewsTh
 export function SingleImageEditor({ data, onChange, sourceData }: { data: NewsSingleImageData; onChange: (d: NewsSingleImageData) => void; sourceData?: Partial<NewsSingleImageData> }) {
   return (
     <div className="space-y-4">
-      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Risoluzione consigliata: 1600x900px (16:9 orizzontale) o 1200x1200px (quadrato). Min 1000px sul lato lungo. Formati: JPG, PNG, MP4, WebM." />
+      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="news" folder="news" acceptVideo helpText="Risoluzione consigliata: 1600x900px (16:9 orizzontale) o 1200x1200px (quadrato). Min 1000px sul lato lungo. Formati: JPG, PNG, MP4, WebM." />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
-        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
+        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} fullscreenOnPlay={!!(data as { videoFullscreenOnPlay?: boolean }).videoFullscreenOnPlay} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} onFullscreenOnPlay={(v) => onChange({ ...(data as object), videoFullscreenOnPlay: v } as typeof data)} />
       )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">…oppure URL video esterno (YouTube, Vimeo)</label>
@@ -304,9 +368,9 @@ export function SingleImageEditor({ data, onChange, sourceData }: { data: NewsSi
 export function ImageWithParagraphEditor({ data, onChange, sourceData }: { data: NewsImageWithParagraphData; onChange: (d: NewsImageWithParagraphData) => void; sourceData?: Partial<NewsImageWithParagraphData> }) {
   return (
     <div className="space-y-4">
-      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Risoluzione consigliata: 1200x800px (3:2 orizzontale) o 1200x1200px (quadrato). Min 1000px sul lato lungo." />
+      <ImageUploadField label="Immagine o video" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="news" folder="news" acceptVideo helpText="Risoluzione consigliata: 1200x800px (3:2 orizzontale) o 1200x1200px (quadrato). Min 1000px sul lato lungo." />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
-        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
+        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} fullscreenOnPlay={!!(data as { videoFullscreenOnPlay?: boolean }).videoFullscreenOnPlay} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} onFullscreenOnPlay={(v) => onChange({ ...(data as object), videoFullscreenOnPlay: v } as typeof data)} />
       )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">…oppure URL video esterno (YouTube, Vimeo)</label>
@@ -330,7 +394,7 @@ export function FullwidthBannerEditor({ data, onChange, sourceData }: { data: Ne
     <div className="space-y-4">
       <ImageUploadField label="Immagine o video (full-width, scuro)" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="hero" folder="news" aspectRatio={1600 / 900} acceptVideo helpText="Risoluzione consigliata: 1920x1080px (16:9 full-width). Min 1600px di larghezza. Il media viene scurito automaticamente per il testo sovrapposto." />
       {(isUploadedVideo(data.imageUrl) || isUploadedVideo(data.videoUrl)) && (
-        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
+        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} fullscreenOnPlay={!!(data as { videoFullscreenOnPlay?: boolean }).videoFullscreenOnPlay} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} onFullscreenOnPlay={(v) => onChange({ ...(data as object), videoFullscreenOnPlay: v } as typeof data)} />
       )}
       <div>
         <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">&hellip;oppure URL video esterno (YouTube, Vimeo)</label>
@@ -453,7 +517,7 @@ export function TwoImagesInlineEditor({ data, onChange, sourceData }: { data: Ne
               value={imgs[i]?.url || ""}
               onChange={(url) => updateImg(i, { url })}
               onRemove={() => updateImg(i, { url: "" })}
-              purpose="general"
+              purpose="news"
               folder="news"
               acceptVideo
               helpText="Risoluzione consigliata: 800x1067px (verticale 3:4). Min 600px di larghezza. Mantieni aspect uguale tra le due immagini."
@@ -523,9 +587,9 @@ export function FeatureToolEditor({ data, onChange, sourceData }: { data: NewsFe
         </div>
       </div>
 
-      <ImageUploadField label="Immagine principale" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="general" folder="news" acceptVideo helpText="Risoluzione consigliata: 1200x900px (4:3 orizzontale). Min 1000px di larghezza. JPG/PNG/MP4/WebM." />
+      <ImageUploadField label="Immagine principale" value={data.imageUrl} onChange={(url) => onChange({ ...data, imageUrl: url })} onRemove={() => onChange({ ...data, imageUrl: "" })} purpose="news" folder="news" acceptVideo helpText="Risoluzione consigliata: 1200x900px (4:3 orizzontale). Min 1000px di larghezza. JPG/PNG/MP4/WebM." />
       {isUploadedVideo(data.imageUrl) && (
-        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} />
+        <VideoPlaybackToggle autoplay={!!data.videoAutoplay} controls={data.videoControls !== false} fullscreenOnPlay={!!(data as { videoFullscreenOnPlay?: boolean }).videoFullscreenOnPlay} onAutoplay={(v) => onChange({ ...data, videoAutoplay: v })} onControls={(v) => onChange({ ...data, videoControls: v })} onFullscreenOnPlay={(v) => onChange({ ...(data as object), videoFullscreenOnPlay: v } as typeof data)} />
       )}
 
       <div className="grid grid-cols-2 gap-3">
@@ -609,6 +673,7 @@ export function FeatureToolEditor({ data, onChange, sourceData }: { data: NewsFe
                 <ImageUploadField label="" value={c.iconUrl || ""} onChange={(url) => updCta(i, { iconUrl: url })} onRemove={() => updCta(i, { iconUrl: "" })} purpose="general" folder="news" helpText="SVG quadrato 24x24px o 32x32px, viewBox riempito senza padding. PNG: minimo 64x64px sfondo trasparente." />
               </div>
             )}
+            <CtaExtraControls cta={c} onChange={(patch) => updCta(i, patch)} />
           </div>
         ))}
         {(data.ctas || []).length === 0 && <div className="text-xs text-warm-400">Nessun pulsante. Clicca &laquo;Aggiungi pulsante&raquo;.</div>}
@@ -677,6 +742,7 @@ export function SingleCtaEditor({ data, onChange, sourceData }: { data: NewsSing
             {c.style === "custom" && (
               <ImageUploadField label="Icona SVG/PNG" value={c.iconUrl || ""} onChange={(url) => updCta(i, { iconUrl: url })} onRemove={() => updCta(i, { iconUrl: "" })} purpose="general" folder="news" helpText="SVG quadrato 24x24px o 32x32px, viewBox riempito senza padding. PNG: minimo 64x64px sfondo trasparente." />
             )}
+            <CtaExtraControls cta={c} onChange={(patch) => updCta(i, patch)} />
           </div>
         ))}
         {(data.ctas || []).length === 0 && <div className="text-xs text-warm-400">Nessun pulsante. Clicca &laquo;Aggiungi&raquo;.</div>}
@@ -926,6 +992,207 @@ export function ComparisonTableEditor({ data, onChange, sourceData }: { data: Ne
         </table>
       </div>
       <button type="button" onClick={addRow} className="w-full py-2 border border-dashed border-warm-300 rounded text-sm text-warm-600 hover:bg-warm-50 flex items-center justify-center gap-1.5"><Plus size={14} /> Aggiungi riga</button>
+    </div>
+  );
+}
+
+/* ── Helper CTA: picker icona lucide + select hover (step 9) ──
+   Usato sia da FeatureToolEditor che da SingleCtaEditor per non
+   duplicare la stessa UI in due punti. */
+function CtaExtraControls({
+  cta,
+  onChange,
+}: {
+  cta: NewsCta;
+  onChange: (patch: Partial<NewsCta>) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 pt-2 border-t border-warm-100">
+      <div>
+        <label className="block text-[10px] font-semibold text-warm-600 uppercase tracking-wider mb-1">Icona libreria</label>
+        <IconPicker
+          value={cta.iconName}
+          onChange={(name) => onChange({ iconName: name })}
+        />
+        <p className="text-[10px] text-warm-400 mt-1">Se settata, vince sull&apos;icona SVG caricata.</p>
+      </div>
+      <div>
+        <label className="block text-[10px] font-semibold text-warm-600 uppercase tracking-wider mb-1">Effetto hover</label>
+        <select
+          value={cta.hoverEffect || "none"}
+          onChange={(e) => onChange({ hoverEffect: e.target.value as CtaHoverEffect })}
+          className="w-full border border-warm-300 rounded px-2 py-1.5 text-xs bg-white focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+        >
+          <option value="none">Nessuno</option>
+          <option value="scale">Ingrandimento</option>
+          <option value="lift">Sollevamento + ombra</option>
+          <option value="underline-grow">Sottolineatura crescente</option>
+          <option value="color-swap">Inversione colori</option>
+          <option value="glow">Bagliore</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+/* ── Columns Editor (step 5 editor news) ────────────────────────────
+   Layout container con N colonne (2/3/4). Ogni colonna è una lista di
+   "child" widget atomici. Niente template / niente nested columns
+   (l'editor non li offre nemmeno) per evitare layout incomprensibili.
+   ─────────────────────────────────────────────────────────────────── */
+
+interface AllowedChildType {
+  type: NewsColumnsChild["type"];
+  label: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  defaultData: () => any;
+}
+const ALLOWED_CHILD_TYPES: AllowedChildType[] = [
+  { type: "caslon_title", label: "Titolo", defaultData: () => ({ text: "", align: "center" }) },
+  { type: "paragraph", label: "Paragrafo", defaultData: () => ({ title: "", body: "" }) },
+  { type: "single_image", label: "Immagine", defaultData: () => ({ imageUrl: "", caption: "" }) },
+  { type: "single_cta", label: "Pulsante", defaultData: () => ({ title: "", body: "", ctas: [{ label: "", href: "", style: "default" }], ctaGroupStyle: "boxed", align: "center" }) },
+  { type: "quote", label: "Citazione", defaultData: () => ({ text: "", author: "", authorRole: "", align: "center" }) },
+];
+
+export function ColumnsEditor({ data, onChange }: { data: NewsColumnsData; onChange: (d: NewsColumnsData) => void }) {
+  const cols = data.children || [];
+  const setCol = (idx: number, items: NewsColumnsChild[]) => {
+    const next = [...cols];
+    next[idx] = items;
+    onChange({ ...data, children: next });
+  };
+  const setColumnsCount = (n: NewsColumnsCount) => {
+    const next: NewsColumnsChild[][] = [];
+    for (let i = 0; i < n; i++) next.push(cols[i] || []);
+    onChange({ ...data, columns: n, children: next });
+  };
+  const addChild = (colIdx: number, type: NewsColumnsChild["type"]) => {
+    const def = ALLOWED_CHILD_TYPES.find((t) => t.type === type);
+    if (!def) return;
+    const child: NewsColumnsChild = { id: crypto.randomUUID(), type, data: def.defaultData() };
+    setCol(colIdx, [...(cols[colIdx] || []), child]);
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updChild = (colIdx: number, childIdx: number, newData: any) => {
+    setCol(colIdx, (cols[colIdx] || []).map((c, i) => i === childIdx ? { ...c, data: newData } : c));
+  };
+  const delChild = (colIdx: number, childIdx: number) => {
+    setCol(colIdx, (cols[colIdx] || []).filter((_, i) => i !== childIdx));
+  };
+  const moveChild = (colIdx: number, childIdx: number, dir: "up" | "down") => {
+    const list = [...(cols[colIdx] || [])];
+    const j = dir === "up" ? childIdx - 1 : childIdx + 1;
+    if (j < 0 || j >= list.length) return;
+    [list[childIdx], list[j]] = [list[j], list[childIdx]];
+    setCol(colIdx, list);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-4 pb-3 border-b border-warm-200">
+        <label className="flex items-center gap-2 text-xs text-warm-600">
+          <span className="font-semibold uppercase tracking-wider">Colonne</span>
+          <select value={data.columns} onChange={(e) => setColumnsCount(parseInt(e.target.value, 10) as NewsColumnsCount)} className="border border-warm-300 rounded px-2 py-1 text-xs bg-white">
+            <option value={2}>2</option>
+            <option value={3}>3</option>
+            <option value={4}>4</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-xs text-warm-600">
+          <span className="font-semibold uppercase tracking-wider">Spazio</span>
+          <select value={data.gap || "md"} onChange={(e) => onChange({ ...data, gap: e.target.value as NewsColumnsGap })} className="border border-warm-300 rounded px-2 py-1 text-xs bg-white">
+            <option value="sm">Piccolo</option>
+            <option value="md">Medio</option>
+            <option value="lg">Grande</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-xs text-warm-600">
+          <span className="font-semibold uppercase tracking-wider">Allineamento</span>
+          <select value={data.verticalAlign || "top"} onChange={(e) => onChange({ ...data, verticalAlign: e.target.value as NewsColumnsAlign })} className="border border-warm-300 rounded px-2 py-1 text-xs bg-white">
+            <option value="top">In alto</option>
+            <option value="center">Al centro</option>
+            <option value="bottom">In basso</option>
+          </select>
+        </label>
+      </div>
+      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${data.columns}, minmax(0, 1fr))` }}>
+        {Array.from({ length: data.columns }).map((_, colIdx) => {
+          const items = cols[colIdx] || [];
+          return (
+            <div key={colIdx} className="border-2 border-dashed border-warm-300 rounded-lg p-3 min-h-[200px] bg-warm-50/30 space-y-2">
+              <div className="text-[10px] uppercase tracking-wider text-warm-500 font-semibold mb-1">Colonna {colIdx + 1}</div>
+              {items.map((child, childIdx) => (
+                <ChildBlockEditor
+                  key={child.id}
+                  child={child}
+                  index={childIdx}
+                  total={items.length}
+                  onChange={(d) => updChild(colIdx, childIdx, d)}
+                  onDelete={() => delChild(colIdx, childIdx)}
+                  onMove={(dir) => moveChild(colIdx, childIdx, dir)}
+                />
+              ))}
+              <ChildAddButton onAdd={(t) => addChild(colIdx, t)} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ChildBlockEditor({ child, index, total, onChange, onDelete, onMove }: {
+  child: NewsColumnsChild;
+  index: number;
+  total: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onChange: (d: any) => void;
+  onDelete: () => void;
+  onMove: (dir: "up" | "down") => void;
+}) {
+  const def = ALLOWED_CHILD_TYPES.find((t) => t.type === child.type);
+  return (
+    <div className="bg-white border border-warm-200 rounded overflow-hidden">
+      <div className="flex items-center gap-1 px-2 py-1 bg-warm-100 text-xs">
+        <span className="text-warm-700 font-medium">{def?.label || child.type}</span>
+        <div className="flex-1" />
+        <button type="button" onClick={() => onMove("up")} disabled={index === 0} className="p-1 text-warm-500 hover:text-warm-800 disabled:opacity-30" title="Su"><ArrowUp size={11} /></button>
+        <button type="button" onClick={() => onMove("down")} disabled={index === total - 1} className="p-1 text-warm-500 hover:text-warm-800 disabled:opacity-30" title="Giù"><ArrowDown size={11} /></button>
+        <button type="button" onClick={onDelete} className="p-1 text-warm-500 hover:text-red-600" title="Rimuovi"><X size={12} /></button>
+      </div>
+      <div className="p-2">
+        {child.type === "caslon_title" && <CaslonTitleEditor data={child.data as NewsCaslonTitleData} onChange={onChange} />}
+        {child.type === "paragraph" && <ParagraphEditor data={child.data as NewsParagraphData} onChange={onChange} />}
+        {child.type === "single_image" && <SingleImageEditor data={child.data as NewsSingleImageData} onChange={onChange} />}
+        {child.type === "single_cta" && <SingleCtaEditor data={child.data as NewsSingleCtaData} onChange={onChange} />}
+        {child.type === "quote" && <QuoteEditor data={child.data as NewsQuoteData} onChange={onChange} />}
+      </div>
+    </div>
+  );
+}
+
+function ChildAddButton({ onAdd }: { onAdd: (type: NewsColumnsChild["type"]) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen((v) => !v)} className="w-full py-1.5 text-[11px] uppercase tracking-wider text-warm-500 border border-dashed border-warm-300 rounded hover:bg-warm-100 hover:text-warm-800 flex items-center justify-center gap-1">
+        <Plus size={12} /> Widget
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 mt-1 bg-white border border-warm-300 rounded shadow-md z-10 py-1">
+          {ALLOWED_CHILD_TYPES.map((t) => (
+            <button
+              key={t.type}
+              type="button"
+              onClick={() => { onAdd(t.type); setOpen(false); }}
+              className="block w-full text-left px-3 py-1.5 text-xs text-warm-700 hover:bg-warm-100"
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

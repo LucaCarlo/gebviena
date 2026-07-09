@@ -7,6 +7,9 @@ interface Row {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  profile?: string | null;
+  company?: string | null;
+  phone?: string | null;
   ipAddress?: string | null;
   geoCity?: string | null;
   geoRegion?: string | null;
@@ -38,7 +41,15 @@ function tally(rows: Row[], key: (r: Row) => string | null | undefined) {
   return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
 }
 
-export default function RegistrantsData() {
+interface Props {
+  /** Se passato, il tab Dati mostra i registrati EventRegistration di questa
+   *  landing (es. MDW 2026, che salva i form su EventRegistration con campo
+   *  profile compilato). Se assente, si ricade sui NewsletterSubscriber globali
+   *  (footer newsletter, form contatti generici). */
+  landingPageId?: string;
+}
+
+export default function RegistrantsData({ landingPageId }: Props = {}) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
@@ -49,15 +60,51 @@ export default function RegistrantsData() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/newsletter/subscribers", { cache: "no-store" });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setRows(data.data as Row[]);
-        setUpdatedAt(new Date());
+      // Landing con form event-registrations (es. MDW 2026): shape diverso —
+      // country/state/city al posto di geoCountry/geoRegion/geoCity, e i campi
+      // email* non esistono (li lasciamo null → colonne CSV vuote per queste landing).
+      if (landingPageId) {
+        const res = await fetch(`/api/event-registrations?landingPageId=${encodeURIComponent(landingPageId)}`, { cache: "no-store" });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const mapped: Row[] = (data.data as any[]).map((r) => ({
+            email: r.email,
+            firstName: r.firstName || null,
+            lastName: r.lastName || null,
+            profile: r.profile || null,
+            company: r.company || null,
+            phone: r.phone || null,
+            // EventRegistration non traccia l'IP (mai salvato nel DB) → colonna vuota.
+            ipAddress: null,
+            geoCity: r.city || null,
+            geoRegion: r.state || null,
+            geoCountry: r.country || null,
+            // Il POST /api/event-registrations invia l'email di conferma
+            // in fire-and-forget subito dopo la create. Non c'e' un vero
+            // tracking di stato/errore/data invio — quindi il default e'
+            // "Inviata" con emailSentAt approssimato a createdAt. Non "In
+            // attesa" (che era fuorviante: l'email non e' in coda, era gia'
+            // stata mandata al momento della registrazione).
+            emailStatus: "sent",
+            emailError: null,
+            emailSentAt: r.createdAt,
+            createdAt: r.createdAt,
+          }));
+          setRows(mapped);
+          setUpdatedAt(new Date());
+        }
+      } else {
+        const res = await fetch("/api/newsletter/subscribers", { cache: "no-store" });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setRows(data.data as Row[]);
+          setUpdatedAt(new Date());
+        }
       }
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, []);
+  }, [landingPageId]);
 
   useEffect(() => {
     load();
@@ -101,10 +148,10 @@ export default function RegistrantsData() {
 
   const exportCsv = () => {
     const e = (s: unknown) => `"${String(s ?? "").replace(/"/g, '""')}"`;
-    const head = ["Nome", "Cognome", "Email", "Stato email", "Errore email", "Email inviata", "IP", "Città", "Regione", "Paese", "Data e ora"].map(e).join(";");
+    const head = ["Nome", "Cognome", "Email", "Azienda", "Telefono", "Profilo", "Stato email", "Errore email", "Email inviata", "IP", "Città", "Regione", "Paese", "Data e ora"].map(e).join(";");
     const st = (s?: string | null) => s === "sent" ? "Inviata" : s === "error" ? "Errore" : "In attesa";
     const lines = filtered.map((r) =>
-      [r.firstName, r.lastName, r.email, st(r.emailStatus), r.emailError || "", r.emailSentAt ? fmt(r.emailSentAt) : "",
+      [r.firstName, r.lastName, r.email, r.company || "", r.phone || "", r.profile || "", st(r.emailStatus), r.emailError || "", r.emailSentAt ? fmt(r.emailSentAt) : "",
        r.ipAddress, r.geoCity, r.geoRegion, r.geoCountry, fmt(r.createdAt)].map(e).join(";"));
     const csv = "﻿" + [head, ...lines].join("\r\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

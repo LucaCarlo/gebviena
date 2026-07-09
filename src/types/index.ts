@@ -253,7 +253,8 @@ export type NewsBlockV2Type =
   | "single_cta"
   | "product"
   | "share"
-  | "related";
+  | "related"
+  | "columns";
 
 export interface NewsParagraphData {
   title?: string;
@@ -266,16 +267,22 @@ export interface NewsImageTextBgData {
   imageUrl: string;
   videoUrl?: string;       // URL video esterno (YouTube/Vimeo) opzionale
   imagePosition: "left" | "right";
+  // NUOVO modello (multi-CTA, come SingleCta / Feature/Strumento). Se presente
+  // e non vuoto, sostituisce completamente i vecchi campi ctaLabel/ctaHref/ctaStyle/ctaIconUrl.
+  ctas?: NewsCta[];
+  ctaGroupStyle?: "boxed" | "icons-text-divider" | "icons-only-divider";
+  // Legacy single-CTA (mantenuti per retro-compat sugli articoli esistenti).
+  // Se ctas[] esiste con almeno un elemento vengono ignorati in render/editor.
   ctaLabel?: string;
   ctaHref?: string;
-  // Stile del CTA: "default" = pulsante testuale (com'era); "custom" = sostituisce il
-  // testo del pulsante con un'icona SVG/PNG (ctaIconUrl) — utile per loghi store, app icons.
   ctaStyle?: CtaButtonStyle;
   ctaIconUrl?: string;
   // Solo se imageUrl è un file video: true = autoplay muted loop (background),
   // false/undefined = controls visibili, l'utente clicca play.
   videoAutoplay?: boolean;
   videoControls?: boolean;
+  /** Al click su play, richiedi fullscreen (solo video locali). */
+  videoFullscreenOnPlay?: boolean;
   // Stile del background della sezione. "warm" è il default storico (warm-50),
   // "white" è bianco puro, "transparent" eredita dal contesto.
   background?: "warm" | "white" | "transparent";
@@ -296,6 +303,8 @@ export interface NewsSingleImageData {
   videoUrl?: string;
   videoAutoplay?: boolean;
   videoControls?: boolean;
+  /** Al click su play, richiedi fullscreen (solo video locali). */
+  videoFullscreenOnPlay?: boolean;
 }
 
 export interface NewsImageWithParagraphData {
@@ -305,6 +314,8 @@ export interface NewsImageWithParagraphData {
   body: string;
   videoAutoplay?: boolean;
   videoControls?: boolean;
+  /** Al click su play, richiedi fullscreen (solo video locali). */
+  videoFullscreenOnPlay?: boolean;
 }
 
 export interface NewsFullwidthBannerData {
@@ -315,6 +326,8 @@ export interface NewsFullwidthBannerData {
   ctaHref?: string;
   videoAutoplay?: boolean;
   videoControls?: boolean;
+  /** Al click su play, richiedi fullscreen (solo video locali). */
+  videoFullscreenOnPlay?: boolean;
 }
 
 // Titolo grande in Libre Caslon Text — sezione editoriale per stacchi di
@@ -335,17 +348,26 @@ export interface NewsTwoImagesInlineData {
 // Block "Strumento / Feature" — immagine + card laterale con logo, paragrafo,
 // lista "ideale per" e fino a 2 CTA (anche badge store).
 export type CtaButtonStyle = "default" | "custom";
+// Effetti hover preset (step 9) — applicati sul tag <a> tramite classi CSS.
+export type CtaHoverEffect =
+  | "none" | "scale" | "lift" | "underline-grow" | "color-swap" | "glow";
 export interface NewsCta {
   label: string;
   href: string;
   style?: CtaButtonStyle;
   iconUrl?: string;   // SVG/PNG custom — se compilato, sostituisce il badge predefinito
+  /** Nome icona dalla libreria curata (lucide-react) — vince su iconUrl se settato. */
+  iconName?: string;
+  /** Effetto hover preset. Default "none". */
+  hoverEffect?: CtaHoverEffect;
 }
 export interface NewsFeatureToolData {
   imageUrl: string;
   videoUrl?: string;
   videoAutoplay?: boolean;
   videoControls?: boolean;
+  /** Al click su play, richiedi fullscreen (solo video locali). */
+  videoFullscreenOnPlay?: boolean;
   imagePosition?: "left" | "right";
   logoUrl?: string;       // piccolo SVG/PNG sopra il titolo (es. logo brand)
   title: string;
@@ -453,6 +475,78 @@ export interface NewsProductData {
   productId: string;
 }
 
+/**
+ * Layout colonne (step 5 editor news). Ogni colonna è una lista lineare di
+ * widget atomici (titolo, paragrafo, immagine, CTA, citazione, condividi).
+ * Niente template / colonne dentro colonne — l'editor lo enforce a UI.
+ * Usiamo `unknown` per i child al posto di NewsBlockV2 ricorsivo perché TS
+ * non gestisce bene il self-reference e il payload è validato lato UI.
+ */
+export type NewsColumnsCount = 2 | 3 | 4;
+export type NewsColumnsGap = "sm" | "md" | "lg";
+export type NewsColumnsAlign = "top" | "center" | "bottom";
+export interface NewsColumnsChild {
+  id: string;
+  type: NewsBlockV2Type;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any;
+  style?: NewsBlockStyle;
+}
+export interface NewsColumnsData {
+  columns: NewsColumnsCount;
+  gap?: NewsColumnsGap;
+  verticalAlign?: NewsColumnsAlign;
+  children: NewsColumnsChild[][]; // children[colIdx][childIdx]
+}
+
+/**
+ * Override di stile per singolo blocco news. Tutto opzionale → block esistenti
+ * senza `style` continuano a renderizzare identici (default code-driven).
+ * Valori semantici "none/sm/md/lg/xl" mappati a classi Tailwind statiche nel
+ * renderer per restare nel safelist e non rompere il purge CSS.
+ */
+export type NewsBlockSpacing = "none" | "sm" | "md" | "lg" | "xl";
+export type NewsBlockBackground = "default" | "white" | "warm-50" | "warm-100" | "warm-900" | "transparent";
+// Font del blocco — chiavi mappate a CSS variables del layout root.
+// "default" = inherit dal sito (Work Sans).
+export type NewsBlockFont =
+  | "default" | "caslon" | "work-sans"
+  | "inter" | "playfair" | "lora" | "montserrat" | "roboto" | "poppins";
+// Animazioni di entrata (step 8) — applicate al wrapper del blocco quando
+// entra nel viewport. "none" = nessuna animazione.
+export type NewsBlockAnimation =
+  | "none" | "fade-in" | "slide-up" | "slide-down" | "slide-left" | "slide-right" | "zoom-in";
+export interface NewsBlockStyle {
+  marginTop?: NewsBlockSpacing;
+  marginBottom?: NewsBlockSpacing;
+  paddingTop?: NewsBlockSpacing;
+  paddingBottom?: NewsBlockSpacing;
+  background?: NewsBlockBackground;
+  /** Sfondo custom (es. "#ff00aa") — vince su `background` se presente. */
+  backgroundCustom?: string;
+  textFont?: NewsBlockFont;
+  /** Colore testo preset slug (es. "black") — applicato via CSS var. */
+  textColor?: string;
+  /** Colore testo custom hex — vince su `textColor` se presente. */
+  textColorCustom?: string;
+  /** Animazione di entrata viewport — vedi NewsBlockAnimation. */
+  animation?: NewsBlockAnimation;
+  /** Delay in ms prima che parta l'animazione. Default 0. */
+  animationDelay?: number;
+  /** Come l'immagine si adatta al suo contenitore (per blocchi con immagini:
+   *  three_images, single_image, image_text_bg, ecc.).
+   *  - "cover" (default): l'immagine riempie il box, viene tagliata se l'aspect
+   *    non combacia col contenitore.
+   *  - "contain": l'immagine si vede tutta dentro il box, può lasciare margini
+   *    (bg crema). Buono per foto orizzontali in container portrait. */
+  imageFit?: "cover" | "contain";
+  /** Sfondo del box immagine (rilevante in modalità cover).
+   *  "default" = bg-warm-100 chiaro. "none" = nessuno sfondo, l'immagine ha
+   *  solo se stessa e i bordi del proprio box (utile quando hai immagini con
+   *  fondo trasparente PNG o vuoi che ci sia il colore della sezione dietro). */
+  imageBg?: "default" | "none";
+}
+
 export interface NewsBlockV2 {
   id: string;
   type: NewsBlockV2Type;
@@ -475,7 +569,10 @@ export interface NewsBlockV2 {
     | NewsComparisonTableData
     | NewsProductData
     | NewsShareData
-    | NewsRelatedData;
+    | NewsRelatedData
+    | NewsColumnsData;
+  /** Override di stile opzionale — vedi NewsBlockStyle. Default: niente override. */
+  style?: NewsBlockStyle;
 }
 
 export interface TextBlockData {
@@ -559,6 +656,7 @@ export interface HeroSlide {
   ctaText: string | null;
   ctaLink: string | null;
   imageUrl: string;
+  mobileImageUrl?: string | null;
   coverImage: string | null;
   videoUrl: string | null;
   position: string;
