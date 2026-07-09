@@ -87,8 +87,17 @@ function getAnimationProps(kind: string | undefined, delaySec: number): any {
    - controls solo → click-to-play con barra
    - entrambi → parte da solo e mostra anche la barra
    - nessuno → richiede click ma senza barra visibile (raro) */
-function NewsVideoFill({ src, autoplay = false, controls = true, className = "" }: { src: string; autoplay?: boolean; controls?: boolean; className?: string }) {
+function NewsVideoFill({ src, autoplay = false, controls = true, fullscreenOnPlay = false, className = "" }: { src: string; autoplay?: boolean; controls?: boolean; fullscreenOnPlay?: boolean; className?: string }) {
   // muted è obbligatorio per autoplay (policy browser); se non c'è autoplay teniamo il suono attivo
+  const handlePlayFill = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    if (!fullscreenOnPlay || autoplay) return;
+    const el = e.currentTarget as HTMLVideoElement & { webkitRequestFullscreen?: () => Promise<void>; webkitEnterFullscreen?: () => void };
+    try {
+      if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.webkitEnterFullscreen) el.webkitEnterFullscreen();
+    } catch { /* silent */ }
+  };
   return (
     <video
       src={src}
@@ -98,6 +107,7 @@ function NewsVideoFill({ src, autoplay = false, controls = true, className = "" 
       controls={controls || undefined}
       playsInline
       preload={autoplay ? undefined : "metadata"}
+      onPlay={fullscreenOnPlay ? handlePlayFill : undefined}
       className={`${controls ? "news-video " : ""}absolute inset-0 w-full h-full object-cover bg-black ${className}`}
     />
   );
@@ -131,7 +141,7 @@ function NewsVideoInline({ src, autoplay = false, controls = true, fullscreenOnP
 
 /* Renderer "smart" che decide tra YouTube/Vimeo/video locale/immagine in base ai dati.
    Usato dove l'admin può scegliere immagine OPPURE videoUrl esterno. */
-function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillContainer = false, aspectRatio = "3 / 4.2", mediaFit = "cover", sizes: sizesProp, quality: qualityProp }: { imageUrl?: string; videoUrl?: string; alt?: string; autoplay?: boolean; controls?: boolean; fillContainer?: boolean; aspectRatio?: string; mediaFit?: "cover" | "contain"; sizes?: string; quality?: number }) {
+function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fullscreenOnPlay = false, fillContainer = false, aspectRatio = "3 / 4.2", mediaFit = "cover", sizes: sizesProp, quality: qualityProp }: { imageUrl?: string; videoUrl?: string; alt?: string; autoplay?: boolean; controls?: boolean; fullscreenOnPlay?: boolean; fillContainer?: boolean; aspectRatio?: string; mediaFit?: "cover" | "contain"; sizes?: string; quality?: number }) {
   const ext = (videoUrl || "").trim();
   const yt = ext.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
   const vimeo = ext.match(/vimeo\.com\/(\d+)/);
@@ -183,7 +193,7 @@ function NewsMediaSmart({ imageUrl, videoUrl, alt, autoplay, controls, fillConta
     );
   }
   if (localVid) {
-    return <NewsVideoFill src={localVid} autoplay={!!autoplay} controls={controls !== false} />;
+    return <NewsVideoFill src={localVid} autoplay={!!autoplay} controls={controls !== false} fullscreenOnPlay={fullscreenOnPlay} />;
   }
   if (imageUrl) {
     // sizesProp: full-width sections (fullwidth_banner) devono passare "100vw" così
@@ -276,7 +286,7 @@ function FullwidthBanner({ d }: { d: NewsFullwidthBannerData }) {
       <div className={`absolute inset-0 ${d.videoAutoplay ? "brightness-[0.6]" : "brightness-[0.85]"}`}>
         {/* sizes 100vw + quality 92: banner full-width, evita che next/image serva
             una variante piccola facendola apparire sgranata su desktop retina. */}
-        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || ""} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer sizes="100vw" quality={92} />
+        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || ""} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fullscreenOnPlay={!!d.videoFullscreenOnPlay} fillContainer sizes="100vw" quality={92} />
       </div>
       <div className="absolute top-14 md:top-18 lg:top-22 left-0 right-0 px-7 md:px-12 lg:px-16 text-left">
         {d.title && (
@@ -315,7 +325,7 @@ function ImageTextBg({ d, title: articleTitle, fitOverride }: { d: NewsImageText
   const imageEl = (
     <div className={`relative w-full mx-auto self-center ${fit === "contain" ? "bg-white" : "bg-warm-200"} overflow-hidden`} style={{ aspectRatio }}>
       {(d.imageUrl || d.videoUrl) && (
-        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fillContainer mediaFit={fit} />
+        <NewsMediaSmart imageUrl={d.imageUrl} videoUrl={d.videoUrl} alt={d.title || articleTitle} autoplay={!!d.videoAutoplay} controls={d.videoControls !== false} fullscreenOnPlay={!!d.videoFullscreenOnPlay} fillContainer mediaFit={fit} />
       )}
     </div>
   );

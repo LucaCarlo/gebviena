@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { HERO_PAGES, PAGE_IMAGES_CONFIG } from "@/lib/constants";
 import ImageUploadField from "@/components/admin/ImageUploadField";
+import HeaderMenuEditor from "@/components/admin/HeaderMenuEditor";
 import { UI_STRINGS_BY_KEY } from "@/lib/ui-strings";
 import type { HeroSlide, PageImage } from "@/types";
 
@@ -463,6 +464,12 @@ export default function GestioneImmaginiPage() {
         </nav>
 
         <div className="flex-1 min-w-0 space-y-3">
+        {activeTab === "header" && (
+          <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 mb-4">
+            <h2 className="text-base font-semibold text-warm-800 mb-4">Voci menu Header</h2>
+            <HeaderMenuEditor />
+          </div>
+        )}
         {visiblePages.length === 0 && (
           <div className="bg-white rounded-xl border border-warm-200 p-10 text-center text-warm-400 text-sm">
             Nessuna pagina configurata in questa sezione.
