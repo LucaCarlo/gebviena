@@ -178,6 +178,7 @@ const navSections: NavSection[] = [
     label: "Configurazione",
     items: [
       { href: "/admin/gestione-contenuti", label: "Gestione Contenuti", icon: Images, permission: "hero.view" },
+      { href: "/admin/header-menu", label: "Voci menu (Header)", icon: Menu, permission: "settings.view" },
       { href: "/admin/professionals/manage", label: "Gestione professionisti", icon: Shield, permission: "newsletter.view" },
       { href: "/admin/media", label: "Media", icon: ImageIcon, permission: "media.view" },
       { href: "/admin/translations", label: "Traduzioni del sito", icon: Languages, permission: "settings.view" },

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { NAV_ITEMS } from "@/lib/constants";
+import type { HeaderMenuItem, HeaderMenuLang } from "@/lib/header-menu-types";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
 import { localizeHref } from "@/lib/localize-href";
@@ -26,6 +27,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   useFilterSlugs();
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [activeChild, setActiveChild] = useState<string | null>(null);
+  const [dynamicNav, setDynamicNav] = useState<HeaderMenuItem[] | null>(null);
   const [featuredImage, setFeaturedImage] = useState<string>(DEFAULT_FEATURED_IMAGE);
 
   useEffect(() => {
@@ -47,14 +49,54 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       .catch(() => { /* silent */ });
   }, []);
 
+
+  // Menu dinamico: prova a caricare dalla dashboard admin (Setting header.menu).
+  // Se non disponibile o vuoto → fallback a NAV_ITEMS statici.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/header", { cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (cancelled) return;
+        if (d?.success && Array.isArray(d.data) && d.data.length > 0) setDynamicNav(d.data);
+      })
+      .catch(() => { /* silent, fallback statico */ });
+    return () => { cancelled = true; };
+  }, []);
+
   const handleItemClick = (label: string, hasChildren: boolean) => {
     if (hasChildren) {
       setActiveItem(activeItem === label ? null : label);
     }
   };
 
-  const activeNav = NAV_ITEMS.find(
-    (item) => "children" in item && item.label === activeItem
+  
+  // Conversione HeaderMenuItem (dinamico) in shape compatibile con NAV_ITEMS statici.
+  // Aggiungiamo `_labels` opzionale per la risoluzione multilingua.
+  type NavLike = { label: string; i18nKey: string; href: string; external?: boolean; _labels?: Partial<Record<HeaderMenuLang, string>>; children?: NavLike[] };
+  const resolveLabel = (labels: Partial<Record<string, string>>, l: string): string => {
+    const v = labels[l as HeaderMenuLang];
+    if (v) return v;
+    return labels["it"] || "";
+  };
+  const convertDyn = (it: HeaderMenuItem): NavLike => ({
+    label: it.labels.it || it.href,
+    i18nKey: "",
+    href: it.href,
+    external: !!it.external,
+    _labels: it.labels,
+    children: it.children && it.children.length > 0 ? it.children.filter((c) => c.isActive !== false).map(convertDyn) : undefined,
+  });
+  const effectiveNav: NavLike[] = dynamicNav
+    ? dynamicNav.filter((x) => x.isActive !== false).map(convertDyn)
+    : (NAV_ITEMS as unknown as NavLike[]);
+  // Funzione unica per ottenere la label da renderizzare
+  const labelOf = (item: NavLike): string => {
+    if (item._labels) return resolveLabel(item._labels, lang) || item.label;
+    return item.i18nKey ? t(item.i18nKey) : item.label;
+  };
+  const activeNav = effectiveNav.find(
+    (item) => Array.isArray(item.children) && (item.label === activeItem || item.i18nKey === activeItem)
   );
   const hasSubOpen = !!(activeItem && activeNav && "children" in activeNav && activeNav.children);
 
@@ -100,8 +142,8 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               {/* Nav items — su altezze piccole riduciamo solo lo spacing per dare aria all'immagine senza toccare le scritte */}
               <nav className="flex items-start justify-center pt-10 md:pt-14 [@media(max-height:800px)]:pt-6 [@media(max-height:680px)]:pt-4 flex-1 min-h-0 overflow-y-auto">
                 <ul className="space-y-8 md:space-y-10 [@media(max-height:800px)]:!space-y-5 [@media(max-height:680px)]:!space-y-3">
-                  {NAV_ITEMS.map((item) => {
-                    const hasChildren = "children" in item && !!item.children;
+                  {effectiveNav.map((item) => {
+                    const hasChildren = Array.isArray(item.children) && item.children.length > 0;
                     const isActive = activeItem === item.label;
 
                     return (
@@ -114,7 +156,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                               isActive ? "underline underline-offset-[8px] decoration-[0.5px]" : ""
                             }`}
                           >
-                            {t(item.i18nKey)}
+                            {labelOf(item)}
                           </button>
                         ) : (
                           <Link
@@ -123,7 +165,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                             style={{ color: "#000000" }}
                             className="block font-sans text-lg md:text-xl uppercase tracking-wider font-light !text-black transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap"
                           >
-                            {t(item.i18nKey)}
+                            {labelOf(item)}
                           </Link>
                         )}
                       </li>
@@ -199,7 +241,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                                 style={{ color: "#000000" }}
                                 className="block font-sans text-sm md:text-base uppercase tracking-wider font-light transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap w-full text-left"
                               >
-                                {t(child.i18nKey)}
+                                {labelOf(child as NavLike)}
                               </button>
                               <AnimatePresence initial={false}>
                                 {expanded && (
@@ -221,7 +263,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                                             style={{ color: "#000000" }}
                                             className="block font-sans text-xs md:text-sm uppercase tracking-wider font-light hover:underline hover:underline-offset-[6px] hover:decoration-[0.5px] whitespace-nowrap"
                                           >
-                                            {t(gc.i18nKey)}
+                                            {labelOf(gc as NavLike)}
                                           </a>
                                         ) : (
                                           <Link
@@ -230,7 +272,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                                             style={{ color: "#000000" }}
                                             className="block font-sans text-xs md:text-sm uppercase tracking-wider font-light hover:underline hover:underline-offset-[6px] hover:decoration-[0.5px] whitespace-nowrap"
                                           >
-                                            {t(gc.i18nKey)}
+                                            {labelOf(gc as NavLike)}
                                           </Link>
                                         )}
                                       </li>
@@ -249,7 +291,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                               className="block font-sans text-sm md:text-base uppercase tracking-wider font-light transition-all hover:underline hover:underline-offset-[8px] hover:decoration-[0.5px] whitespace-nowrap"
                               style={{ color: "#000000" }}
                             >
-                              {t(child.i18nKey)}
+                              {labelOf(child as NavLike)}
                             </Link>
                           </li>
                         );
