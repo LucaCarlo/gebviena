@@ -87,7 +87,7 @@ export default function HeaderLanguageSwitcher({ isScrolled, allowedLangs }: Pro
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={`inline-flex items-center gap-1.5 uppercase text-[16px] tracking-[0.03em] font-medium transition-colors hover:underline ${colorClass}`}
-        style={{ marginTop: "2px", textUnderlineOffset: "6px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
+        style={{ textUnderlineOffset: "6px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
         aria-label="Cambia lingua"
       >
         <span>{shortLabel}</span>
