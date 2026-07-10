@@ -108,7 +108,7 @@ function NewsVideoFill({ src, autoplay = false, controls = true, fullscreenOnPla
       playsInline
       preload={autoplay ? undefined : "auto"}
       onPlay={fullscreenOnPlay ? handlePlayFill : undefined}
-      className={`${controls ? "news-video " : ""}absolute inset-0 w-full h-full object-contain bg-black ${className}`}
+      className={`${controls ? "news-video " : ""}absolute inset-0 w-full h-full object-cover bg-black ${className}`}
     />
   );
 }
@@ -316,14 +316,12 @@ function ImageTextBg({ d, title: articleTitle, fitOverride }: { d: NewsImageText
   const imgLeft = d.imagePosition === "left";
   // fitOverride (dal pannello Stile dx) vince sul mediaFit storico salvato nel data.
   const fit = fitOverride || d.mediaFit || "cover";
-  // Aspect: 16/9 (horizontal) per i VIDEO (locali mp4/webm o YT/Vimeo),
-  // 3/4.2 (portrait) per le IMMAGINI. I video sono quasi sempre orizzontali,
-  // quindi un container verticale creerebbe fasce nere sui bordi + crop
-  // in fullscreen. La forma orizzontale rispetta l'aspetto nativo.
-  const isLocalVideo = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(d.imageUrl || "");
-  const isExternalVideo = !!d.videoUrl && d.videoUrl.trim().length > 0;
-  const isVideo = isLocalVideo || isExternalVideo;
-  const aspectRatio = isVideo ? "16 / 9" : "3 / 4.2";
+  // Aspect portrait 3/4.2 uniforme per immagini e video (YT/Vimeo/locali) così
+  // che il media-side riempia sempre la stessa altezza del testo-side e
+  // matchi le altre sezioni image_text_bg (es. tra video Continuum e foto C 5501).
+  // Per gli iframe esterni il player applica un cover-fit (Vimeo background=1)
+  // oppure CSS crop laterale, vedi NewsMediaSmart.
+  const aspectRatio = "3 / 4.2";
   const imageEl = (
     <div className={`relative w-full mx-auto self-center ${fit === "contain" ? "bg-white" : "bg-warm-200"} overflow-hidden`} style={{ aspectRatio }}>
       {(d.imageUrl || d.videoUrl) && (
