@@ -1836,6 +1836,10 @@ function AziendaTab({ showToast }: { showToast: (m: string, t: "success" | "erro
   const [form, setForm] = useState({
     company_name: "",
     company_description: "",
+    company_description_en: "",
+    company_description_fr: "",
+    company_description_de: "",
+    company_description_es: "",
     company_logo_main: "",
     company_logo_white: "",
     company_logo_dark: "",
@@ -1906,8 +1910,24 @@ function AziendaTab({ showToast }: { showToast: (m: string, t: "success" | "erro
           <input type="text" value={form.company_name} onChange={(e) => update("company_name", e.target.value)} className={inputClass} placeholder="Gebrüder Thonet Vienna" />
         </div>
         <div>
-          <label className={labelClass}>Descrizione / Claim</label>
+          <label className={labelClass}>Descrizione / Claim (IT — default)</label>
           <textarea value={form.company_description} onChange={(e) => update("company_description", e.target.value)} rows={3} className={inputClass} placeholder="Breve descrizione dell'azienda…" />
+        </div>
+        <div>
+          <label className={labelClass}>Descrizione (EN)</label>
+          <textarea value={form.company_description_en} onChange={(e) => update("company_description_en", e.target.value)} rows={3} className={inputClass} placeholder="English translation (fallback IT if empty)" />
+        </div>
+        <div>
+          <label className={labelClass}>Descrizione (FR)</label>
+          <textarea value={form.company_description_fr} onChange={(e) => update("company_description_fr", e.target.value)} rows={3} className={inputClass} placeholder="Traduction française (fallback IT si vide)" />
+        </div>
+        <div>
+          <label className={labelClass}>Descrizione (DE)</label>
+          <textarea value={form.company_description_de} onChange={(e) => update("company_description_de", e.target.value)} rows={3} className={inputClass} placeholder="Deutsche Übersetzung (Fallback IT)" />
+        </div>
+        <div>
+          <label className={labelClass}>Descrizione (ES)</label>
+          <textarea value={form.company_description_es} onChange={(e) => update("company_description_es", e.target.value)} rows={3} className={inputClass} placeholder="Traducción al español (fallback IT)" />
         </div>
       </div>
 

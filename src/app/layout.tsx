@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import { Work_Sans, Libre_Caslon_Text } from "next/font/google";
+import {
+  Work_Sans, Libre_Caslon_Text,
+  Inter, Playfair_Display, Lora, Montserrat, Roboto, Poppins,
+} from "next/font/google";
 import Script from "next/script";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
@@ -21,6 +24,16 @@ const caslon = Libre_Caslon_Text({
   style: ["normal", "italic"],
   display: "swap",
 });
+
+// Font extra esposti come CSS variables per il font picker nello Style
+// panel delle news (step 6). Sono caricati in CSS sempre, ma i woff2 si
+// scaricano solo quando un blocco li usa effettivamente.
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap" });
+const lora = Lora({ subsets: ["latin"], variable: "--font-lora", display: "swap" });
+const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat", display: "swap" });
+const roboto = Roboto({ subsets: ["latin"], variable: "--font-roboto", weight: ["400", "500", "700"], display: "swap" });
+const poppins = Poppins({ subsets: ["latin"], variable: "--font-poppins", weight: ["400", "500", "600", "700"], display: "swap" });
 
 export const metadata: Metadata = {
   title: "Wiener GTV Design | Gebrüder Thonet Vienna",
@@ -117,7 +130,7 @@ export default async function RootLayout({
           </noscript>
         )}
       </head>
-      <body className={`${workSans.variable} ${caslon.variable} antialiased bg-white`}>
+      <body className={`${workSans.variable} ${caslon.variable} ${inter.variable} ${playfair.variable} ${lora.variable} ${montserrat.variable} ${roboto.variable} ${poppins.variable} antialiased bg-white`}>
         {gtmId && (
           <noscript>
             <iframe

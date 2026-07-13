@@ -73,15 +73,15 @@ export default async function AreaProfessionistiPage() {
               </span>
             )}
             <h2 className="text-lg md:text-xl font-serif text-warm-900 mb-2 leading-tight group-hover:text-warm-700">
-              Bacheca
+              {t("bacheca.title")}
             </h2>
             <p className="text-sm text-warm-700 leading-relaxed">
               {unreadCount > 0
-                ? `${unreadCount} ${unreadCount === 1 ? "novità non letta" : "novità non lette"}: cataloghi, listini, media e aggiornamenti.`
-                : "Aggiornamenti e novità: cataloghi, listini, media, credenziali."}
+                ? `${unreadCount} ${t(unreadCount === 1 ? "bacheca.card.unread_one" : "bacheca.card.unread_many")}`
+                : t("bacheca.card.subtitle")}
             </p>
             <div className="mt-4 text-[11px] uppercase tracking-[0.15em] text-warm-900 inline-flex items-center gap-2">
-              {unreadCount > 0 ? "Leggi le novità" : t("dashboard.cta.open")}
+              {unreadCount > 0 ? t("bacheca.card.cta_unread") : t("dashboard.cta.open")}
             </div>
           </Link>
 

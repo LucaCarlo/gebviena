@@ -32,31 +32,31 @@ export async function GET(req: Request) {
         where: { ...regWhere, checkedIn: false },
         orderBy: { createdAt: "desc" },
       });
-      csv = "Email,Nome,Cognome,Sorgente,Registrato il\n";
+      csv = "Email,Nome,Cognome,Profilo,Sorgente,Registrato il\n";
       csv += regs.map((r) =>
-        `"${r.email}","${r.firstName}","${r.lastName}","${r.source || "unknown"}","${r.createdAt.toISOString()}"`
+        `"${r.email}","${r.firstName}","${r.lastName}","${r.profile || ""}","${r.source || "unknown"}","${r.createdAt.toISOString()}"`
       ).join("\n");
     } else if (status === "checkedIn") {
       const regs = await prisma.eventRegistration.findMany({
         where: { ...regWhere, checkedIn: true },
         orderBy: { checkedInAt: "desc" },
       });
-      csv = "Email,Nome,Cognome,Sorgente,Registrato il,Check-in il\n";
+      csv = "Email,Nome,Cognome,Profilo,Sorgente,Registrato il,Check-in il\n";
       csv += regs.map((r) =>
-        `"${r.email}","${r.firstName}","${r.lastName}","${r.source || "unknown"}","${r.createdAt.toISOString()}","${r.checkedInAt?.toISOString() || ""}"`
+        `"${r.email}","${r.firstName}","${r.lastName}","${r.profile || ""}","${r.source || "unknown"}","${r.createdAt.toISOString()}","${r.checkedInAt?.toISOString() || ""}"`
       ).join("\n");
     } else {
-      // All
+      // All — Profilo compilato solo dai registrati (gli inviti non hanno profilo).
       const [invitations, regs] = await Promise.all([
         prisma.eventInvitation.findMany({ where: invWhere, orderBy: { sentAt: "desc" } }),
         prisma.eventRegistration.findMany({ where: regWhere, orderBy: { createdAt: "desc" } }),
       ]);
-      csv = "Tipo,Email,Nome,Sorgente,Inviato,Aperto,Cliccato,Registrato,Check-in\n";
+      csv = "Tipo,Email,Nome,Profilo,Sorgente,Inviato,Aperto,Cliccato,Registrato,Check-in\n";
       for (const i of invitations) {
-        csv += `"Invito","${i.email}","","","${i.sentAt.toISOString()}","${i.openedAt?.toISOString() || ""}","${i.clickedAt?.toISOString() || ""}","${i.registeredAt?.toISOString() || ""}",""\n`;
+        csv += `"Invito","${i.email}","","","","${i.sentAt.toISOString()}","${i.openedAt?.toISOString() || ""}","${i.clickedAt?.toISOString() || ""}","${i.registeredAt?.toISOString() || ""}",""\n`;
       }
       for (const r of regs) {
-        csv += `"Registrazione","${r.email}","${r.firstName} ${r.lastName}","${r.source || "unknown"}","","","","${r.createdAt.toISOString()}","${r.checkedIn ? r.checkedInAt?.toISOString() || "sì" : ""}"\n`;
+        csv += `"Registrazione","${r.email}","${r.firstName} ${r.lastName}","${r.profile || ""}","${r.source || "unknown"}","","","","${r.createdAt.toISOString()}","${r.checkedIn ? r.checkedInAt?.toISOString() || "sì" : ""}"\n`;
       }
     }
 

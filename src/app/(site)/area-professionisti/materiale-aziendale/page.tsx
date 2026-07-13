@@ -23,6 +23,13 @@ export default async function Page() {
   const rows = await prisma.setting.findMany({ where: { group: "azienda" } });
   const s: Record<string, string> = {};
   for (const r of rows) s[r.key] = r.value || "";
+  // Risolve la descrizione aziendale nella lingua attiva: chiavi
+  // company_description_<lang> sovrascrivono la master "company_description"
+  // (italiano). Fallback sempre all'IT se la traduzione è vuota o assente.
+  if (lang !== "it") {
+    const localized = s[`company_description_${lang}`];
+    if (localized && localized.trim()) s.company_description = localized;
+  }
   const has = (k: string) => !!s[k]?.trim();
 
   const logos: Array<{ label: string; url: string; isWhite?: boolean }> = [];

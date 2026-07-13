@@ -101,11 +101,12 @@ export async function middleware(req: NextRequest) {
   const segments = pathname.split("/").filter(Boolean);
   const first = segments[0];
 
-  // La lingua è determinata ESCLUSIVAMENTE dal prefisso nell'URL (/fr, /en, …).
-  // Niente auto-redirect basato su cookie: il dominio "nudo" mostra sempre la
-  // lingua di default (it). Così nessuno resta "incastrato" in francese per un
-  // cookie vecchio. Lo switcher continua a funzionare perché naviga all'URL
-  // con il prefisso giusto.
+  // La lingua è determinata dal prefisso nell'URL (/fr, /en, …).
+  // Se l'URL NON ha prefisso ma esiste il cookie "gtv_lang" (impostato dal
+  // language switcher quando l'utente sceglie esplicitamente una lingua),
+  // facciamo redirect a /{lang}/... così i link hardcoded in italiano
+  // (es. <Link href="/">) non resettano la lingua attiva.
+  // Cookie="it" → nessun redirect (l'utente ha esplicitamente scelto IT).
   let lang = DEFAULT_LANG;
   let rest = segments;
 
@@ -113,6 +114,15 @@ export async function middleware(req: NextRequest) {
     lang = first;
     rest = segments.slice(1);
     rest = translateSegmentsBackward(rest, lang);
+  } else if (!isStoreHost) {
+    // Solo sul main host. Sullo store il routing è host-based e non vogliamo
+    // forzare prefissi sull'URL della vetrina.
+    const cookieLang = req.cookies.get("gtv_lang")?.value?.toLowerCase() || "";
+    if (KNOWN_PREFIXES.includes(cookieLang)) {
+      const target = req.nextUrl.clone();
+      target.pathname = `/${cookieLang}${pathname === "/" ? "" : pathname}`;
+      return NextResponse.redirect(target);
+    }
   }
 
   const strippedPath = rest.length ? "/" + rest.join("/") : "/";

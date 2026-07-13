@@ -24,14 +24,16 @@ export default function CataloghiPage() {
   const [filter, setFilter] = useState<string>("__all__");
 
   useEffect(() => {
+    // Le API /api/* non passano dal middleware: la lingua va in query string.
+    const langQs = lang && lang !== "it" ? `&lang=${encodeURIComponent(lang)}` : "";
     Promise.all([
-      fetch("/api/catalogs").then((r) => r.json()).catch(() => ({ data: [] })),
-      fetch("/api/catalog-categories?scope=public").then((r) => r.json()).catch(() => ({ data: [] })),
+      fetch(`/api/catalogs?_=1${langQs}`).then((r) => r.json()).catch(() => ({ data: [] })),
+      fetch(`/api/catalog-categories?scope=public${langQs}`).then((r) => r.json()).catch(() => ({ data: [] })),
     ]).then(([catRes, catgRes]) => {
       setCatalogs((catRes.data || []) as Catalog[]);
       setCategories((catgRes.data || []) as Category[]);
     }).finally(() => setLoading(false));
-  }, []);
+  }, [lang]);
 
   // Categorie effettivamente popolate (esistono cataloghi in quella categoria)
   const visibleCategories = useMemo(() => {

@@ -17,6 +17,7 @@ const FALLBACK_SLIDE: HeroSlide = {
   ctaText: "Kipferl by Antenna",
   ctaLink: "/prodotti",
   imageUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=2560&h=1707&fit=crop&q=90",
+  mobileImageUrl: null,
   coverImage: null,
   videoUrl: null,
   position: "center",
@@ -90,10 +91,22 @@ export default function HeroSection() {
     slide.position === "right" ? "items-end text-right pr-8 md:pr-20" :
     "items-center text-center";
 
-  const textAlignV = "bottom-[calc(12.5vh-30px)]";
+  // Su mobile il testo va leggermente piu in basso e piu compatto per lasciare
+  // piu spazio all'immagine sopra (soprattutto quando entra intera).
+  const textAlignV = "max-md:bottom-[calc(6vh-18px)] md:bottom-[calc(12.5vh-30px)]";
+
+  // Height della section:
+  //  - Desktop: sempre h-[min(118vh,1107px)]
+  //  - Mobile con mobileImageUrl: h-[55vh] (cover, come prima)
+  //  - Mobile SENZA mobileImageUrl: altezza dinamica = quella dell'immagine
+  //    orizzontale scalata a w-full (l'immagine entra intera, niente crop).
+  //    L'hero risulta piu bassa ma si vede tutta.
+  const sectionHeightClass = slide.mobileImageUrl
+    ? "h-[min(118vh,1107px)] max-md:h-[55vh]"
+    : "md:h-[min(118vh,1107px)]";
 
   return (
-    <section className="relative w-full overflow-hidden h-[min(118vh,1107px)] max-md:h-[55vh]">
+    <section className={`relative w-full overflow-hidden ${sectionHeightClass}`}>
       <AnimatePresence mode="wait">
         <motion.div
           key={slide.id}
@@ -101,17 +114,51 @@ export default function HeroSection() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8 }}
-          className="absolute inset-0"
         >
-          <Image
-            src={slide.imageUrl}
-            alt={slide.title}
-            fill
-            className="object-cover"
-            priority={current === 0}
-            sizes="100vw"
-            quality={90}
-          />
+          {/* Mobile SENZA mobileImageUrl: immagine in-flow, w-full h-auto.
+              Determina l'altezza della section (adattiva). */}
+          {!slide.mobileImageUrl && (
+            <div className="md:hidden">
+              <Image
+                src={slide.imageUrl}
+                alt={slide.title}
+                width={1920}
+                height={1080}
+                className="w-full h-auto"
+                priority={current === 0}
+                sizes="100vw"
+                quality={90}
+              />
+            </div>
+          )}
+          {/* Mobile CON mobileImageUrl: fill cover a 55vh */}
+          {slide.mobileImageUrl && (
+            <div className="md:hidden absolute inset-0">
+              <Image
+                src={slide.mobileImageUrl}
+                alt={slide.title}
+                fill
+                className="object-cover"
+                priority={current === 0}
+                sizes="100vw"
+                quality={90}
+                style={{ objectPosition: slide.imagePosition || "center center" }}
+              />
+            </div>
+          )}
+          {/* Desktop (>=md): sempre fill cover come prima */}
+          <div className="hidden md:block absolute inset-0">
+            <Image
+              src={slide.imageUrl}
+              alt={slide.title}
+              fill
+              className="object-cover"
+              priority={current === 0}
+              sizes="100vw"
+              quality={90}
+              style={{ objectPosition: slide.imagePosition || "center center" }}
+            />
+          </div>
         </motion.div>
       </AnimatePresence>
 
@@ -123,7 +170,9 @@ export default function HeroSection() {
         <div className="absolute inset-0 bg-black" style={{ opacity: (slide.overlayOpacity ?? 60) / 100 }} />
       )}
 
-      {/* Text content */}
+      {/* Text content — overlay assoluto sopra l'immagine. Anche su mobile:
+          font piu piccolo, leading piu stretto, righe piu compatte per
+          leggibilita' quando l'hero e' bassa (immagine orizzontale). */}
       <AnimatePresence mode="wait">
         <motion.div
           key={`text-${slide.id}`}
@@ -133,18 +182,18 @@ export default function HeroSection() {
           transition={{ duration: 1, delay: 0.3 }}
           className={`absolute ${textAlignV} left-0 right-0 flex flex-col ${textAlignH}`}
         >
-          <h1 className={`font-sans text-2xl md:text-3xl lg:text-[38px] ${slide.textColor === "black" ? "text-black" : "text-white"} leading-snug font-light uppercase tracking-[inherit] whitespace-nowrap`} style={{ marginTop: "-5px" }}>
+          <h1 className={`font-sans text-[19px] md:text-3xl lg:text-[38px] ${slide.textColor === "black" ? "text-black" : "text-white"} max-md:leading-tight md:leading-snug font-light uppercase tracking-[inherit] max-md:whitespace-normal md:whitespace-nowrap max-md:max-w-[85%]`} style={{ marginTop: "-5px" }}>
             {slide.title}
           </h1>
           {slide.subtitle && (
-            <p className={`text-[16px] ${slide.textColor === "black" ? "text-black/60" : "text-white/60"} mt-2 max-w-2xl`}>
+            <p className={`text-[13px] md:text-[16px] ${slide.textColor === "black" ? "text-black/60" : "text-white/60"} max-md:mt-0.5 md:mt-2 max-w-2xl max-md:leading-tight`}>
               {slide.subtitle}
             </p>
           )}
           {slide.ctaText && slide.ctaLink && (
             <Link
               href={slide.ctaLink}
-              className={`inline-block mt-4 uppercase text-[16px] tracking-[0.03em] ${slide.textColor === "black" ? "text-black hover:text-black/70" : "text-white hover:text-white/80"} font-medium transition-colors duration-300 hover:underline`}
+              className={`inline-block max-md:mt-1.5 md:mt-4 uppercase text-[13px] md:text-[16px] tracking-[0.03em] ${slide.textColor === "black" ? "text-black hover:text-black/70" : "text-white hover:text-white/80"} font-medium transition-colors duration-300 hover:underline`}
               style={{ textUnderlineOffset: "12px", textDecorationSkipInk: "none", textDecorationThickness: "0.5px" }}
             >
               {slide.ctaText} &rarr;

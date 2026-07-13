@@ -346,6 +346,17 @@ export default function Footer() {
                   {t("footer.terms")}
                 </Link>
               </li>
+              <li>
+                <a
+                  href="https://whistleblowersoftware.com/secure/febb7ea8-1fb0-4b00-baa1-ae65561d54b4"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[16px] uppercase tracking-[0.03em] font-normal hover:underline transition-all"
+                  style={{ color: "#000", textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}
+                >
+                  Whistleblowing
+                </a>
+              </li>
             </ul>
           </div>
 

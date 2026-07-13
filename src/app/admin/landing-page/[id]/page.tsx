@@ -1273,7 +1273,7 @@ export default function LandingPageDetailPage() {
       )}
 
       {/* ═══ DATI Tab ═══ */}
-      {activeTab === "dati" && <RegistrantsData />}
+      {activeTab === "dati" && <RegistrantsData landingPageId={lpId} />}
 
       {/* ═══ Scanner Tab ═══ */}
       {activeTab === "scanner" && (

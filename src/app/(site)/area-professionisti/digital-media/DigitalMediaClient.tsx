@@ -122,9 +122,27 @@ export default function DigitalMediaClient({
   const photosForTypology = useMemo(() => {
     if (!selectedTypology) return [];
     const fromTypology = typologyImages.filter((i) => i.typology === selectedTypology).map((i) => ({ id: i.id, fileUrl: i.fileUrl, fileName: i.fileName, label: "" }));
-    const fromProducts = productImages
-      .filter((i) => i.productCategory && i.productCategory.split(",").map((s) => s.trim()).includes(selectedTypology))
-      .map((i) => ({ id: i.id, fileUrl: i.fileUrl, fileName: i.fileName, label: i.productName }));
+    // Filtra le immagini dei prodotti che appartengono a questa tipologia,
+    // poi raggruppa per productId cosi tutte le foto dello stesso prodotto
+    // sono contigue. I prodotti vengono poi ordinati alfabeticamente per nome
+    // (case-insensitive) per una lettura chiara nella galleria.
+    const filtered = productImages.filter(
+      (i) => i.productCategory && i.productCategory.split(",").map((s) => s.trim()).includes(selectedTypology)
+    );
+    const byProduct = new Map<string, typeof filtered>();
+    for (const i of filtered) {
+      const key = i.productId || "_no_product";
+      const arr = byProduct.get(key);
+      if (arr) arr.push(i); else byProduct.set(key, [i]);
+    }
+    const sortedProductIds = Array.from(byProduct.keys()).sort((a, b) => {
+      const na = byProduct.get(a)![0]?.productName || "";
+      const nb = byProduct.get(b)![0]?.productName || "";
+      return na.localeCompare(nb, undefined, { sensitivity: "base" });
+    });
+    const fromProducts = sortedProductIds.flatMap((pid) =>
+      byProduct.get(pid)!.map((i) => ({ id: i.id, fileUrl: i.fileUrl, fileName: i.fileName, label: i.productName }))
+    );
     return [...fromTypology, ...fromProducts];
   }, [selectedTypology, typologyImages, productImages]);
 

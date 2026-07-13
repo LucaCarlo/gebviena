@@ -26,6 +26,7 @@ interface I18n {
   empty: string;
   sheet: string;
   downloadPdf: string;
+  typology: Record<string, string>;
 }
 
 // Tipologie canoniche, in ordine di priorità (la prima vince se un prodotto
@@ -120,7 +121,7 @@ export default function InformazioniTecnicheClient({ initialProducts, i18n }: { 
                   className="w-full flex items-center justify-between py-5 px-2 group"
                 >
                   <span className="uppercase text-[18px] md:text-[20px] tracking-[0.03em] text-black font-light">
-                    {cat} <span className="text-warm-500 text-[14px] ml-2">({items.length})</span>
+                    {i18n.typology[cat] || cat} <span className="text-warm-500 text-[14px] ml-2">({items.length})</span>
                   </span>
                   <span className="w-10 h-10 border border-black flex items-center justify-center text-black flex-shrink-0">
                     {isOpen ? <Minus size={18} /> : <Plus size={18} />}

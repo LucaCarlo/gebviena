@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { X, Sparkles, Loader2, Check, FileText } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
-import SeoPanel from "./SeoPanel";
+import NewsRightStyle from "./news/NewsRightStyle";
 import { useTranslationCtx } from "@/contexts/TranslationContext";
 import { TInput } from "./TranslatableField";
 import NewsBlockBuilder from "./news/NewsBlockBuilder";
 import { slugify } from "@/lib/utils";
-import type { NewsBlockV2 } from "@/types";
+import type { NewsBlockV2, NewsBlockStyle } from "@/types";
 
 
 interface NewsFormProps {
@@ -44,6 +44,9 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
   const [error, setError] = useState("");
   const [newTag, setNewTag] = useState("");
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  // Selezione blocco nel canvas per il pannello Stile a destra.
+  // null = nessun blocco selezionato → il pannello mostra impostazioni SEO.
+  const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null);
   useEffect(() => {
     if (!savedAt) return;
     const id = setTimeout(() => setSavedAt(null), 3500);
@@ -309,7 +312,6 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
             onChange={(e) => updateField("category", e.target.value)}
             className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
           >
-            {/* fallback se la categoria attuale non è nella lista (cat. rimossa o non ancora caricata) */}
             {form.category && !categories.find((c) => c.value === form.category) && (
               <option value={form.category}>{CATEGORY_LABELS[form.category] || form.category}</option>
             )}
@@ -402,6 +404,8 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
           <NewsBlockBuilder
             value={tCtx?.isTranslating ? (tCtx.getValue("blocks", "") || form.blocksV2) : form.blocksV2}
             sourceValue={tCtx?.isTranslating ? form.blocksV2 : undefined}
+            selectedStyleId={selectedStyleId}
+            onSelectStyle={setSelectedStyleId}
             onChange={(json) => {
               if (tCtx?.isTranslating) {
                 tCtx.setValue("blocks", json);
@@ -429,23 +433,47 @@ export default function NewsForm({ articleId, category: categoryProp }: NewsForm
 
       </div>
 
-      {/* Right: SEO sidebar */}
-      <div className="w-80 flex-shrink-0 hidden lg:block sticky top-6">
-        <SeoPanel
+      {/* Right: Pannello Stile (per blocco selezionato) o SEO (default). Sempre
+          visibile su desktop, sticky lungo l'altezza viewport. */}
+      <aside className="hidden lg:block w-[340px] flex-shrink-0 sticky top-0 self-start h-screen border-l border-warm-200 bg-warm-50 overflow-hidden">
+        <NewsRightStyle
+          selectedBlock={(() => {
+            if (!selectedStyleId) return null;
+            try {
+              const blocks = JSON.parse(tCtx?.isTranslating ? (tCtx.getValue("blocks", "") || form.blocksV2) : form.blocksV2) as NewsBlockV2[];
+              return blocks.find((b) => b.id === selectedStyleId) || null;
+            } catch { return null; }
+          })()}
+          onCloseSelection={() => setSelectedStyleId(null)}
+          onBlockStyleChange={(style: NewsBlockStyle | null) => {
+            if (!selectedStyleId) return;
+            const json = tCtx?.isTranslating ? (tCtx.getValue("blocks", "") || form.blocksV2) : form.blocksV2;
+            let blocks: NewsBlockV2[];
+            try { blocks = JSON.parse(json) as NewsBlockV2[]; } catch { return; }
+            const next = blocks.map((b) => {
+              if (b.id !== selectedStyleId) return b;
+              if (style === null) {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { style: _s, ...rest } = b;
+                return rest as NewsBlockV2;
+              }
+              return { ...b, style };
+            });
+            const nextJson = JSON.stringify(next);
+            if (tCtx?.isTranslating) tCtx.setValue("blocks", nextJson);
+            else updateField("blocksV2", nextJson);
+          }}
           seoTitle={form.seoTitle}
           seoDescription={form.seoDescription}
           seoKeywords={(() => { try { return JSON.parse(form.seoKeywords); } catch { return []; } })()}
           slug={form.slug}
           content={form.content || ""}
-          onChange={(field, value) => {
-            if (field === "seoKeywords") {
-              updateField("seoKeywords", JSON.stringify(value));
-            } else {
-              updateField(field, value as string);
-            }
+          onSeoChange={(field, value) => {
+            if (field === "seoKeywords") updateField("seoKeywords", JSON.stringify(value));
+            else updateField(field, value as string);
           }}
         />
-      </div>
+      </aside>
     </form>
   );
 }
