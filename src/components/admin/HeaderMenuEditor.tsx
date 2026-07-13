@@ -121,6 +121,26 @@ export default function HeaderMenuEditor() {
     }
   }, [items]);
 
+  const restoreBackup = async () => {
+    if (!confirm("Ripristinare l'ultima versione salvata prima delle modifiche?")) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/header-menu", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data?.error || "Errore ripristino backup", "err");
+        return;
+      }
+      const r = await fetch("/api/admin/header-menu", { cache: "no-store" });
+      const j = await r.json();
+      if (j.success && Array.isArray(j.data)) setItems(j.data);
+      showToast("Backup ripristinato — ricarica il sito pubblico per vederlo", "ok");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+
   const toggleExpand = (id: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -149,6 +169,15 @@ export default function HeaderMenuEditor() {
             className="inline-flex items-center gap-1.5 text-sm border border-warm-300 px-3 py-2 rounded-lg hover:bg-warm-50"
           >
             <Plus size={14} /> Aggiungi voce
+          </button>
+          <button
+            type="button"
+            onClick={restoreBackup}
+            disabled={saving}
+            className="mr-2 inline-flex items-center gap-1.5 px-4 py-2 text-sm border border-warm-300 text-warm-700 rounded hover:bg-warm-50 disabled:opacity-50"
+            title="Ripristina l'ultima versione salvata prima di questa"
+          >
+            Ripristina backup
           </button>
           <button
             onClick={save}

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Download } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 
 interface Catalog {
   id: string;
@@ -135,8 +135,9 @@ function CatalogCard({ c, i18n }: { c: Catalog; i18n: I18n }) {
             className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-warm-400 text-xs">
-            {i18n.previewUnavailable}
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-warm-50 to-warm-100 gap-2 px-2">
+            <FileText size={40} className="text-warm-400" strokeWidth={1.2} />
+            <div className="text-[10px] uppercase tracking-[0.15em] text-warm-500">PDF</div>
           </div>
         )}
       </div>

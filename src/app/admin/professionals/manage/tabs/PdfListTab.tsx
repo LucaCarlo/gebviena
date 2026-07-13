@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Upload, FileText, Trash2, Loader2, ExternalLink, Eye, EyeOff } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, ExternalLink, Eye, EyeOff, Image as ImageIcon } from "lucide-react";
 
 interface CatalogItem {
   id: string;
   name: string;
   slug: string;
   pdfUrl: string;
+  imageUrl?: string | null;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -25,6 +26,38 @@ export default function PdfListTab({
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [uploadingPreviewId, setUploadingPreviewId] = useState<string | null>(null);
+  const previewInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const uploadPreview = async (it: CatalogItem, file: File) => {
+    setUploadingPreviewId(it.id);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "catalogs");
+      const up = await fetch("/api/upload", { method: "POST", body: fd });
+      const upData = await up.json();
+      if (!upData.success || !upData.data?.url) {
+        alert(upData?.error || "Upload anteprima fallito");
+        return;
+      }
+      const res = await fetch(`/api/catalogs/${it.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: upData.data.url }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data?.error || "Errore aggiornamento anteprima");
+        return;
+      }
+      setItems((prev) => prev.map((x) => x.id === it.id ? { ...x, imageUrl: upData.data.url } : x));
+    } finally {
+      setUploadingPreviewId(null);
+      const inp = previewInputRefs.current[it.id];
+      if (inp) inp.value = "";
+    }
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -148,7 +181,17 @@ export default function PdfListTab({
             {items.map((it) => (
               <div key={it.id} className={`flex items-center justify-between gap-3 px-4 py-3 ${!it.isActive ? "opacity-60" : ""}`}>
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <FileText size={18} className="text-warm-500 flex-shrink-0" />
+                  {/* Thumbnail anteprima o icona PDF di default */}
+                  <div className="relative w-14 h-14 flex-shrink-0 bg-warm-50 border border-warm-200 rounded overflow-hidden">
+                    {it.imageUrl ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={it.imageUrl} alt="anteprima" className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <FileText size={22} className="text-warm-400" />
+                      </div>
+                    )}
+                  </div>
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-warm-900 truncate">{it.name}</div>
                     <a href={it.pdfUrl} target="_blank" rel="noopener noreferrer"
@@ -158,6 +201,26 @@ export default function PdfListTab({
                   </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Upload anteprima */}
+                  <label
+                    title={it.imageUrl ? "Sostituisci l'anteprima" : "Carica un'immagine di anteprima"}
+                    className="p-1.5 text-warm-400 hover:text-warm-800 rounded cursor-pointer"
+                  >
+                    {uploadingPreviewId === it.id
+                      ? <Loader2 size={16} className="animate-spin" />
+                      : <ImageIcon size={16} />}
+                    <input
+                      ref={(el) => { previewInputRefs.current[it.id] = el; }}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingPreviewId === it.id}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadPreview(it, f);
+                      }}
+                    />
+                  </label>
                   <button
                     onClick={() => togglePublish(it)}
                     title={it.isActive ? "Visibile sul sito — clicca per nascondere" : "Nascosto — clicca per pubblicare"}
