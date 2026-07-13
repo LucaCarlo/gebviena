@@ -80,7 +80,7 @@ const D: Record<string, Dict> = {
     es: "Catálogo general, monografías, pósters, journal.",
   },
 
-  "section.pcon.label": { it: "pCon configuratore", fr: "Configurateur pCon", en: "pCon configurator", de: "pCon-Konfigurator", es: "Configurador pCon" },
+  "section.pcon.label": { it: "Configuratore", fr: "Configurateur", en: "Configurator", de: "Konfigurator", es: "Configurador" },
   "section.pcon.desc": {
     it: "Configura le sedute online e accedi all'intero catalogo.",
     fr: "Configurez les sièges en ligne et accédez au catalogue complet.",
