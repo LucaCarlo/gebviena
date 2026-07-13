@@ -250,7 +250,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                                     animate={{ height: "auto", opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }}
                                     transition={{ duration: 0.25 }}
-                                    className="overflow-hidden pl-4 mt-3 space-y-3"
+                                    className="overflow-hidden pl-4 mt-3 pb-2 space-y-3"
                                   >
                                     {grandchildren.map((gc) => (
                                       <li key={gc.label}>
