@@ -119,48 +119,61 @@ export default function DigitalMediaClient({
     return c;
   }, [typologies, typologyImages, productImages]);
 
-  // Vista PER tipologia raggruppata: ogni prodotto e' una sezione con header
-  // + griglia delle sue foto. Le foto pro caricate a livello tipologia (senza
-  // prodotto associato) finiscono in una sezione "Foto tipologia".
+  // Vista PER tipologia: filtra i prodotti che hanno immagini con questa tipologia
+  // e li presenta come CARD (esattamente come la vista PER prodotto), ordinate
+  // alfabeticamente. Click su una card → apre la stessa modal gallery del prodotto.
   type TyImg = { id: string; fileUrl: string; fileName: string; label: string };
-  type TyGroup = { key: string; productName: string; images: TyImg[] };
-  const typologyGroups = useMemo<TyGroup[]>(() => {
+  type TyProductGroup = { id: string; name: string; cover: string; images: TyImg[] };
+  const typologyProductGroups = useMemo<TyProductGroup[]>(() => {
     if (!selectedTypology) return [];
-    const fromTypology = typologyImages
-      .filter((i) => i.typology === selectedTypology)
-      .map((i) => ({ id: i.id, fileUrl: i.fileUrl, fileName: i.fileName, label: "" }));
     const filtered = productImages.filter(
       (i) => i.productCategory && i.productCategory.split(",").map((s) => s.trim()).includes(selectedTypology)
     );
-    const byProduct = new Map<string, TyImg[]>();
-    const productNameById = new Map<string, string>();
+    const byProduct = new Map<string, { name: string; cover: string; images: TyImg[] }>();
     for (const i of filtered) {
-      const key = i.productId || "_no_product";
-      const img: TyImg = { id: i.id, fileUrl: i.fileUrl, fileName: i.fileName, label: i.productName };
-      const arr = byProduct.get(key);
-      if (arr) arr.push(img); else byProduct.set(key, [img]);
-      if (!productNameById.has(key)) productNameById.set(key, i.productName || "");
+      if (!i.productId) continue;
+      let g = byProduct.get(i.productId);
+      if (!g) {
+        g = {
+          name: i.productName || "",
+          cover: i.productCover || i.fileUrl,
+          images: [],
+        };
+        byProduct.set(i.productId, g);
+      }
+      g.images.push({ id: i.id, fileUrl: i.fileUrl, fileName: i.fileName, label: i.productName });
     }
-    const sortedProductKeys = Array.from(byProduct.keys()).sort((a, b) => {
-      const na = productNameById.get(a) || "";
-      const nb = productNameById.get(b) || "";
-      return na.localeCompare(nb, undefined, { sensitivity: "base" });
-    });
-    const productGroupsArr: TyGroup[] = sortedProductKeys.map((k) => ({
-      key: `prod-${k}`,
-      productName: productNameById.get(k) || "",
-      images: byProduct.get(k)!,
-    }));
-    const groups: TyGroup[] = [];
-    if (fromTypology.length > 0) groups.push({ key: "typology", productName: "", images: fromTypology });
-    groups.push(...productGroupsArr);
-    return groups;
-  }, [selectedTypology, typologyImages, productImages]);
+    return Array.from(byProduct.entries())
+      .map(([id, g]) => ({ id, ...g }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  }, [selectedTypology, productImages]);
 
+  // Le foto "generic" (typology senza prodotto) vengono mostrate in cima come un
+  // gruppo speciale — ma nella nuova UX preferiamo mostrarle come singola card
+  // "Foto generiche" cliccabile che apre la modal.
+  const typologyGenericGroup = useMemo<TyProductGroup | null>(() => {
+    if (!selectedTypology) return null;
+    const fromTypology = typologyImages
+      .filter((i) => i.typology === selectedTypology)
+      .map((i) => ({ id: i.id, fileUrl: i.fileUrl, fileName: i.fileName, label: "" }));
+    if (fromTypology.length === 0) return null;
+    return {
+      id: "__generic__",
+      name: labelMap[selectedTypology] || selectedTypology,
+      cover: fromTypology[0].fileUrl,
+      images: fromTypology,
+    };
+  }, [selectedTypology, typologyImages, labelMap]);
+
+  // Lista piatta di tutte le foto di questa tipologia — usata dal "Scarica tutte" globale
   const photosForTypology = useMemo<TyImg[]>(
-    () => typologyGroups.flatMap((g) => g.images),
-    [typologyGroups]
+    () => [
+      ...(typologyGenericGroup ? typologyGenericGroup.images : []),
+      ...typologyProductGroups.flatMap((g) => g.images),
+    ],
+    [typologyGenericGroup, typologyProductGroups]
   );
+
 
   /* ---- Scarica tutte le immagini del set: scarica sequenziale via anchor click ---- */
   const downloadAll = async (items: { fileUrl: string; fileName: string }[]) => {
@@ -272,7 +285,7 @@ export default function DigitalMediaClient({
       )}
 
       {view === "typology" && selectedTypology && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <button onClick={() => setSelectedTypology("")} className="text-[11px] uppercase tracking-[0.18em] text-warm-700 hover:text-warm-900">
             {i18n.backToTypologies}
           </button>
@@ -287,30 +300,26 @@ export default function DigitalMediaClient({
               </button>
             )}
           </div>
-          {typologyGroups.length === 0 ? (
+          <div className="text-xs text-warm-500">
+            {typologyProductGroups.length} {i18n.productsAvailable}
+          </div>
+          {typologyProductGroups.length === 0 && !typologyGenericGroup ? (
             <p className="text-sm text-warm-500 py-8 text-center">{i18n.noPhotos}</p>
           ) : (
-            <div className="space-y-8">
-              {typologyGroups.map((g) => (
-                <section key={g.key} className="space-y-3">
-                  <div className="flex items-center justify-between gap-3 border-b border-warm-200 pb-2">
-                    <h3 className="text-base md:text-lg font-medium text-warm-900">
-                      {g.productName || labelMap[selectedTypology] || selectedTypology}
-                      <span className="ml-2 text-xs font-normal text-warm-500">
-                        {g.images.length} {g.images.length === 1 ? i18n.photoAvailable : i18n.photosAvailable}
-                      </span>
-                    </h3>
-                    <button
-                      onClick={() => downloadAll(g.images)}
-                      className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em] text-warm-700 hover:text-warm-900"
-                    >
-                      <Download size={12} /> {i18n.downloadAll}
-                    </button>
-                  </div>
-                  <Gallery items={g.images} onOpen={setLightbox} />
-                </section>
-              ))}
-            </div>
+            <CardsGrid
+              items={[
+                ...(typologyGenericGroup ? [{ id: typologyGenericGroup.id, name: typologyGenericGroup.name, cover: typologyGenericGroup.cover, count: typologyGenericGroup.images.length }] : []),
+                ...typologyProductGroups.map((g) => ({ id: g.id, name: g.name, cover: g.cover, count: g.images.length })),
+              ]}
+              onClick={(id) => {
+                if (typologyGenericGroup && id === typologyGenericGroup.id) {
+                  setGalleryOpen({ title: typologyGenericGroup.name, images: typologyGenericGroup.images });
+                  return;
+                }
+                const g = typologyProductGroups.find((p) => p.id === id);
+                if (g) setGalleryOpen({ title: g.name, images: g.images });
+              }}
+            />
           )}
         </div>
       )}

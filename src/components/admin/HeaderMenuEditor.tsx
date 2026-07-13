@@ -6,7 +6,6 @@ import {
   ChevronRight, ChevronDown, Loader2, Check, AlertCircle,
 } from "lucide-react";
 import type { HeaderMenuItem, HeaderMenuLang } from "@/lib/header-menu-types";
-import { HEADER_MENU_LANGS } from "@/lib/header-menu-types";
 
 /** Genera un id stabile pseudo-random. */
 function makeId() {
@@ -82,6 +81,7 @@ export default function HeaderMenuEditor() {
   const [items, setItems] = useState<HeaderMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeLang, setActiveLang] = useState<HeaderMenuLang>("it");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
 
@@ -174,11 +174,26 @@ export default function HeaderMenuEditor() {
             type="button"
             onClick={restoreBackup}
             disabled={saving}
-            className="mr-2 inline-flex items-center gap-1.5 px-4 py-2 text-sm border border-warm-300 text-warm-700 rounded hover:bg-warm-50 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm border border-warm-300 text-warm-700 rounded hover:bg-warm-50 disabled:opacity-50"
             title="Ripristina l'ultima versione salvata prima di questa"
           >
             Ripristina backup
           </button>
+          <div className="inline-flex items-center gap-2 border border-warm-300 rounded-lg px-3 py-1 bg-white">
+            <span className="text-[11px] uppercase tracking-wider text-warm-500 font-semibold">Modifica lingua:</span>
+            <select
+              value={activeLang}
+              onChange={(e) => setActiveLang(e.target.value as HeaderMenuLang)}
+              className="text-sm bg-transparent outline-none font-medium text-warm-900 cursor-pointer"
+              title="Cambia la lingua che stai modificando"
+            >
+              <option value="it">Italiano</option>
+              <option value="en">English</option>
+              <option value="de">Deutsch</option>
+              <option value="fr">Français</option>
+              <option value="es">Español</option>
+            </select>
+          </div>
           <button
             onClick={save}
             disabled={saving}
@@ -212,6 +227,7 @@ export default function HeaderMenuEditor() {
             depth={0}
             siblingsCount={items.length}
             expanded={expanded}
+            activeLang={activeLang}
             onToggleExpand={toggleExpand}
             onChange={(next) => setItems(updateAtPath(items, [i], () => next))}
             onRemove={() => setItems(removeAtPath(items, [i]))}
@@ -235,6 +251,7 @@ interface ItemRowProps {
   depth: number;
   siblingsCount: number;
   expanded: Set<string>;
+  activeLang: HeaderMenuLang;
   onToggleExpand: (id: string) => void;
   onChange: (it: HeaderMenuItem) => void;
   onRemove: () => void;
@@ -248,11 +265,9 @@ interface ItemRowProps {
 }
 
 function ItemRow(p: ItemRowProps) {
-  const { item, depth, siblingsCount, expanded, onToggleExpand, onChange, onRemove, onMoveUp, onMoveDown, onAddChild } = p;
+  const { item, depth, siblingsCount, expanded, activeLang, onToggleExpand, onChange, onRemove, onMoveUp, onMoveDown, onAddChild } = p;
   const idx = p.path[p.path.length - 1];
   const isOpen = expanded.has(item.id);
-
-  const setLabel = (lang: HeaderMenuLang, v: string) => onChange({ ...item, labels: { ...item.labels, [lang]: v } });
 
   const bgClass = depth === 0 ? "bg-white border-warm-300" : depth === 1 ? "bg-warm-50 border-warm-200 ml-8" : "bg-warm-100 border-warm-200 ml-16";
 
@@ -272,16 +287,23 @@ function ItemRow(p: ItemRowProps) {
             </button>
           )}
 
-          {/* Label IT (input inline) — visibile sempre come "master" */}
+          {/* Label per la lingua ATTIVA — cambia col dropdown "Modifica lingua" in alto */}
           <div className="relative flex-1 min-w-[160px]">
-            <span className="absolute -top-1.5 left-2 px-1 bg-white text-[10px] uppercase tracking-wider text-warm-500 font-semibold rounded">IT</span>
+            <span className="absolute -top-1.5 left-2 px-1 bg-white text-[10px] uppercase tracking-wider text-warm-500 font-semibold rounded">
+              {activeLang.toUpperCase()}
+            </span>
             <input
               type="text"
-              value={item.labels.it || ""}
-              onChange={(e) => setLabel("it", e.target.value)}
-              placeholder="Etichetta italiana"
+              value={item.labels[activeLang] || ""}
+              onChange={(e) => onChange({ ...item, labels: { ...item.labels, [activeLang]: e.target.value } })}
+              placeholder={activeLang === "it" ? "Etichetta italiana" : `Traduzione in ${activeLang.toUpperCase()}…`}
               className="w-full border border-warm-300 rounded px-2 py-1.5 text-sm bg-white"
             />
+            {activeLang !== "it" && item.labels.it && (
+              <div className="mt-1 text-[10px] text-warm-500 pl-2">
+                IT: <span className="text-warm-700">{item.labels.it}</span>
+              </div>
+            )}
           </div>
 
           {/* Href */}
@@ -338,30 +360,6 @@ function ItemRow(p: ItemRowProps) {
             <Trash2 size={14} />
           </button>
         </div>
-
-        {/* Sezione traduzioni (visibile quando esteso) */}
-        {isOpen && (
-          <div className="border-t border-warm-200 p-3 bg-warm-50/50">
-            <div className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider mb-2">Traduzioni</div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {HEADER_MENU_LANGS.filter((l) => l !== "it").map((lang) => {
-                const langName: Record<string, string> = { en: "English", de: "Deutsch", fr: "Français", es: "Español" };
-                return (
-                  <label key={lang} className="text-xs">
-                    <span className="block text-warm-500 uppercase tracking-wider mb-0.5">{lang} — {langName[lang] || lang}</span>
-                    <input
-                      type="text"
-                      value={item.labels[lang] || ""}
-                      onChange={(e) => setLabel(lang, e.target.value)}
-                      placeholder={`Traduci in ${langName[lang] || lang}…`}
-                      className="w-full border border-warm-300 rounded px-2 py-1 text-sm bg-white"
-                    />
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Sotto-voci nested */}
@@ -375,6 +373,7 @@ function ItemRow(p: ItemRowProps) {
               depth={depth + 1}
               siblingsCount={item.children!.length}
               expanded={expanded}
+              activeLang={p.activeLang}
               onToggleExpand={onToggleExpand}
               onChange={(next) => p.onNestedChange([ci], () => next)}
               onRemove={() => p.onNestedRemove([ci])}
