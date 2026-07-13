@@ -12,6 +12,8 @@ import { localizePath, DEFAULT_LANG } from "./path-segments";
 import { translateFilterParams } from "./filter-slugs";
 
 export function localizeHref(href: string, lang: string, langPrefix?: string | null): string {
+  // URL assoluti (http/https) o mailto/tel: non traducibili come path — restituisci tal quali.
+  if (/^(https?:|mailto:|tel:)/i.test(href)) return href;
   const [path, qs] = href.split("?");
   const localizedPath = localizePath(path, lang, langPrefix);
   if (!qs) return localizedPath;

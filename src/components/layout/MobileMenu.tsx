@@ -254,27 +254,36 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                                   >
                                     {grandchildren.map((gc) => (
                                       <li key={gc.label}>
-                                        {gc.external ? (
-                                          <a
-                                            href={gc.href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={onClose}
-                                            style={{ color: "#000000" }}
-                                            className="block font-sans text-xs md:text-sm uppercase tracking-wider font-light hover:underline hover:underline-offset-[6px] hover:decoration-[0.5px] whitespace-nowrap"
-                                          >
-                                            {labelOf(gc as NavLike)}
-                                          </a>
-                                        ) : (
-                                          <Link
-                                            href={localizeHref(gc.href, lang)}
-                                            onClick={onClose}
-                                            style={{ color: "#000000" }}
-                                            className="block font-sans text-xs md:text-sm uppercase tracking-wider font-light hover:underline hover:underline-offset-[6px] hover:decoration-[0.5px] whitespace-nowrap"
-                                          >
-                                            {labelOf(gc as NavLike)}
-                                          </Link>
-                                        )}
+                                        {(() => {
+                                          const isAbs = /^(https?:|mailto:|tel:)/i.test(gc.href);
+                                          const isExternalHost = isAbs && !/^https?:\/\/(www\.)?gebruederthonetvienna\.com/i.test(gc.href);
+                                          if (gc.external || isExternalHost) {
+                                            return (
+                                              <a
+                                                href={gc.href}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={onClose}
+                                                style={{ color: "#000000" }}
+                                                className="block font-sans text-xs md:text-sm uppercase tracking-wider font-light hover:underline hover:underline-offset-[6px] hover:decoration-[0.5px] whitespace-nowrap"
+                                              >
+                                                {labelOf(gc as NavLike)}
+                                              </a>
+                                            );
+                                          }
+                                          // URL assoluto interno (stesso dominio) → strippa host e naviga come Link
+                                          const relHref = isAbs ? gc.href.replace(/^https?:\/\/(www\.)?gebruederthonetvienna\.com/i, "") || "/" : gc.href;
+                                          return (
+                                            <Link
+                                              href={localizeHref(relHref, lang)}
+                                              onClick={onClose}
+                                              style={{ color: "#000000" }}
+                                              className="block font-sans text-xs md:text-sm uppercase tracking-wider font-light hover:underline hover:underline-offset-[6px] hover:decoration-[0.5px] whitespace-nowrap"
+                                            >
+                                              {labelOf(gc as NavLike)}
+                                            </Link>
+                                          );
+                                        })()}
                                       </li>
                                     ))}
                                   </motion.ul>

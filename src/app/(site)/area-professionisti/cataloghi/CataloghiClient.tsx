@@ -30,7 +30,7 @@ interface I18n {
   allLabel: string;
 }
 
-export default function CataloghiClient({ lang, i18n }: { lang?: string; i18n: I18n }) {
+export default function CataloghiClient({ lang, i18n, sectionFilter }: { lang?: string; i18n: I18n; sectionFilter?: string }) {
   const [catalogs, setCatalogs] = useState<Catalog[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,15 +40,26 @@ export default function CataloghiClient({ lang, i18n }: { lang?: string; i18n: I
     // Le API /api/* non passano dal middleware, quindi non ricevono
     // x-gtv-lang. Passiamo la lingua come query param così title/description
     // e label categoria tornano già tradotti.
-    const langParam = lang && lang !== "it" ? `?lang=${encodeURIComponent(lang)}` : "";
+    // Section riservate (usate come "bucket" PDF interni all'area pro): quando
+    // sectionFilter e' assente, le escludiamo dalla pagina Cataloghi principale
+    // così i listini/press-kit non appaiono qui insieme ai cataloghi veri.
+    const RESERVED = new Set(["listini-prezzi", "press-kit", "informazioni-tecniche"]);
+    const params = new URLSearchParams();
+    if (lang && lang !== "it") params.set("lang", lang);
+    if (sectionFilter) params.set("section", sectionFilter);
+    const qs = params.toString() ? `?${params.toString()}` : "";
     Promise.all([
-      fetch(`/api/catalogs${langParam}`).then((r) => r.json()).catch(() => ({ data: [] })),
-      fetch(`/api/catalog-categories${langParam}`).then((r) => r.json()).catch(() => ({ data: [] })),
+      fetch(`/api/catalogs${qs}`).then((r) => r.json()).catch(() => ({ data: [] })),
+      fetch(`/api/catalog-categories${qs}`).then((r) => r.json()).catch(() => ({ data: [] })),
     ]).then(([catRes, catgRes]) => {
-      setCatalogs(((catRes.data || []) as Catalog[]).filter((c) => c.isActive));
+      const raw = ((catRes.data || []) as Catalog[]).filter((c) => c.isActive);
+      const filtered = sectionFilter
+        ? raw.filter((c) => c.section === sectionFilter)
+        : raw.filter((c) => !RESERVED.has(c.section));
+      setCatalogs(filtered);
       setCategories((catgRes.data || []) as Category[]);
     }).finally(() => setLoading(false));
-  }, [lang]);
+  }, [lang, sectionFilter]);
 
   const visibleCategories = useMemo(() => {
     const usedSlugs = new Set(catalogs.map((c) => c.section));
@@ -66,8 +77,8 @@ export default function CataloghiClient({ lang, i18n }: { lang?: string; i18n: I
 
   return (
     <div className="space-y-8">
-      {/* Filtri pill */}
-      {visibleCategories.length > 1 && (
+      {/* Filtri pill — nascosti quando c'e' gia' un section filter forzato */}
+      {!sectionFilter && visibleCategories.length > 1 && (
         <div className="flex flex-wrap gap-2">
           <FilterPill active={filter === "__all__"} onClick={() => setFilter("__all__")}>{i18n.allLabel}</FilterPill>
           {visibleCategories.map((c) => (

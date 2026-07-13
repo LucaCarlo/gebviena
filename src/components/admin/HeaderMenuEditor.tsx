@@ -243,14 +243,17 @@ function ItemRow(p: ItemRowProps) {
             </button>
           )}
 
-          {/* Label IT (input inline) */}
-          <input
-            type="text"
-            value={item.labels.it || ""}
-            onChange={(e) => setLabel("it", e.target.value)}
-            placeholder="Etichetta IT"
-            className="flex-1 min-w-[160px] border border-warm-300 rounded px-2 py-1.5 text-sm bg-white"
-          />
+          {/* Label IT (input inline) — visibile sempre come "master" */}
+          <div className="relative flex-1 min-w-[160px]">
+            <span className="absolute -top-1.5 left-2 px-1 bg-white text-[10px] uppercase tracking-wider text-warm-500 font-semibold rounded">IT</span>
+            <input
+              type="text"
+              value={item.labels.it || ""}
+              onChange={(e) => setLabel("it", e.target.value)}
+              placeholder="Etichetta italiana"
+              className="w-full border border-warm-300 rounded px-2 py-1.5 text-sm bg-white"
+            />
+          </div>
 
           {/* Href */}
           <input
@@ -312,18 +315,21 @@ function ItemRow(p: ItemRowProps) {
           <div className="border-t border-warm-200 p-3 bg-warm-50/50">
             <div className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider mb-2">Traduzioni</div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {HEADER_MENU_LANGS.filter((l) => l !== "it").map((lang) => (
-                <label key={lang} className="text-xs">
-                  <span className="block text-warm-500 uppercase tracking-wider mb-0.5">{lang}</span>
-                  <input
-                    type="text"
-                    value={item.labels[lang] || ""}
-                    onChange={(e) => setLabel(lang, e.target.value)}
-                    placeholder={item.labels.it || "…"}
-                    className="w-full border border-warm-300 rounded px-2 py-1 text-sm bg-white"
-                  />
-                </label>
-              ))}
+              {HEADER_MENU_LANGS.filter((l) => l !== "it").map((lang) => {
+                const langName: Record<string, string> = { en: "English", de: "Deutsch", fr: "Français", es: "Español" };
+                return (
+                  <label key={lang} className="text-xs">
+                    <span className="block text-warm-500 uppercase tracking-wider mb-0.5">{lang} — {langName[lang] || lang}</span>
+                    <input
+                      type="text"
+                      value={item.labels[lang] || ""}
+                      onChange={(e) => setLabel(lang, e.target.value)}
+                      placeholder={`Traduci in ${langName[lang] || lang}…`}
+                      className="w-full border border-warm-300 rounded px-2 py-1 text-sm bg-white"
+                    />
+                  </label>
+                );
+              })}
             </div>
           </div>
         )}
