@@ -52,6 +52,8 @@ export interface Product {
   techSheetUrl: string | null;
   model2dUrl: string | null;
   model3dUrl: string | null;
+  instructionsUrl: string | null;
+  careUrl: string | null;
   pconUrl: string | null;
   pconMoc: string | null;
   pconBan: string | null;

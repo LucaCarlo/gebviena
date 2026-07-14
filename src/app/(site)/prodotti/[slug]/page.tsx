@@ -13,6 +13,8 @@ import { localizePath } from "@/lib/path-segments";
 import { localizeHref } from "@/lib/localize-href";
 import GallerySlideshow from "@/components/site/GallerySlideshow";
 import CarouselProgressBar from "@/components/site/CarouselProgressBar";
+import ProductDocsList from "@/components/site/ProductDocsList";
+
 
 interface ProductDetail extends Omit<Product, "projects"> {
   related: (Product & { designer?: Designer })[];
@@ -652,37 +654,26 @@ export default function ProductDetailPage() {
                       transition={{ duration: 0.3 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-2 pb-8">
-                        <div className="flex flex-wrap gap-12 pt-4">
-                          {product.techSheetUrl && (
-                            <a href={product.techSheetUrl} target="_blank" rel="noopener noreferrer"
-                              className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
-                              style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-                              {t("prodotti.detail.tech_sheet_download")} ↓
-                            </a>
-                          )}
-                          {product.model2dUrl && (
-                            <a href={product.model2dUrl} download
-                              className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
-                              style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-                              {t("prodotti.detail.model_2d")} ↓
-                            </a>
-                          )}
-                          {product.model3dUrl && (
-                            <a href={product.model3dUrl} download
-                              className="uppercase text-sm tracking-[0.1em] text-warm-900 font-medium hover:underline"
-                              style={{ textUnderlineOffset: "8px", textDecorationThickness: "0.5px" }}>
-                              {t("prodotti.detail.model_3d")} ↓
-                            </a>
-                          )}
-                        </div>
-                        {!product.techSheetUrl && !product.model2dUrl && !product.model3dUrl && (
-                          <div className="pt-4">
-                            <p className="text-sm text-warm-400 font-light">
-                              {t("prodotti.detail.docs.unavailable")}
-                            </p>
-                          </div>
-                        )}
+                      <div className="px-2 pb-8 pt-2">
+                        {(() => {
+                          // Ogni link scaricabile è una riga con icona download + lucchetto.
+                          // Se l'utente NON e' loggato, il click sull'icona apre il popup login.
+                          const rows = [
+                            product.techSheetUrl ? { key: "scheda", label: t("prodotti.detail.tech_sheet_label") || "Scheda tecnica", url: product.techSheetUrl } : null,
+                            product.model2dUrl ? { key: "m2d", label: t("prodotti.detail.model_2d") || "Modello 2D", url: product.model2dUrl } : null,
+                            product.model3dUrl ? { key: "m3d", label: t("prodotti.detail.model_3d") || "Modello 3D", url: product.model3dUrl } : null,
+                            product.instructionsUrl ? { key: "montaggio", label: t("prodotti.detail.instructions") || "Istruzioni di montaggio", url: product.instructionsUrl } : null,
+                            product.careUrl ? { key: "manutenzione", label: t("prodotti.detail.care") || "Manutenzione", url: product.careUrl } : null,
+                          ].filter(Boolean) as { key: string; label: string; url: string }[];
+                          if (rows.length === 0) {
+                            return (
+                              <p className="text-sm text-warm-400 font-light">
+                                {t("prodotti.detail.docs.unavailable")}
+                              </p>
+                            );
+                          }
+                          return <ProductDocsList items={rows} />;
+                        })()}
                       </div>
                     </motion.div>
                   )}
