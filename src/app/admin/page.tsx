@@ -11,6 +11,98 @@ import {
 } from "lucide-react";
 import { formatNumber } from "@/lib/format";
 
+const STATS_CACHE_KEY = "admin-dashboard-stats-v1";
+const CONTACTS_CACHE_KEY = "admin-dashboard-contacts-v1";
+const CACHE_TTL_MS = 60_000;
+
+function readCache<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { data: T; expiresAt: number };
+    if (parsed.expiresAt > Date.now()) return parsed.data;
+  } catch {}
+  return null;
+}
+
+function writeCache<T>(key: string, data: T) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(
+      key,
+      JSON.stringify({ data, expiresAt: Date.now() + CACHE_TTL_MS })
+    );
+  } catch {}
+}
+
+function SkeletonBox({ className = "" }: { className?: string }) {
+  return <div className={`bg-warm-100 rounded ${className}`} />;
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <SkeletonBox className="h-8 w-44" />
+          <SkeletonBox className="h-4 w-64 mt-2" />
+        </div>
+        <SkeletonBox className="h-4 w-40" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="bg-white rounded-xl border border-warm-200 p-5">
+            <SkeletonBox className="w-9 h-9 mb-3" />
+            <SkeletonBox className="h-8 w-24 mb-1.5" />
+            <SkeletonBox className="h-3 w-28" />
+          </div>
+        ))}
+      </div>
+      <div className="bg-white rounded-xl border border-warm-200 p-6 mb-8">
+        <SkeletonBox className="h-4 w-44 mb-4" />
+        <SkeletonBox className="h-28 w-full" />
+      </div>
+      <SkeletonBox className="h-3 w-24 mb-3" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-white rounded-xl border border-warm-200 p-5">
+            <SkeletonBox className="w-9 h-9 mb-3" />
+            <SkeletonBox className="h-6 w-16 mb-1" />
+            <SkeletonBox className="h-3 w-20" />
+          </div>
+        ))}
+      </div>
+      <SkeletonBox className="h-3 w-24 mb-3" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="bg-white rounded-xl border border-warm-200 p-5">
+            <SkeletonBox className="w-9 h-9 mb-3" />
+            <SkeletonBox className="h-6 w-16 mb-1" />
+            <SkeletonBox className="h-3 w-20" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="bg-white rounded-xl border border-warm-200 p-6">
+            <SkeletonBox className="h-4 w-32 mb-4" />
+            {[0, 1, 2, 3].map((j) => (
+              <div key={j} className="flex items-center gap-3 py-2">
+                <SkeletonBox className="w-10 h-10 rounded-lg" />
+                <div className="flex-1">
+                  <SkeletonBox className="h-3 w-32 mb-1.5" />
+                  <SkeletonBox className="h-2 w-20" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface ViewsChartItem {
   label: string;
   views: number;
@@ -80,30 +172,34 @@ function formatBytes(bytes: number | null | undefined): string {
 }
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentContacts, setRecentContacts] = useState<RecentContact[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(() => readCache<DashboardStats>(STATS_CACHE_KEY));
+  const [recentContacts, setRecentContacts] = useState<RecentContact[]>(
+    () => readCache<RecentContact[]>(CONTACTS_CACHE_KEY) ?? []
+  );
+  const [errored, setErrored] = useState(false);
 
   useEffect(() => {
+    // SWR: se abbiamo dati in cache mostriamo subito, refresh in background.
     Promise.all([
-      fetch("/api/dashboard/stats").then((r) => r.json()),
-      fetch("/api/contact").then((r) => r.json()),
+      fetch("/api/dashboard/stats", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/contact", { cache: "no-store" }).then((r) => r.json()),
     ]).then(([statsRes, contactsRes]) => {
-      if (statsRes.success) setStats(statsRes.data);
-      if (contactsRes.success) setRecentContacts((contactsRes.data || []).slice(0, 5));
-      setLoading(false);
-    }).catch(() => setLoading(false));
+      if (statsRes.success) {
+        setStats(statsRes.data);
+        writeCache(STATS_CACHE_KEY, statsRes.data);
+      }
+      if (contactsRes.success) {
+        const list = (contactsRes.data || []).slice(0, 5);
+        setRecentContacts(list);
+        writeCache(CONTACTS_CACHE_KEY, list);
+      }
+    }).catch(() => setErrored(true));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-800 rounded-full animate-spin" />
-      </div>
-    );
+  if (!stats) {
+    if (errored) return <div className="text-warm-400">Errore nel caricamento</div>;
+    return <DashboardSkeleton />;
   }
-
-  if (!stats) return <div className="text-warm-400">Errore nel caricamento</div>;
 
   const maxViews = Math.max(...(stats.viewsChart || []).map((v) => v.views), 1);
 
