@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Bell, FileText, FileCode, FolderOpen, Box, Camera, Image as ImageIcon, Briefcase, AlertTriangle, Shield, ExternalLink } from "lucide-react";
+import { Bell, FileText, FileCode, FolderOpen, Box, Camera, Image as ImageIcon, Briefcase, AlertTriangle, Shield, ExternalLink, Layers } from "lucide-react";
 import BachecaTab from "./tabs/BachecaTab";
 import PdfListTab from "./tabs/PdfListTab";
 import PconConfigTab from "./tabs/PconConfigTab";
@@ -14,6 +14,7 @@ import MediaTab from "./tabs/MediaTab";
 type TabKey =
   | "bacheca"
   | "tecnica"
+  | "tessuti"
   | "media"
   | "cataloghi"
   | "pcon"
@@ -26,6 +27,7 @@ type TabKey =
 const TABS: { key: TabKey; label: string; icon: React.ElementType; subtitle: string }[] = [
   { key: "bacheca",      label: "Bacheca",                       icon: Bell,            subtitle: "Novità da pubblicare ai professionisti" },
   { key: "tecnica",      label: "Informazioni tecniche",         icon: FileCode,        subtitle: "PDF + link alle schede prodotto" },
+  { key: "tessuti",      label: "Tessuti e Finiture",            icon: Layers,          subtitle: "Cartelle tessuti, pelli, essenze legno e finiture" },
   { key: "media",        label: "Digital & Media",               icon: ImageIcon,       subtitle: "Foto, render e materiali digitali" },
   { key: "cataloghi",    label: "Cataloghi, poster e journal",   icon: FolderOpen,      subtitle: "Vai alla gestione cataloghi" },
   { key: "pcon",         label: "pCon configuratore",            icon: Box,             subtitle: "Impostazioni del configuratore pCon" },
@@ -36,7 +38,7 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType; subtitle: str
   { key: "impostazioni", label: "Impostazioni area riservata",   icon: Shield,          subtitle: "Quali sezioni sono visibili e a chi" },
 ];
 
-const VALID_TAB_KEYS: TabKey[] = ["bacheca", "tecnica", "media", "cataloghi", "pcon", "listini", "press", "aziendale", "manutenzione", "impostazioni"];
+const VALID_TAB_KEYS: TabKey[] = ["bacheca", "tecnica", "tessuti", "media", "cataloghi", "pcon", "listini", "press", "aziendale", "manutenzione", "impostazioni"];
 
 export default function ManageClient() {
   const router = useRouter();
@@ -123,6 +125,15 @@ export default function ManageClient() {
                   </Link>
                 </div>
               </div>
+            )}
+
+            {active === "tessuti" && (
+              <RedirectCard
+                title="Tessuti e Finiture"
+                description={"Le cartelle tessuti, pelli, essenze legno e finiture sono gestite in una pagina dedicata (con categorie e file per ogni cartella)."}
+                href="/admin/fabric-finishes"
+                cta="Apri Tessuti e Finiture"
+              />
             )}
 
             {active === "media" && <MediaTab />}
