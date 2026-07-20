@@ -62,6 +62,15 @@ const D: Record<string, Dict> = {
     es: "Fichas técnicas, dibujos 2D/3D, instrucciones de montaje y mantenimiento.",
   },
 
+  "section.tessuti-e-finiture.label": { it: "Tessuti e Finiture", fr: "Tissus et Finitions", en: "Fabrics and Finishes", de: "Stoffe und Oberflächen", es: "Tejidos y Acabados" },
+  "section.tessuti-e-finiture.desc": {
+    it: "Cartelle tessuti, pelli, essenze legno e finiture disponibili.",
+    fr: "Nuanciers tissus, cuirs, essences de bois et finitions disponibles.",
+    en: "Fabric folders, leathers, wood species and available finishes.",
+    de: "Stoffmappen, Leder, Holzarten und verfügbare Oberflächen.",
+    es: "Carpetas de tejidos, pieles, esencias de madera y acabados disponibles.",
+  },
+
   "section.digital-media.label": { it: "Digital & Media", fr: "Digital & Médias", en: "Digital & Media", de: "Digital & Medien", es: "Digital & Media" },
   "section.digital-media.desc": {
     it: "Foto, render e materiali digitali dei prodotti.",

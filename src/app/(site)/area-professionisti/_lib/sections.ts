@@ -21,6 +21,7 @@ export interface ProSection {
 
 const SECTION_KEYS: Record<string, { labelKey: string; descKey: string }> = {
   "informazioni-tecniche": { labelKey: "section.informazioni-tecniche.label", descKey: "section.informazioni-tecniche.desc" },
+  "tessuti-e-finiture":    { labelKey: "section.tessuti-e-finiture.label",    descKey: "section.tessuti-e-finiture.desc" },
   "digital-media":         { labelKey: "section.digital-media.label",         descKey: "section.digital-media.desc" },
   "cataloghi":             { labelKey: "section.cataloghi.label",             descKey: "section.cataloghi.desc" },
   "pcon":                  { labelKey: "section.pcon.label",                  descKey: "section.pcon.desc" },
@@ -30,10 +31,10 @@ const SECTION_KEYS: Record<string, { labelKey: string; descKey: string }> = {
 };
 
 export const SECTIONS_BY_ROLE: Record<ProfessionalRole, string[]> = {
-  ARCHITECT_DESIGNER: ["informazioni-tecniche", "digital-media", "cataloghi", "pcon"],
+  ARCHITECT_DESIGNER: ["informazioni-tecniche", "tessuti-e-finiture", "digital-media", "cataloghi", "pcon"],
   PRESS: ["digital-media", "press-kit"],
-  RESELLER: ["informazioni-tecniche", "digital-media", "cataloghi", "pcon", "listino-prezzi", "materiale-aziendale"],
-  AGENT: ["informazioni-tecniche", "digital-media", "cataloghi", "pcon", "listino-prezzi", "materiale-aziendale"],
+  RESELLER: ["informazioni-tecniche", "tessuti-e-finiture", "digital-media", "cataloghi", "pcon", "listino-prezzi", "materiale-aziendale"],
+  AGENT: ["informazioni-tecniche", "tessuti-e-finiture", "digital-media", "cataloghi", "pcon", "listino-prezzi", "materiale-aziendale"],
 };
 
 export function getSectionsForRole(role: ProfessionalRole, lang: string | null | undefined): ProSection[] {
