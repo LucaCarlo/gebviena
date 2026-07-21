@@ -1504,7 +1504,7 @@ function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "erro
 
   const enabled = form.bunny_enabled === "true";
 
-  // Regioni Bunny (endpoint S3-compat: https://<region>-s3.storage.bunnycdn.com)
+  // Regioni VAY Storage (endpoint S3-compat via Bunny; opaco all'utente)
   const REGIONS: { value: string; label: string }[] = [
     { value: "de",  label: "Falkenstein, Germania (default)" },
     { value: "uk",  label: "Londra, Regno Unito" },
@@ -1562,7 +1562,7 @@ function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "erro
             placeholder="es. gtv-media"
           />
           <p className="text-xs text-warm-500 mt-1">
-            Il nome esatto della zona di storage creata su Bunny.
+            Il nome esatto della Storage Zone (VAY Storage).
           </p>
         </div>
 
@@ -1639,7 +1639,7 @@ function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "erro
             placeholder="https://xxx.b-cdn.net"
           />
           <p className="text-xs text-warm-500 mt-1">
-            Base URL della Pull Zone Bunny (senza slash finale). Gli URL pubblici dei media saranno
+            Base URL della Pull Zone VAY CDN (senza slash finale). Gli URL pubblici dei media saranno
             costruiti come <code className="bg-warm-100 px-1 rounded">{`{cdn}/{path}`}</code>.
           </p>
         </div>
