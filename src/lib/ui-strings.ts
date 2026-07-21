@@ -181,7 +181,7 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "footer.company.headquarters", defaultValue: "Headquarters Gebrüder Thonet Vienna GmbH" },
       { key: "footer.company.registered", defaultValue: "Registered Office Gebrüder Thonet Vienna GmbH" },
       { key: "footer.company.licencee", defaultValue: "Offices of the trademarks licencee" },
-      { key: "footer.bottom.copyright", defaultValue: "Copyright 2025 © GEBRUDER THONET VIENNA GMBH" },
+      { key: "footer.bottom.copyright", defaultValue: "Copyright 2026 © GEBRUDER THONET VIENNA GMBH" },
       { key: "footer.bottom.disclaimer", defaultValue: "Si prega di osservare che l'utilizzo del marchio e il nome della società \"Gebrüder Thonet Vienna\" negli Stati Uniti e l'uso del marchio di fabbrica \"Gebrüder Thonet Vienna\" in Germania comporta restrizioni, a causa di accordi stipulati con altre imprese. Per ulteriori informazioni si prega di contattare info@gebruederthonetvienna.it." },
     ],
   },
