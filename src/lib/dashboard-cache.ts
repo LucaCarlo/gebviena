@@ -40,7 +40,7 @@ export interface DashboardStatsData {
   }[];
 }
 
-const TTL_MS = 60_000;
+const TTL_MS = 300_000; // 5 min: dashboard non realtime
 let cache: { data: DashboardStatsData; expiresAt: number } | null = null;
 let inflight: Promise<DashboardStatsData> | null = null;
 
@@ -61,29 +61,32 @@ async function fetchDashboardStats(): Promise<DashboardStatsData> {
   }
 
   const [
-    products,
-    designers,
-    projects,
-    campaigns,
-    awards,
-    stores,
-    agents,
-    heroSlides,
-    languages,
-    mediaFiles,
-    contacts,
-    unreadContacts,
-    newsletter,
-    users,
-    pageViews,
-    todayViews,
-    mediaSynced,
-    mediaUnsynced,
-    mediaAgg,
-    recentProducts,
-    recentProjects,
-    ...dailyViews
+    [
+      products,
+      designers,
+      projects,
+      campaigns,
+      awards,
+      stores,
+      agents,
+      heroSlides,
+      languages,
+      mediaFiles,
+      contacts,
+      unreadContacts,
+      newsletter,
+      users,
+      todayViews,
+      mediaSynced,
+      mediaUnsynced,
+      mediaAgg,
+      recentProducts,
+      recentProjects,
+    ],
+    pageViewsApprox,
+    dailyViewsGrouped,
   ] = await Promise.all([
+    Promise.all([
     prisma.product.count(),
     prisma.designer.count(),
     prisma.project.count(),
@@ -98,7 +101,6 @@ async function fetchDashboardStats(): Promise<DashboardStatsData> {
     prisma.contactSubmission.count({ where: { isRead: false } }),
     prisma.newsletterSubscriber.count(),
     prisma.adminUser.count(),
-    prisma.pageView.count(),
     prisma.pageView.count({ where: { createdAt: { gte: todayStart } } }),
     prisma.mediaFile.count({ where: { isSynced: true } }),
     prisma.mediaFile.count({ where: { isSynced: false } }),
@@ -113,10 +115,17 @@ async function fetchDashboardStats(): Promise<DashboardStatsData> {
       orderBy: { createdAt: "desc" },
       select: { id: true, name: true, imageUrl: true, type: true, createdAt: true },
     }),
-    ...days.map((d) =>
-      prisma.pageView.count({ where: { createdAt: { gte: d.start, lt: d.end } } })
-    ),
+    ]),
+    prisma.$queryRaw<{ n: bigint }[]>`SELECT TABLE_ROWS AS n FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='PageView'`,
+    prisma.$queryRaw<{ day: Date; n: bigint }[]>`SELECT DATE(createdAt) as day, COUNT(*) as n FROM PageView WHERE createdAt >= ${days[0].start} GROUP BY DATE(createdAt) ORDER BY day`,
   ]);
+  const pageViews = Number(pageViewsApprox[0]?.n || 0);
+  const dailyMap = new Map<string, number>();
+  for (const r of dailyViewsGrouped) {
+    const d = new Date(r.day);
+    dailyMap.set(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`, Number(r.n));
+  }
+  const dailyViews = days.map(d => dailyMap.get(`${d.start.getFullYear()}-${d.start.getMonth()}-${d.start.getDate()}`) || 0);
 
   const totalStorage = mediaAgg._sum.size || 0;
   const totalOriginalSize = mediaAgg._sum.originalSize || 0;
