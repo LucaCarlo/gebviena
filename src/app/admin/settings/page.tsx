@@ -84,7 +84,7 @@ const TABS: TabDef[] = [
   { key: "azienda", label: "Azienda", icon: Building2 },
   { key: "stats", label: "Statistiche", icon: BarChart3 },
   { key: "backup", label: "Backup", icon: Database },
-  { key: "storage", label: "Storage Cloud", icon: Cloud },
+  { key: "storage", label: "Storage (VAY CDN)", icon: Cloud },
 ];
 
 // ─── Toast Component ─────────────────────────────────────────────────────────
@@ -1434,17 +1434,17 @@ function MapsTab({ showToast }: { showToast: (m: string, t: "success" | "error")
 
 function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "error") => void }) {
   const [form, setForm] = useState({
-    wasabi_access_key: "",
-    wasabi_secret_key: "",
-    wasabi_bucket: "",
-    wasabi_region: "",
-    wasabi_endpoint: "",
-    bunny_api_key: "",
+    bunny_enabled: "false",
     bunny_storage_zone: "",
-    bunny_hostname: "",
+    bunny_access_key: "",
+    bunny_secret_key: "",
+    bunny_region: "de",
+    bunny_endpoint: "https://de-s3.storage.bunnycdn.com",
+    bunny_cdn_url: "",
   });
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings?group=storage")
@@ -1472,7 +1472,7 @@ function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "erro
       });
       const data = await res.json();
       if (data.success) {
-        showToast("Impostazioni storage salvate", "success");
+        showToast("Impostazioni VAY CDN salvate", "success");
       } else {
         showToast(data.error || "Errore nel salvataggio", "error");
       }
@@ -1483,13 +1483,13 @@ function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "erro
     }
   };
 
-  const handleTestWasabi = async () => {
+  const handleTest = async () => {
     setTesting(true);
     try {
       const res = await fetch("/api/settings/test-storage", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        showToast(data.data.message, "success");
+        showToast(data.data?.message || "Connessione OK", "success");
       } else {
         showToast(data.error || "Test fallito", "error");
       }
@@ -1502,81 +1502,161 @@ function StorageTab({ showToast }: { showToast: (m: string, t: "success" | "erro
 
   const update = (key: string, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
 
+  const enabled = form.bunny_enabled === "true";
+
+  // Regioni Bunny (endpoint S3-compat: https://<region>-s3.storage.bunnycdn.com)
+  const REGIONS: { value: string; label: string }[] = [
+    { value: "de",  label: "Falkenstein, Germania (default)" },
+    { value: "uk",  label: "Londra, Regno Unito" },
+    { value: "se",  label: "Stoccolma, Svezia" },
+    { value: "ny",  label: "New York, USA" },
+    { value: "la",  label: "Los Angeles, USA" },
+    { value: "sg",  label: "Singapore" },
+    { value: "syd", label: "Sydney, Australia" },
+    { value: "br",  label: "San Paolo, Brasile" },
+    { value: "jh",  label: "Johannesburg, Sud Africa" },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-warm-800">Configurazione Storage Cloud</h2>
-        <p className="text-sm text-warm-500 mt-1">Configura i servizi di storage cloud per i file media.</p>
+        <h2 className="text-lg font-semibold text-warm-800">Storage (VAY CDN)</h2>
+        <p className="text-sm text-warm-500 mt-1">
+          Configura il CDN per il salvataggio e la distribuzione dei file media caricati nell&apos;area admin.
+        </p>
       </div>
 
-      {/* Wasabi */}
       <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
-        <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">Wasabi S3</h3>
+        {/* Toggle enabled */}
+        <div className="flex items-start gap-3 pb-4 border-b border-warm-100">
+          <button
+            type="button"
+            onClick={() => update("bunny_enabled", enabled ? "false" : "true")}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
+              enabled ? "bg-emerald-600" : "bg-warm-300"
+            }`}
+            aria-pressed={enabled}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                enabled ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+          <div className="flex-1">
+            <div className="text-sm font-medium text-warm-800">VAY CDN attivo</div>
+            <div className="text-xs text-warm-500 mt-0.5">
+              Quando disattivato, i nuovi upload restano solo sullo storage locale del server.
+            </div>
+          </div>
+        </div>
 
+        {/* Storage Zone name */}
+        <div>
+          <label className={labelClass}>Nome Storage Zone</label>
+          <input
+            type="text"
+            value={form.bunny_storage_zone}
+            onChange={(e) => update("bunny_storage_zone", e.target.value)}
+            className={inputClass}
+            placeholder="es. gtv-media"
+          />
+          <p className="text-xs text-warm-500 mt-1">
+            Il nome esatto della zona di storage creata su Bunny.
+          </p>
+        </div>
+
+        {/* Access + Secret */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>Access Key</label>
-            <input type="text" value={form.wasabi_access_key} onChange={(e) => update("wasabi_access_key", e.target.value)} className={inputClass} />
+            <input
+              type="text"
+              value={form.bunny_access_key}
+              onChange={(e) => update("bunny_access_key", e.target.value)}
+              className={inputClass}
+              placeholder="Coincide col nome Storage Zone"
+              autoComplete="off"
+            />
           </div>
           <div>
             <label className={labelClass}>Secret Key</label>
-            <input type="password" value={form.wasabi_secret_key} onChange={(e) => update("wasabi_secret_key", e.target.value)} className={inputClass} />
+            <div className="relative">
+              <input
+                type={showSecret ? "text" : "password"}
+                value={form.bunny_secret_key}
+                onChange={(e) => update("bunny_secret_key", e.target.value)}
+                className={inputClass + " pr-10"}
+                placeholder="UUID (es. 1a2b3c4d-…)"
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                onClick={() => setShowSecret((v) => !v)}
+                className="absolute inset-y-0 right-2 flex items-center px-1 text-warm-500 hover:text-warm-800"
+                aria-label={showSecret ? "Nascondi Secret Key" : "Mostra Secret Key"}
+              >
+                <span className="text-lg leading-none">{showSecret ? "🙈" : "👁"}</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Region + Endpoint */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className={labelClass}>Bucket</label>
-            <input type="text" value={form.wasabi_bucket} onChange={(e) => update("wasabi_bucket", e.target.value)} className={inputClass} placeholder="gtv-media" />
+            <label className={labelClass}>Regione primaria</label>
+            <select
+              value={form.bunny_region}
+              onChange={(e) => update("bunny_region", e.target.value)}
+              className={inputClass}
+            >
+              {REGIONS.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <label className={labelClass}>Region</label>
-            <input type="text" value={form.wasabi_region} onChange={(e) => update("wasabi_region", e.target.value)} className={inputClass} placeholder="eu-central-1" />
-          </div>
-          <div>
-            <label className={labelClass}>Endpoint</label>
-            <input type="text" value={form.wasabi_endpoint} onChange={(e) => update("wasabi_endpoint", e.target.value)} className={inputClass} placeholder="https://s3.eu-central-1.wasabisys.com" />
+            <label className={labelClass}>Endpoint Storage</label>
+            <input
+              type="text"
+              value={form.bunny_endpoint}
+              onChange={(e) => update("bunny_endpoint", e.target.value)}
+              className={inputClass}
+              placeholder="https://de-s3.storage.bunnycdn.com"
+            />
           </div>
         </div>
 
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <p className="text-xs text-green-700">
-            Inserisci le credenziali qui e salva. La configurazione viene letta direttamente dal database, non serve modificare file di sistema.
+        {/* CDN URL */}
+        <div>
+          <label className={labelClass}>URL CDN pubblica</label>
+          <input
+            type="url"
+            value={form.bunny_cdn_url}
+            onChange={(e) => update("bunny_cdn_url", e.target.value)}
+            className={inputClass}
+            placeholder="https://xxx.b-cdn.net"
+          />
+          <p className="text-xs text-warm-500 mt-1">
+            Base URL della Pull Zone Bunny (senza slash finale). Gli URL pubblici dei media saranno
+            costruiti come <code className="bg-warm-100 px-1 rounded">{`{cdn}/{path}`}</code>.
           </p>
         </div>
-      </div>
 
-      {/* Bunny */}
-      <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-6 space-y-5">
-        <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold text-warm-800 uppercase tracking-wider">BunnyCDN</h3>
-          <span className="text-[10px] font-medium text-warm-400 bg-warm-100 px-2 py-0.5 rounded-full uppercase">Coming soon</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className={labelClass}>API Key</label>
-            <input type="password" value={form.bunny_api_key} onChange={(e) => update("bunny_api_key", e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className={labelClass}>Storage Zone</label>
-            <input type="text" value={form.bunny_storage_zone} onChange={(e) => update("bunny_storage_zone", e.target.value)} className={inputClass} />
-          </div>
-          <div>
-            <label className={labelClass}>Hostname</label>
-            <input type="text" value={form.bunny_hostname} onChange={(e) => update("bunny_hostname", e.target.value)} className={inputClass} placeholder="cdn.example.com" />
-          </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs text-blue-800">
+          Le credenziali sono lette dal database. Ricordati di premere <b>Salva</b> dopo ogni modifica.
         </div>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <button onClick={handleSave} disabled={saving} className={btnPrimary}>
           {saving && <Loader2 size={16} className="animate-spin" />}
           Salva
         </button>
-        <button onClick={handleTestWasabi} disabled={testing} className={btnSecondary}>
+        <button onClick={handleTest} disabled={testing} className={btnSecondary}>
           {testing && <Loader2 size={16} className="animate-spin" />}
-          Testa connessione Wasabi
+          Testa connessione VAY CDN
         </button>
       </div>
     </div>

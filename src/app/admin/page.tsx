@@ -274,7 +274,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-xl shadow-sm border border-warm-200 p-5">
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-emerald-500 p-2 rounded-lg"><Cloud size={16} className="text-white" /></div>
-            <span className="text-xs text-warm-500 uppercase tracking-wider font-semibold">Sync Wasabi</span>
+            <span className="text-xs text-warm-500 uppercase tracking-wider font-semibold">Sync VAY CDN</span>
           </div>
           <p className="text-3xl font-bold text-warm-800">{formatNumber(stats.mediaSynced)}</p>
           <div className="flex items-center gap-2 mt-1">

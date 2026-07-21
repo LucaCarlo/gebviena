@@ -467,7 +467,7 @@ export default function AdminMediaPage() {
               <button
                 onClick={() => handleSyncSingle(file.id)}
                 disabled={syncing}
-                title="Sincronizza su Wasabi"
+                title="Sincronizza su VAY CDN"
                 className="p-1 bg-white/90 rounded-lg shadow-sm text-warm-400 hover:text-blue-600 transition-colors disabled:opacity-50"
               >
                 <CloudUpload size={14} />
@@ -607,7 +607,7 @@ export default function AdminMediaPage() {
           <div className="flex items-center gap-3">
             <Cloud size={20} className="text-warm-400" />
             <div>
-              <span className="text-sm font-medium text-warm-800">Wasabi Cloud Storage</span>
+              <span className="text-sm font-medium text-warm-800">VAY CDN</span>
               {wasabiLoading ? (
                 <span className="ml-3 text-xs text-warm-400">Verifica connessione...</span>
               ) : wasabi ? (
