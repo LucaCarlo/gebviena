@@ -366,6 +366,10 @@ export const MEDIA_FOLDERS = [
   { value: "typologies", label: "Tipologie" },
   { value: "landing-page", label: "Landing page" },
   { value: "email-templates", label: "Template email" },
+  { value: "mondo-gtv", label: "Mondo GTV" },
+  { value: "videos", label: "Video" },
+  { value: "press", label: "Press / Magazine" },
+  { value: "sistema", label: "Sistema / Loghi" },
 ] as const;
 
 export const NAV_ITEMS = [
