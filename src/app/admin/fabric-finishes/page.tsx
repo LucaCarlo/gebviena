@@ -144,7 +144,7 @@ export default function AdminFabricFinishesPage() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("folder", "fabric-finishes");
+      fd.append("folder", "professionisti/tessuti-finiture");
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (!data.success) {

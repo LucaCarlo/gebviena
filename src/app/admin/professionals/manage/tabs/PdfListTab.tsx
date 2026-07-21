@@ -34,7 +34,7 @@ export default function PdfListTab({
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("folder", "catalogs");
+      fd.append("folder", "professionisti/cataloghi");
       const up = await fetch("/api/upload", { method: "POST", body: fd });
       const upData = await up.json();
       if (!upData.success || !upData.data?.url) {
@@ -81,7 +81,7 @@ export default function PdfListTab({
       // 1. Upload del PDF
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("folder", "catalogs");
+      fd.append("folder", "professionisti/cataloghi");
       fd.append("skipCompression", "true");
       const up = await fetch("/api/upload", { method: "POST", body: fd });
       const upData = await up.json();

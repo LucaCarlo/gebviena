@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
 const PRO_FOLDER_PREFIXES = [
-  "professionals", "tech-sheets", "catalogs",
+  "professionisti", "professionals", "digital-media", "tech-sheets", "catalogs",
   "listini-prezzi", "press-kit", "informazioni-tecniche",
   "pdf-listini-prezzi", "pdf-press-kit", "pdf-informazioni-tecniche",
 ];

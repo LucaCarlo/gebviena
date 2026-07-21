@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   // Filtro speciale "__pro__": raggruppa cartelle dell'area professionisti
   // (foto pro + PDF tecnici, listini, press-kit, cataloghi, info tecniche).
   const PRO_FOLDER_MATCHES = [
-    "professionals", "tech-sheets", "catalogs",
+    "professionisti", "professionals", "digital-media", "tech-sheets", "catalogs",
     "listini-prezzi", "press-kit", "informazioni-tecniche",
     "pdf-listini-prezzi", "pdf-press-kit", "pdf-informazioni-tecniche",
   ];

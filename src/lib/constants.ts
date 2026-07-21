@@ -353,7 +353,6 @@ export const PAGE_IMAGES_CONFIG: {
 ];
 
 export const MEDIA_FOLDERS = [
-  { value: "general", label: "Generale" },
   { value: "products", label: "Prodotti" },
   { value: "projects", label: "Progetti" },
   { value: "designers", label: "Designer" },
@@ -361,8 +360,6 @@ export const MEDIA_FOLDERS = [
   { value: "campaigns", label: "Campagne" },
   { value: "hero", label: "Hero" },
   { value: "premi", label: "Premi" },
-  { value: "tech-sheets", label: "Schede tecniche e 2D/3D" },
-  { value: "catalogs", label: "Cataloghi" },
   { value: "typologies", label: "Tipologie" },
   { value: "landing-page", label: "Landing page" },
   { value: "email-templates", label: "Template email" },
@@ -370,6 +367,14 @@ export const MEDIA_FOLDERS = [
   { value: "videos", label: "Video" },
   { value: "press", label: "Press / Magazine" },
   { value: "sistema", label: "Sistema / Loghi" },
+  { value: "documents", label: "Documenti" },
+  { value: "professionisti/cataloghi", label: "Pro — Cataloghi" },
+  { value: "professionisti/schede-tecniche", label: "Pro — Schede tecniche" },
+  { value: "professionisti/tessuti-finiture", label: "Pro — Tessuti e finiture" },
+  { value: "professionisti/digital-media", label: "Pro — Digital & Media" },
+  { value: "store-products", label: "Store — Prodotti" },
+  { value: "store-variants", label: "Store — Varianti" },
+  { value: "attribute-swatches", label: "Store — Campionari" },
 ] as const;
 
 export const NAV_ITEMS = [

@@ -300,7 +300,7 @@ export default function MediaTab() {
         modalKind === "typology" ? `tip-${modalValue}` :
         modalKind === "project" ? `proj-${modalValue}` :
         `prod-${modalValue}`;
-      const folder = `professionals/${subfolder}`;
+      const folder = `professionisti/digital-media/${subfolder}`;
       const items: { fileUrl: string; fileName: string; size?: number; width?: number; height?: number }[] = [];
       for (const f of arr) {
         const fd = new FormData();
