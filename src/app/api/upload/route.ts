@@ -5,6 +5,10 @@ import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { processImage, getWebpFilename, type ImagePurpose } from "@/lib/image";
 import { isS3Configured, uploadToS3 } from "@/lib/s3";
+import {
+  isStreamConfigured, createStreamVideo, uploadStreamVideoBinary,
+  waitForStreamReady, buildStreamMp4Url, buildStreamIframeUrl, buildStreamThumbnailUrl,
+} from "@/lib/bunny-stream";
 
 export async function POST(req: Request) {
   const result = await requirePermission("media", "create");
@@ -45,7 +49,38 @@ export async function POST(req: Request) {
     let mediumKey: string | null = null;
     let mediumSize: number | null = null;
 
-    if (isImage && !skipCompression) {
+    const isVideo = file.type.startsWith("video/");
+
+    if (isVideo && (await isStreamConfigured())) {
+      // ── VIDEO → VAY Stream (Bunny Video Library) ──
+      // 1) Crea video su Bunny (metadata) - restituisce guid
+      // 2) Upload binario
+      // 3) Attende encoding (finished status) fino a 2 min
+      // 4) Salva in MediaFile:
+      //    url = MP4 720p diretto (backwards compat con <video src>)
+      //    wasabiKey = guid Bunny (per API future)
+      //    wasabiUrl = iframe embed URL (per player evoluto)
+      //    thumbnailUrl = thumbnail auto-generata da Bunny
+      const cleanTitle = file.name.replace(/\.[^.]+$/, "");
+      const created = await createStreamVideo(cleanTitle);
+      const guid = created.guid;
+      await uploadStreamVideoBinary(guid, buffer, file.type);
+      const info = await waitForStreamReady(guid, 120_000);
+
+      filename = `${timestamp}-${sanitizedName}`; // reference filename per DB
+      finalSize = buffer.length;
+      width = info.width || null;
+      height = info.height || null;
+      // Sceglie la miglior qualità disponibile per url MP4
+      const resolutions = (info.availableResolutions || "").split(",").map((r) => r.trim());
+      const pref = ["720p", "1080p", "480p", "360p", "240p"];
+      const bestQuality = (pref.find((q) => resolutions.includes(q)) || "720p") as "720p" | "1080p" | "480p" | "360p" | "240p";
+      url = buildStreamMp4Url(guid, bestQuality);
+      wasabiKey = guid; // riusiamo wasabiKey come "external key"
+      wasabiUrl = buildStreamIframeUrl(guid);
+      thumbnailUrl = buildStreamThumbnailUrl(guid);
+      isSynced = true;
+    } else if (isImage && !skipCompression) {
       const { processed, medium, thumbnail, metadata } = await processImage(buffer, purpose);
       const webpName = getWebpFilename(sanitizedName);
       filename = `${timestamp}-${webpName}`;
@@ -158,7 +193,7 @@ export async function POST(req: Request) {
         height,
         size: finalSize,
         originalSize,
-        format: isImage && !skipCompression ? "webp" : file.type,
+        format: isImage && !skipCompression ? "webp" : (isVideo && wasabiKey ? "stream" : file.type),
       },
     });
   } catch (e) {

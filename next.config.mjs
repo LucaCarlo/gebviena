@@ -19,6 +19,14 @@ const nextConfig = {
         protocol: "https",
         hostname: "**.wasabisys.com",
       },
+      {
+        protocol: "https",
+        hostname: "**.b-cdn.net",
+      },
+      {
+        protocol: "https",
+        hostname: "**.storage.bunnycdn.com",
+      },
     ],
   },
   async rewrites() {
