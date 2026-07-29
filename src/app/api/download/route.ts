@@ -16,6 +16,42 @@ import { getAuthProfessional } from "@/lib/professional-auth";
  *           - original -> nessuna conversione (serve il file cosi com'e')
  *           Se il file non e' un'immagine (PDF/video), format viene ignorato.
  */
+
+// Mappa mime -> estensione file, per garantire che il download abbia sempre
+// l'estensione corretta (Windows/macOS altrimenti mostrano "FILE" senza icona).
+function mimeToExt(ct: string): string {
+  const t = ct.toLowerCase();
+  if (t.includes("application/pdf")) return "pdf";
+  if (t.includes("image/jpeg")) return "jpg";
+  if (t.includes("image/png")) return "png";
+  if (t.includes("image/webp")) return "webp";
+  if (t.includes("image/gif")) return "gif";
+  if (t.includes("image/svg")) return "svg";
+  if (t.includes("video/mp4")) return "mp4";
+  if (t.includes("video/webm")) return "webm";
+  if (t.includes("video/quicktime")) return "mov";
+  if (t.includes("application/zip")) return "zip";
+  if (t.includes("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) return "docx";
+  if (t.includes("application/msword")) return "doc";
+  if (t.includes("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) return "xlsx";
+  if (t.includes("application/vnd.ms-excel")) return "xls";
+  if (t.includes("application/vnd.openxmlformats-officedocument.presentationml.presentation")) return "pptx";
+  return "";
+}
+
+// Aggiunge/normalizza l'estensione: se il nome non termina gia' con quella dedotta
+// dal content-type, la aggiunge. Serve perche' la UI a volte passa una "label"
+// (es. "Scheda tecnica") senza estensione, e senza estensione l'OS mostra "FILE".
+function ensureExtension(name: string, contentType: string): string {
+  const ext = mimeToExt(contentType);
+  if (!ext) return name;
+  const current = (name.match(/\.([a-z0-9]{1,10})$/i)?.[1] || "").toLowerCase();
+  if (current === ext) return name;
+  const known = ["pdf","jpg","jpeg","png","webp","gif","svg","mp4","webm","mov","zip","doc","docx","xls","xlsx","pptx"];
+  if (known.includes(current)) return name; // ha gia' un'estensione riconosciuta diversa: rispettala
+  return `${name}.${ext}`;
+}
+
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("u");
   const filename = req.nextUrl.searchParams.get("f") || "download";
@@ -62,7 +98,7 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${safeName}"`,
+        "Content-Disposition": `attachment; filename="${ensureExtension(safeName, contentType)}"`,
         "Content-Length": upstream.headers.get("content-length") || "",
         "Cache-Control": "private, max-age=3600",
       },
