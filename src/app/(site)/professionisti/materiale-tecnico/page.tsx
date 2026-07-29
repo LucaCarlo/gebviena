@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
 
+import { buildDownloadUrl } from "@/lib/download-url";
 interface ProductSheet {
   id: string;
   name: string;
@@ -305,9 +306,7 @@ export default function MaterialeTecnicoPage() {
                                     <div className="flex items-center gap-5 flex-shrink-0">
                                       {tab === "schede" && p.techSheetUrl && (
                                         <a
-                                          href={p.techSheetUrl}
-                                          download
-                                          target="_blank"
+                                          href={buildDownloadUrl(p.techSheetUrl, `${p.name} - Scheda tecnica`)}
                                           rel="noopener noreferrer"
                                           className="inline-flex items-center gap-2 uppercase text-[12px] tracking-[0.1em] text-black hover:text-accent transition-colors group"
                                         >
@@ -320,9 +319,7 @@ export default function MaterialeTecnicoPage() {
                                       )}
                                       {tab === "modelli" && p.model2dUrl && (
                                         <a
-                                          href={p.model2dUrl}
-                                          download
-                                          target="_blank"
+                                          href={buildDownloadUrl(p.model2dUrl, `${p.name} - modello 2D`)}
                                           rel="noopener noreferrer"
                                           className="inline-flex items-center gap-2 uppercase text-[12px] tracking-[0.1em] text-black hover:text-accent transition-colors group"
                                         >
@@ -335,9 +332,7 @@ export default function MaterialeTecnicoPage() {
                                       )}
                                       {tab === "modelli" && p.model3dUrl && (
                                         <a
-                                          href={p.model3dUrl}
-                                          download
-                                          target="_blank"
+                                          href={buildDownloadUrl(p.model3dUrl, `${p.name} - modello 3D`)}
                                           rel="noopener noreferrer"
                                           className="inline-flex items-center gap-2 uppercase text-[12px] tracking-[0.1em] text-black hover:text-accent transition-colors group"
                                         >
