@@ -27,6 +27,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "**.storage.bunnycdn.com",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.gebruederthonetvienna.com",
+      },
     ],
   },
   async rewrites() {

@@ -123,6 +123,7 @@ export const UI_STRING_GROUPS: UiStringGroup[] = [
       { key: "pro.error.weakPassword", defaultValue: "La password non rispetta i requisiti" },
       { key: "pro.error.duplicateEmail", defaultValue: "Esiste già un account con questa email" },
       { key: "pro.error.credentials", defaultValue: "Email o password errati" },
+      { key: "pro.cta.forgotPassword", defaultValue: "Password dimenticata?" },
       { key: "pro.error.generic", defaultValue: "Errore di connessione. Riprova." },
       { key: "pro.download.title", defaultValue: "Accedi per scaricare" },
       { key: "pro.download.desc", defaultValue: "Accedi con il tuo account per scaricare il file." },

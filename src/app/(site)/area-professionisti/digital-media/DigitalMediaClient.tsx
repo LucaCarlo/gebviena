@@ -179,7 +179,10 @@ export default function DigitalMediaClient({
   const downloadAll = async (items: { fileUrl: string; fileName: string }[]) => {
     for (const item of items) {
       const a = document.createElement("a");
-      a.href = item.fileUrl;
+      const isCrossOrigin = /^https?:\/\//.test(item.fileUrl);
+      a.href = isCrossOrigin
+        ? `/api/download?u=${encodeURIComponent(item.fileUrl)}&f=${encodeURIComponent(item.fileName || "download")}`
+        : item.fileUrl;
       a.download = item.fileName || "";
       a.rel = "noopener noreferrer";
       a.target = "_self";
@@ -413,9 +416,8 @@ function Gallery({ items, onOpen }: { items: { id: string; fileUrl: string; file
             <img src={img.fileUrl} alt={img.fileName} className="w-full h-full object-cover" />
           </button>
           <a
-            href={img.fileUrl}
+            href={/^https?:\/\//.test(img.fileUrl) ? `/api/download?u=${encodeURIComponent(img.fileUrl)}&f=${encodeURIComponent(img.fileName || "download")}` : img.fileUrl}
             download={img.fileName}
-            target="_blank"
             rel="noopener noreferrer"
             className="absolute top-1.5 right-1.5 bg-white/95 text-warm-800 p-1.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
             title="Scarica"

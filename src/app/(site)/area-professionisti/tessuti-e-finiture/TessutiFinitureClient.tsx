@@ -5,6 +5,7 @@ import { Plus, Minus, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useT } from "@/contexts/I18nContext";
 
+import { buildDownloadUrl } from "@/lib/download-url";
 interface FabricFile {
   id: string;
   name: string;
@@ -79,9 +80,7 @@ export default function TessutiFinitureClient({ categories }: { categories: Fabr
                             </div>
                             <div className="flex items-center gap-5 flex-shrink-0">
                               <a
-                                href={f.fileUrl}
-                                download
-                                target="_blank"
+                                href={buildDownloadUrl(f.fileUrl, f.title || f.name)}
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-2 uppercase text-[12px] tracking-[0.1em] text-black hover:text-accent transition-colors group"
                               >

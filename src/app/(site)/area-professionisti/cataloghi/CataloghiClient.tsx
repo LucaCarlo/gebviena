@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Download, FileText } from "lucide-react";
 
+import { buildDownloadUrl } from "@/lib/download-url";
 interface Catalog {
   id: string;
   name: string;
@@ -115,7 +116,7 @@ function CatalogCard({ c, i18n }: { c: Catalog; i18n: I18n }) {
   const hasPdf = Boolean(c.pdfUrl && c.pdfUrl.trim());
   const Wrapper: React.ElementType = hasPdf ? "a" : "div";
   const wrapperProps = hasPdf
-    ? { href: c.pdfUrl, target: "_blank", rel: "noopener noreferrer" }
+    ? { href: buildDownloadUrl(c.pdfUrl, c.title || c.name), rel: "noopener noreferrer" }
     : {};
 
   return (

@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { Plus, Minus, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { buildDownloadUrl } from "@/lib/download-url";
 interface ProductRow {
   id: string;
   name: string;
@@ -179,8 +180,7 @@ function DownloadLink({ href, label }: { href: string | null; label: string }) {
   }
   return (
     <a
-      href={href}
-      target="_blank"
+      href={buildDownloadUrl(href, label)}
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1.5 uppercase text-[11px] tracking-[0.1em] text-black hover:text-warm-700 transition-colors group"
     >

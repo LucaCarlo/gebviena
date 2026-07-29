@@ -1159,6 +1159,10 @@ model Professional {
   lastLoginAt    DateTime?
   approvedAt     DateTime?
 
+  // Password reset flow — token generato da /api/professionals/forgot-password, validato da /api/professionals/reset-password (scadenza 1h)
+  passwordResetToken   String?   @db.VarChar(128)
+  passwordResetExpires DateTime?
+
   notificationReads ProfessionalNotificationRead[]
 
   @@index([role])

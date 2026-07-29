@@ -451,6 +451,15 @@ export default function AccessoForm({ initialMode = "login" }: { initialMode?: M
           >
             <span className="hover:underline">{t(mode === "login" ? "pro.cta.toRegister" : "pro.cta.toLogin")}</span>
           </button>
+          {mode === "login" && (
+            <a
+              href="/area-professionisti/password-dimenticata"
+              className="text-[13px] text-warm-600 hover:text-warm-900 transition-colors"
+              style={{ textUnderlineOffset: "4px", textDecorationThickness: "0.5px" }}
+            >
+              <span className="hover:underline">{t("pro.cta.forgotPassword") || "Password dimenticata?"}</span>
+            </a>
+          )}
         </div>
       </form>
     </div>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useT, useLang } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
 
+import { buildDownloadUrl } from "@/lib/download-url";
 interface DocItem {
   key: string;
   label: string;
@@ -38,9 +39,9 @@ export default function ProductDocsList({ items }: { items: DocItem[] }) {
     return () => { cancelled = true; };
   }, []);
 
-  const triggerDownload = useCallback((url: string) => {
+  const triggerDownload = useCallback((url: string, filename?: string) => {
     const a = document.createElement("a");
-    a.href = url;
+    a.href = buildDownloadUrl(url, filename);
     a.rel = "noopener noreferrer";
     a.target = "_blank";
     // 'download' attribute for local files; per URL cross-origin il browser
@@ -54,7 +55,7 @@ export default function ProductDocsList({ items }: { items: DocItem[] }) {
   const onClickRow = useCallback((doc: DocItem, e: React.MouseEvent) => {
     e.preventDefault();
     if (isLoggedIn) {
-      triggerDownload(doc.url);
+      triggerDownload(doc.url, doc.label);
       return;
     }
     setPendingDoc(doc);
@@ -88,7 +89,7 @@ export default function ProductDocsList({ items }: { items: DocItem[] }) {
       setIsLoggedIn(true);
       const toDl = pendingDoc;
       closeLogin();
-      if (toDl) triggerDownload(toDl.url);
+      if (toDl) triggerDownload(toDl.url, toDl.label);
     } catch {
       setError(t("pro.error.generic"));
     } finally {
