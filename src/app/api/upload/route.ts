@@ -3,7 +3,7 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { processImage, getWebpFilename, type ImagePurpose } from "@/lib/image";
+import { processImage, getOutputFilename, type ImagePurpose } from "@/lib/image";
 import { isS3Configured, uploadToS3 } from "@/lib/s3";
 import {
   isStreamConfigured, createStreamVideo, uploadStreamVideoBinary,
@@ -81,9 +81,9 @@ export async function POST(req: Request) {
       thumbnailUrl = buildStreamThumbnailUrl(guid);
       isSynced = true;
     } else if (isImage && !skipCompression) {
-      const { processed, medium, thumbnail, metadata } = await processImage(buffer, purpose);
-      const webpName = getWebpFilename(sanitizedName);
-      filename = `${timestamp}-${webpName}`;
+      const { processed, medium, thumbnail, outputExt, outputMime, keepOriginal, metadata } = await processImage(buffer, purpose, file.type);
+      const outName = getOutputFilename(sanitizedName, outputExt);
+      filename = `${timestamp}-${outName}`;
       finalSize = metadata.size;
       width = metadata.width;
       height = metadata.height;
@@ -91,26 +91,37 @@ export async function POST(req: Request) {
       thumbnailSize = thumbnail.length;
       mediumSize = medium.length;
 
-      const mdName = `${timestamp}-md-${webpName}`;
-      const thName = `${timestamp}-thumb-${webpName}`;
+      const mdName = `${timestamp}-md-${outName}`;
+      const thName = `${timestamp}-thumb-${outName}`;
+
+      // Nome file originale (se richiesto): mantiene estensione e mime originali
+      const origExt = (sanitizedName.match(/\.([^.]+)$/)?.[1] || "bin").toLowerCase();
+      const origBase = sanitizedName.replace(/\.[^.]+$/, "");
+      const origName = `${timestamp}-${origBase}-original.${origExt}`;
 
       if (await isS3Configured()) {
         const key = `${folder}/${filename}`;
-        wasabiUrl = await uploadToS3(processed, key, "image/webp");
+        wasabiUrl = await uploadToS3(processed, key, outputMime);
         wasabiKey = key;
         isSynced = true;
         url = wasabiUrl;
 
         const mdKey = `${folder}/${mdName}`;
-        mediumUrl = await uploadToS3(medium, mdKey, "image/webp");
+        mediumUrl = await uploadToS3(medium, mdKey, outputMime);
         mediumKey = mdKey;
 
         const thKey = `${folder}/thumbs/${thName}`;
-        thumbnailUrl = await uploadToS3(thumbnail, thKey, "image/webp");
+        thumbnailUrl = await uploadToS3(thumbnail, thKey, outputMime);
         thumbnailKey = thKey;
+
+        if (keepOriginal) {
+          const origKey = `${folder}/originals/${origName}`;
+          await uploadToS3(buffer, origKey, file.type || "application/octet-stream");
+        }
       } else {
         const uploadsDir = path.join(process.cwd(), "public", "uploads");
         const thumbsDir = path.join(uploadsDir, "thumbs");
+        const originalsDir = path.join(uploadsDir, "originals");
         await mkdir(uploadsDir, { recursive: true });
         await mkdir(thumbsDir, { recursive: true });
 
@@ -118,6 +129,11 @@ export async function POST(req: Request) {
         await writeFile(path.join(uploadsDir, mdName), medium);
         await writeFile(path.join(thumbsDir, thName), thumbnail);
         url = `/uploads/${filename}`;
+
+        if (keepOriginal) {
+          await mkdir(originalsDir, { recursive: true });
+          await writeFile(path.join(originalsDir, origName), buffer);
+        }
         mediumUrl = `/uploads/${mdName}`;
         thumbnailUrl = `/uploads/thumbs/${thName}`;
       }
@@ -164,7 +180,7 @@ export async function POST(req: Request) {
       data: {
         filename,
         originalName: file.name,
-        mimeType: isImage && !skipCompression ? "image/webp" : file.type,
+        mimeType: isImage && !skipCompression ? (filename.endsWith(".jpg") || filename.endsWith(".jpeg") ? "image/jpeg" : filename.endsWith(".png") ? "image/png" : "image/webp") : file.type,
         size: finalSize,
         url,
         wasabiUrl,
