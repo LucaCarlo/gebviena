@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Download, X, FolderOpen, Box, Briefcase } from "lucide-react";
+import { buildDownloadUrl, type DownloadFormat } from "@/lib/download-url";
 
 interface TypologyOpt { value: string; label: string }
 interface ProductImage { id: string; fileUrl: string; fileName: string; productId: string | null; productName: string; productSlug: string; productCategory: string; productCover?: string | null }
@@ -41,6 +42,7 @@ export default function DigitalMediaClient({
   i18n: I18nDM;
 }) {
   const [view, setView] = useState<"product" | "project" | "typology">("product");
+  const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>("jpg");
   const [selectedTypology, setSelectedTypology] = useState<string>("");
   const [productFilterTypology, setProductFilterTypology] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -179,10 +181,7 @@ export default function DigitalMediaClient({
   const downloadAll = async (items: { fileUrl: string; fileName: string }[]) => {
     for (const item of items) {
       const a = document.createElement("a");
-      const isCrossOrigin = /^https?:\/\//.test(item.fileUrl);
-      a.href = isCrossOrigin
-        ? `/api/download?u=${encodeURIComponent(item.fileUrl)}&f=${encodeURIComponent(item.fileName || "download")}`
-        : item.fileUrl;
+      a.href = buildDownloadUrl(item.fileUrl, item.fileName || "download", downloadFormat);
       a.download = item.fileName || "";
       a.rel = "noopener noreferrer";
       a.target = "_self";
@@ -195,6 +194,34 @@ export default function DigitalMediaClient({
 
   return (
     <div className="space-y-6">
+      {/* FORMAT_SELECTOR_ANCHOR — barra formato download applicata a tutti i pulsanti "Scarica" della pagina */}
+      <div className="flex items-center gap-3 flex-wrap bg-warm-50 border border-warm-200 rounded-lg px-4 py-2.5">
+        <div className="flex items-center gap-2 text-[12px] uppercase tracking-[0.14em] text-warm-700">
+          <Download size={14} /> Formato download:
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          {(["jpg", "png", "webp", "original"] as DownloadFormat[]).map((f) => {
+            const label = f === "jpg" ? "JPG (alta qualita)" : f === "png" ? "PNG" : f === "webp" ? "WebP (leggero)" : "Originale";
+            const isActive = downloadFormat === f;
+            return (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setDownloadFormat(f)}
+                className={`text-[11px] uppercase tracking-[0.1em] px-3 py-1.5 rounded transition-colors ${
+                  isActive ? "bg-warm-800 text-white" : "bg-white text-warm-700 hover:bg-warm-100 border border-warm-200"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-[11px] text-warm-500 ml-auto">
+          JPG consigliato per stampa/giornali/social; WebP e&apos; il formato leggero del sito; Originale mantiene il file cosi come e&apos; online.
+        </p>
+      </div>
+
       <div className="flex gap-2 border-b border-warm-200 pb-3 flex-wrap">
         <Tab active={view === "product"} onClick={() => setView("product")} icon={<Box size={16} />} label={i18n.byProduct} />
         <Tab active={view === "typology"} onClick={() => { setView("typology"); setSelectedTypology(""); }} icon={<FolderOpen size={16} />} label={i18n.byTypology} />
@@ -350,7 +377,7 @@ export default function DigitalMediaClient({
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-5">
-              <Gallery items={galleryOpen.images.map((i) => ({ ...i, label: "" }))} onOpen={setLightbox} />
+              <Gallery items={galleryOpen.images.map((i) => ({ ...i, label: "" }))} onOpen={setLightbox} format={downloadFormat} />
             </div>
           </div>
         </div>
@@ -406,7 +433,7 @@ function CardsGrid({ items, onClick }: { items: { id: string; name: string; cove
   );
 }
 
-function Gallery({ items, onOpen }: { items: { id: string; fileUrl: string; fileName: string; label: string }[]; onOpen: (url: string) => void }) {
+function Gallery({ items, onOpen, format }: { items: { id: string; fileUrl: string; fileName: string; label: string }[]; onOpen: (url: string) => void; format: DownloadFormat }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       {items.map((img) => (
@@ -416,7 +443,7 @@ function Gallery({ items, onOpen }: { items: { id: string; fileUrl: string; file
             <img src={img.fileUrl} alt={img.fileName} className="w-full h-full object-cover" />
           </button>
           <a
-            href={/^https?:\/\//.test(img.fileUrl) ? `/api/download?u=${encodeURIComponent(img.fileUrl)}&f=${encodeURIComponent(img.fileName || "download")}` : img.fileUrl}
+            href={buildDownloadUrl(img.fileUrl, img.fileName || "download", format)}
             download={img.fileName}
             rel="noopener noreferrer"
             className="absolute top-1.5 right-1.5 bg-white/95 text-warm-800 p-1.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"

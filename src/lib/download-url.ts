@@ -1,25 +1,36 @@
 /**
  * Costruisce l'URL per il download di un file.
  *
- * Se l'URL è cross-origin (es. CDN Bunny), passa dal proxy /api/download
- * che aggiunge il header `Content-Disposition: attachment` — così il browser
- * scarica il file invece di aprirlo (l'attributo HTML `download` non funziona
- * cross-origin senza quel header).
+ * Se l'URL e' cross-origin (es. CDN Bunny), passa dal proxy /api/download
+ * che aggiunge il header `Content-Disposition: attachment` e — se richiesto —
+ * converte on-the-fly le immagini nel formato scelto (jpg/png/webp/original).
  *
- * Se l'URL è same-origin (/uploads/... o path relativi), la usa direttamente.
+ * Se l'URL e' same-origin (/uploads/... o path relativi) senza conversione,
+ * la usa direttamente. Se e' richiesto un format, passa comunque dal proxy.
  *
  * @param url        URL del file da scaricare (assoluta o relativa)
  * @param filename   Nome file da suggerire al browser (opzionale)
+ * @param format     "jpg" | "png" | "webp" | "original" — SOLO per immagini
  */
-export function buildDownloadUrl(url: string | null | undefined, filename?: string | null): string {
+export type DownloadFormat = "jpg" | "png" | "webp" | "original";
+
+export function buildDownloadUrl(
+  url: string | null | undefined,
+  filename?: string | null,
+  format?: DownloadFormat | null,
+): string {
   if (!url) return "";
   const u = String(url).trim();
   if (!u) return "";
-  // URL assoluta cross-origin → proxy
-  if (/^https?:\/\//i.test(u)) {
-    const f = filename ? encodeURIComponent(String(filename)) : "";
-    return `/api/download?u=${encodeURIComponent(u)}${f ? `&f=${f}` : ""}`;
-  }
-  // Same-origin: url diretta
-  return u;
+
+  const isAbsolute = /^https?:\/\//i.test(u);
+  const needsProxy = isAbsolute || !!format; // se serve conversione, passa sempre dal proxy
+
+  if (!needsProxy) return u;
+
+  const params = new URLSearchParams();
+  params.set("u", u);
+  if (filename) params.set("f", String(filename));
+  if (format) params.set("format", format);
+  return `/api/download?${params.toString()}`;
 }
