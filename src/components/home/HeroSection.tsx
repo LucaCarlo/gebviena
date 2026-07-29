@@ -10,6 +10,38 @@ import type { HeroSlide } from "@/types";
 
 const AUTOPLAY_INTERVAL = 6000;
 
+// Video helpers — decide come rendere slide.videoUrl.
+function isMp4Url(u: string | null | undefined): boolean {
+  if (!u) return false;
+  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(u) || /b-cdn\.net/i.test(u);
+}
+function isYouTubeUrl(u: string | null | undefined): boolean {
+  if (!u) return false;
+  return /(?:youtube\.com|youtu\.be)/i.test(u);
+}
+function isVimeoUrl(u: string | null | undefined): boolean {
+  if (!u) return false;
+  return /vimeo\.com/i.test(u);
+}
+function toYouTubeEmbed(u: string): string {
+  // Estrae videoId da youtube.com/watch?v=X o youtu.be/X
+  let id = "";
+  try {
+    const url = new URL(u);
+    if (url.hostname.includes("youtu.be")) id = url.pathname.slice(1);
+    else id = url.searchParams.get("v") || "";
+  } catch { /* URL invalido -> id vuoto -> iframe non renderizzato */ }
+  if (!id) return "";
+  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&playsinline=1`;
+}
+function toVimeoEmbed(u: string): string {
+  const m = u.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  const id = m ? m[1] : "";
+  if (!id) return "";
+  return `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1&background=1`;
+}
+
+
 const FALLBACK_SLIDE: HeroSlide = {
   id: "fallback",
   title: "Un omaggio alla tradizione viennese",
@@ -146,18 +178,50 @@ export default function HeroSection() {
               />
             </div>
           )}
-          {/* Desktop (>=md): sempre fill cover come prima */}
+          {/* Desktop (>=md): video di sfondo se videoUrl, altrimenti Image come prima */}
           <div className="hidden md:block absolute inset-0">
-            <Image
-              src={slide.imageUrl}
-              alt={slide.title}
-              fill
-              className="object-cover"
-              priority={current === 0}
-              sizes="100vw"
-              quality={90}
-              style={{ objectPosition: slide.imagePosition || "center center" }}
-            />
+            {isMp4Url(slide.videoUrl) ? (
+              <video
+                key={`video-${slide.id}`}
+                src={slide.videoUrl || undefined}
+                poster={slide.imageUrl}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : isYouTubeUrl(slide.videoUrl) && toYouTubeEmbed(slide.videoUrl!) ? (
+              <iframe
+                key={`yt-${slide.id}`}
+                src={toYouTubeEmbed(slide.videoUrl!)}
+                title={slide.title}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 w-[177.77vh] h-[56.25vw] min-w-full min-h-full -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 pointer-events-none"
+              />
+            ) : isVimeoUrl(slide.videoUrl) && toVimeoEmbed(slide.videoUrl!) ? (
+              <iframe
+                key={`vm-${slide.id}`}
+                src={toVimeoEmbed(slide.videoUrl!)}
+                title={slide.title}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 w-[177.77vh] h-[56.25vw] min-w-full min-h-full -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 pointer-events-none"
+              />
+            ) : (
+              <Image
+                src={slide.imageUrl}
+                alt={slide.title}
+                fill
+                className="object-cover"
+                priority={current === 0}
+                sizes="100vw"
+                quality={90}
+                style={{ objectPosition: slide.imagePosition || "center center" }}
+              />
+            )}
           </div>
         </motion.div>
       </AnimatePresence>

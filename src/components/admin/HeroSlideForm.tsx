@@ -235,17 +235,34 @@ export default function HeroSlideForm({ slideId, defaultPage }: HeroSlideFormPro
           recommendedSize="800x500px"
         />
 
-        <div>
-          <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            URL Video
-          </label>
-          <input
-            type="text"
-            value={form.videoUrl}
-            onChange={(e) => updateField("videoUrl", e.target.value)}
-            className="w-full border border-warm-300 rounded px-4 py-2.5 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
-            placeholder="https://youtube.com/..."
+        <div className="border-t border-warm-100 pt-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-semibold text-warm-600 uppercase tracking-wider">
+              Video di sfondo (opzionale)
+            </label>
+            <p className="text-[10px] text-warm-400">MP4/WebM caricato oppure URL YouTube/Vimeo</p>
+          </div>
+          <ImageUploadField
+            label="Carica video (MP4/WebM)"
+            value={form.videoUrl && !/^https?:\/\/(www\.)?(youtube|youtu\.be|vimeo)/i.test(form.videoUrl) ? form.videoUrl : ""}
+            onChange={(url) => updateField("videoUrl", url)}
+            onRemove={() => updateField("videoUrl", "")}
+            purpose="hero"
+            folder="hero"
+            acceptVideo
+            helpText="Se impostato, il video appare come sfondo dello slide (muto, autoplay, loop). L'immagine sopra resta come poster/fallback."
+            recommendedSize="1920x1080px (Full HD)"
           />
+          <div className="mt-2">
+            <label className="block text-[10px] text-warm-500 uppercase tracking-wider mb-1">Oppure incolla URL YouTube/Vimeo/MP4</label>
+            <input
+              type="text"
+              value={form.videoUrl}
+              onChange={(e) => updateField("videoUrl", e.target.value)}
+              className="w-full border border-warm-300 rounded px-4 py-2 text-sm focus:border-warm-800 focus:outline-none focus:ring-1 focus:ring-warm-800"
+              placeholder="https://youtube.com/watch?v=... oppure https://.../video.mp4"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
