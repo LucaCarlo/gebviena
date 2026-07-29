@@ -217,7 +217,7 @@ export default function DigitalMediaClient({
             );
           })}
         </div>
-        <p className="text-[11px] text-warm-500 ml-auto">
+        <p className="text-[11px] text-warm-500 w-full text-left">
           JPG consigliato per stampa/giornali/social; WebP e&apos; il formato leggero del sito; Originale mantiene il file cosi come e&apos; online.
         </p>
       </div>
