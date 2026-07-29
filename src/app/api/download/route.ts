@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${ensureExtension(safeName, contentType)}"`,
         "Content-Length": upstream.headers.get("content-length") || "",
-        "Cache-Control": "private, max-age=3600",
+        "Cache-Control": "private, no-store, must-revalidate",
       },
     });
   }
@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${finalName}"`,
         "Content-Length": upstream.headers.get("content-length") || "",
-        "Cache-Control": "private, max-age=3600",
+        "Cache-Control": "private, no-store, must-revalidate",
       },
     });
   }
@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
       "Content-Type": outMime,
       "Content-Disposition": `attachment; filename="${finalName}"`,
       "Content-Length": String(converted.length),
-      "Cache-Control": "private, max-age=3600",
+      "Cache-Control": "private, no-store, must-revalidate",
     },
   });
 }
