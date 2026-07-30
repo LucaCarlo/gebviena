@@ -145,6 +145,10 @@ export async function GET(req: Request) {
   // Sezione "session-time" — calcolata via CTE LAG. Negli snapshot precalcolati
   // viene fatta dal cron notturno; qui è il fallback se non c'è snapshot.
   async function buildSessionTime() {
+    // Skip su range personalizzati lunghi: la CTE con LAG e SUM window functions
+    // e' O(N) e su 2.8M righe puo' impiegare 30s+. Torniamo null (il frontend mostra
+    // placeholder "-" senza bloccare le altre sezioni).
+    if (isCustom && customDays > 30) return { avgSeconds: null };
     const avgTimeR = await q(`WITH seq AS (
           SELECT \`ipHash\` h, UNIX_TIMESTAMP(\`createdAt\`) ts,
                  LAG(UNIX_TIMESTAMP(\`createdAt\`)) OVER (PARTITION BY \`ipHash\` ORDER BY \`createdAt\`) prev

@@ -146,7 +146,7 @@ export default function AdminAnalyticsPage() {
         setLoadedSections((prev) => new Set(prev).add(sec));
       } catch { /* ignore */ }
     };
-    await Promise.all([
+    Promise.all([
       fetchSection("kpi"),
       fetchSection("store"),
       fetchSection("geo"),
