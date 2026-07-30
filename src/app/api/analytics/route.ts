@@ -76,7 +76,7 @@ export async function GET(req: Request) {
   // index PageView_host_created_path_idx (host, createdAt, path).
   // Restituisce visualizzazioni totali (hits) invece di visitatori unici — metrica
   // comunque utile per confrontare pagine tra loro.
-  const CNT = isCustom ? "COUNT(*)" : "COUNT(DISTINCT `ipHash`)";
+  const CNT = isCustom ? "COUNT(*)" : "COUNT(DISTINCT \`ipHash\`)";
   const FI  = isCustom ? "FORCE INDEX (PageView_host_created_path_idx)" : "";
   const PV  = `\`PageView\` ${FI}`.trim();
 
@@ -127,7 +127,7 @@ export async function GET(req: Request) {
   // "kpi" = solo i 3 KPI VELOCI (visitatori, periodo, serie). NO tempo medio.
   async function buildKpi() {
     const [uniqueR, daysR, series] = await Promise.all([
-      q(`SELECT ${CNT} u FROM ${PV} ${W}`),
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM ${PV} ${W}`),
       q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
       q(`SELECT ${BUCKET} b, ${CNT} v FROM ${PV} ${W} GROUP BY b ORDER BY b`),
     ]);
@@ -210,11 +210,11 @@ export async function GET(req: Request) {
   }
   async function buildStore() {
     const [sfV, sfP, sfC, sfK, sfOk, sfTop] = await Promise.all([
-      q(`SELECT ${CNT} u FROM \`PageView\` ${SW}`),
-      q(`SELECT ${CNT} u FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%'`),
-      q(`SELECT ${CNT} u FROM \`PageView\` ${SW} AND \`path\` LIKE '%carrello%'`),
-      q(`SELECT ${CNT} u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout%' AND \`path\` NOT LIKE '%success%'`),
-      q(`SELECT ${CNT} u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout/success%'`),
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW}`),
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%'`),
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%carrello%'`),
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout%' AND \`path\` NOT LIKE '%success%'`),
+      q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM \`PageView\` ${SW} AND \`path\` LIKE '%checkout/success%'`),
       q(`SELECT \`path\` p, ${CNT} v FROM \`PageView\` ${SW} AND \`path\` LIKE '%/prodotti/%' GROUP BY \`path\` ORDER BY v DESC LIMIT 15`),
     ]);
     const sv = num(sfV[0]?.u);
