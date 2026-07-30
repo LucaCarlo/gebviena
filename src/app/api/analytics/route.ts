@@ -39,7 +39,9 @@ export async function GET(req: Request) {
 
   // Cache key
   const cacheTag = isRecentPage ? `recent:${searchParams.get("offset") || "0"}` : (section || "all");
-  const cacheKey = `${host || "ALL"}|${rangeParam}|${cacheTag}`;
+  const fromParam = (searchParams.get("from") || "").slice(0, 10); // YYYY-MM-DD
+  const toParam   = (searchParams.get("to") || "").slice(0, 10);
+  const cacheKey = `${host || "ALL"}|${rangeParam}|${fromParam}|${toParam}|${cacheTag}`;
   const cached = CACHE.get(cacheKey);
   if (cached && cached.expires > Date.now()) {
     return NextResponse.json({ success: true, data: cached.data, cached: true });
@@ -47,14 +49,26 @@ export async function GET(req: Request) {
 
   const RANGE_DAYS: Record<string, number> = { "1d": 1, "7d": 7, "30d": 30, "1y": 365 };
   const days = RANGE_DAYS[rangeParam];
-  const isHourly = rangeParam === "1d";
-  // Per range lunghi (1 anno o totale) il bucket diventa mensile, altrimenti
-  // il grafico avrebbe 365+ barre illeggibili.
-  const isMonthly = rangeParam === "1y" || rangeParam === "all";
+
+  // Range personalizzato: fromParam/toParam validati come YYYY-MM-DD.
+  // Se rangeParam === "custom" ma le date sono invalide/mancanti, si comporta come "all".
+  const isCustom = rangeParam === "custom" && /^\d{4}-\d{2}-\d{2}$/.test(fromParam) && /^\d{4}-\d{2}-\d{2}$/.test(toParam);
+  const customDays = isCustom
+    ? Math.max(1, Math.round((new Date(toParam + "T23:59:59Z").getTime() - new Date(fromParam + "T00:00:00Z").getTime()) / 86400000) + 1)
+    : 0;
+
+  const isHourly = rangeParam === "1d" || (isCustom && customDays <= 1);
+  // Bucket mensile per range molto lunghi (grafico leggibile).
+  const isMonthly = rangeParam === "1y" || rangeParam === "all" || (isCustom && customDays > 120);
 
   const conds: string[] = [];
   if (host) conds.push(`\`host\` = '${host}'`);
-  if (days) conds.push(`\`createdAt\` >= (UTC_TIMESTAMP() - INTERVAL ${days} DAY)`);
+  if (isCustom) {
+    conds.push(`\`createdAt\` >= '${fromParam} 00:00:00'`);
+    conds.push(`\`createdAt\` <= '${toParam} 23:59:59'`);
+  } else if (days) {
+    conds.push(`\`createdAt\` >= (UTC_TIMESTAMP() - INTERVAL ${days} DAY)`);
+  }
   const W = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
 
   const q = <T = Row>(sql: string) => prisma.$queryRawUnsafe<T[]>(sql);

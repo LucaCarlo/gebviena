@@ -90,13 +90,20 @@ function Card({ children }: { children: React.ReactNode }) {
   return <div className="bg-white border border-warm-200 rounded-lg p-4">{children}</div>;
 }
 
-const RANGES: [string, string][] = [["1d", "Ultimo giorno"], ["7d", "7 giorni"], ["30d", "30 giorni"], ["1y", "1 anno"], ["all", "Totale"]];
+const RANGES: [string, string][] = [["1d", "Ultimo giorno"], ["7d", "7 giorni"], ["30d", "30 giorni"], ["1y", "1 anno"], ["all", "Totale"], ["custom", "Personalizzato"]];
 
 export default function AdminAnalyticsPage() {
   const [data, setData] = useState<Partial<Data>>({});
   const [loadedSections, setLoadedSections] = useState<Set<string>>(new Set());
   const [host, setHost] = useState<"" | "SITO" | "STORE">("");
   const [range, setRange] = useState<string>("all");
+
+  // Range personalizzato: from/to sono le date "in editing";
+  // appliedFrom/appliedTo sono quelle applicate al fetch (evita richieste ad ogni digitazione).
+  const [customFrom, setCustomFrom] = useState<string>(() => { const d = new Date(); d.setDate(d.getDate() - 6); return d.toISOString().slice(0,10); });
+  const [customTo, setCustomTo] = useState<string>(() => new Date().toISOString().slice(0,10));
+  const [appliedFrom, setAppliedFrom] = useState<string>("");
+  const [appliedTo, setAppliedTo] = useState<string>("");
   const [recent, setRecent] = useState<Data["recent"]>([]);
   const [recMore, setRecMore] = useState(false);
   const [recLoading, setRecLoading] = useState(false);
@@ -105,9 +112,13 @@ export default function AdminAnalyticsPage() {
     const p = new URLSearchParams();
     if (host) p.set("host", host);
     if (range) p.set("range", range);
+    if (range === "custom" && appliedFrom && appliedTo) {
+      p.set("from", appliedFrom);
+      p.set("to", appliedTo);
+    }
     const s = p.toString();
     return `${s ? `?${s}` : ""}${extra ? (s ? "&" : "?") + extra : ""}`;
-  }, [host, range]);
+  }, [host, range, appliedFrom, appliedTo]);
 
   // Carica TUTTE le sezioni IN PARALLELO (snapshot precalcolati = read DB veloci).
   // Ogni sezione aggiorna lo state appena pronta, quindi compaiono in modo
@@ -187,6 +198,44 @@ export default function AdminAnalyticsPage() {
           ))}
         </div>
       </div>
+
+      {range === "custom" && (
+        <div className="flex items-end gap-3 flex-wrap bg-warm-50 border border-warm-200 rounded-lg px-4 py-3">
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-warm-600 mb-1">Da</label>
+            <input type="date" value={customFrom} max={customTo || undefined}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none bg-white" />
+          </div>
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-warm-600 mb-1">A</label>
+            <input type="date" value={customTo} min={customFrom || undefined} max={new Date().toISOString().slice(0,10)}
+              onChange={(e) => setCustomTo(e.target.value)}
+              className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none bg-white" />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!customFrom || !customTo) return;
+              if (customFrom > customTo) return;
+              setAppliedFrom(customFrom);
+              setAppliedTo(customTo);
+            }}
+            disabled={!customFrom || !customTo || customFrom > customTo}
+            className="bg-warm-800 text-white text-sm px-4 py-1.5 rounded hover:bg-warm-900 disabled:opacity-50"
+          >
+            Applica
+          </button>
+          {appliedFrom && appliedTo && (
+            <div className="text-[12px] text-warm-500 ml-1">
+              Applicato: {appliedFrom} → {appliedTo}
+            </div>
+          )}
+          <p className="text-[11px] text-warm-400 w-full">
+            Scegli intervallo e clicca &quot;Applica&quot;. I dati vengono ricaricati per il periodo selezionato.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-6">
           {/* KPI — unica riga (sez. "kpi") */}
