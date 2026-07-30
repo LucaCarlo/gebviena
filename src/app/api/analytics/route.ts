@@ -157,7 +157,7 @@ export async function GET(req: Request) {
     // Skip su range personalizzati lunghi: la CTE con LAG e SUM window functions
     // e' O(N) e su 2.8M righe puo' impiegare 30s+. Torniamo null (il frontend mostra
     // placeholder "-" senza bloccare le altre sezioni).
-    if (isCustom && customDays > 30) return { avgSeconds: null };
+    if (isCustom) return { avgSeconds: null };
     const avgTimeR = await q(`WITH seq AS (
           SELECT \`ipHash\` h, UNIX_TIMESTAMP(\`createdAt\`) ts,
                  LAG(UNIX_TIMESTAMP(\`createdAt\`)) OVER (PARTITION BY \`ipHash\` ORDER BY \`createdAt\`) prev
