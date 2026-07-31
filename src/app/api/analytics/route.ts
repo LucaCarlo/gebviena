@@ -80,6 +80,16 @@ export async function GET(req: Request) {
   const FI  = isCustom ? "FORCE INDEX (PageView_host_created_path_idx)" : "";
   const PV  = `\`PageView\` ${FI}`.trim();
 
+  // ─── SNAPSHOT_INTEGRATION ─────────────────────────────────────────
+  // Per range custom con giorni chiusi (dal 10/05 in poi, escluso oggi),
+  // leggiamo dalla tabella pre-aggregata AnalyticsDaySnapshot (~700 righe/giorno).
+  // Le query breakdown passano da 5-60s a <100ms.
+  const todayIt = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }); // YYYY-MM-DD
+  const canUseSnapshot = isCustom && fromParam && toParam && toParam < todayIt;
+  const snapHostClause = host ? `AND host = '${host}'` : "";
+  const snapDayClause = canUseSnapshot ? `WHERE day >= '${fromParam}' AND day <= '${toParam}' ${snapHostClause}` : "";
+
+
   const q = <T = Row>(sql: string) => prisma.$queryRawUnsafe<T[]>(sql);
   const DAY = "DATE(CONVERT_TZ(`createdAt`,'+00:00','+02:00'))";
   const HOUR = "DATE_FORMAT(CONVERT_TZ(`createdAt`,'+00:00','+02:00'),'%Y-%m-%d %H:00')";
@@ -169,10 +179,26 @@ export async function GET(req: Request) {
     return { avgSeconds: Math.round(num(avgTimeR[0]?.a)) };
   }
   async function buildPages() {
+    if (canUseSnapshot) {
+      const topPages = await q(`SELECT dimensionValue p, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='path' GROUP BY dimensionValue ORDER BY v DESC LIMIT 15`);
+      return { topPages: topPages.map((r) => ({ path: String((r as Row).p), count: num((r as Row).v) })) };
+    }
     const topPages = await q(`SELECT \`path\` p, ${CNT} v FROM ${PV} ${W} GROUP BY \`path\` ORDER BY v DESC LIMIT 15`);
     return { topPages: topPages.map((r) => ({ path: String((r as Row).p), count: num((r as Row).v) })) };
   }
   async function buildGeo() {
+    if (canUseSnapshot) {
+      const [countries, regions, cities] = await Promise.all([
+        q(`SELECT dimensionValue n, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='country' GROUP BY dimensionValue ORDER BY v DESC LIMIT 12`),
+        q(`SELECT dimensionValue n, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='region'  GROUP BY dimensionValue ORDER BY v DESC LIMIT 12`),
+        q(`SELECT dimensionValue n, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='city'    GROUP BY dimensionValue ORDER BY v DESC LIMIT 15`),
+      ]);
+      return {
+        countries: countries.map((r) => ({ name: String((r as Row).n), count: num((r as Row).v) })),
+        regions:   regions.map((r) =>   ({ name: String((r as Row).n), count: num((r as Row).v) })),
+        cities:    cities.map((r) =>    ({ name: String((r as Row).n), count: num((r as Row).v) })),
+      };
+    }
     const [countries, regions, cities] = await Promise.all([
       q(`SELECT COALESCE(NULLIF(\`geoCountry\`,''),'(sconosciuto)') n, ${CNT} v FROM ${PV} ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
       q(`SELECT COALESCE(NULLIF(\`geoRegion\`,''),'(sconosciuto)') n, ${CNT} v FROM ${PV} ${W} GROUP BY n ORDER BY v DESC LIMIT 12`),
@@ -187,6 +213,11 @@ export async function GET(req: Request) {
     };
   }
   async function buildSources() {
+    if (canUseSnapshot) {
+      const sources = await q(`SELECT dimensionValue n, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='source' GROUP BY dimensionValue ORDER BY v DESC`);
+      return { sources: sources.map((r) => ({ name: String((r as Row).n), count: num((r as Row).v) })) };
+    }
+
     const sources = await q(`SELECT CASE
           WHEN \`referrer\` IS NULL OR \`referrer\`='' OR \`referrer\` LIKE '%gebruederthonetvienna.com%' THEN 'Diretto / interno'
           WHEN \`referrer\` LIKE '%facebook%' OR \`referrer\` LIKE '%fbclid%' OR \`referrer\` LIKE '%fb.%' THEN 'Facebook'
@@ -199,6 +230,17 @@ export async function GET(req: Request) {
     return { sources: sources.map((r) => ({ name: String((r as Row).src), count: num((r as Row).v) })) };
   }
   async function buildDevices() {
+    if (canUseSnapshot) {
+      const [devices, osR] = await Promise.all([
+        q(`SELECT dimensionValue dev, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='device' GROUP BY dimensionValue ORDER BY v DESC`),
+        q(`SELECT dimensionValue os,  SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='os'     GROUP BY dimensionValue ORDER BY v DESC`),
+      ]);
+      return {
+        devices: devices.map((r) => ({ name: String((r as Row).dev), count: num((r as Row).v) })),
+        systems: osR.map((r) =>     ({ name: String((r as Row).os),  count: num((r as Row).v) })),
+      };
+    }
+
     const [devices, osR] = await Promise.all([
       q(`SELECT ${DEV} dev, ${CNT} v FROM ${PV} ${W} GROUP BY dev ORDER BY v DESC`),
       q(`SELECT ${OS} os, ${CNT} v FROM ${PV} ${W} GROUP BY os ORDER BY v DESC`),
