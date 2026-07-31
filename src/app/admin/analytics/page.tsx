@@ -197,45 +197,31 @@ export default function AdminAnalyticsPage() {
               className={`px-4 py-2 ${range === v ? "bg-warm-800 text-white" : "bg-white text-warm-600 hover:bg-warm-50"}`}>{l}</button>
           ))}
         </div>
-      </div>
-
-      {range === "custom" && (
-        <div className="flex items-end gap-3 flex-wrap bg-warm-50 border border-warm-200 rounded-lg px-4 py-3">
-          <div>
-            <label className="block text-[11px] uppercase tracking-wider text-warm-600 mb-1">Da</label>
+        {range === "custom" && (
+          <div className="flex items-center gap-2 text-sm">
             <input type="date" value={customFrom} max={customTo || undefined}
               onChange={(e) => setCustomFrom(e.target.value)}
-              className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none bg-white" />
-          </div>
-          <div>
-            <label className="block text-[11px] uppercase tracking-wider text-warm-600 mb-1">A</label>
+              className="border border-warm-300 rounded px-2 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white" />
+            <span className="text-warm-500">→</span>
             <input type="date" value={customTo} min={customFrom || undefined} max={new Date().toISOString().slice(0,10)}
               onChange={(e) => setCustomTo(e.target.value)}
-              className="border border-warm-300 rounded px-3 py-1.5 text-sm focus:border-warm-800 focus:outline-none bg-white" />
+              className="border border-warm-300 rounded px-2 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white" />
+            <button
+              type="button"
+              onClick={() => {
+                if (!customFrom || !customTo) return;
+                if (customFrom > customTo) return;
+                setAppliedFrom(customFrom);
+                setAppliedTo(customTo);
+              }}
+              disabled={!customFrom || !customTo || customFrom > customTo}
+              className="bg-warm-800 text-white text-sm px-4 py-2 rounded hover:bg-warm-900 disabled:opacity-50"
+            >
+              Applica
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (!customFrom || !customTo) return;
-              if (customFrom > customTo) return;
-              setAppliedFrom(customFrom);
-              setAppliedTo(customTo);
-            }}
-            disabled={!customFrom || !customTo || customFrom > customTo}
-            className="bg-warm-800 text-white text-sm px-4 py-1.5 rounded hover:bg-warm-900 disabled:opacity-50"
-          >
-            Applica
-          </button>
-          {appliedFrom && appliedTo && (
-            <div className="text-[12px] text-warm-500 ml-1">
-              Applicato: {appliedFrom} → {appliedTo}
-            </div>
-          )}
-          <p className="text-[11px] text-warm-400 w-full">
-            Scegli intervallo e clicca &quot;Applica&quot;. I dati vengono ricaricati per il periodo selezionato.
-          </p>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="space-y-6">
           {/* KPI — unica riga (sez. "kpi") */}
