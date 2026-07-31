@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureTodaySnapshot, SNAPSHOT_HOSTS, type SnapshotHost } from "@/lib/analytics-snapshot";
 import { getAuthUser } from "@/lib/auth";
 
 type Row = Record<string, unknown>;
@@ -85,9 +86,15 @@ export async function GET(req: Request) {
   // leggiamo dalla tabella pre-aggregata AnalyticsDaySnapshot (~700 righe/giorno).
   // Le query breakdown passano da 5-60s a <100ms.
   const todayIt = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }); // YYYY-MM-DD
-  const canUseSnapshot = isCustom && fromParam && toParam && toParam < todayIt;
+  const canUseSnapshot = isCustom && !!fromParam && !!toParam && toParam <= todayIt;
   const snapHostClause = host ? `AND host = '${host}'` : "";
   const snapDayClause = canUseSnapshot ? `WHERE day >= '${fromParam}' AND day <= '${toParam}' ${snapHostClause}` : "";
+
+  // Se il range include oggi, triggera lo snapshot on-the-fly (idempotente, TTL 5min).
+  if (canUseSnapshot && toParam === todayIt) {
+    const hostsToRefresh: SnapshotHost[] = host === "SITO" || host === "STORE" ? [host as SnapshotHost] : Array.from(SNAPSHOT_HOSTS);
+    await Promise.all(hostsToRefresh.map((h) => ensureTodaySnapshot(todayIt, h)));
+  }
 
 
   const q = <T = Row>(sql: string) => prisma.$queryRawUnsafe<T[]>(sql);
@@ -136,6 +143,38 @@ export async function GET(req: Request) {
   // Helper per generare ogni sezione separatamente.
   // "kpi" = solo i 3 KPI VELOCI (visitatori, periodo, serie). NO tempo medio.
   async function buildKpi() {
+    if (canUseSnapshot) {
+      // Snapshot ha una riga per (day, host, dimensionKind='total').
+      // uniques cross-day = SUM daily (over-count intrinseco; e' la stessa cosa che fa Google Analytics
+      // nelle stat aggregate "utenti totali per periodo" quando manca session-stitching)
+      const [totR, seriesR] = await Promise.all([
+        q(`SELECT SUM(hits) h, SUM(uniques) u FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='total'`),
+        q(`SELECT day b, SUM(uniques) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='total' GROUP BY day ORDER BY day`),
+      ]);
+      const t = (totR[0] || {}) as Row;
+      const dateFrom = new Date(fromParam + "T00:00:00");
+      const dateTo = new Date(toParam + "T23:59:59");
+      const periodDays = Math.max(1, Math.round((dateTo.getTime() - dateFrom.getTime()) / 86400000) + 1);
+      const seriesArr = seriesR.map((r) => ({ date: String((r as Row).b), views: num((r as Row).v) }));
+      const avg = seriesArr.length ? Math.round(seriesArr.reduce((s, x) => s + x.views, 0) / seriesArr.length) : 0;
+      return {
+        kpi: {
+          unique: num(t.u),
+          avg,
+          avgUnit: "giorno",
+          periodDays,
+          minDate: fromParam,
+          maxDate: toParam,
+          filterHost: host || "",
+          range: rangeParam,
+          isHourly: false,
+          isMonthly: periodDays > 120,
+          isStore: host === "STORE",
+          avgSeconds: null,
+        },
+        series: seriesArr,
+      };
+    }
     const [uniqueR, daysR, series] = await Promise.all([
       q(`SELECT COUNT(DISTINCT \`ipHash\`) u FROM ${PV} ${W}`),
       q(`SELECT COUNT(DISTINCT ${DAY}) d, MIN(${DAY}) mn, MAX(${DAY}) mx, COUNT(DISTINCT ${HOUR}) h FROM \`PageView\` ${W}`),
@@ -278,6 +317,7 @@ export async function GET(req: Request) {
     };
   }
   async function buildRecent() {
+    if (canUseSnapshot) { return { recent: [], recentHasMore: false }; }
     const recent = await q(recentSql(0));
     return {
       recent: mapRecent(recent.slice(0, PAGE)),
