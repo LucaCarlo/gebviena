@@ -117,17 +117,20 @@ export async function snapshotDayHost(
 // ─── Cache in-memory per snapshot on-the-fly di oggi ────────────────
 // Ricalcola snapshot di "today" al massimo ogni 5 minuti (evita di rifarlo
 // per ogni request analytics). La stale-lease semplice basta.
-const todayLease = new Map<string, number>(); // key `${day}|${host}` -> expiresAt ms
+const todayLease = new Map<string, number>();
+const inflight = new Map<string, Promise<void>>();
 
-export async function ensureTodaySnapshot(day: string, host: SnapshotHost): Promise<void> {
+export function ensureTodaySnapshot(day: string, host: SnapshotHost): Promise<void> {
   const key = `${day}|${host}`;
   const now = Date.now();
   const exp = todayLease.get(key) || 0;
-  if (exp > now) return; // già rigenerato di recente
-  todayLease.set(key, now + 5 * 60 * 1000); // 5 min TTL
-  // force=true perché per today vogliamo dati aggiornati (non skip)
-  await snapshotDayHost(day, host, true).catch((e) => {
-    console.error(`[snapshot] ensureTodaySnapshot ${key} err:`, e);
-    todayLease.delete(key); // riprova al prossimo giro
-  });
+  if (exp > now) return Promise.resolve();
+  const existing = inflight.get(key);
+  if (existing) return existing;
+  const p = snapshotDayHost(day, host, true)
+    .then(() => { todayLease.set(key, now + 5 * 60 * 1000); })
+    .catch((e) => { console.error(`[snapshot] ensureTodaySnapshot ${key} err:`, e); })
+    .finally(() => { inflight.delete(key); });
+  inflight.set(key, p);
+  return p;
 }
