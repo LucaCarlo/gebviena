@@ -158,19 +158,19 @@ export async function GET(req: Request) {
       const seriesArr = seriesR.map((r) => ({ date: String((r as Row).b), views: num((r as Row).v) }));
       const avg = seriesArr.length ? Math.round(seriesArr.reduce((s, x) => s + x.views, 0) / seriesArr.length) : 0;
       return {
+        filterHost: host || "ALL",
+        range: rangeParam,
+        isHourly: false,
+        isMonthly: periodDays > 120,
+        isStore: host === "STORE",
         kpi: {
           unique: num(t.u),
+          avgSeconds: null,
           avg,
           avgUnit: "giorno",
           periodDays,
           minDate: fromParam,
           maxDate: toParam,
-          filterHost: host || "",
-          range: rangeParam,
-          isHourly: false,
-          isMonthly: periodDays > 120,
-          isStore: host === "STORE",
-          avgSeconds: null,
         },
         series: seriesArr,
       };
@@ -233,9 +233,11 @@ export async function GET(req: Request) {
         q(`SELECT dimensionValue n, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='city'    GROUP BY dimensionValue ORDER BY v DESC LIMIT 15`),
       ]);
       return {
-        countries: countries.map((r) => ({ name: String((r as Row).n), count: num((r as Row).v) })),
-        regions:   regions.map((r) =>   ({ name: String((r as Row).n), count: num((r as Row).v) })),
-        cities:    cities.map((r) =>    ({ name: String((r as Row).n), count: num((r as Row).v) })),
+        geo: {
+          countries: countries.map((r) => ({ name: String((r as Row).n), count: num((r as Row).v) })),
+          regions:   regions.map((r) =>   ({ name: String((r as Row).n), count: num((r as Row).v) })),
+          cities:    cities.map((r) =>    ({ name: String((r as Row).n), count: num((r as Row).v) })),
+        },
       };
     }
     const [countries, regions, cities] = await Promise.all([
