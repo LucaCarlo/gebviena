@@ -3,6 +3,12 @@
  * ancora importati nella tabella PageView e geolocalizza i nuovi IP.
  * Idempotente tramite Setting `analytics_ingest_until` (ultima data importata).
  * Eseguire una volta al giorno.
+ *
+ * Anti-bot:
+ *  - Skip row se ipHash appartiene alla BlockedIp attiva
+ *  - Post-ingest: identifica IP che superano soglie orarie (settings.security)
+ *    su un giorno intero (soglia * 12 come proxy conservativo) e aggiunge
+ *    automaticamente a BlockedIp con expiresAt = now + autoBanDurationHours
  */
 import { prisma } from "../src/lib/prisma";
 import { readFileSync, readdirSync } from "fs";
@@ -15,6 +21,10 @@ const LINE = /^(\S+) - - \[([^\]]+)\] "(\S+) ([^"]*?) HTTP\/[\d.]+" (\d{3}) \d+ 
 const ASSET = /\.(js|css|png|jpe?g|webp|svg|ico|gif|woff2?|ttf|map|json|xml|txt|mp4|webm|avif)(\?|$)|^\/_next\/|^\/api\/|\/uploads\/|favicon|robots\.txt|sitemap|\/_vercel|\.well-known/i;
 const BOT = /bot|crawl|spider|slurp|headless|python|curl|wget|monitor|uptime|preview|facebookexternalhit|bingpreview|ahrefs|semrush|petalbot|dataprovider|dotbot|mj12|gptbot|claudebot|bytespider/i;
 
+// Path scanner noti: sono chiari indizi di scanner di vulnerabilita, skippati
+// gia in fase di parsing per non entrare in DB.
+const BOT_PATH = /^\/\.env|^\/\.git|\.(tar|tgz|zip|gz|rar|7z|sql|bak|old|swp|php|asp|aspx|jsp|cgi)($|\?)|^\/(wp-|xmlrpc|wordpress|joomla|drupal|phpmyadmin|phpMyAdmin|pma|adminer|actuator|bitrix|autodiscover|owa|ecp|vendor\/phpunit)/i;
+
 function tsOf(s: string): number {
   const m = s.match(/^(\d{2})\/(\w{3})\/(\d{4}):(\d{2}):(\d{2}):(\d{2}) ([+-]\d{4})$/);
   if (!m) return NaN;
@@ -22,16 +32,43 @@ function tsOf(s: string): number {
   return Date.UTC(+m[3], MON[m[2]], +m[1], +m[4], +m[5], +m[6]) - off;
 }
 
+interface SecuritySettings {
+  autoBanEnabled: boolean;
+  hitsPerHourThreshold: number;
+  hitsPerPathPerHourThreshold: number;
+  autoBanDurationHours: number;
+}
+const DEFAULT_SECURITY: SecuritySettings = {
+  autoBanEnabled: true,
+  hitsPerHourThreshold: 300,
+  hitsPerPathPerHourThreshold: 50,
+  autoBanDurationHours: 168,
+};
+
+async function loadSecuritySettings(): Promise<SecuritySettings> {
+  try {
+    const row = await prisma.setting.findUnique({ where: { key: "security_settings" } });
+    if (row?.value) {
+      const parsed = JSON.parse(row.value) as Partial<SecuritySettings>;
+      return { ...DEFAULT_SECURITY, ...parsed };
+    }
+  } catch { /* fallback default */ }
+  return DEFAULT_SECURITY;
+}
+
+async function loadBlocklist(): Promise<Set<string>> {
+  const rows = await prisma.blockedIp.findMany({
+    where: { OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
+    select: { ipHash: true },
+  });
+  return new Set(rows.map((r: { ipHash: string }) => r.ipHash));
+}
+
 async function main() {
   const setting = await prisma.setting.findUnique({ where: { key: "analytics_ingest_until" } });
-  const until = setting?.value || "2026-05-18"; // recupero iniziale copre fino al 18/05
+  const until = setting?.value || "2026-05-18";
   const today = new Date().toISOString().slice(0, 10);
 
-  // File datati da processare: data > until e data <= oggi.
-  // Nota sulla convention nginx: il file `access.log-YYYY-MM-DD` viene creato
-  // dalla rotazione di logrotate alle 00:0X di YYYY-MM-DD e contiene i log del
-  // giorno PRECEDENTE. Quindi per processare i log di "ieri" dobbiamo includere
-  // il file con data = oggi (`<= today`, non `< today`).
   const files = readdirSync(LOGDIR);
   const todo: Array<{ file: string; host: "SITO" | "STORE"; date: string }> = [];
   for (const f of files) {
@@ -42,9 +79,15 @@ async function main() {
   }
   if (!todo.length) { console.log(`[cron-traffic] nulla da fare (until=${until})`); return; }
 
+  // Carica blocklist attiva (Set di ipHash) + settings
+  const [blockedSet, security] = await Promise.all([loadBlocklist(), loadSecuritySettings()]);
+  console.log(`[cron-traffic] blockedSet=${blockedSet.size} autoBanEnabled=${security.autoBanEnabled} hitsPerHour=${security.hitsPerHourThreshold} perPath=${security.hitsPerPathPerHourThreshold}`);
+
   const rows: Array<{ path: string; host: string; referrer: string | null; userAgent: string; ipHash: string; createdAt: Date }> = [];
   const ipByHash = new Map<string, string>();
   let maxDate = until;
+  let skippedBlocked = 0;
+  let skippedBotPath = 0;
   for (const { file, host, date } of todo) {
     if (date > maxDate) maxDate = date;
     let txt = ""; try { txt = readFileSync(`${LOGDIR}/${file}`, "utf8"); } catch { continue; }
@@ -53,21 +96,82 @@ async function main() {
       const [, ip, tstr, method, url, status, ref, ua] = mm;
       if (method !== "GET" || (status !== "200" && status !== "304")) continue;
       if (ASSET.test(url) || BOT.test(ua)) continue;
+      const path = (url.split("?")[0] || "/").slice(0, 180);
+      if (BOT_PATH.test(path)) { skippedBotPath++; continue; }
       const t = tsOf(tstr); if (isNaN(t)) continue;
       const h = hash(ip);
+      if (blockedSet.has(h)) { skippedBlocked++; continue; }
       if (!ipByHash.has(h)) ipByHash.set(h, ip);
       rows.push({
-        path: (url.split("?")[0] || "/").slice(0, 180),
-        host, referrer: ref && ref !== "-" ? ref.slice(0, 1000) : null,
+        path, host, referrer: ref && ref !== "-" ? ref.slice(0, 1000) : null,
         userAgent: ua.slice(0, 500), ipHash: h, createdAt: new Date(t),
       });
     }
   }
-  console.log(`[cron-traffic] giorni=${Array.from(new Set(todo.map((t) => t.date))).join(",")} pageview=${rows.length}`);
+  console.log(`[cron-traffic] giorni=${Array.from(new Set(todo.map((t) => t.date))).join(",")} pageview=${rows.length} skipBlocked=${skippedBlocked} skipBotPath=${skippedBotPath}`);
 
   for (let i = 0; i < rows.length; i += 2000) {
     await prisma.pageView.createMany({ data: rows.slice(i, i + 2000) });
   }
+
+  // ── Auto-ban post-ingest ─────────────────────────────────────────
+  // Soglia giornaliera = soglia oraria * 12 (proxy conservativo:
+  // un utente reale che spulcia tanto sta a ~50 hit/h massimo).
+  let autoBanned = 0;
+  if (security.autoBanEnabled && ipByHash.size > 0) {
+    const dailyThreshold = security.hitsPerHourThreshold * 12;
+    const dailyPathThreshold = security.hitsPerPathPerHourThreshold * 12;
+    const daysCovered = Array.from(new Set(todo.map((t) => t.date)));
+    const dateFrom = new Date(daysCovered[0] + "T00:00:00Z");
+    const dateTo = new Date(daysCovered[daysCovered.length - 1] + "T23:59:59Z");
+
+    // 1) IP-bomber (troppi hit totali nel range)
+    const bombers = await prisma.$queryRawUnsafe<Array<{ ipHash: string; n: bigint }>>(
+      `SELECT \`ipHash\`, COUNT(*) AS n FROM \`PageView\`
+       WHERE \`createdAt\` >= ? AND \`createdAt\` <= ?
+         AND \`ipHash\` IS NOT NULL
+       GROUP BY \`ipHash\` HAVING n > ?`,
+      dateFrom, dateTo, dailyThreshold
+    );
+
+    // 2) Path-scanner (troppi hit su stesso path)
+    const scanners = await prisma.$queryRawUnsafe<Array<{ ipHash: string; path: string; n: bigint }>>(
+      `SELECT \`ipHash\`, \`path\`, COUNT(*) AS n FROM \`PageView\`
+       WHERE \`createdAt\` >= ? AND \`createdAt\` <= ?
+         AND \`ipHash\` IS NOT NULL
+       GROUP BY \`ipHash\`, \`path\` HAVING n > ?
+       ORDER BY n DESC LIMIT 500`,
+      dateFrom, dateTo, dailyPathThreshold
+    );
+
+    const expiresAt = security.autoBanDurationHours > 0
+      ? new Date(Date.now() + security.autoBanDurationHours * 60 * 60 * 1000)
+      : null;
+
+    const toBan = new Map<string, string>(); // ipHash -> reason
+    for (const b of bombers) {
+      const n = Number(b.n);
+      toBan.set(b.ipHash, `Auto: ${n} hit su ${daysCovered.length}gg (soglia ${dailyThreshold})`);
+    }
+    for (const s of scanners) {
+      const n = Number(s.n);
+      if (!toBan.has(s.ipHash)) {
+        toBan.set(s.ipHash, `Auto: ${n} hit su path ${s.path.slice(0, 60)} (soglia ${dailyPathThreshold})`);
+      }
+    }
+
+    for (const [ipHash, reason] of Array.from(toBan.entries())) {
+      try {
+        await prisma.blockedIp.upsert({
+          where: { ipHash },
+          create: { ipHash, reason, autoBanned: true, expiresAt },
+          update: { reason, autoBanned: true, expiresAt, blockedAt: new Date() },
+        });
+        autoBanned++;
+      } catch { /* race safe */ }
+    }
+  }
+  console.log(`[cron-traffic] autoBanned=${autoBanned} IP nel range ${todo[0]?.date}..${maxDate}`);
 
   // geolocalizza i nuovi ipHash senza geo
   const pairs = Array.from(ipByHash.entries());
@@ -98,6 +202,6 @@ async function main() {
     update: { value: maxDate },
     create: { key: "analytics_ingest_until", value: maxDate, group: "analytics" },
   });
-  console.log(`[cron-traffic] FATTO. inseriti=${rows.length} geoOk=${geoOk} until=${maxDate}`);
+  console.log(`[cron-traffic] FATTO. inseriti=${rows.length} geoOk=${geoOk} autoBanned=${autoBanned} until=${maxDate}`);
 }
 main().catch((e) => { console.error("[cron-traffic] ERR:", (e as Error).message); process.exit(1); }).finally(() => prisma.$disconnect());
