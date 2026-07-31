@@ -27,6 +27,7 @@ import {
 import ImageUploadField from "@/components/admin/ImageUploadField";
 import MediaPickerModal from "@/components/admin/MediaPickerModal";
 import MediaSettingsTab from "@/components/admin/settings/MediaSettingsTab";
+import SecuritySettingsTab from "@/components/admin/settings/SecuritySettingsTab";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -64,7 +65,7 @@ interface BackupPreview {
   [key: string]: number;
 }
 
-type TabKey = "smtp" | "recaptcha" | "iubenda" | "languages" | "translations" | "social" | "maps" | "analytics" | "payments" | "azienda" | "stats" | "backup" | "storage" | "media";
+type TabKey = "smtp" | "recaptcha" | "iubenda" | "languages" | "translations" | "social" | "maps" | "analytics" | "payments" | "azienda" | "stats" | "backup" | "storage" | "media" | "security";
 
 interface TabDef {
   key: TabKey;
@@ -75,6 +76,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { key: "smtp", label: "Email / SMTP", icon: Mail },
   { key: "media", label: "Media / Immagini", icon: ImageIcon },
+  { key: "security", label: "Sicurezza / Anti-bot", icon: Shield },
   { key: "recaptcha", label: "reCAPTCHA", icon: Shield },
   { key: "iubenda", label: "Iubenda", icon: Cookie },
   { key: "languages", label: "Lingue", icon: Globe },
@@ -2104,7 +2106,7 @@ function AziendaTab({ showToast }: { showToast: (m: string, t: "success" | "erro
 
 // ─── Main Settings Page ──────────────────────────────────────────────────────
 
-const VALID_TABS: TabKey[] = ["smtp", "media", "recaptcha", "iubenda", "languages", "translations", "social", "maps", "analytics", "payments", "azienda", "stats", "backup", "storage"];
+const VALID_TABS: TabKey[] = ["smtp", "media", "security", "recaptcha", "iubenda", "languages", "translations", "social", "maps", "analytics", "payments", "azienda", "stats", "backup", "storage"];
 
 export default function AdminSettingsPage() {
   const router = useRouter();
@@ -2143,6 +2145,8 @@ export default function AdminSettingsPage() {
         return <SmtpTab showToast={showToast} />;
       case "media":
         return <MediaSettingsTab showToast={showToast} />;
+      case "security":
+        return <SecuritySettingsTab showToast={showToast} />;
       case "recaptcha":
         return <RecaptchaTab showToast={showToast} />;
       case "languages":

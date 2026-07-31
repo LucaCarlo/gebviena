@@ -1893,3 +1893,22 @@ model ProfessionalCatalogHidden {
   @@index([productId])
   @@index([projectId])
 }
+
+// ─── Anti-bot: IP bloccati dal tracker analytics.
+// Gli IP finiscono qui in due modi:
+//  - manuale: admin aggiunge dalla UI /admin/settings?tab=security
+//  - automatico: se in 1h l'IP fa piu' hit di soglia (configurabile), viene bannato con expiresAt
+// Il tracker (POST /api/analytics/track) consulta questa tabella e scarta gli IP bloccati (204).
+model BlockedIp {
+  id         String    @id @default(cuid())
+  ipHash     String    @unique @db.VarChar(64)
+  reason     String    @db.VarChar(255)
+  autoBanned Boolean   @default(false)
+  blockedAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  notes      String?   @db.Text
+
+  @@index([ipHash])
+  @@index([expiresAt])
+}
+
