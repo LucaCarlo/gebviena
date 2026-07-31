@@ -228,9 +228,9 @@ export async function GET(req: Request) {
   async function buildGeo() {
     if (canUseSnapshot) {
       const [countries, regions, cities] = await Promise.all([
-        q(`SELECT dimensionValue n, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='country' GROUP BY dimensionValue ORDER BY v DESC LIMIT 12`),
-        q(`SELECT dimensionValue n, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='region'  GROUP BY dimensionValue ORDER BY v DESC LIMIT 12`),
-        q(`SELECT dimensionValue n, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='city'    GROUP BY dimensionValue ORDER BY v DESC LIMIT 15`),
+        q(`SELECT dimensionValue n, SUM(uniques) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='country' GROUP BY dimensionValue ORDER BY v DESC LIMIT 12`),
+        q(`SELECT dimensionValue n, SUM(uniques) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='region'  GROUP BY dimensionValue ORDER BY v DESC LIMIT 12`),
+        q(`SELECT dimensionValue n, SUM(uniques) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='city'    GROUP BY dimensionValue ORDER BY v DESC LIMIT 15`),
       ]);
       return {
         geo: {
@@ -255,7 +255,7 @@ export async function GET(req: Request) {
   }
   async function buildSources() {
     if (canUseSnapshot) {
-      const sources = await q(`SELECT dimensionValue n, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='source' GROUP BY dimensionValue ORDER BY v DESC`);
+      const sources = await q(`SELECT dimensionValue n, SUM(uniques) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='source' GROUP BY dimensionValue ORDER BY v DESC`);
       return { sources: sources.map((r) => ({ name: String((r as Row).n), count: num((r as Row).v) })) };
     }
 
@@ -273,8 +273,8 @@ export async function GET(req: Request) {
   async function buildDevices() {
     if (canUseSnapshot) {
       const [devices, osR] = await Promise.all([
-        q(`SELECT dimensionValue dev, SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='device' GROUP BY dimensionValue ORDER BY v DESC`),
-        q(`SELECT dimensionValue os,  SUM(hits) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='os'     GROUP BY dimensionValue ORDER BY v DESC`),
+        q(`SELECT dimensionValue dev, SUM(uniques) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='device' GROUP BY dimensionValue ORDER BY v DESC`),
+        q(`SELECT dimensionValue os,  SUM(uniques) v FROM \`AnalyticsDaySnapshot\` ${snapDayClause} AND dimensionKind='os'     GROUP BY dimensionValue ORDER BY v DESC`),
       ]);
       return {
         devices: devices.map((r) => ({ name: String((r as Row).dev), count: num((r as Row).v) })),
@@ -319,7 +319,7 @@ export async function GET(req: Request) {
     };
   }
   async function buildRecent() {
-    if (canUseSnapshot) { return { recent: [], recentHasMore: false }; }
+    // Anche su range custom mostriamo ultime visite (usa W che include gia il filtro date/host)
     const recent = await q(recentSql(0));
     return {
       recent: mapRecent(recent.slice(0, PAGE)),
