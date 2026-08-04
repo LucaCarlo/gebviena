@@ -8,9 +8,11 @@ interface GallerySlideshowProps {
   images: string[];
   name: string;
   id?: string;
+  /** Se false, nasconde il pulsante info + didascalia. Default true. */
+  showCaption?: boolean;
 }
 
-export default function GallerySlideshow({ images, name, id }: GallerySlideshowProps) {
+export default function GallerySlideshow({ images, name, id, showCaption = true }: GallerySlideshowProps) {
   const [current, setCurrent] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
@@ -122,6 +124,7 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
             ))}
           </div>
 
+          {showCaption && (<>
           {/* Icona info in basso a sinistra: invisibile, compare solo in hover.
               Click → mostra/nasconde l'alt-text dell'immagine corrente. */}
           <button
@@ -143,6 +146,7 @@ export default function GallerySlideshow({ images, name, id }: GallerySlideshowP
               <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
             </div>
           )}
+          </>)}
         </div>
 
         {images.length > 1 && (

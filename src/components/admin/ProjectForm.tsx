@@ -306,7 +306,7 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
           </div>
           <div>
             <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-              Architetto
+              Photo by
             </label>
             <TInput
               fieldKey="architect"
@@ -319,10 +319,10 @@ export default function ProjectForm({ projectId }: ProjectFormProps) {
 
         <div>
           <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-            Progetto
+            Project by
           </label>
           <p className="text-[10px] text-warm-400 mb-1.5">
-            Testo breve mostrato nella colonna &ldquo;Progetto&rdquo; accanto a Foto da e Location.
+            Testo breve mostrato nella colonna &ldquo;Project by&rdquo; accanto a Photo by e Location.
           </p>
           <TTextarea
             fieldKey="description"

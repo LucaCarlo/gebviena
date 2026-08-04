@@ -252,7 +252,7 @@ export default function ProjectDetailPage() {
 
       {/* ===== 3. GALLERY — horizontal full-width slideshow ===== */}
       {horizontalImages.length > 0 && (
-        <GallerySlideshow images={horizontalImages} name={project.name} />
+        <GallerySlideshow images={horizontalImages} name={project.name} showCaption={false} />
       )}
 
       {/* ===== 3b. VERTICAL GALLERY — same style as product inspiration carousel ===== */}
