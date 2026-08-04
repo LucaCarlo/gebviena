@@ -30,9 +30,12 @@ export default async function AreaProfessionistiPage() {
     isSectionVisible(settings, pro.role, s.slug, true),
   );
 
+  // Bacheca non visibile per architetti e stampa: non hanno notifiche dedicate.
+  const bachecaVisible = pro.role !== "ARCHITECT_DESIGNER" && pro.role !== "PRESS";
+
   // Conteggio bacheca non letti: notifiche visibili per il ruolo del prof,
   // meno quelle già marcate come lette nella tabella read.
-  const [totalNotifs, readNotifs] = await Promise.all([
+  const [totalNotifs, readNotifs] = bachecaVisible ? await Promise.all([
     prisma.professionalNotification.count({
       where: { OR: [{ audience: null }, { audience: pro.role }] },
     }),
@@ -42,7 +45,7 @@ export default async function AreaProfessionistiPage() {
         notification: { OR: [{ audience: null }, { audience: pro.role }] },
       },
     }),
-  ]);
+  ]) : [0, 0];
   const unreadCount = Math.max(0, totalNotifs - readNotifs);
 
   return (
@@ -59,7 +62,8 @@ export default async function AreaProfessionistiPage() {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Bacheca: card sempre presente, con pallino rosso se ci sono novità non lette */}
+          {bachecaVisible && (
+          /* Bacheca: card sempre presente, con pallino rosso se ci sono novità non lette */
           <Link
             href="/area-professionisti/bacheca"
             className="group relative block bg-white border border-warm-200 hover:border-warm-900 transition-colors p-6"
@@ -84,6 +88,7 @@ export default async function AreaProfessionistiPage() {
               {unreadCount > 0 ? t("bacheca.card.cta_unread") : t("dashboard.cta.open")}
             </div>
           </Link>
+          )}
 
           {sections.map((s) => (
             <Link

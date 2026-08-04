@@ -11,6 +11,8 @@ export const dynamic = "force-dynamic";
 export default async function BachecaPage() {
   const pro = await getAuthProfessional();
   if (!pro) redirect("/area-professionisti/accesso");
+  // Bacheca non disponibile per architetti e stampa: torna alla home area pro.
+  if (pro.role === "ARCHITECT_DESIGNER" || pro.role === "PRESS") redirect("/area-professionisti");
 
   const h = await headers();
   const lang = h.get("x-gtv-lang") || "it";
