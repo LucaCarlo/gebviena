@@ -57,8 +57,8 @@ export default function GallerySlideshow({ images, name, id, showCaption = true 
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    if (x < rect.width / 3) setHoverSide("left");
-    else if (x > (rect.width * 2) / 3) setHoverSide("right");
+    if (x < rect.width / 5) setHoverSide("left");
+    else if (x > (rect.width * 4) / 5) setHoverSide("right");
     else setHoverSide(null);
   };
 
@@ -130,6 +130,8 @@ export default function GallerySlideshow({ images, name, id, showCaption = true 
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setShowAlt((v) => !v); }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onMouseUp={(e) => e.stopPropagation()}
             aria-label="Info immagine"
             style={{ left: iconLeft, bottom: iconBottom }}
             className="absolute z-10 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center shadow-sm cursor-pointer opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-warm-100"

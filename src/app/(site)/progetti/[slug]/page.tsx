@@ -331,7 +331,6 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
   const [altMap, setAltMap] = useState<Record<string, string>>({});
 
@@ -402,8 +401,8 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
     }
     const rect = el.getBoundingClientRect();
     const cx = e.clientX - rect.left;
-    if (cx < rect.width / 3) setHoverSide("left");
-    else if (cx > (rect.width * 2) / 3) setHoverSide("right");
+    if (cx < rect.width / 5) setHoverSide("left");
+    else if (cx > (rect.width * 4) / 5) setHoverSide("right");
     else setHoverSide(null);
   };
   const handleMouseUp = (e: React.MouseEvent) => {
@@ -417,8 +416,8 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
         const step = cardWidth + gap;
         const rect = el.getBoundingClientRect();
         const cx = e.clientX - rect.left;
-        if (cx < rect.width / 3) el.scrollBy({ left: -step, behavior: "smooth" });
-        else if (cx > (rect.width * 2) / 3) el.scrollBy({ left: step, behavior: "smooth" });
+        if (cx < rect.width / 5) el.scrollBy({ left: -step, behavior: "smooth" });
+        else if (cx > (rect.width * 4) / 5) el.scrollBy({ left: step, behavior: "smooth" });
       }
     }
     setIsDragging(false);
@@ -456,19 +455,6 @@ function VerticalCarousel({ images, projectName }: { images: string[]; projectNa
                   draggable={false}
                   sizes="45vw"
                 />
-                {/* Tooltip bubble */}
-                {activeTooltip === i && (
-                  <div className="absolute bottom-14 left-4 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug">
-                    {altMap[url] || `${projectName} ${i + 1}`}
-                    <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
-                  </div>
-                )}
-                <button
-                  className="absolute bottom-4 left-4 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center hover:bg-warm-100 transition-colors shadow-sm"
-                  onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === i ? null : i); }}
-                >
-                  i
-                </button>
               </div>
             </div>
           ))}
