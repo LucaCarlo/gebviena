@@ -38,7 +38,7 @@ export default function WoodCraftsmanship({ videoUrl }: WoodCraftsmanshipProps) 
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="absolute top-14 md:top-18 lg:top-22 left-7 md:left-12 lg:left-16"
+          className="absolute top-14 md:top-18 lg:top-22 left-7 md:left-12 lg:left-16 max-md:left-0 max-md:right-0 max-md:text-center max-md:px-6"
         >
           <h2 className="font-sans text-2xl md:text-3xl lg:text-[38px] text-white/80 font-light uppercase tracking-[inherit] leading-snug">
             {t("home.wood.title")}

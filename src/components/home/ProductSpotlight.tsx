@@ -39,7 +39,7 @@ export default function ProductSpotlight({ ambianceImage, productImage, ctaLink 
         </motion.div>
 
         {/* Right — product image centered with white space + text below centered */}
-        <div className="flex flex-col items-center justify-center py-16 lg:py-24 px-0 md:px-16 lg:px-20 max-md:py-8 max-md:px-6">
+        <div className="flex flex-col items-center justify-center py-16 lg:py-24 px-0 md:px-16 lg:px-20 max-md:py-8 max-md:px-6 max-md:flex-col-reverse">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -62,7 +62,7 @@ export default function ProductSpotlight({ ambianceImage, productImage, ctaLink 
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-center mt-8 lg:mt-10"
+            className="text-center mt-8 lg:mt-10 max-md:mt-0 max-md:mb-6"
           >
             <p
               className="uppercase text-[16px] tracking-[0.03em] !text-black mb-[8px] mt-[6px] font-light"
