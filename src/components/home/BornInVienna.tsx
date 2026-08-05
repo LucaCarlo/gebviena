@@ -14,7 +14,7 @@ export default function BornInVienna({ historicalImage }: BornInViennaProps) {
   const t = useT();
   const lang = useLang();
   return (
-    <section className="w-full py-20 md:py-28 lg:py-36">
+    <section className="w-full py-20 md:py-28 lg:py-36 max-md:py-12">
       <div className="grid grid-cols-1 lg:grid-cols-12 items-start gap-0">
         {/* Left — big serif text (narrower, ~40%) */}
         <motion.div
@@ -22,9 +22,9 @@ export default function BornInVienna({ historicalImage }: BornInViennaProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 1 }}
-          className="lg:col-span-5 flex flex-col justify-start px-0 md:px-12 lg:px-16 py-16 lg:py-0"
+          className="lg:col-span-5 flex flex-col justify-start px-0 md:px-12 lg:px-16 py-16 lg:py-0 max-md:px-6 max-md:py-8"
         >
-          <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-dark leading-[1.15] font-normal">
+          <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-dark leading-[1.15] font-normal max-md:text-[26px]">
             <em>Born</em> in Vienna.<br />
             Made in <em>Italy.</em><br />
             <em>Designed</em> around<br />

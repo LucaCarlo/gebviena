@@ -27,7 +27,7 @@ export default function FeaturedProduct({ ambianceImage, productImage, ctaLink }
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 1 }}
-          className="relative"
+          className="relative max-md:hidden"
           style={{ aspectRatio: "3 / 4.45" }}
         >
           <Image
@@ -40,13 +40,13 @@ export default function FeaturedProduct({ ambianceImage, productImage, ctaLink }
         </motion.div>
 
         {/* Right — product image centered with white space + text below centered */}
-        <div className="flex flex-col items-center justify-center py-16 lg:py-24 px-0 md:px-16 lg:px-20">
+        <div className="flex flex-col items-center justify-center py-16 lg:py-24 px-0 md:px-16 lg:px-20 max-md:py-8 max-md:px-6">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 1, delay: 0.2 }}
-            className="relative w-full max-w-[80%]"
+            className="relative w-full max-w-[80%] max-md:max-w-full"
             style={{ aspectRatio: "3 / 4.35" }}
           >
             <Image
