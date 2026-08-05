@@ -22,7 +22,7 @@ export default function BornInVienna({ historicalImage }: BornInViennaProps) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 1 }}
-          className="lg:col-span-5 flex flex-col justify-start px-0 md:px-12 lg:px-16 py-16 lg:py-0 max-md:px-6 max-md:py-8"
+          className="lg:col-span-5 flex flex-col justify-start px-0 md:px-12 lg:px-16 py-16 lg:py-0 max-md:px-6 max-md:py-8 max-md:items-center max-md:text-center"
         >
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-dark leading-[1.15] font-normal max-md:text-[26px]">
             <em>Born</em> in Vienna.<br />

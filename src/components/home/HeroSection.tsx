@@ -108,7 +108,7 @@ export default function HeroSection() {
 
   if (loading) {
     return (
-      <section className="relative w-full bg-warm-100 h-[min(118vh,1107px)] max-md:h-[55vh]">
+      <section className="relative w-full bg-warm-100 h-[min(118vh,1107px)] max-md:h-[90vh]">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-warm-300 border-t-warm-600 rounded-full animate-spin" />
         </div>
@@ -134,7 +134,7 @@ export default function HeroSection() {
   //    orizzontale scalata a w-full (l'immagine entra intera, niente crop).
   //    L'hero risulta piu bassa ma si vede tutta.
   const sectionHeightClass = slide.mobileImageUrl
-    ? "h-[min(118vh,1107px)] max-md:h-[55vh]"
+    ? "h-[min(118vh,1107px)] max-md:h-[90vh]"
     : "md:h-[min(118vh,1107px)]";
 
   return (
