@@ -56,10 +56,14 @@ const GoogleMapView = forwardRef<MapApi, Props>(function GoogleMapView(
 
   useEffect(() => {
     if (!mapInstanceRef.current || !readyRef.current) return;
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
+    try {
+      markersRef.current.forEach((m) => { try { m.setMap(null); } catch { /* stale marker */ } });
+      markersRef.current = [];
+    } catch { /* skip */ }
+    if (typeof google === "undefined" || !google.maps?.LatLngBounds) return;
     const bounds = new google.maps.LatLngBounds();
     stores.forEach((store) => {
+      if (typeof store.latitude !== "number" || typeof store.longitude !== "number") return;
       const marker = new google.maps.Marker({
         position: { lat: store.latitude, lng: store.longitude },
         map: mapInstanceRef.current,
@@ -81,9 +85,11 @@ const GoogleMapView = forwardRef<MapApi, Props>(function GoogleMapView(
       markersRef.current.push(marker);
       bounds.extend({ lat: store.latitude, lng: store.longitude });
     });
-    if (stores.length > 0) {
-      mapInstanceRef.current.fitBounds(bounds);
-      if (stores.length === 1) mapInstanceRef.current.setZoom(14);
+    if (stores.length > 0 && !bounds.isEmpty()) {
+      try {
+        mapInstanceRef.current.fitBounds(bounds);
+        if (stores.length === 1) mapInstanceRef.current.setZoom(14);
+      } catch (e) { console.warn("[maps] fitBounds fail:", e); }
     }
   }, [stores]);
 

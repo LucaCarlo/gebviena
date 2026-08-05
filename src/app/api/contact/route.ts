@@ -118,8 +118,28 @@ export async function GET() {
   const result = await requirePermission("contacts", "view");
   if (isErrorResponse(result)) return result;
 
-  const data = await prisma.contactSubmission.findMany({
+  const rows = await prisma.contactSubmission.findMany({
     orderBy: { createdAt: "desc" },
+  });
+  // Se c'e' storeId, arricchisce con dati dal PointOfSale (nome negozio / agente, citta, tipo)
+  const storeIds = Array.from(new Set(rows.map((r) => r.storeId).filter((x): x is string => !!x)));
+  const storesMap = new Map<string, { name: string; agentName: string | null; city: string; type: string }>();
+  if (storeIds.length > 0) {
+    const stores = await prisma.pointOfSale.findMany({
+      where: { id: { in: storeIds } },
+      select: { id: true, name: true, agentName: true, city: true, type: true },
+    });
+    for (const st of stores) storesMap.set(st.id, { name: st.name, agentName: st.agentName, city: st.city, type: st.type });
+  }
+  const data = rows.map((r) => {
+    const st = r.storeId ? storesMap.get(r.storeId) : null;
+    return {
+      ...r,
+      storeName: st?.name ?? null,
+      storeAgentName: st?.agentName ?? null,
+      storeCity: st?.city ?? null,
+      storeType: st?.type ?? null,
+    };
   });
   return NextResponse.json({ success: true, data });
 }

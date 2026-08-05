@@ -240,6 +240,15 @@ export default function AdminContactsPage() {
                         {[c.company, c.phone].filter(Boolean).join(" — ")}
                       </p>
                     )}
+                    {(c.storeName || c.storeAgentName) && (
+                      <p className="text-xs text-blue-700 mt-0.5">
+                        <span className="uppercase tracking-wide mr-1">
+                          {c.storeType === "agent" ? "Agente" : "Punto vendita"}:
+                        </span>
+                        <strong>{c.storeName || c.storeAgentName}</strong>
+                        {c.storeCity ? ` — ${c.storeCity}` : ""}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

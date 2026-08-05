@@ -774,6 +774,10 @@ export interface ContactSubmission {
   company: string | null;
   phone: string | null;
   storeId: string | null;
+  storeName?: string | null;
+  storeAgentName?: string | null;
+  storeCity?: string | null;
+  storeType?: string | null;
   contactReason: string | null;
   isRead: boolean;
   createdAt: string;
