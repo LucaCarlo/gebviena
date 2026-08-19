@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
+import FinishCard, { CaptionSchema, CaptionValues } from "@/components/site/FinishCard";
 import CarouselProgressBar from "@/components/site/CarouselProgressBar";
 
 interface GallerySlideshowProps {
@@ -10,9 +11,14 @@ interface GallerySlideshowProps {
   id?: string;
   /** Se false, nasconde il pulsante info + didascalia. Default true. */
   showCaption?: boolean;
+  /** Struttura FINISHES (dall'API caption-schemas). Se presente, il tooltip alt legacy
+   *  viene sostituito dalla FinishCard strutturata per l'immagine corrente. */
+  captionSchema?: CaptionSchema | null;
+  /** Valori compilati per URL immagine (chiave = URL, valore = { part → { attr → value } }). */
+  imageCaptions?: Record<string, CaptionValues>;
 }
 
-export default function GallerySlideshow({ images, name, id, showCaption = true }: GallerySlideshowProps) {
+export default function GallerySlideshow({ images, name, id, showCaption = true, captionSchema, imageCaptions }: GallerySlideshowProps) {
   const [current, setCurrent] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
@@ -124,31 +130,38 @@ export default function GallerySlideshow({ images, name, id, showCaption = true 
             ))}
           </div>
 
-          {showCaption && (<>
-          {/* Icona info in basso a sinistra: invisibile, compare solo in hover.
-              Click → mostra/nasconde l'alt-text dell'immagine corrente. */}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setShowAlt((v) => !v); }}
-            onMouseDown={(e) => e.stopPropagation()}
-            onMouseUp={(e) => e.stopPropagation()}
-            aria-label="Info immagine"
-            style={{ left: iconLeft, bottom: iconBottom }}
-            className="absolute z-10 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center shadow-sm cursor-pointer opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-warm-100"
-          >
-            i
-          </button>
-          {showAlt && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{ left: iconLeft, bottom: iconBottom + 40 }}
-              className="absolute z-10 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug"
-            >
-              {currentAlt}
-              <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
-            </div>
-          )}
-          </>)}
+          {captionSchema ? (
+            <FinishCard
+              schema={captionSchema}
+              values={(imageCaptions && imageCaptions[images[current]]) || null}
+            />
+          ) : showCaption ? (
+            <>
+              {/* Icona info in basso a sinistra: invisibile, compare solo in hover.
+                  Click → mostra/nasconde l'alt-text dell'immagine corrente. */}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setShowAlt((v) => !v); }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                aria-label="Info immagine"
+                style={{ left: iconLeft, bottom: iconBottom }}
+                className="absolute z-10 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center shadow-sm cursor-pointer opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-warm-100"
+              >
+                i
+              </button>
+              {showAlt && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ left: iconLeft, bottom: iconBottom + 40 }}
+                  className="absolute z-10 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug"
+                >
+                  {currentAlt}
+                  <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
+                </div>
+              )}
+            </>
+          ) : null}
         </div>
 
         {images.length > 1 && (

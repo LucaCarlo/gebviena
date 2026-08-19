@@ -23,7 +23,7 @@ interface ProductDetail extends Omit<Product, "projects"> {
 }
 
 /* ─── Inspiration Carousel sub-component ─── */
-function InspirationCarousel({ images, productName, id }: { images: string[]; productName: string; id?: string }) {
+function InspirationCarousel({ images, productName, id, captionSchema, imageCaptions }: { images: string[]; productName: string; id?: string; captionSchema?: CaptionSchema | null; imageCaptions?: Record<string, CaptionValues> }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [visibleFraction, setVisibleFraction] = useState(1);
@@ -160,20 +160,28 @@ function InspirationCarousel({ images, productName, id }: { images: string[]; pr
                   draggable={false}
                   sizes="45vw"
                 />
-                {/* Tooltip bubble */}
-                {activeTooltip === i && (
-                  <div className="absolute bottom-14 left-4 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug">
-                    {altMap[url] || `${productName} ispirazione ${i + 1}`}
-                    <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
-                  </div>
+                {captionSchema ? (
+                  <FinishCard
+                    schema={captionSchema}
+                    values={(imageCaptions && imageCaptions[url]) || null}
+                  />
+                ) : (
+                  <>
+                    {/* Tooltip bubble legacy quando non c'e' captionSchema */}
+                    {activeTooltip === i && (
+                      <div className="absolute bottom-14 left-4 bg-white text-warm-900 text-xs px-3 py-2 rounded shadow-md max-w-[250px] leading-snug">
+                        {altMap[url] || `${productName} ispirazione ${i + 1}`}
+                        <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-white rotate-45" />
+                      </div>
+                    )}
+                    <button
+                      className="absolute bottom-4 left-4 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center shadow-sm cursor-pointer opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-warm-100"
+                      onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === i ? null : i); }}
+                    >
+                      i
+                    </button>
+                  </>
                 )}
-                {/* Icona info: invisibile, compare solo in hover sulla singola immagine */}
-                <button
-                  className="absolute bottom-4 left-4 w-7 h-7 rounded-full bg-white text-warm-900 text-xs font-serif flex items-center justify-center shadow-sm cursor-pointer opacity-0 pointer-events-none transition group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-warm-100"
-                  onClick={(e) => { e.stopPropagation(); setActiveTooltip(activeTooltip === i ? null : i); }}
-                >
-                  i
-                </button>
               </div>
             </div>
           ))}
@@ -289,26 +297,20 @@ export default function ProductDetailPage() {
   const heroImg = product.heroImage || product.coverImage || product.imageUrl;
   const sideImg = product.sideImage || product.coverImage || product.imageUrl;
 
-  // Risolve schema+values per una specifica immagine del prodotto.
-  // imageKey: "cover" | "hero" | "side" | l'URL della gallery.
-  const resolveCaption = (imageKey: string): { schema: CaptionSchema | null; values: CaptionValues | null } => {
+  // Deriva la mappa URL -> CaptionValues per il ramo "gallery" della caption
+  // + lo schema unico da passare a GallerySlideshow e InspirationCarousel.
+  const galleryCaption = (() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const p: any = product;
-    if (!p?.captionTypeId) return { schema: null, values: null };
+    if (!p?.captionTypeId) return { schema: null as CaptionSchema | null, values: {} as Record<string, CaptionValues> };
     const schema = captionSchemas[p.captionTypeId] || null;
-    if (!schema) return { schema: null, values: null };
     let data: unknown = p.captionsData;
     if (typeof data === "string") { try { data = JSON.parse(data); } catch { data = null; } }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cd: any = data || {};
-    let values: CaptionValues | null = null;
-    if (imageKey === "cover" || imageKey === "hero" || imageKey === "side") {
-      values = cd[imageKey] || null;
-    } else {
-      values = (cd.gallery && cd.gallery[imageKey]) || null;
-    }
-    return { schema, values };
-  };
+    const galleryVals: Record<string, CaptionValues> = cd.gallery || {};
+    return { schema, values: galleryVals };
+  })();
 
   const sectionNav = [
     ...(hasAnyGallery ? [{ label: t("prodotti.detail.nav.inspiration"), id: "ispirazione" }] : []),
@@ -329,8 +331,6 @@ export default function ProductDetailPage() {
           priority
         />
         <div className="absolute inset-0 bg-black" style={{ opacity: 0.6 }} />
-
-        {(() => { const c = resolveCaption("hero"); return <FinishCard schema={c.schema} values={c.values} />; })()}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -366,7 +366,6 @@ export default function ProductDetailPage() {
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 50vw"
             />
-            {(() => { const c = resolveCaption("side"); return <FinishCard schema={c.schema} values={c.values} />; })()}
           </motion.div>
 
           {/* Right — description + actions, vertically centered */}
@@ -459,6 +458,8 @@ export default function ProductDetailPage() {
       {/* ===== 4. ISPIRAZIONE — horizontal slideshow + vertical carousel ===== */}
       {horizontalGallery.length > 0 && (
         <GallerySlideshow
+          captionSchema={galleryCaption.schema}
+          imageCaptions={galleryCaption.values}
           images={horizontalGallery}
           name={product.name}
           id="ispirazione"
@@ -466,6 +467,8 @@ export default function ProductDetailPage() {
       )}
       {verticalGallery.length > 0 && (
         <InspirationCarousel
+          captionSchema={galleryCaption.schema}
+          imageCaptions={galleryCaption.values}
           images={verticalGallery}
           productName={product.name}
           id={horizontalGallery.length === 0 ? "ispirazione" : undefined}
