@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 // ============================================================================
-// FinishCard v4 — pixel-match del mockup cliente:
-//  - card bianca 220px, angoli minimalmente arrotondati (2px), ombra tenue
-//  - padding interno 20px (p-5)
-//  - "FINISHES" small-caps, tracking largo, colore grigio scuro, mb 16px
-//  - Nome parte: sans-serif bold 13px, colore quasi nero
-//  - Attributi: sans-serif 12px, label grassetto + valore regular
-//  - Spacing verticale tra sezioni: 14-16px (space-y-4)
-//  - Nessuna X: si chiude con click di nuovo sul pallino "i"
+// FinishCard v5 — refinements:
+//  - righe divisorie orizzontali (sotto FINISHES + tra ogni sezione)
+//  - larghezza FISSA 220px, mai variabile (testo va a capo con break-words)
+//  - animazione di entrata (fade + slide dal basso)
+//  - triangolino puntatore in basso a sx della card, allineato al pallino "i"
 // ============================================================================
 
 export interface CaptionAttribute {
@@ -60,8 +58,7 @@ export default function FinishCard({ schema, values, title = "FINISHES", open: c
 
   return (
     <>
-      {/* Pulsante "i": pallino bianco piccolo, sempre visibile quando c'e'
-          didascalia. Click toggle apri/chiudi. */}
+      {/* Pallino "i" (bottom-left dell'immagine): sempre visibile, toggle card */}
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
@@ -73,30 +70,35 @@ export default function FinishCard({ schema, values, title = "FINISHES", open: c
         i
       </button>
 
-      {/* Card sopra il pallino (12px di gap). Stile del mockup:
-          bianco puro, ombra tenue, angoli 2px. Font sans di sistema (quello
-          gia' impostato dal layout globale come font-body). */}
-      {open && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="absolute bottom-14 left-4 z-20 w-[220px] max-md:w-[calc(100%-32px)] max-md:max-w-[220px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-[2px] font-sans"
-        >
-          <div className="px-5 pt-5 pb-5">
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="card"
+            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.98 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute bottom-14 left-4 z-20 w-[220px] bg-white shadow-[0_2px_10px_rgba(0,0,0,0.10)] rounded-[2px] font-sans"
+            style={{ willChange: "transform, opacity" }}
+          >
             {/* Titolo FINISHES */}
-            <p className="text-[11px] uppercase tracking-[0.18em] text-warm-700 font-normal mb-4">
-              {title}
-            </p>
+            <div className="px-5 pt-5 pb-4">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-warm-700 font-normal">
+                {title}
+              </p>
+            </div>
 
-            {/* Sezioni parti */}
-            <div className="space-y-4">
+            {/* Riga sotto FINISHES + sezioni con separatori tra loro */}
+            <div className="border-t border-warm-200 divide-y divide-warm-200">
               {filledParts.map((part) => {
                 const partVals = values[part.key] || {};
                 return (
-                  <div key={part.key}>
-                    <p className="text-[13px] font-bold text-warm-900 mb-1 leading-tight">
+                  <div key={part.key} className="px-5 py-4">
+                    <p className="text-[13px] font-bold text-warm-900 mb-1 leading-tight break-words">
                       {part.label}
                     </p>
-                    <div className="text-[12px] leading-[1.45] text-warm-900">
+                    <div className="text-[12px] leading-[1.45] text-warm-900 break-words">
                       {part.attributes.map((attr) => {
                         const v = (partVals[attr.key] || "").trim();
                         if (!v) return null;
@@ -111,9 +113,17 @@ export default function FinishCard({ schema, values, title = "FINISHES", open: c
                 );
               })}
             </div>
-          </div>
-        </div>
-      )}
+
+            {/* Triangolino puntatore verso il pallino "i" sotto.
+                Il pallino ha centro a left-4 + 14px = 30px dall'immagine.
+                La card parte a left-4 = 16px, quindi il centro del pallino
+                cade a 14px dal bordo left della card. Il rombo w-3 (12px)
+                centrato a 14px richiede left = 14 - 6 = 8px = left-2.
+                -bottom-1.5 (=-6px) fa sporgere il rombo di 6px sotto la card. */}
+            <div className="absolute -bottom-1.5 left-2 w-3 h-3 bg-white rotate-45 shadow-[2px_2px_2px_rgba(0,0,0,0.04)]" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
