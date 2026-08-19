@@ -19,6 +19,7 @@ interface GallerySlideshowProps {
 }
 
 export default function GallerySlideshow({ images, name, id, showCaption = true, captionSchema, imageCaptions }: GallerySlideshowProps) {
+  const [openCaption, setOpenCaption] = useState(false);
   const [current, setCurrent] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
@@ -78,6 +79,9 @@ export default function GallerySlideshow({ images, name, id, showCaption = true,
     : (hoverSide === "right" && canGoNext)
     ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Ccircle cx='22' cy='22' r='21' fill='white' fill-opacity='0.85' stroke='black' stroke-width='1'/%3E%3Cpath d='M16 22 L28 22 M23 17 L28 22 L23 27' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E\") 22 22, pointer"
     : "default";
+
+  // Chiudi FinishCard quando cambio slide
+  useEffect(() => { setOpenCaption(false); }, [current]);
 
   if (images.length === 0) return null;
 
@@ -139,6 +143,8 @@ export default function GallerySlideshow({ images, name, id, showCaption = true,
             <FinishCard
               schema={captionSchema || null}
               values={(imageCaptions && imageCaptions[images[current]]) || null}
+              open={openCaption}
+              onToggle={setOpenCaption}
             />
           ) : showCaption ? (
             <>

@@ -33,6 +33,8 @@ function InspirationCarousel({ images, productName, id, captionSchema, imageCapt
   const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
   const [hoverSide, setHoverSide] = useState<"left" | "right" | null>(null);
   const [altMap, setAltMap] = useState<Record<string, string>>({});
+  // Solo UNA card FINISHES aperta alla volta nel carousel verticale.
+  const [openCaptionUrl, setOpenCaptionUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (images.length === 0) return;
@@ -168,6 +170,8 @@ function InspirationCarousel({ images, productName, id, captionSchema, imageCapt
                   <FinishCard
                     schema={captionSchema || null}
                     values={(imageCaptions && imageCaptions[url]) || null}
+                    open={openCaptionUrl === url}
+                    onToggle={(next) => setOpenCaptionUrl(next ? url : null)}
                   />
                 ) : (
                   <>

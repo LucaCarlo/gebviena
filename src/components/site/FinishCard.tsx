@@ -38,6 +38,10 @@ export interface FinishCardProps {
   values: CaptionValues | null | undefined;
   /** Titolo card (default "FINISHES"). */
   title?: string;
+  /** Se passato, la card e' controllata dall'esterno (una sola aperta alla
+   *  volta nel carousel). Se undefined, usa state interno (retro-compat). */
+  open?: boolean;
+  onToggle?: (next: boolean) => void;
 }
 
 function partHasValues(part: CaptionPart, values: CaptionValues): boolean {
@@ -46,8 +50,13 @@ function partHasValues(part: CaptionPart, values: CaptionValues): boolean {
   return part.attributes.some((a) => (partVals[a.key] || "").trim().length > 0);
 }
 
-export default function FinishCard({ schema, values, title = "FINISHES" }: FinishCardProps) {
-  const [open, setOpen] = useState(false);
+export default function FinishCard({ schema, values, title = "FINISHES", open: controlledOpen, onToggle }: FinishCardProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = (next: boolean) => {
+    if (onToggle) onToggle(next);
+    if (controlledOpen === undefined) setInternalOpen(next);
+  };
 
   if (!schema || !values) return null;
   const filledParts = schema.parts.filter((p) => partHasValues(p, values));
@@ -59,7 +68,7 @@ export default function FinishCard({ schema, values, title = "FINISHES" }: Finis
           Sempre visibile quando c'e' una didascalia. Click apre/chiude la card. */}
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
         onMouseDown={(e) => e.stopPropagation()}
         onMouseUp={(e) => e.stopPropagation()}
         aria-label="Info finiture"
