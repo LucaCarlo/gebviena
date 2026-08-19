@@ -80,6 +80,7 @@ const navSections: NavSection[] = [
           { href: "/admin/taxonomy/products/typologies", label: "Tipologie" },
           { href: "/admin/taxonomy/products/categories", label: "Categorie" },
           { href: "/admin/products/dimensions", label: "Dimensioni" },
+          { href: "/admin/caption-schemas", label: "Didascalie" },
         ],
       },
       { href: "/admin/designers", label: "Designer", icon: Palette, permission: "designers.view" },
