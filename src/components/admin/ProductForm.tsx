@@ -7,6 +7,8 @@ import { slugify } from "@/lib/utils";
 import { Plus, X, Upload, FileText, Trash2, ImageIcon } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
 import GalleryUploadField from "./GalleryUploadField";
+import CaptionEditor from "./CaptionEditor";
+import type { CaptionSchema, CaptionValues } from "@/components/site/FinishCard";
 import ImageAltField from "./ImageAltField";
 import MediaPickerModal from "./MediaPickerModal";
 import SeoPanel from "./SeoPanel";
@@ -77,6 +79,8 @@ export default function ProductForm({ productId }: ProductFormProps) {
     sideImage: "",
     galleryImages: "[]",
     galleryOrientations: "{}",
+    captionTypeId: "",
+    captionsData: "{}",
     variants: "[]",
     dimensionImage: "",
     techSheetUrl: "",
@@ -112,6 +116,18 @@ export default function ProductForm({ productId }: ProductFormProps) {
       setAllCategories(cData.data || []);
       if (dbData.success) setDimensionBlocks(dbData.data || []);
     });
+    // Carica gli schemi didascalia (i 16 preset)
+    fetch("/api/caption-schemas")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d?.data) return;
+        const map: Record<string, CaptionSchema> = {};
+        for (const sch of d.data as Array<{ id: string; key: string; label: string; parts: unknown }>) {
+          map[sch.id] = { key: sch.key, label: sch.label, parts: (sch.parts as CaptionSchema["parts"]) || [] };
+        }
+        setCaptionSchemas(map);
+      })
+      .catch(() => {});
   }, []);
 
   const loadProduct = useCallback(async () => {
@@ -142,6 +158,8 @@ export default function ProductForm({ productId }: ProductFormProps) {
         sideImage: p.sideImage || "",
         galleryImages: p.galleryImages || "[]",
         galleryOrientations: p.galleryOrientations || "{}",
+        captionTypeId: p.captionTypeId || "",
+        captionsData: p.captionsData ? (typeof p.captionsData === "string" ? p.captionsData : JSON.stringify(p.captionsData)) : "{}",
         variants: p.variants || "[]",
         dimensionImage: p.dimensionImage || "",
         techSheetUrl: p.techSheetUrl || "",
@@ -177,6 +195,10 @@ export default function ProductForm({ productId }: ProductFormProps) {
   }, [productId]);
 
   useEffect(() => { loadProduct(); }, [loadProduct]);
+
+  // Struttura didascalia: schemi caricati da API + set di URL con editor aperto
+  const [captionSchemas, setCaptionSchemas] = useState<Record<string, CaptionSchema>>({});
+  const [openCaptionUrls, setOpenCaptionUrls] = useState<Set<string>>(new Set());
 
   // Track previous subcategory to detect changes (user-driven only)
   const prevSubcategoryRef = useRef<string | null>(null);
@@ -300,6 +322,8 @@ export default function ProductForm({ productId }: ProductFormProps) {
         careUrl: form.careUrl || null,
         isActive: form.isActive,
         scheduledPublishAt: form.scheduledPublishAt ? new Date(form.scheduledPublishAt).toISOString() : null,
+        captionTypeId: form.captionTypeId || null,
+        captionsData: (() => { try { const o = JSON.parse(form.captionsData || "{}"); return Object.keys(o).length ? o : null; } catch { return null; } })(),
         extraDimensions: extraDimensions.map((d) => {
           const cleanedValues = d.values ? filterValuesToBlock(d.values, d.blockId) : "";
           return {
@@ -549,6 +573,28 @@ export default function ProductForm({ productId }: ProductFormProps) {
           </p>
         </div>
 
+        {/* Struttura didascalia FINISHES (per le immagini del carosello) */}
+        <div className="border border-warm-200 rounded-lg bg-warm-50 p-4">
+          <label className="block text-xs font-semibold text-warm-700 uppercase tracking-wider mb-1.5">
+            Struttura didascalia (carosello)
+          </label>
+          <p className="text-[10px] text-warm-500 mb-2">
+            Definisce quali parti/attributi mostrare nella card FINISHES che compare al click del pallino &quot;i&quot; sopra ogni immagine del carosello. Lascia vuoto per non attivare la funzione.
+          </p>
+          <select
+            value={form.captionTypeId}
+            onChange={(e) => updateField("captionTypeId", e.target.value)}
+            className="w-full border border-warm-300 rounded px-3 py-2 text-sm focus:border-warm-800 focus:outline-none bg-white"
+          >
+            <option value="">— Nessuna didascalia —</option>
+            {Object.entries(captionSchemas)
+              .sort(([, a], [, b]) => a.label.localeCompare(b.label))
+              .map(([id, sch]) => (
+                <option key={id} value={id}>{sch.label}</option>
+              ))}
+          </select>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <ImageUploadField
@@ -643,6 +689,83 @@ export default function ProductForm({ productId }: ProductFormProps) {
             </div>
           </div>
         )}
+
+        {/* Editor didascalie FINISHES per singola immagine del carosello */}
+        {galleryUrls.length > 0 && form.captionTypeId && captionSchemas[form.captionTypeId] && (() => {
+          const schema = captionSchemas[form.captionTypeId];
+          let parsedData: Record<string, CaptionValues> = {};
+          try {
+            const obj = JSON.parse(form.captionsData || "{}");
+            parsedData = (obj.gallery || {}) as Record<string, CaptionValues>;
+          } catch { /* keep empty */ }
+          const setGalleryCaption = (url: string, nextValues: CaptionValues) => {
+            let root: Record<string, unknown> = {};
+            try { root = JSON.parse(form.captionsData || "{}"); } catch { root = {}; }
+            const gal = { ...(parsedData || {}), [url]: nextValues };
+            // Rimuovi entries vuote (tutti gli attr blank) per pulizia JSON
+            const cleaned: Record<string, CaptionValues> = {};
+            for (const [u, v] of Object.entries(gal)) {
+              const hasAny = Object.values(v || {}).some((pv) => Object.values(pv as Record<string, string>).some((x) => (x || "").trim() !== ""));
+              if (hasAny) cleaned[u] = v;
+            }
+            root.gallery = cleaned;
+            updateField("captionsData", JSON.stringify(root));
+          };
+          const toggleOpen = (url: string) => {
+            setOpenCaptionUrls((prev) => {
+              const n = new Set(prev);
+              if (n.has(url)) n.delete(url); else n.add(url);
+              return n;
+            });
+          };
+          return (
+            <div className="border-t border-warm-200 pt-6">
+              <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1">
+                Didascalie FINISHES (per immagine)
+              </label>
+              <p className="text-[10px] text-warm-400 mb-3">
+                Compila i valori per ogni foto. I campi lasciati vuoti non compaiono nella card in overlay.
+              </p>
+              <div className="space-y-3">
+                {galleryUrls.map((url, i) => {
+                  const isOpen = openCaptionUrls.has(url);
+                  const values = parsedData[url] || null;
+                  const hasData = values && Object.values(values).some((pv) => Object.values(pv as Record<string, string>).some((x) => (x || "").trim() !== ""));
+                  return (
+                    <div key={url} className="border border-warm-200 rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => toggleOpen(url)}
+                        className="w-full flex items-center gap-3 px-3 py-2 bg-white hover:bg-warm-50 text-left"
+                      >
+                        <div className="relative w-14 h-14 rounded overflow-hidden flex-shrink-0 bg-warm-100">
+                          <Image src={url} alt="" fill className="object-cover" sizes="56px" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-warm-700 truncate">Foto {i + 1}</p>
+                          <p className="text-[10px] text-warm-400">
+                            {hasData ? "Didascalia compilata" : "Nessun valore"}
+                          </p>
+                        </div>
+                        <span className="text-xs text-warm-500">{isOpen ? "Chiudi" : "Modifica"}</span>
+                      </button>
+                      {isOpen && (
+                        <div className="p-3 border-t border-warm-200 bg-warm-50/40">
+                          <CaptionEditor
+                            schema={schema}
+                            values={values}
+                            onChange={(next) => setGalleryCaption(url, next)}
+                            showMissingSchemaHint={false}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* DIMENSIONI */}
