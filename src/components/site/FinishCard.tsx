@@ -84,7 +84,7 @@ export default function FinishCard({ schema, values, title = "FINISHES", open: c
           >
             {/* Titolo FINISHES */}
             <div className="px-5 pt-5 pb-4">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-warm-700 font-normal">
+              <p className="text-[11px] uppercase tracking-[0.08em] text-warm-500 font-normal">
                 {title}
               </p>
             </div>
@@ -95,7 +95,7 @@ export default function FinishCard({ schema, values, title = "FINISHES", open: c
                 const partVals = values[part.key] || {};
                 return (
                   <div key={part.key} className="px-5 py-4">
-                    <p className="text-[13px] font-bold text-warm-900 mb-1 leading-tight break-words">
+                    <p className="text-[13px] font-medium text-warm-900 mb-1 leading-tight break-words">
                       {part.label}
                     </p>
                     <div className="text-[12px] leading-[1.45] text-warm-900 break-words">
@@ -104,7 +104,7 @@ export default function FinishCard({ schema, values, title = "FINISHES", open: c
                         if (!v) return null;
                         return (
                           <div key={attr.key}>
-                            <span className="font-bold">{attr.label}:</span> {v}
+                            <span className="font-medium">{attr.label}:</span> {v}
                           </div>
                         );
                       })}
