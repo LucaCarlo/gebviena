@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
 
 // ============================================================================
-// FinishCard — card informativa "FINISHES" in overlay sull'immagine prodotto.
-//
-// Comportamento (post-fix):
-//  - Pulsante "i" in basso a sinistra: identico al legacy (pallino piccolo,
-//    "i" font-serif). SEMPRE visibile quando c'e' almeno una parte compilata.
-//  - Click sull'i: apre la card SOPRA il pulsante (non lo copre). Il pulsante
-//    resta cliccabile per riaprire/chiudere; c'e' anche una X in alto a destra.
-//  - Se `values` e' vuoto / tutte le parti blank: NON renderizza nulla.
+// FinishCard v4 — pixel-match del mockup cliente:
+//  - card bianca 220px, angoli minimalmente arrotondati (2px), ombra tenue
+//  - padding interno 20px (p-5)
+//  - "FINISHES" small-caps, tracking largo, colore grigio scuro, mb 16px
+//  - Nome parte: sans-serif bold 13px, colore quasi nero
+//  - Attributi: sans-serif 12px, label grassetto + valore regular
+//  - Spacing verticale tra sezioni: 14-16px (space-y-4)
+//  - Nessuna X: si chiude con click di nuovo sul pallino "i"
 // ============================================================================
 
 export interface CaptionAttribute {
@@ -36,10 +35,7 @@ export type CaptionValues = Record<string, Record<string, string>>;
 export interface FinishCardProps {
   schema: CaptionSchema | null;
   values: CaptionValues | null | undefined;
-  /** Titolo card (default "FINISHES"). */
   title?: string;
-  /** Se passato, la card e' controllata dall'esterno (una sola aperta alla
-   *  volta nel carousel). Se undefined, usa state interno (retro-compat). */
   open?: boolean;
   onToggle?: (next: boolean) => void;
 }
@@ -64,8 +60,8 @@ export default function FinishCard({ schema, values, title = "FINISHES", open: c
 
   return (
     <>
-      {/* Pulsante info (stile legacy: pallino piccolo con "i" font-serif).
-          Sempre visibile quando c'e' una didascalia. Click apre/chiude la card. */}
+      {/* Pulsante "i": pallino bianco piccolo, sempre visibile quando c'e'
+          didascalia. Click toggle apri/chiudi. */}
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
@@ -77,52 +73,44 @@ export default function FinishCard({ schema, values, title = "FINISHES", open: c
         i
       </button>
 
-      {/* Card FINISHES sopra il pulsante (non lo copre). bottom-14 = 56px,
-          il pulsante e' bottom-4 (16px) + h-7 (28px) = arriva a 44px; la card
-          parte da 56px = 12px di gap sopra. */}
+      {/* Card sopra il pallino (12px di gap). Stile del mockup:
+          bianco puro, ombra tenue, angoli 2px. Font sans di sistema (quello
+          gia' impostato dal layout globale come font-body). */}
       {open && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute bottom-14 left-4 z-20 max-w-[280px] max-md:max-w-[calc(100%-32px)] bg-white shadow-lg rounded-sm overflow-hidden"
+          className="absolute bottom-14 left-4 z-20 w-[220px] max-md:w-[calc(100%-32px)] max-md:max-w-[220px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-[2px] font-sans"
         >
-          {/* Header con titolo + X */}
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <p className="text-[10px] font-semibold text-warm-500 uppercase tracking-[0.15em]">
+          <div className="px-5 pt-5 pb-5">
+            {/* Titolo FINISHES */}
+            <p className="text-[11px] uppercase tracking-[0.18em] text-warm-700 font-normal mb-4">
               {title}
             </p>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setOpen(false); }}
-              className="text-warm-400 hover:text-warm-800 transition-colors"
-              aria-label="Chiudi"
-            >
-              <X size={14} />
-            </button>
-          </div>
 
-          {/* Sezioni parti compilate */}
-          <div className="px-4 pb-4 space-y-3">
-            {filledParts.map((part) => {
-              const partVals = values[part.key] || {};
-              return (
-                <div key={part.key}>
-                  <p className="text-[13px] font-semibold text-warm-900 mb-0.5">
-                    {part.label}
-                  </p>
-                  <div className="text-[12px] leading-[1.35] text-warm-700">
-                    {part.attributes.map((attr) => {
-                      const v = (partVals[attr.key] || "").trim();
-                      if (!v) return null;
-                      return (
-                        <div key={attr.key}>
-                          <span className="font-semibold">{attr.label}:</span> {v}
-                        </div>
-                      );
-                    })}
+            {/* Sezioni parti */}
+            <div className="space-y-4">
+              {filledParts.map((part) => {
+                const partVals = values[part.key] || {};
+                return (
+                  <div key={part.key}>
+                    <p className="text-[13px] font-bold text-warm-900 mb-1 leading-tight">
+                      {part.label}
+                    </p>
+                    <div className="text-[12px] leading-[1.45] text-warm-900">
+                      {part.attributes.map((attr) => {
+                        const v = (partVals[attr.key] || "").trim();
+                        if (!v) return null;
+                        return (
+                          <div key={attr.key}>
+                            <span className="font-bold">{attr.label}:</span> {v}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
