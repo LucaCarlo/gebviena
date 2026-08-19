@@ -143,6 +143,8 @@ model Product {
   seoTitle            String?              @db.Text
   seoDescription      String?              @db.Text
   seoKeywords         String?              @db.Text
+  captionTypeId       String?              @db.VarChar(191)
+  captionsData        Json?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   designer            Designer?            @relation(fields: [designerId], references: [id])
@@ -151,7 +153,9 @@ model Product {
   translations        ProductTranslation[]
   extraDimensions     ProductDimension[]
   storeProduct        StoreProduct?
+  captionType         ProductCaptionType?  @relation(fields: [captionTypeId], references: [id])
 
+  @@index([captionTypeId])
   @@index([category])
   @@index([subcategory])
   @@index([slug])
@@ -345,7 +349,8 @@ model Language {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  productTranslations     ProductTranslation[]
+  productTranslations                ProductTranslation[]
+  productCaptionTypeTranslations     ProductCaptionTypeTranslation[]
   designerTranslations    DesignerTranslation[]
   projectTranslations     ProjectTranslation[]
   campaignTranslations    CampaignTranslation[]
@@ -1912,3 +1917,32 @@ model BlockedIp {
   @@index([expiresAt])
 }
 
+
+
+model ProductCaptionType {
+  id           String                          @id @default(cuid())
+  key          String                          @unique @db.VarChar(64)
+  label        String                          @db.VarChar(191)
+  partsJson    Json
+  sortOrder    Int                             @default(0)
+  isActive     Boolean                         @default(true)
+  createdAt    DateTime                        @default(now())
+  updatedAt    DateTime                        @updatedAt
+  products     Product[]
+  translations ProductCaptionTypeTranslation[]
+}
+
+model ProductCaptionTypeTranslation {
+  id             String             @id @default(cuid())
+  captionTypeId  String
+  languageCode   String             @db.VarChar(16)
+  label          String             @db.VarChar(191)
+  partsJson      Json
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  captionType    ProductCaptionType @relation(fields: [captionTypeId], references: [id], onDelete: Cascade)
+  language       Language           @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+
+  @@unique([captionTypeId, languageCode])
+  @@index([languageCode])
+}

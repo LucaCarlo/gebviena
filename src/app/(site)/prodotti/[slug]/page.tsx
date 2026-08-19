@@ -12,6 +12,7 @@ import { useLang, useT } from "@/contexts/I18nContext";
 import { localizePath } from "@/lib/path-segments";
 import { localizeHref } from "@/lib/localize-href";
 import GallerySlideshow from "@/components/site/GallerySlideshow";
+import FinishCard, { CaptionSchema, CaptionValues } from "@/components/site/FinishCard";
 import CarouselProgressBar from "@/components/site/CarouselProgressBar";
 import ProductDocsList from "@/components/site/ProductDocsList";
 
@@ -196,6 +197,8 @@ export default function ProductDetailPage() {
   const [descExpanded, setDescExpanded] = useState(false);
   const [supportImg, setSupportImg] = useState("https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop&q=80");
   const [imageOrientations, setImageOrientations] = useState<Record<string, "h" | "v">>({});
+  // Caption schemas caricati da API — chiave = id dello schema, valore = struttura
+  const [captionSchemas, setCaptionSchemas] = useState<Record<string, CaptionSchema>>({});
 
   useEffect(() => {
     async function load() {
@@ -208,7 +211,18 @@ export default function ProductDetailPage() {
       setLoading(false);
     }
     load();
-    fetch("/api/page-images?page=prodotti-dettaglio").then(r => r.json()).then(d => {
+    fetch(`/api/caption-schemas?lang=${lang}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d?.data) return;
+        const map: Record<string, CaptionSchema> = {};
+        for (const sch of d.data as Array<{ id: string; key: string; label: string; parts: unknown }>) {
+          map[sch.id] = { key: sch.key, label: sch.label, parts: (sch.parts as CaptionSchema["parts"]) || [] };
+        }
+        setCaptionSchemas(map);
+      })
+      .catch(() => {});
+        fetch("/api/page-images?page=prodotti-dettaglio").then(r => r.json()).then(d => {
       const img = (d.data || []).find((i: { section: string }) => i.section === "supporto-professionisti");
       if (img?.imageUrl) setSupportImg(img.imageUrl);
     });
@@ -275,6 +289,27 @@ export default function ProductDetailPage() {
   const heroImg = product.heroImage || product.coverImage || product.imageUrl;
   const sideImg = product.sideImage || product.coverImage || product.imageUrl;
 
+  // Risolve schema+values per una specifica immagine del prodotto.
+  // imageKey: "cover" | "hero" | "side" | l'URL della gallery.
+  const resolveCaption = (imageKey: string): { schema: CaptionSchema | null; values: CaptionValues | null } => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const p: any = product;
+    if (!p?.captionTypeId) return { schema: null, values: null };
+    const schema = captionSchemas[p.captionTypeId] || null;
+    if (!schema) return { schema: null, values: null };
+    let data: unknown = p.captionsData;
+    if (typeof data === "string") { try { data = JSON.parse(data); } catch { data = null; } }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cd: any = data || {};
+    let values: CaptionValues | null = null;
+    if (imageKey === "cover" || imageKey === "hero" || imageKey === "side") {
+      values = cd[imageKey] || null;
+    } else {
+      values = (cd.gallery && cd.gallery[imageKey]) || null;
+    }
+    return { schema, values };
+  };
+
   const sectionNav = [
     ...(hasAnyGallery ? [{ label: t("prodotti.detail.nav.inspiration"), id: "ispirazione" }] : []),
     { label: t("prodotti.detail.nav.designer"), id: "designer" },
@@ -294,6 +329,8 @@ export default function ProductDetailPage() {
           priority
         />
         <div className="absolute inset-0 bg-black" style={{ opacity: 0.6 }} />
+
+        {(() => { const c = resolveCaption("hero"); return <FinishCard schema={c.schema} values={c.values} />; })()}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -329,6 +366,7 @@ export default function ProductDetailPage() {
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 50vw"
             />
+            {(() => { const c = resolveCaption("side"); return <FinishCard schema={c.schema} values={c.values} />; })()}
           </motion.div>
 
           {/* Right — description + actions, vertically centered */}
