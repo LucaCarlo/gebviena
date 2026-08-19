@@ -130,9 +130,14 @@ export default function GallerySlideshow({ images, name, id, showCaption = true,
             ))}
           </div>
 
-          {captionSchema ? (
+          {(() => {
+            const curUrl = images[current];
+            const curVals = (imageCaptions && imageCaptions[curUrl]) || null;
+            const hasFilled = !!(captionSchema && curVals && Object.values(curVals).some((pv) => Object.values(pv as Record<string, string>).some((x) => (x || "").trim() !== "")));
+            return hasFilled;
+          })() ? (
             <FinishCard
-              schema={captionSchema}
+              schema={captionSchema || null}
               values={(imageCaptions && imageCaptions[images[current]]) || null}
             />
           ) : showCaption ? (

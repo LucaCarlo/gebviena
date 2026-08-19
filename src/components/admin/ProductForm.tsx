@@ -650,49 +650,9 @@ export default function ProductForm({ productId }: ProductFormProps) {
           helpText="Immagini aggiuntive per il carosello ispirazione. Trascina per riordinare."
         />
 
-        {galleryUrls.length > 0 && (
-          <div>
-            <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-              Orientamento carosello
-            </label>
-            <p className="text-[10px] text-warm-400 mb-3">
-              Per ogni immagine scegli se mostrarla nel carosello orizzontale o in quello verticale. Se lasci &quot;Auto&quot;, l&apos;orientamento viene rilevato dall&apos;aspect ratio dell&apos;immagine.
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {galleryUrls.map((url) => {
-                const orient = galleryOrientations[url] || "";
-                return (
-                  <div key={url} className="border border-warm-200 rounded-lg p-2 bg-warm-50">
-                    <div className="relative aspect-square rounded overflow-hidden mb-2 bg-white">
-                      <Image src={url} alt="" fill className="object-cover" sizes="200px" />
-                    </div>
-                    <div className="flex gap-1">
-                      {(["", "h", "v"] as const).map((val) => (
-                        <button
-                          key={val || "auto"}
-                          type="button"
-                          onClick={() => setGalleryOrientation(url, val)}
-                          className={`flex-1 text-[10px] py-1 rounded border ${
-                            orient === val
-                              ? "bg-warm-900 text-white border-warm-900"
-                              : "bg-white text-warm-600 border-warm-300 hover:border-warm-500"
-                          }`}
-                        >
-                          {val === "" ? "Auto" : val === "h" ? "Orizz." : "Vert."}
-                        </button>
-                      ))}
-                    </div>
-                    <ImageAltField url={url} label="Alt text" />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Editor didascalie FINISHES per singola immagine del carosello */}
-        {galleryUrls.length > 0 && form.captionTypeId && captionSchemas[form.captionTypeId] && (() => {
-          const schema = captionSchemas[form.captionTypeId];
+        {/* Carosello immagini: sezione unificata (orientamento + alt + didascalia FINISHES) */}
+        {galleryUrls.length > 0 && (() => {
+          const schema = form.captionTypeId ? captionSchemas[form.captionTypeId] : null;
           let parsedData: Record<string, CaptionValues> = {};
           try {
             const obj = JSON.parse(form.captionsData || "{}");
@@ -702,7 +662,6 @@ export default function ProductForm({ productId }: ProductFormProps) {
             let root: Record<string, unknown> = {};
             try { root = JSON.parse(form.captionsData || "{}"); } catch { root = {}; }
             const gal = { ...(parsedData || {}), [url]: nextValues };
-            // Rimuovi entries vuote (tutti gli attr blank) per pulizia JSON
             const cleaned: Record<string, CaptionValues> = {};
             for (const [u, v] of Object.entries(gal)) {
               const hasAny = Object.values(v || {}).some((pv) => Object.values(pv as Record<string, string>).some((x) => (x || "").trim() !== ""));
@@ -721,16 +680,18 @@ export default function ProductForm({ productId }: ProductFormProps) {
           return (
             <div className="border-t border-warm-200 pt-6">
               <label className="block text-xs font-semibold text-warm-600 uppercase tracking-wider mb-1">
-                Didascalie FINISHES (per immagine)
+                Carosello immagini
               </label>
               <p className="text-[10px] text-warm-400 mb-3">
-                Compila i valori per ogni foto. I campi lasciati vuoti non compaiono nella card in overlay.
+                Per ogni foto puoi scegliere l&apos;orientamento nel carosello (orizzontale / verticale / auto), l&apos;alt text e — se hai selezionato una &quot;Struttura didascalia&quot; sopra — i valori FINISHES che compaiono al click sul pallino &quot;i&quot;.
               </p>
               <div className="space-y-3">
                 {galleryUrls.map((url, i) => {
                   const isOpen = openCaptionUrls.has(url);
+                  const orient = galleryOrientations[url] || "";
                   const values = parsedData[url] || null;
                   const hasData = values && Object.values(values).some((pv) => Object.values(pv as Record<string, string>).some((x) => (x || "").trim() !== ""));
+                  const orientLabel = orient === "h" ? "Orizz." : orient === "v" ? "Vert." : "Auto";
                   return (
                     <div key={url} className="border border-warm-200 rounded-lg overflow-hidden">
                       <button
@@ -744,19 +705,56 @@ export default function ProductForm({ productId }: ProductFormProps) {
                         <div className="flex-1 min-w-0">
                           <p className="text-xs text-warm-700 truncate">Foto {i + 1}</p>
                           <p className="text-[10px] text-warm-400">
-                            {hasData ? "Didascalia compilata" : "Nessun valore"}
+                            Orientamento: {orientLabel}
+                            {schema ? ` · ${hasData ? "Didascalia compilata" : "Didascalia vuota"}` : ""}
                           </p>
                         </div>
                         <span className="text-xs text-warm-500">{isOpen ? "Chiudi" : "Modifica"}</span>
                       </button>
                       {isOpen && (
-                        <div className="p-3 border-t border-warm-200 bg-warm-50/40">
-                          <CaptionEditor
-                            schema={schema}
-                            values={values}
-                            onChange={(next) => setGalleryCaption(url, next)}
-                            showMissingSchemaHint={false}
-                          />
+                        <div className="p-3 border-t border-warm-200 bg-warm-50/40 space-y-4">
+                          {/* Orientamento */}
+                          <div>
+                            <p className="text-[10px] font-semibold text-warm-600 uppercase tracking-wider mb-1.5">Orientamento nel carosello</p>
+                            <div className="flex gap-1 max-w-xs">
+                              {(["", "h", "v"] as const).map((val) => (
+                                <button
+                                  key={val || "auto"}
+                                  type="button"
+                                  onClick={() => setGalleryOrientation(url, val)}
+                                  className={`flex-1 text-[10px] py-1.5 rounded border ${
+                                    orient === val
+                                      ? "bg-warm-900 text-white border-warm-900"
+                                      : "bg-white text-warm-600 border-warm-300 hover:border-warm-500"
+                                  }`}
+                                >
+                                  {val === "" ? "Auto" : val === "h" ? "Orizzontale" : "Verticale"}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Alt text */}
+                          <ImageAltField url={url} label="Alt text" />
+
+                          {/* Didascalia FINISHES (solo se schema selezionato) */}
+                          {schema ? (
+                            <div>
+                              <p className="text-[10px] font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
+                                Didascalia FINISHES ({schema.label})
+                              </p>
+                              <CaptionEditor
+                                schema={schema}
+                                values={values}
+                                onChange={(next) => setGalleryCaption(url, next)}
+                                showMissingSchemaHint={false}
+                              />
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-warm-400 italic">
+                              Per compilare la didascalia FINISHES seleziona una &quot;Struttura didascalia&quot; nella card in cima alla sezione Immagini.
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>

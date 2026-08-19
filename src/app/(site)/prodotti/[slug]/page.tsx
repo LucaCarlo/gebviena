@@ -160,9 +160,13 @@ function InspirationCarousel({ images, productName, id, captionSchema, imageCapt
                   draggable={false}
                   sizes="45vw"
                 />
-                {captionSchema ? (
+                {(() => {
+                  const curVals = (imageCaptions && imageCaptions[url]) || null;
+                  const hasFilled = !!(captionSchema && curVals && Object.values(curVals).some((pv) => Object.values(pv as Record<string, string>).some((x) => (x || "").trim() !== "")));
+                  return hasFilled;
+                })() ? (
                   <FinishCard
-                    schema={captionSchema}
+                    schema={captionSchema || null}
                     values={(imageCaptions && imageCaptions[url]) || null}
                   />
                 ) : (
