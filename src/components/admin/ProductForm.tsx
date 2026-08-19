@@ -653,14 +653,25 @@ export default function ProductForm({ productId }: ProductFormProps) {
         {/* Carosello immagini: sezione unificata (orientamento + alt + didascalia FINISHES) */}
         {galleryUrls.length > 0 && (() => {
           const schema = form.captionTypeId ? captionSchemas[form.captionTypeId] : null;
+          // In modalita' traduzione, i valori vengono dal draft del context
+          // (fallback a stringa IT se il draft e' vuoto). Altrimenti dal form.
+          const activeCaptionsDataStr = tCtx?.isTranslating
+            ? (tCtx.getValue("captionsData", form.captionsData) || form.captionsData || "{}")
+            : (form.captionsData || "{}");
           let parsedData: Record<string, CaptionValues> = {};
           try {
-            const obj = JSON.parse(form.captionsData || "{}");
+            const obj = JSON.parse(activeCaptionsDataStr);
             parsedData = (obj.gallery || {}) as Record<string, CaptionValues>;
+          } catch { /* keep empty */ }
+          // Valori IT (per fallback placeholder + traduzione AI)
+          let parsedDataIt: Record<string, CaptionValues> = {};
+          try {
+            const objIt = JSON.parse(form.captionsData || "{}");
+            parsedDataIt = (objIt.gallery || {}) as Record<string, CaptionValues>;
           } catch { /* keep empty */ }
           const setGalleryCaption = (url: string, nextValues: CaptionValues) => {
             let root: Record<string, unknown> = {};
-            try { root = JSON.parse(form.captionsData || "{}"); } catch { root = {}; }
+            try { root = JSON.parse(activeCaptionsDataStr); } catch { root = {}; }
             const gal = { ...(parsedData || {}), [url]: nextValues };
             const cleaned: Record<string, CaptionValues> = {};
             for (const [u, v] of Object.entries(gal)) {
@@ -668,7 +679,40 @@ export default function ProductForm({ productId }: ProductFormProps) {
               if (hasAny) cleaned[u] = v;
             }
             root.gallery = cleaned;
-            updateField("captionsData", JSON.stringify(root));
+            const nextStr = JSON.stringify(root);
+            if (tCtx?.isTranslating) {
+              tCtx.setValue("captionsData", nextStr);
+            } else {
+              updateField("captionsData", nextStr);
+            }
+          };
+          // Traduce con AI tutti i valori IT compilati per una singola foto.
+          const translatePhoto = async (url: string) => {
+            if (!tCtx?.isTranslating || !schema) return;
+            const src = parsedDataIt[url];
+            if (!src) return;
+            const next: CaptionValues = { ...(parsedData[url] || {}) };
+            for (const part of schema.parts) {
+              const partSrc = src[part.key] || {};
+              const partOut = { ...(next[part.key] || {}) };
+              for (const attr of part.attributes) {
+                const val = (partSrc[attr.key] || "").trim();
+                if (!val) continue;
+                try {
+                  const r = await fetch("/api/admin/translate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: val, fromLang: tCtx.defaultLang, toLang: tCtx.lang }),
+                  });
+                  const d = await r.json();
+                  if (d?.success && typeof d.translation === "string") {
+                    partOut[attr.key] = d.translation;
+                  }
+                } catch { /* ignore */ }
+              }
+              next[part.key] = partOut;
+            }
+            setGalleryCaption(url, next);
           };
           const toggleOpen = (url: string) => {
             setOpenCaptionUrls((prev) => {
@@ -740,9 +784,21 @@ export default function ProductForm({ productId }: ProductFormProps) {
                           {/* Didascalia FINISHES (solo se schema selezionato) */}
                           {schema ? (
                             <div>
-                              <p className="text-[10px] font-semibold text-warm-600 uppercase tracking-wider mb-1.5">
-                                Didascalia FINISHES ({schema.label})
-                              </p>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <p className="text-[10px] font-semibold text-warm-600 uppercase tracking-wider">
+                                  Didascalia FINISHES ({schema.label})
+                                </p>
+                                {tCtx?.isTranslating && (
+                                  <button
+                                    type="button"
+                                    onClick={() => translatePhoto(url)}
+                                    className="text-[10px] px-2 py-1 rounded border border-warm-400 text-warm-700 hover:bg-warm-100"
+                                    title={`Traduci con AI dai valori IT verso ${tCtx.lang.toUpperCase()}`}
+                                  >
+                                    ✨ Traduci con AI
+                                  </button>
+                                )}
+                              </div>
                               <CaptionEditor
                                 schema={schema}
                                 values={values}

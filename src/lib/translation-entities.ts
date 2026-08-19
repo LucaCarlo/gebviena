@@ -4,7 +4,7 @@ import { prisma } from "./prisma";
 export interface TranslationFieldDef {
   key: string;
   label: string;
-  type: "short" | "long" | "html" | "slug";
+  type: "short" | "long" | "html" | "slug" | "json";
 }
 
 export interface TranslationEntityDef {
@@ -31,6 +31,7 @@ export const TRANSLATION_ENTITIES: Record<string, TranslationEntityDef> = {
       { key: "seoTitle", label: "SEO Title", type: "short" },
       { key: "seoDescription", label: "SEO Description", type: "long" },
       { key: "seoKeywords", label: "SEO Keywords", type: "long" },
+      { key: "captionsData", label: "Didascalie carosello", type: "json" },
     ],
   },
   designer: {
@@ -253,11 +254,17 @@ export async function upsertTranslation(
   if (!def) throw new Error(`Unknown entity ${entity}`);
   const delegate = (prisma as unknown as Record<string, AnyDelegate>)[def.delegate];
 
-  // Strip unknown keys
+  // Strip unknown keys + parse JSON-typed fields (per Prisma Json columns)
   const allowed = new Set(def.fields.map((f) => f.key));
+  const jsonKeys = new Set(def.fields.filter((f) => f.type === "json").map((f) => f.key));
   const clean: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(data)) {
-    if (allowed.has(k)) clean[k] = v;
+    if (!allowed.has(k)) continue;
+    if (jsonKeys.has(k) && typeof v === "string") {
+      try { clean[k] = v.trim() ? JSON.parse(v) : null; } catch { clean[k] = null; }
+    } else {
+      clean[k] = v;
+    }
   }
   if (typeof data.status === "string") clean.status = data.status;
   if (typeof data.isPublished === "boolean") clean.isPublished = data.isPublished;

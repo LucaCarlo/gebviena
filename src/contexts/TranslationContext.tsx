@@ -61,7 +61,9 @@ export function TranslationProvider({ entity, entityId, defaultLang, initialLang
             const m: Record<string, string> = {};
             for (const f of res.fields as FieldDef[]) {
               const v = (t as Record<string, unknown>)[f.key];
-              m[f.key] = typeof v === "string" ? v : "";
+              if (typeof v === "string") m[f.key] = v;
+              else if (v && typeof v === "object") m[f.key] = JSON.stringify(v);
+              else m[f.key] = "";
             }
             next[t.languageCode] = m;
           }
