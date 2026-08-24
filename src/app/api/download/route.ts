@@ -32,6 +32,11 @@ function mimeToExt(ct: string): string {
   if (t.includes("video/quicktime")) return "mov";
   if (t.includes("application/zip")) return "zip";
   if (t.includes("application/x-zip")) return "zip";
+  // Archivi non-zip
+  if (t.includes("application/x-rar") || t.includes("application/vnd.rar")) return "rar";
+  if (t.includes("application/x-7z")) return "7z";
+  if (t.includes("application/x-tar")) return "tar";
+  if (t.includes("application/gzip") || t.includes("application/x-gzip")) return "gz";
   // DWG (AutoCAD) — vari server usano mime diversi, tutti mappano a .dwg
   if (t.includes("application/acad") || t.includes("application/x-acad")) return "dwg";
   if (t.includes("application/autocad_dwg")) return "dwg";
@@ -62,7 +67,9 @@ function extFromUrl(rawUrl: string): string {
 // presenti nel filename passato dal client.
 const KNOWN_EXTS = [
   "pdf", "jpg", "jpeg", "png", "webp", "gif", "svg",
-  "mp4", "webm", "mov", "zip", "dwg", "dxf", "3ds", "skp", "obj", "step", "stp", "iges", "igs",
+  "mp4", "webm", "mov",
+  "zip", "rar", "7z", "tar", "gz", "tgz",
+  "dwg", "dxf", "3ds", "skp", "obj", "step", "stp", "iges", "igs",
   "doc", "docx", "xls", "xlsx", "pptx",
 ];
 
