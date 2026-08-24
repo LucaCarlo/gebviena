@@ -31,6 +31,13 @@ function mimeToExt(ct: string): string {
   if (t.includes("video/webm")) return "webm";
   if (t.includes("video/quicktime")) return "mov";
   if (t.includes("application/zip")) return "zip";
+  if (t.includes("application/x-zip")) return "zip";
+  // DWG (AutoCAD) — vari server usano mime diversi, tutti mappano a .dwg
+  if (t.includes("application/acad") || t.includes("application/x-acad")) return "dwg";
+  if (t.includes("application/autocad_dwg")) return "dwg";
+  if (t.includes("image/vnd.dwg") || t.includes("image/x-dwg")) return "dwg";
+  if (t.includes("application/dwg") || t.includes("application/x-dwg")) return "dwg";
+  if (t.includes("drawing/dwg")) return "dwg";
   if (t.includes("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) return "docx";
   if (t.includes("application/msword")) return "doc";
   if (t.includes("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) return "xlsx";
@@ -39,17 +46,44 @@ function mimeToExt(ct: string): string {
   return "";
 }
 
-// Aggiunge/normalizza l'estensione: se il nome non termina gia' con quella dedotta
-// dal content-type, la aggiunge. Serve perche' la UI a volte passa una "label"
-// (es. "Scheda tecnica") senza estensione, e senza estensione l'OS mostra "FILE".
-function ensureExtension(name: string, contentType: string): string {
-  const ext = mimeToExt(contentType);
-  if (!ext) return name;
-  const current = (name.match(/\.([a-z0-9]{1,10})$/i)?.[1] || "").toLowerCase();
-  if (current === ext) return name;
-  const known = ["pdf","jpg","jpeg","png","webp","gif","svg","mp4","webm","mov","zip","doc","docx","xls","xlsx","pptx"];
-  if (known.includes(current)) return name; // ha gia' un'estensione riconosciuta diversa: rispettala
-  return `${name}.${ext}`;
+// Estrae l'estensione dal path di un URL (rimuove querystring). Ritorna "" se
+// non c'e' un'estensione riconoscibile.
+function extFromUrl(rawUrl: string): string {
+  try {
+    const path = rawUrl.split("?")[0].split("#")[0];
+    const m = path.match(/\.([a-z0-9]{2,5})$/i);
+    return m ? m[1].toLowerCase() : "";
+  } catch {
+    return "";
+  }
+}
+
+// Elenco estensioni che consideriamo "riconosciute" e da rispettare se gia'
+// presenti nel filename passato dal client.
+const KNOWN_EXTS = [
+  "pdf", "jpg", "jpeg", "png", "webp", "gif", "svg",
+  "mp4", "webm", "mov", "zip", "dwg", "dxf", "3ds", "skp", "obj", "step", "stp", "iges", "igs",
+  "doc", "docx", "xls", "xlsx", "pptx",
+];
+
+// Aggiunge/normalizza l'estensione al filename.
+// Priorita' per dedurre l'estensione (in ordine):
+//   1. estensione gia' presente nel filename passato (se riconosciuta)
+//   2. estensione dell'URL sorgente (es. .../file.dwg)
+//   3. mime type della risposta upstream
+// Serve perche' la UI a volte passa una "label" (es. "Scheda tecnica") senza
+// estensione, e senza estensione l'OS mostra "FILE".
+function ensureExtension(name: string, contentType: string, sourceUrl: string): string {
+  const current = (name.match(/\.([a-z0-9]{2,10})$/i)?.[1] || "").toLowerCase();
+  if (current && KNOWN_EXTS.includes(current)) return name; // filename gia' con estensione ok
+
+  const fromUrl = extFromUrl(sourceUrl);
+  if (fromUrl && KNOWN_EXTS.includes(fromUrl)) return `${name}.${fromUrl}`;
+
+  const fromMime = mimeToExt(contentType);
+  if (fromMime) return `${name}.${fromMime}`;
+
+  return name;
 }
 
 export async function GET(req: NextRequest) {
@@ -98,7 +132,7 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${ensureExtension(safeName, contentType)}"`,
+        "Content-Disposition": `attachment; filename="${ensureExtension(safeName, contentType, url)}"`,
         "Content-Length": upstream.headers.get("content-length") || "",
         "Cache-Control": "private, no-store, must-revalidate",
       },

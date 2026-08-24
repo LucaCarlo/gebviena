@@ -52,6 +52,16 @@ function extractCategory(raw: string | null): string {
   return best || "ALTRO";
 }
 
+// Slugifica il nome prodotto per usarlo come base del filename di download.
+// Es: "N.14" -> "n-14", "Allegory Desk" -> "allegory-desk".
+function slugName(name: string | null | undefined): string {
+  return String(name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "prodotto";
+}
+
 export default function InformazioniTecnicheClient({ initialProducts, i18n }: { initialProducts: ProductRow[]; i18n: I18n }) {
   const [tab, setTab] = useState<Tab>("schede-cad");
   const [openCategory, setOpenCategory] = useState<string | null>(null);
@@ -139,7 +149,9 @@ export default function InformazioniTecnicheClient({ initialProducts, i18n }: { 
                     >
                       <div className="px-2 pb-8">
                         <div className="divide-y divide-warm-200">
-                          {items.map((p) => (
+                          {items.map((p) => {
+                            const base = slugName(p.name);
+                            return (
                             <div key={p.id} className="flex items-center justify-between py-4 gap-4 flex-wrap">
                               <div className="flex-1 min-w-0">
                                 <span className="uppercase text-[14px] tracking-[0.05em] text-black font-light">{p.name}</span>
@@ -150,16 +162,17 @@ export default function InformazioniTecnicheClient({ initialProducts, i18n }: { 
                               <div className="flex items-center gap-3 md:gap-5 flex-shrink-0 flex-wrap justify-end">
                                 {tab === "schede-cad" && (
                                   <>
-                                    <DownloadLink href={p.techSheetUrl} label={i18n.sheet} />
-                                    <DownloadLink href={p.model2dUrl} label="2D" />
-                                    <DownloadLink href={p.model3dUrl} label="3D" />
+                                    <DownloadLink href={p.techSheetUrl} label={i18n.sheet} filename={`${base}-scheda`} />
+                                    <DownloadLink href={p.model2dUrl} label="2D" filename={`${base}-2d`} />
+                                    <DownloadLink href={p.model3dUrl} label="3D" filename={`${base}-3d`} />
                                   </>
                                 )}
-                                {tab === "istruzioni" && <DownloadLink href={p.instructionsUrl} label={i18n.downloadPdf} />}
-                                {tab === "manutenzione" && <DownloadLink href={p.careUrl} label={i18n.downloadPdf} />}
+                                {tab === "istruzioni" && <DownloadLink href={p.instructionsUrl} label={i18n.downloadPdf} filename={`${base}-istruzioni`} />}
+                                {tab === "manutenzione" && <DownloadLink href={p.careUrl} label={i18n.downloadPdf} filename={`${base}-manutenzione`} />}
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     </motion.div>
@@ -174,13 +187,13 @@ export default function InformazioniTecnicheClient({ initialProducts, i18n }: { 
   );
 }
 
-function DownloadLink({ href, label }: { href: string | null; label: string }) {
+function DownloadLink({ href, label, filename }: { href: string | null; label: string; filename?: string }) {
   if (!href || !href.trim()) {
     return <span className="inline-flex items-center gap-1.5 uppercase text-[11px] tracking-[0.1em] text-warm-300 cursor-not-allowed">{label}</span>;
   }
   return (
     <a
-      href={buildDownloadUrl(href, label)}
+      href={buildDownloadUrl(href, filename || label)}
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1.5 uppercase text-[11px] tracking-[0.1em] text-black hover:text-warm-700 transition-colors group"
     >
