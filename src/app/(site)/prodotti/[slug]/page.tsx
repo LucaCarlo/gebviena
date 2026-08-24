@@ -716,17 +716,30 @@ export default function ProductDetailPage() {
                             .replace(/[^a-z0-9]+/g, "-")
                             .replace(/^-+|-+$/g, "") || "documento";
                           const nameSlug = slugify(product.name);
-                          const mk = (key: string, label: string, url: string | null | undefined) => (
+                          // t() ritorna la key stessa quando la traduzione manca (es. "prodotti.detail.tech_sheet_label")
+                          // quindi `t(k) || fallback` non basta: bisogna verificare che il risultato NON sia la key.
+                          const tOr = (key: string, fallback: string): string => {
+                            const v = t(key);
+                            return (v && v !== key) ? v : fallback;
+                          };
+                          // Slug del filename basato sulla label ITALIANA fissa (non tradotta):
+                          // cosi' il nome file resta stabile e prevedibile anche cambiando lingua.
+                          const mk = (
+                            key: string,
+                            label: string,
+                            slugPart: string,
+                            url: string | null | undefined,
+                          ) => (
                             url && url.trim()
-                              ? { key, label, url, filename: `${nameSlug}-${slugify(label)}` }
+                              ? { key, label, url, filename: `${nameSlug}-${slugPart}` }
                               : null
                           );
                           const rows = [
-                            mk("scheda", t("prodotti.detail.tech_sheet_label") || "Scheda tecnica", product.techSheetUrl),
-                            mk("m2d", t("prodotti.detail.model_2d") || "Modello 2D", product.model2dUrl),
-                            mk("m3d", t("prodotti.detail.model_3d") || "Modello 3D", product.model3dUrl),
-                            mk("montaggio", t("prodotti.detail.instructions") || "Istruzioni di montaggio", product.instructionsUrl),
-                            mk("manutenzione", t("prodotti.detail.care") || "Manutenzione", product.careUrl),
+                            mk("scheda",       tOr("prodotti.detail.tech_sheet_label", "Scheda tecnica"),         "scheda-tecnica",         product.techSheetUrl),
+                            mk("m2d",          tOr("prodotti.detail.model_2d",         "Modello 2D"),             "modello-2d",             product.model2dUrl),
+                            mk("m3d",          tOr("prodotti.detail.model_3d",         "Modello 3D"),             "modello-3d",             product.model3dUrl),
+                            mk("montaggio",    tOr("prodotti.detail.instructions",     "Istruzioni di montaggio"),"istruzioni-di-montaggio",product.instructionsUrl),
+                            mk("manutenzione", tOr("prodotti.detail.care",             "Manutenzione"),           "manutenzione",           product.careUrl),
                           ].filter(Boolean) as { key: string; label: string; url: string; filename: string }[];
                           if (rows.length === 0) {
                             return (
