@@ -707,13 +707,27 @@ export default function ProductDetailPage() {
                         {(() => {
                           // Ogni link scaricabile è una riga con icona download + lucchetto.
                           // Se l'utente NON e' loggato, il click sull'icona apre il popup login.
+                          // Il filename di download segue lo schema: <nome-prodotto>-<label-slugificata>
+                          // (es. "n-14-scheda-tecnica.pdf", "allegory-desk-modello-2d.dwg").
+                          const slugify = (s: string) => String(s || "")
+                            .trim()
+                            .toLowerCase()
+                            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // rimuove accenti
+                            .replace(/[^a-z0-9]+/g, "-")
+                            .replace(/^-+|-+$/g, "") || "documento";
+                          const nameSlug = slugify(product.name);
+                          const mk = (key: string, label: string, url: string | null | undefined) => (
+                            url && url.trim()
+                              ? { key, label, url, filename: `${nameSlug}-${slugify(label)}` }
+                              : null
+                          );
                           const rows = [
-                            product.techSheetUrl ? { key: "scheda", label: t("prodotti.detail.tech_sheet_label") || "Scheda tecnica", url: product.techSheetUrl } : null,
-                            product.model2dUrl ? { key: "m2d", label: t("prodotti.detail.model_2d") || "Modello 2D", url: product.model2dUrl } : null,
-                            product.model3dUrl ? { key: "m3d", label: t("prodotti.detail.model_3d") || "Modello 3D", url: product.model3dUrl } : null,
-                            product.instructionsUrl ? { key: "montaggio", label: t("prodotti.detail.instructions") || "Istruzioni di montaggio", url: product.instructionsUrl } : null,
-                            product.careUrl ? { key: "manutenzione", label: t("prodotti.detail.care") || "Manutenzione", url: product.careUrl } : null,
-                          ].filter(Boolean) as { key: string; label: string; url: string }[];
+                            mk("scheda", t("prodotti.detail.tech_sheet_label") || "Scheda tecnica", product.techSheetUrl),
+                            mk("m2d", t("prodotti.detail.model_2d") || "Modello 2D", product.model2dUrl),
+                            mk("m3d", t("prodotti.detail.model_3d") || "Modello 3D", product.model3dUrl),
+                            mk("montaggio", t("prodotti.detail.instructions") || "Istruzioni di montaggio", product.instructionsUrl),
+                            mk("manutenzione", t("prodotti.detail.care") || "Manutenzione", product.careUrl),
+                          ].filter(Boolean) as { key: string; label: string; url: string; filename: string }[];
                           if (rows.length === 0) {
                             return (
                               <p className="text-sm text-warm-400 font-light">

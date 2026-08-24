@@ -11,6 +11,8 @@ interface DocItem {
   key: string;
   label: string;
   url: string;
+  // Filename suggerito al browser per il download. Se assente, si usa la label.
+  filename?: string;
 }
 
 export default function ProductDocsList({ items }: { items: DocItem[] }) {
@@ -55,7 +57,7 @@ export default function ProductDocsList({ items }: { items: DocItem[] }) {
   const onClickRow = useCallback((doc: DocItem, e: React.MouseEvent) => {
     e.preventDefault();
     if (isLoggedIn) {
-      triggerDownload(doc.url, doc.label);
+      triggerDownload(doc.url, doc.filename || doc.label);
       return;
     }
     setPendingDoc(doc);
@@ -89,7 +91,7 @@ export default function ProductDocsList({ items }: { items: DocItem[] }) {
       setIsLoggedIn(true);
       const toDl = pendingDoc;
       closeLogin();
-      if (toDl) triggerDownload(toDl.url, toDl.label);
+      if (toDl) triggerDownload(toDl.url, toDl.filename || toDl.label);
     } catch {
       setError(t("pro.error.generic"));
     } finally {
