@@ -50,7 +50,7 @@ export default function ProDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", company: "", language: "it", marketingOptIn: false });
+  const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", company: "", language: "it", marketingOptIn: false, role: "ARCHITECT_DESIGNER" as Role });
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const showToast = (msg: string, ok: boolean) => {
@@ -70,6 +70,7 @@ export default function ProDetailPage() {
         company: res.data.company,
         language: res.data.language,
         marketingOptIn: res.data.marketingOptIn,
+        role: res.data.role,
       });
     }
     setLoading(false);
@@ -78,6 +79,16 @@ export default function ProDetailPage() {
   useEffect(() => { fetchPro(); }, [fetchPro]);
 
   const save = async () => {
+    if (pro && form.role !== pro.role) {
+      const conferma = confirm(
+        `Cambiare la categoria di ${pro.firstName} ${pro.lastName}
+
+da "${ROLE_LABELS[pro.role]}" a "${ROLE_LABELS[form.role]}"?
+
+I contenuti visibili nell'area riservata cambiano subito, senza bisogno di un nuovo login.`
+      );
+      if (!conferma) return;
+    }
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/professionals/${params.id}`, {
@@ -233,9 +244,24 @@ export default function ProDetailPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-warm-600 mb-1">
-                  {pro.role === "ARCHITECT_DESIGNER" || pro.role === "PRESS" ? "Azienda / Studio / Testata" : "Azienda"}
+                  {form.role === "ARCHITECT_DESIGNER" || form.role === "PRESS" ? "Azienda / Studio / Testata" : "Azienda"}
                 </label>
                 <input value={form.company} onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))} className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-warm-600 mb-1 inline-flex items-center gap-1">
+                  <Briefcase size={11} /> Categoria / Ruolo
+                </label>
+                <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value as Role }))} className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm bg-white">
+                  {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
+                    <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                  ))}
+                </select>
+                {form.role !== pro.role && (
+                  <p className="mt-1 text-[11px] text-amber-700">
+                    Da <strong>{ROLE_LABELS[pro.role]}</strong> a <strong>{ROLE_LABELS[form.role]}</strong>: attivo dopo il salvataggio.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-warm-600 mb-1">Lingua dell&apos;account</label>

@@ -4,6 +4,11 @@ import { requirePermission, isErrorResponse } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
+// Categorie ammesse per un professionista: devono combaciare con l'enum
+// ProfessionalRole in prisma/schema.prisma.
+const PROFESSIONAL_ROLES = ["ARCHITECT_DESIGNER", "PRESS", "RESELLER", "AGENT"] as const;
+type ProRole = (typeof PROFESSIONAL_ROLES)[number];
+
 /** GET — dettaglio completo di un professional + tag associati (per email).
  *  Usato dalla pagina /admin/persone/professionisti/:id. */
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -53,6 +58,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       phone?: string | null;
       company?: string;
       language?: string;
+      role?: ProRole;
     } = {};
     if (typeof body.isActive === "boolean")        data.isActive = body.isActive;
     if (typeof body.marketingOptIn === "boolean")  data.marketingOptIn = body.marketingOptIn;
@@ -63,13 +69,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (typeof body.language === "string" && ["it","fr","en","de","es"].includes(body.language.toLowerCase())) {
       data.language = body.language.toLowerCase();
     }
+    // Cambio di categoria (es. Rivenditore -> Stampa): l'admin puo correggere
+    // il ruolo scelto in fase di registrazione. Ha effetto immediato perche
+    // getAuthProfessional() rilegge sempre il ruolo dal DB.
+    if (typeof body.role === "string" && (PROFESSIONAL_ROLES as readonly string[]).includes(body.role)) {
+      data.role = body.role as ProRole;
+    }
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ success: false, error: "Nessun campo aggiornabile" }, { status: 400 });
     }
     const updated = await prisma.professional.update({
       where: { id: params.id },
       data,
-      select: { id: true, isActive: true, marketingOptIn: true, firstName: true, lastName: true, phone: true, company: true, language: true },
+      select: { id: true, isActive: true, marketingOptIn: true, firstName: true, lastName: true, phone: true, company: true, language: true, role: true },
     });
     return NextResponse.json({ success: true, data: updated });
   } catch (e) {
