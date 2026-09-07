@@ -6,6 +6,10 @@ import { requirePermission, isErrorResponse } from "@/lib/permissions";
 import { sendCapiEvent } from "@/lib/fb-capi";
 import { normalizeEmail, isLikelyDotSpam, isLikelyGibberishName } from "@/lib/email-spam";
 
+// Indirizzo commerciale a cui inoltrare le richieste dalla pagina "Rete vendita"
+// (form con storeId / type = "store_contact"), oltre allo store contattato.
+const SALES_EMAIL = "sales@gebruederthonetvienna.com";
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -62,21 +66,36 @@ export async function POST(req: Request) {
     }
 
     // If store contact, send email to both store and admin
+    // + CC sempre a SALES_EMAIL (per non perdere richieste di offerta dalla rete vendita)
     if (storeId) {
       const store = await prisma.pointOfSale.findUnique({ where: { id: storeId } });
+      const storeLabel = store ? `${store.name}${store.city ? " — " + store.city : ""}` : "";
+      const storeHtml = `
+        <h2>Nuovo messaggio dal sito GTV — Rete vendita</h2>
+        ${storeLabel ? `<p><strong>Punto vendita / Agente:</strong> ${storeLabel}</p>` : ""}
+        <p><strong>Nome:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        ${company ? `<p><strong>Azienda:</strong> ${company}</p>` : ""}
+        ${phone ? `<p><strong>Telefono:</strong> ${phone}</p>` : ""}
+        ${subject ? `<p><strong>Oggetto:</strong> ${subject}</p>` : ""}
+        ${contactReason ? `<p><strong>Motivo del contatto:</strong> ${contactReason}</p>` : ""}
+        <p><strong>Messaggio:</strong></p>
+        <p>${message.replace(/\n/g, "<br>")}</p>
+      `;
+      const subjectLine = `[GTV] ${storeLabel ? storeLabel + " — " : ""}Nuovo messaggio da ${name}`;
+      const { sendMail } = await import("@/lib/mail");
+      // 1) allo store (se ha un indirizzo email configurato)
       if (store?.email) {
-        const { sendMail } = await import("@/lib/mail");
-        const storeHtml = `
-          <h2>Nuovo messaggio dal sito GTV</h2>
-          <p><strong>Nome:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          ${company ? `<p><strong>Azienda:</strong> ${company}</p>` : ""}
-          ${phone ? `<p><strong>Telefono:</strong> ${phone}</p>` : ""}
-          <p><strong>Messaggio:</strong></p>
-          <p>${message.replace(/\n/g, "<br>")}</p>
-        `;
-        sendMail(store.email, `[GTV] Nuovo messaggio da ${name}`, storeHtml).catch((err) =>
+        sendMail(store.email, subjectLine, storeHtml).catch((err) =>
           console.error("Failed to send store email:", err)
+        );
+      }
+      // 2) sempre a SALES_EMAIL — anche quando lo store non ha email o l'admin
+      //    non guarda la dashboard: cosi' le richieste di offerta non si perdono.
+      //    Evito duplicato se lo store e' proprio l'indirizzo sales.
+      if (!store?.email || store.email.trim().toLowerCase() !== SALES_EMAIL.toLowerCase()) {
+        sendMail(SALES_EMAIL, subjectLine, storeHtml).catch((err) =>
+          console.error("Failed to send sales notification:", err)
         );
       }
     }
